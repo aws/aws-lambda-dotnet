@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=10.0.3
-ARG ASPNET_SHA512=6c174c466dbc495bac6a6ba9dae99cdd5185999dc91eca9db540ca424a294a43d47994c4cb5b59bc125451ce4d5670683df39e2f9af2f0f0b4547a810f95ffd3
+ARG ASPNET_VERSION=10.0.5
+ARG ASPNET_SHA512=6cab3b81910ba3e6e118595a45948331f5d1506b42af0942f79ea3db6623e820557a1757973becb9afd3d6f8ead9e9a641667860f2a7fbbd598bcafa38f4739c
 
 ARG LAMBDA_RUNTIME_NAME=dotnet10
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
@@ -27,21 +27,20 @@ RUN curl -SL --output aspnetcore.tar.gz https://builds.dotnet.microsoft.com/dotn
     && rm aspnetcore.tar.gz
 
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview-trixie-slim AS builder
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
 COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
 COPY ["buildtools/", "Repo/buildtools/"]
 RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net10.0
-WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"
+WORKDIR /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport
 RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net10.0 --runtime linux-arm64 -c Release -o /app/build
 
 
 FROM builder AS publish
 RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net10.0 -f net10.0 --runtime linux-arm64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
-RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/bootstrap.sh && \
+RUN sed -i 's/\r$//' /app/publish/bootstrap.sh && \
     mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
 RUN touch /app/publish/empty-certificates.crt

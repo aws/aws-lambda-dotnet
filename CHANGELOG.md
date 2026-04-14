@@ -1,3 +1,37 @@
+## Release 2026-04-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.17.1)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.RuntimeSupport (1.14.3)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.Annotations (1.13.0)
+* Added [FunctionUrl] attribute for configuring Lambda functions with Function URL endpoints, including optional CORS support
+
+## Release 2026-04-13 #2
+
+### Amazon.Lambda.Annotations (1.12.0)
+* treat warnings as errors and fix unshipped.md
+* Added [S3Event] annotation attribute for declaratively configuring S3 event-triggered Lambda functions with support for bucket reference, event types, key prefix/suffix filters, and enabled state.
+
+## Release 2026-04-08
+
+### Amazon.Lambda.Annotations (1.11.0)
+* Added [ALBApi] attribute for configuring Lambda functions as targets behind an Application Load Balancer
+
+## Release 2026-03-27
+
+### Amazon.Lambda.Annotations (1.10.0)
+* Developers can now define Lambda Authorizers and protect API endpoints entirely through C# attributes, eliminating the need for manual CloudFormation configuration.
+
+## Release 2026-03-19
+
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.2)
+* Update AWS .NET SDK dependencies
+### Amazon.Lambda.KinesisEvents (3.0.2)
+* Update AWS .NET SDK dependencies
+### Amazon.Lambda.Templates (8.0.2)
+* Update package references for Lambda templates
+
 ## Release 2026-02-19
 
 ### Amazon.Lambda.AspNetCoreServer.Hosting (1.10.0)

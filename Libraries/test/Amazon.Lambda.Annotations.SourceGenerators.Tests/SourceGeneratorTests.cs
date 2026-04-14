@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.IO;
 using System.Text;
@@ -1340,6 +1343,55 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyValidALBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "albEvents.template"));
+            var validALBEventsHelloGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_Hello_Generated.g.cs"));
+            var validALBEventsHandleRequestGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_HandleRequest_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_Hello_Generated.g.cs",
+                            SourceText.From(validALBEventsHelloGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_HandleRequest_Generated.g.cs",
+                            SourceText.From(validALBEventsHandleRequestGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task ExceededMaximumHandlerLength()
         {
             await new VerifyCS.Test
@@ -1644,9 +1696,272 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
+        /// <summary>
+        /// Tests the full authorizer annotation template generation using TestCustomAuthorizerApp's AuthorizerFunction.cs.
+        /// This validates that [HttpApiAuthorizer] and [RestApiAuthorizer] attributes produce correct CloudFormation
+        /// template output including AnnotationsHttpApi/AnnotationsRestApi resources with Auth.Authorizers sections.
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerAppAuthorizerDefinitionsTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "customAuthorizerApp.template"));
+            var expectedHttpApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs"));
+            var expectedHttpApiAuthorizeV1Generated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs"));
+            var expectedRestApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_RestApiAuthorize_Generated.g.cs"));
+            var expectedSimpleHttpApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs"));
+            var expectedSimpleRestApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs"));
+            var expectedGetProtectedDataGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetProtectedData_Generated.g.cs"));
+            var expectedGetUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetUserInfo_Generated.g.cs"));
+            var expectedHealthCheckGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_HealthCheck_Generated.g.cs"));
+            var expectedGetRestUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetRestUserInfo_Generated.g.cs"));
+            var expectedGetHttpApiV1UserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs"));
+            var expectedGetIHttpResultGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetIHttpResult_Generated.g.cs"));
+            var expectedGetSimpleHttpApiUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs"));
+            var expectedGetSimpleRestApiUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs"));
+            var expectedGetNonStringUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetNonStringUserInfo_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestCustomAuthorizerApp", "AuthorizerFunction.cs"), File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "AuthorizerFunction.cs"))),
+                        (Path.Combine("TestCustomAuthorizerApp", "ProtectedFunction.cs"), File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "ProtectedFunction.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedHttpApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs",
+                            SourceText.From(expectedHttpApiAuthorizeV1Generated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_RestApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedRestApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedSimpleHttpApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedSimpleRestApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetProtectedData_Generated.g.cs",
+                            SourceText.From(expectedGetProtectedDataGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_HealthCheck_Generated.g.cs",
+                            SourceText.From(expectedHealthCheckGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetRestUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetRestUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetHttpApiV1UserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetIHttpResult_Generated.g.cs",
+                            SourceText.From(expectedGetIHttpResultGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetSimpleHttpApiUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetSimpleRestApiUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetNonStringUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetNonStringUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs", expectedHttpApiAuthorizeV1Generated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorize_Generated.g.cs", expectedHttpApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_RestApiAuthorize_Generated.g.cs", expectedRestApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs", expectedSimpleHttpApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs", expectedSimpleRestApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs", expectedGetHttpApiV1UserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetIHttpResult_Generated.g.cs", expectedGetIHttpResultGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetNonStringUserInfo_Generated.g.cs", expectedGetNonStringUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetProtectedData_Generated.g.cs", expectedGetProtectedDataGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetRestUserInfo_Generated.g.cs", expectedGetRestUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs", expectedGetSimpleHttpApiUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs", expectedGetSimpleRestApiUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetUserInfo_Generated.g.cs", expectedGetUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_HealthCheck_Generated.g.cs", expectedHealthCheckGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestCustomAuthorizerApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task VerifyMissingLambdaFunctionWithAuthorizerAttribute()
+        {
+            var test = new VerifyCS.Test()
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0129", DiagnosticSeverity.Error)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}MissingLambdaFunctionWithAuthorizer.cs", 10, 9, 20, 10)
+                            .WithMessage("Method has [HttpApiAuthorizer] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method."),
+                    },
+                },
+            };
+
+            await test.RunAsync();
+        }
+
+        /// <summary>
+        /// Tests the IAuthorizerResult pattern for authorizer functions.
+        /// This validates that [HttpApiAuthorizer] + IAuthorizerResult return type + [FromHeader] generates
+        /// correct handler code that extracts headers from the authorizer request and serializes IAuthorizerResult.
+        /// </summary>
+        [Fact]
+        public async Task IAuthorizerResultHttpApiTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerIAuthorizerResult.template"));
+            var expectedHttpApiGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs"));
+            var expectedRestApiGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "IAuthorizerResultExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "IAuthorizerResultExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromHeaderAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromHeaderAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedHttpApiGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedRestApiGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs", expectedHttpApiGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs", expectedRestApiGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task FunctionUrlExample()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "functionUrlExample.template"));
+            var expectedGetItemsGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "FunctionUrlExample_GetItems_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "FunctionUrlExample_GetItems_Generated.g.cs",
+                            SourceText.From(expectedGetItemsGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("FunctionUrlExample_GetItems_Generated.g.cs", expectedGetItemsGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));
+            File.Delete(Path.Combine("TestCustomAuthorizerApp", "serverless.template"));
         }
 
         private async static Task<string> ReadSnapshotContent(string snapshotPath, bool trimContent = true)

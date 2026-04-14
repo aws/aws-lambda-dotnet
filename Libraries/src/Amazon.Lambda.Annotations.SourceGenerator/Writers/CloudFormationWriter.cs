@@ -1,8 +1,13 @@
-﻿using Amazon.Lambda.Annotations.APIGateway;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System;
@@ -10,6 +15,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using AuthorizerType = Amazon.Lambda.Annotations.SourceGenerator.Models.AuthorizerType;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
@@ -25,6 +31,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private const string PARAMETERS = "Parameters";
         private const string GET_ATTRIBUTE = "Fn::GetAtt";
         private const string REF = "Ref";
+        private const string HTTP_API_RESOURCE_NAME = "AnnotationsHttpApi";
+        private const string REST_API_RESOURCE_NAME = "AnnotationsRestApi";
 
         // Constants related to the message we append to the CloudFormation template description
         private const string BASE_DESCRIPTION = "This template is partially managed by Amazon.Lambda.Annotations";
@@ -59,17 +67,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             ProcessTemplateDescription(report);
 
+            // Build authorizer lookup for processing events with Auth configuration
+            var authorizerLookup = new Dictionary<string, AuthorizerModel>(StringComparer.Ordinal);
+            foreach (var authorizer in report.Authorizers)
+            {
+                if (authorizerLookup.ContainsKey(authorizer.Name))
+                {
+                    _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, authorizer.Name));
+                    continue;
+                }
+                authorizerLookup[authorizer.Name] = authorizer;
+            }
+
+            // Process authorizers first (they need to exist before functions reference them)
+            ProcessAuthorizers(report.Authorizers);
+
             var processedLambdaFunctions = new HashSet<string>();
 
             foreach (var lambdaFunction in report.LambdaFunctions)
             {
                 if (!ShouldProcessLambdaFunction(lambdaFunction))
                     continue;
-                ProcessLambdaFunction(lambdaFunction, relativeProjectUri);
+                ProcessLambdaFunction(lambdaFunction, relativeProjectUri, authorizerLookup);
                 processedLambdaFunctions.Add(lambdaFunction.ResourceName);
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
+            RemoveOrphanedAuthorizers(report.Authorizers);
             var content = _templateWriter.GetContent();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, content);
 
@@ -98,7 +122,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// Captures different properties specified by <see cref="ILambdaFunctionSerializable"/> and attributes specified by <see cref="AttributeModel{T}"/>
         /// and writes it to the serverless template.
         /// </summary>
-        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
+        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var lambdaFunctionPath = $"Resources.{lambdaFunction.ResourceName}";
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
@@ -107,7 +131,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath, lambdaFunction.Runtime);
 
             ProcessLambdaFunctionProperties(lambdaFunction, propertiesPath, relativeProjectUri);
-            ProcessLambdaFunctionEventAttributes(lambdaFunction);
+            ProcessLambdaFunctionEventAttributes(lambdaFunction, authorizerLookup);
         }
 
         /// <summary>
@@ -180,10 +204,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// It also removes all events that exist in the serverless template but were not encountered during the current source generation pass.
         /// All events are specified under 'Resources.FUNCTION_NAME.Properties.Events' path.
         /// </summary>
-        private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
+        private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var currentSyncedEvents = new List<string>();
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
+            var currentAlbResources = new List<string>();
+            var hasFunctionUrl = false;
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -191,27 +217,53 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 switch (attributeModel)
                 {
                     case AttributeModel<HttpApiAttribute> httpApiAttributeModel:
-                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties);
+                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties, authorizerLookup);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<RestApiAttribute> restApiAttributeModel:
-                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data, currentSyncedEventProperties);
+                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data, currentSyncedEventProperties, authorizerLookup);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<SQSEventAttribute> sqsAttributeModel:
                         eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
+                    case AttributeModel<ALBApiAttribute> albAttributeModel:
+                        var albResourceNames = ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
+                        currentAlbResources.AddRange(albResourceNames);
+                        break;
+                    case AttributeModel<S3EventAttribute> s3AttributeModel:
+                        eventName = ProcessS3Attribute(lambdaFunction, s3AttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<FunctionUrlAttribute> functionUrlAttributeModel:
+                        ProcessFunctionUrlAttribute(lambdaFunction, functionUrlAttributeModel.Data);
+                        _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig", true);
+                        hasFunctionUrl = true;
+                        break;
+                }
+            }
+
+            // Remove FunctionUrlConfig only if it was previously created by Annotations (tracked via metadata).
+            // This preserves any manually-added FunctionUrlConfig that was not created by the source generator.
+            if (!hasFunctionUrl)
+            {
+                var syncedFunctionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig";
+                if (_templateWriter.GetToken<bool>(syncedFunctionUrlConfigPath, false))
+                {
+                    _templateWriter.RemoveToken($"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig");
+                    _templateWriter.RemoveToken(syncedFunctionUrlConfigPath);
                 }
             }
 
             SynchronizeEventsAndProperties(currentSyncedEvents, currentSyncedEventProperties, lambdaFunction);
+            SynchronizeAlbResources(currentAlbResources, lambdaFunction);
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="RestApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
+        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute, Dictionary<string, List<string>> syncedEventProperties, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var eventName = $"Root{restApiAttribute.Method}";
             var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
@@ -220,13 +272,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Path", restApiAttribute.Template);
             SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Method", restApiAttribute.Method.ToString().ToUpper());
 
+            // Set Auth configuration if authorizer is specified
+            // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
+            // Also set RestApiId to link to our explicit AnnotationsRestApi resource where the authorizer is defined
+            if (!string.IsNullOrEmpty(restApiAttribute.Authorizer) && authorizerLookup.TryGetValue(restApiAttribute.Authorizer, out var authorizer))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all REST API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"RestApiId.{REF}", REST_API_RESOURCE_NAME);
+            }
+
             return eventName;
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="HttpApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
+        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute, Dictionary<string, List<string>> syncedEventProperties, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var eventName = $"Root{httpApiAttribute.Method}";
             var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
@@ -240,7 +306,296 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (httpApiAttribute.Version == HttpApiVersion.V1)
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "PayloadFormatVersion", "1.0");
 
+            // Set Auth configuration if authorizer is specified
+            // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
+            // Also set ApiId to link to our explicit AnnotationsHttpApi resource where the authorizer is defined
+            if (!string.IsNullOrEmpty(httpApiAttribute.Authorizer) && authorizerLookup.TryGetValue(httpApiAttribute.Authorizer, out var authorizer))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all HTTP API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"ApiId.{REF}", HTTP_API_RESOURCE_NAME);
+            }
+
             return eventName;
+        }
+
+        /// <summary>
+        /// Writes the <see cref="FunctionUrlAttribute"/> configuration to the serverless template.
+        /// Unlike HttpApi/RestApi, Function URLs are configured as a property on the function resource
+        /// rather than as an event source.
+        /// </summary>
+        private void ProcessFunctionUrlAttribute(ILambdaFunctionSerializable lambdaFunction, FunctionUrlAttribute functionUrlAttribute)
+        {
+            var functionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig";
+            _templateWriter.SetToken($"{functionUrlConfigPath}.AuthType", functionUrlAttribute.AuthType.ToString());
+
+            // Always remove the existing Cors block first to clear any stale properties
+            // from a previous generation pass, then re-emit only the currently configured values.
+            var corsPath = $"{functionUrlConfigPath}.Cors";
+            _templateWriter.RemoveToken(corsPath);
+
+            var hasCors = functionUrlAttribute.AllowOrigins != null
+                || functionUrlAttribute.AllowMethods != null
+                || functionUrlAttribute.AllowHeaders != null
+                || functionUrlAttribute.ExposeHeaders != null
+                || functionUrlAttribute.AllowCredentials
+                || functionUrlAttribute.MaxAge > 0;
+
+            if (hasCors)
+            {
+                if (functionUrlAttribute.AllowOrigins != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowOrigins", new List<string>(functionUrlAttribute.AllowOrigins), TokenType.List);
+
+                if (functionUrlAttribute.AllowMethods != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowMethods", functionUrlAttribute.AllowMethods.Select(m => m == LambdaHttpMethod.Any ? "*" : m.ToString().ToUpper()).ToList(), TokenType.List);
+
+                if (functionUrlAttribute.AllowHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowHeaders", new List<string>(functionUrlAttribute.AllowHeaders), TokenType.List);
+
+                if (functionUrlAttribute.ExposeHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.ExposeHeaders", new List<string>(functionUrlAttribute.ExposeHeaders), TokenType.List);
+
+                if (functionUrlAttribute.AllowCredentials)
+                    _templateWriter.SetToken($"{corsPath}.AllowCredentials", true);
+
+                if (functionUrlAttribute.MaxAge > 0)
+                    _templateWriter.SetToken($"{corsPath}.MaxAge", functionUrlAttribute.MaxAge);
+            }
+        }
+
+        /// <summary>
+        /// Processes all authorizers and writes them to the serverless template as inline authorizers within the API resources.
+        /// AWS SAM expects authorizers to be defined within the Auth.Authorizers property of AWS::Serverless::HttpApi or AWS::Serverless::Api resources.
+        /// </summary>
+        private void ProcessAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            // Group authorizers by type
+            var httpApiAuthorizers = authorizers.Where(a => a.AuthorizerType == AuthorizerType.HttpApi).ToList();
+            var restApiAuthorizers = authorizers.Where(a => a.AuthorizerType == AuthorizerType.RestApi).ToList();
+
+            // Process HTTP API authorizers (add to AnnotationsHttpApi resource)
+            if (httpApiAuthorizers.Any())
+            {
+                ProcessHttpApiAuthorizers(httpApiAuthorizers);
+            }
+
+            // Process REST API authorizers (add to AnnotationsRestApi resource)
+            if (restApiAuthorizers.Any())
+            {
+                ProcessRestApiAuthorizers(restApiAuthorizers);
+            }
+        }
+
+        /// <summary>
+        /// Writes HTTP API (API Gateway V2) authorizers to the AnnotationsHttpApi resource.
+        /// SAM expects authorizers to be defined inline in the Auth.Authorizers property.
+        /// </summary>
+        private void ProcessHttpApiAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            const string httpApiResourcePath = "Resources." + HTTP_API_RESOURCE_NAME;
+            
+            // Create the AnnotationsHttpApi resource if it doesn't exist
+            if (!_templateWriter.Exists(httpApiResourcePath))
+            {
+                _templateWriter.SetToken($"{httpApiResourcePath}.Type", "AWS::Serverless::HttpApi");
+                _templateWriter.SetToken($"{httpApiResourcePath}.Metadata.Tool", CREATION_TOOL);
+            }
+
+            // Add each authorizer to the Auth.Authorizers map
+            foreach (var authorizer in authorizers)
+            {
+                var authorizerPath = $"{httpApiResourcePath}.Properties.Auth.Authorizers.{authorizer.Name}";
+
+                // FunctionArn - Reference to the Lambda function ARN
+                _templateWriter.SetToken($"{authorizerPath}.FunctionArn.{GET_ATTRIBUTE}", new List<string> { authorizer.LambdaResourceName, "Arn" }, TokenType.List);
+
+                // AuthorizerPayloadFormatVersion
+                var payloadFormatVersionString = authorizer.AuthorizerPayloadFormatVersion == AuthorizerPayloadFormatVersion.V1 ? "1.0" : "2.0";
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerPayloadFormatVersion", payloadFormatVersionString);
+
+                // EnableSimpleResponses
+                _templateWriter.SetToken($"{authorizerPath}.EnableSimpleResponses", authorizer.EnableSimpleResponses);
+
+                // Identity.Headers - The header to use for identity source
+                _templateWriter.SetToken($"{authorizerPath}.Identity.Headers", new List<string> { authorizer.IdentityHeader }, TokenType.List);
+
+                // EnableFunctionDefaultPermissions tells SAM to automatically create the AWS::Lambda::Permission
+                // for the authorizer Lambda function. Unlike AWS::Serverless::Api (REST API), AWS::Serverless::HttpApi
+                // does NOT automatically create invoke permissions for Lambda authorizers defined in Auth.Authorizers.
+                // https://github.com/aws/serverless-application-model/issues/2933
+                _templateWriter.SetToken($"{authorizerPath}.EnableFunctionDefaultPermissions", true);
+
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
+            }
+        }
+
+        /// <summary>
+        /// Writes REST API (API Gateway V1) authorizers to the AnnotationsRestApi resource.
+        /// SAM expects authorizers to be defined inline in the Auth.Authorizers property.
+        /// </summary>
+        private void ProcessRestApiAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            const string restApiResourcePath = "Resources." + REST_API_RESOURCE_NAME;
+            
+            // Create the AnnotationsRestApi resource if it doesn't exist
+            if (!_templateWriter.Exists(restApiResourcePath))
+            {
+                _templateWriter.SetToken($"{restApiResourcePath}.Type", "AWS::Serverless::Api");
+                // REST API requires explicit stage name
+                _templateWriter.SetToken($"{restApiResourcePath}.Properties.StageName", "Prod");
+                _templateWriter.SetToken($"{restApiResourcePath}.Metadata.Tool", CREATION_TOOL);
+            }
+
+            // Add each authorizer to the Auth.Authorizers map
+            foreach (var authorizer in authorizers)
+            {
+                var authorizerPath = $"{restApiResourcePath}.Properties.Auth.Authorizers.{authorizer.Name}";
+
+                // FunctionArn - Reference to the Lambda function ARN using GetAtt
+                _templateWriter.SetToken($"{authorizerPath}.FunctionArn.{GET_ATTRIBUTE}", new List<string> { authorizer.LambdaResourceName, "Arn" }, TokenType.List);
+
+                // Identity.Header - The header to use for identity source
+                _templateWriter.SetToken($"{authorizerPath}.Identity.Header", authorizer.IdentityHeader);
+
+                // FunctionPayloadType - TOKEN or REQUEST
+                if (authorizer.RestApiAuthorizerType == RestApiAuthorizerType.Token)
+                {
+                    _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "TOKEN");
+                }
+                else
+                {
+                    _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "REQUEST");
+                }
+
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                // API Gateway REST Lambda authorizer TTL must be between 0 and 3600 seconds.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
+            }
+        }
+
+        /// <summary>
+        /// Removes orphaned authorizers from the serverless template.
+        /// Authorizers are now defined inline within the API resources (AnnotationsHttpApi and AnnotationsRestApi).
+        /// This method removes authorizers that were created by Lambda Annotations but no longer exist in the current compilation.
+        /// It also cleans up legacy standalone authorizer resources (AWS::ApiGatewayV2::Authorizer, AWS::ApiGateway::Authorizer)
+        /// and their associated Lambda permissions.
+        /// </summary>
+        private void RemoveOrphanedAuthorizers(IList<AuthorizerModel> currentAuthorizers)
+        {
+            if (!_templateWriter.Exists("Resources"))
+            {
+                return;
+            }
+
+            // Get current authorizer names by type
+            var currentHttpApiAuthorizerNames = new HashSet<string>(
+                currentAuthorizers.Where(a => a.AuthorizerType == AuthorizerType.HttpApi).Select(a => a.Name));
+            var currentRestApiAuthorizerNames = new HashSet<string>(
+                currentAuthorizers.Where(a => a.AuthorizerType == AuthorizerType.RestApi).Select(a => a.Name));
+
+            // Clean up orphaned inline authorizers in AnnotationsHttpApi
+            const string httpApiAuthorizersPath = "Resources." + HTTP_API_RESOURCE_NAME + ".Properties.Auth.Authorizers";
+            if (_templateWriter.Exists(httpApiAuthorizersPath))
+            {
+                var httpApiCreationTool = _templateWriter.GetToken<string>($"Resources.{HTTP_API_RESOURCE_NAME}.Metadata.Tool", string.Empty);
+                if (string.Equals(httpApiCreationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    var existingAuthorizerNames = _templateWriter.GetKeys(httpApiAuthorizersPath);
+                    foreach (var authorizerName in existingAuthorizerNames)
+                    {
+                        if (!currentHttpApiAuthorizerNames.Contains(authorizerName))
+                        {
+                            _templateWriter.RemoveToken($"{httpApiAuthorizersPath}.{authorizerName}");
+                        }
+                    }
+                    
+                    // Clean up empty Auth structure
+                    _templateWriter.RemoveTokenIfNullOrEmpty(httpApiAuthorizersPath);
+                    _templateWriter.RemoveTokenIfNullOrEmpty($"Resources.{HTTP_API_RESOURCE_NAME}.Properties.Auth");
+                }
+            }
+
+            // Clean up orphaned inline authorizers in AnnotationsRestApi
+            const string restApiAuthorizersPath = "Resources." + REST_API_RESOURCE_NAME + ".Properties.Auth.Authorizers";
+            if (_templateWriter.Exists(restApiAuthorizersPath))
+            {
+                var restApiCreationTool = _templateWriter.GetToken<string>($"Resources.{REST_API_RESOURCE_NAME}.Metadata.Tool", string.Empty);
+                if (string.Equals(restApiCreationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    var existingAuthorizerNames = _templateWriter.GetKeys(restApiAuthorizersPath);
+                    foreach (var authorizerName in existingAuthorizerNames)
+                    {
+                        if (!currentRestApiAuthorizerNames.Contains(authorizerName))
+                        {
+                            _templateWriter.RemoveToken($"{restApiAuthorizersPath}.{authorizerName}");
+                        }
+                    }
+                    
+                    // Clean up empty Auth structure
+                    _templateWriter.RemoveTokenIfNullOrEmpty(restApiAuthorizersPath);
+                    _templateWriter.RemoveTokenIfNullOrEmpty($"Resources.{REST_API_RESOURCE_NAME}.Properties.Auth");
+                }
+            }
+
+            // Clean up legacy standalone authorizer resources and permissions from older versions
+            var toRemove = new List<string>();
+            foreach (var resourceName in _templateWriter.GetKeys("Resources"))
+            {
+                var resourcePath = $"Resources.{resourceName}";
+                var type = _templateWriter.GetToken<string>($"{resourcePath}.Type", string.Empty);
+                var creationTool = _templateWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (!string.Equals(creationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                // Remove legacy standalone authorizer resources
+                if (string.Equals(type, "AWS::ApiGatewayV2::Authorizer", StringComparison.Ordinal) ||
+                    string.Equals(type, "AWS::ApiGateway::Authorizer", StringComparison.Ordinal))
+                {
+                    toRemove.Add(resourceName);
+                }
+
+                // Remove legacy authorizer Lambda permissions
+                if (string.Equals(type, "AWS::Lambda::Permission", StringComparison.Ordinal) &&
+                    resourceName.EndsWith("AuthorizerPermission"))
+                {
+                    toRemove.Add(resourceName);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _templateWriter.RemoveToken($"Resources.{resourceName}");
+            }
+
+            // Remove the entire AnnotationsHttpApi resource if it was created by us and no longer has any HTTP API authorizers
+            if (!currentHttpApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{HTTP_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{HTTP_API_RESOURCE_NAME}");
+            }
+
+            // Remove the entire AnnotationsRestApi resource if it was created by us and no longer has any REST API authorizers
+            if (!currentRestApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{REST_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{REST_API_RESOURCE_NAME}");
+            }
         }
 
         /// <summary>
@@ -319,8 +674,285 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
-        /// Writes all properties associated with <see cref="LambdaFunctionRoleAttribute"/> to the serverless template.
+        /// Writes all properties associated with <see cref="S3EventAttribute"/> to the serverless template.
         /// </summary>
+        private string ProcessS3Attribute(ILambdaFunctionSerializable lambdaFunction, S3EventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "S3");
+
+            // Bucket - always a Ref since S3 events require the bucket resource in the same template (validated to start with "@")
+            var bucketName = att.Bucket.Substring(1);
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Bucket");
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Bucket.{REF}", bucketName);
+
+            // Events - list of S3 event types (always written since S3 SAM events require it; uses default "s3:ObjectCreated:*" if not explicitly set)
+            {
+                var events = att.Events.Split(';').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Events", events, TokenType.List);
+            }
+
+            // Filter - S3 key filter rules
+            if (att.IsFilterPrefixSet || att.IsFilterSuffixSet)
+            {
+                var rules = new List<Dictionary<string, string>>();
+
+                if (att.IsFilterPrefixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "prefix" }, { "Value", att.FilterPrefix } });
+                }
+
+                if (att.IsFilterSuffixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "suffix" }, { "Value", att.FilterSuffix } });
+                }
+
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Filter.S3Key.Rules", rules, TokenType.List);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Generates CloudFormation resources for an Application Load Balancer target.
+        /// Unlike API Gateway events which map to SAM event types, ALB integration requires
+        /// generating standalone CloudFormation resources: a TargetGroup, a ListenerRule, and a Lambda Permission.
+        /// </summary>
+        /// <returns>List of the three generated CloudFormation resource names for tracking/synchronization.</returns>
+        private List<string> ProcessAlbApiAttribute(ILambdaFunctionSerializable lambdaFunction, ALBApiAttribute att)
+        {
+            var baseName = att.IsResourceNameSet ? att.ResourceName : $"{lambdaFunction.ResourceName}ALB";
+            var permissionName = $"{baseName}Permission";
+            var targetGroupName = $"{baseName}TargetGroup";
+            var listenerRuleName = $"{baseName}ListenerRule";
+
+            // 1. Lambda Permission - allows ELB to invoke the Lambda function
+            var permPath = $"Resources.{permissionName}";
+            if (!_templateWriter.Exists(permPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{permPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{permPath}.Type", "AWS::Lambda::Permission");
+                _templateWriter.SetToken($"{permPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{permPath}.Properties.FunctionName.{GET_ATTRIBUTE}", new List<string> { lambdaFunction.ResourceName, "Arn" }, TokenType.List);
+                _templateWriter.SetToken($"{permPath}.Properties.Action", "lambda:InvokeFunction");
+                _templateWriter.SetToken($"{permPath}.Properties.Principal", "elasticloadbalancing.amazonaws.com");
+            }
+
+            // 2. Target Group - registers the Lambda function as a target
+            var tgPath = $"Resources.{targetGroupName}";
+            if (!_templateWriter.Exists(tgPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{tgPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{tgPath}.Type", "AWS::ElasticLoadBalancingV2::TargetGroup");
+                _templateWriter.SetToken($"{tgPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{tgPath}.DependsOn", permissionName);
+                _templateWriter.SetToken($"{tgPath}.Properties.TargetType", "lambda");
+
+                // MultiValueHeaders must be set via TargetGroupAttributes, not as a top-level property.
+                // The CFN property "MultiValueHeadersEnabled" does not exist on AWS::ElasticLoadBalancingV2::TargetGroup.
+                if (att.MultiValueHeaders)
+                {
+                    _templateWriter.SetToken($"{tgPath}.Properties.TargetGroupAttributes",
+                        new List<Dictionary<string, string>>
+                        {
+                            new Dictionary<string, string>
+                            {
+                                { "Key", "lambda.multi_value_headers.enabled" },
+                                { "Value", "true" }
+                            }
+                        }, TokenType.List);
+                }
+                else
+                {
+                    _templateWriter.RemoveToken($"{tgPath}.Properties.TargetGroupAttributes");
+                }
+
+                _templateWriter.SetToken($"{tgPath}.Properties.Targets", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Id", new Dictionary<string, List<string>> { { GET_ATTRIBUTE, new List<string> { lambdaFunction.ResourceName, "Arn" } } } }
+                    }
+                }, TokenType.List);
+            }
+
+            // 3. Listener Rule - routes traffic from the ALB listener to the target group
+            var rulePath = $"Resources.{listenerRuleName}";
+            if (!_templateWriter.Exists(rulePath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{rulePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{rulePath}.Type", "AWS::ElasticLoadBalancingV2::ListenerRule");
+                _templateWriter.SetToken($"{rulePath}.Metadata.Tool", CREATION_TOOL);
+
+                // ListenerArn - handle @reference vs literal ARN
+                _templateWriter.RemoveToken($"{rulePath}.Properties.ListenerArn");
+                if (!string.IsNullOrEmpty(att.ListenerArn) && att.ListenerArn.StartsWith("@"))
+                {
+                    var refName = att.ListenerArn.Substring(1);
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn.{REF}", refName);
+
+                    // Warn if the referenced resource/parameter doesn't exist in the template
+                    if (!_templateWriter.Exists($"Resources.{refName}") && !_templateWriter.Exists($"{PARAMETERS}.{refName}"))
+                    {
+                        _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.AlbListenerReferenceNotFound, Location.None, refName));
+                    }
+                }
+                else
+                {
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn", att.ListenerArn);
+                }
+
+                // Priority
+                _templateWriter.SetToken($"{rulePath}.Properties.Priority", att.Priority);
+
+                // Conditions
+                var conditions = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Field", "path-pattern" },
+                        { "PathPatternConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.PathPattern } }
+                            }
+                        }
+                    }
+                };
+                if (!string.IsNullOrEmpty(att.HostHeader))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "host-header" },
+                        { "HostHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HostHeader } }
+                            }
+                        }
+                    });
+                }
+                if (!string.IsNullOrEmpty(att.HttpMethod))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-request-method" },
+                        { "HttpRequestMethodConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HttpMethod.ToUpper() } }
+                            }
+                        }
+                    });
+                }
+                if (!string.IsNullOrEmpty(att.HttpHeaderConditionName) && att.HttpHeaderConditionValues != null && att.HttpHeaderConditionValues.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-header" },
+                        { "HttpHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "HttpHeaderName", att.HttpHeaderConditionName },
+                                { "Values", att.HttpHeaderConditionValues.ToList() }
+                            }
+                        }
+                    });
+                }
+                if (att.QueryStringConditions != null && att.QueryStringConditions.Length > 0)
+                {
+                    var keyValuePairs = new List<Dictionary<string, string>>();
+                    foreach (var entry in att.QueryStringConditions)
+                    {
+                        var separatorIndex = entry.IndexOf('=');
+                        if (separatorIndex >= 0)
+                        {
+                            var key = entry.Substring(0, separatorIndex);
+                            var value = entry.Substring(separatorIndex + 1);
+                            var kvp = new Dictionary<string, string>();
+                            if (!string.IsNullOrEmpty(key))
+                            {
+                                kvp["Key"] = key;
+                            }
+                            kvp["Value"] = value;
+                            keyValuePairs.Add(kvp);
+                        }
+                    }
+                    if (keyValuePairs.Any())
+                    {
+                        conditions.Add(new Dictionary<string, object>
+                        {
+                            { "Field", "query-string" },
+                            { "QueryStringConfig", new Dictionary<string, object>
+                                {
+                                    { "Values", keyValuePairs }
+                                }
+                            }
+                        });
+                    }
+                }
+                if (att.SourceIpConditions != null && att.SourceIpConditions.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "source-ip" },
+                        { "SourceIpConfig", new Dictionary<string, object>
+                            {
+                                { "Values", att.SourceIpConditions.ToList() }
+                            }
+                        }
+                    });
+                }
+                _templateWriter.SetToken($"{rulePath}.Properties.Conditions", conditions, TokenType.List);
+
+                // Actions - forward to target group
+                _templateWriter.SetToken($"{rulePath}.Properties.Actions", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Type", "forward" },
+                        { "TargetGroupArn", new Dictionary<string, string> { { REF, targetGroupName } } }
+                    }
+                }, TokenType.List);
+            }
+
+            return new List<string> { permissionName, targetGroupName, listenerRuleName };
+        }
+
+        /// <summary>
+        /// Synchronizes ALB resources for a given Lambda function. ALB resources (Permission, TargetGroup, ListenerRule)
+        /// are standalone top-level CloudFormation resources, so they need separate tracking from SAM events.
+        /// Previously generated ALB resources that are no longer present in the current compilation are removed.
+        /// </summary>
+        private void SynchronizeAlbResources(List<string> currentAlbResources, ILambdaFunctionSerializable lambdaFunction)
+        {
+            var syncedAlbResourcesPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedAlbResources";
+
+            // Get previously synced ALB resources
+            var previousAlbResources = _templateWriter.GetToken<List<string>>(syncedAlbResourcesPath, new List<string>());
+
+            // Remove orphaned ALB resources
+            var orphanedAlbResources = previousAlbResources.Except(currentAlbResources).ToList();
+            foreach (var resourceName in orphanedAlbResources)
+            {
+                var resourcePath = $"Resources.{resourceName}";
+                // Only remove if it was created by this tool
+                if (_templateWriter.Exists(resourcePath) &&
+                    string.Equals(_templateWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    _templateWriter.RemoveToken(resourcePath);
+                }
+            }
+
+            // Update synced ALB resources in the template metadata
+            _templateWriter.RemoveToken(syncedAlbResourcesPath);
+            if (currentAlbResources.Any())
+                _templateWriter.SetToken(syncedAlbResourcesPath, currentAlbResources, TokenType.List);
+        }
 
         /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.

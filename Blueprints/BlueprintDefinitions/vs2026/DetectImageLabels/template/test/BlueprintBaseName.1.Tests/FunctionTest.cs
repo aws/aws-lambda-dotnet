@@ -23,14 +23,14 @@ public class FunctionTest
         IAmazonRekognition rekognitionClient = new AmazonRekognitionClient(RegionEndpoint.USWest2);
 
         var bucketName = "lambda-BlueprintBaseName.1-".ToLower() + DateTime.Now.Ticks;
-        await s3Client.PutBucketAsync(bucketName);
+        await s3Client.PutBucketAsync(bucketName, TestContext.Current.CancellationToken);
         try
         {
             await s3Client.PutObjectAsync(new PutObjectRequest
             {
                 BucketName = bucketName,
                 FilePath = fileName
-            });
+            }, TestContext.Current.CancellationToken);
 
             // Setup the S3 event object that S3 notifications would create and send to the Lambda function if
             // the bucket was configured as an event source.

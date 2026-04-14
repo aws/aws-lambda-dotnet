@@ -10,7 +10,7 @@ on:
     - cron: '0 0 * * *'
   # Allows to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
-    
+
 
 
 jobs:
@@ -23,6 +23,8 @@ jobs:
       NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
       NET_10_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile"
       NET_10_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile"
+      NET_11_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net11/amd64/Dockerfile"
+      NET_11_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net11/arm64/Dockerfile"
 
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE
@@ -114,6 +116,34 @@ jobs:
             Write-Host "Skipping .NET 10 ARM64 update - No version detected"
           }
 
+      # Update .NET 11 AMD64 Dockerfile
+      - name: Update .NET 11 AMD64
+        id: update-net11-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_11_AMD64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "11"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 11 AMD64 update - No version detected"
+          }
+
+      # Update .NET 11 ARM64 Dockerfile
+      - name: Update .NET 11 ARM64
+        id: update-net11-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_11_ARM64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "11"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 11 ARM64 update - No version detected"
+          }
+
       # Commit changes and create a branch
       - name: Commit and Push
         id: commit-push
@@ -159,25 +189,27 @@ jobs:
           destination_branch: "dev"
           pr_title: 'chore: Daily ASP.NET Core version update in Dockerfiles'
           pr_body: "This PR automatically updates the Dockerfiles to use the latest ASP.NET Core version.
-            
+
             Verify that the Dockerfiles have correct versions and matching SHA512 checksums for ASP.NET Core runtime.
-            
+
             All .NET versions: https://dotnet.microsoft.com/en-us/download/dotnet
-            
+
             *Description of changes:*
             \n${{ format
-                (
-                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
-                  join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net10-arm64.outputs.MESSAGE, '\n')
-                )
+            (
+            '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}',
+            join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net10-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net11-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net11-arm64.outputs.MESSAGE, '\n')
+            )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       # Add "Release Not Needed" label to the PR
       - name: Add Release Not Needed label
         if: ${{ steps.pull-request.outputs.pr_number }}
