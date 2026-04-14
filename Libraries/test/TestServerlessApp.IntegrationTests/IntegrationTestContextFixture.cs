@@ -93,7 +93,7 @@ namespace TestServerlessApp.IntegrationTests
             Assert.Equal(37, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
             Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
-
+fdasfdasf
             await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name).ToList());
 
             // Wait an additional 10 seconds for any other eventually consistency state to finish up.
