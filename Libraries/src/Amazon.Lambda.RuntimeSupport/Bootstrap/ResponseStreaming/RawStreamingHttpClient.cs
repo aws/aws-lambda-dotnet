@@ -49,8 +49,11 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         public RawStreamingHttpClient(string hostAndPort)
         {
             var parts = hostAndPort.Split(':');
+            if (parts.Length != 2)
+                throw new ArgumentException($"Invalid host and port format: {hostAndPort}. Expected format is 'host:port'"); 
+
             _host = parts[0];
-            _port = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 80;
+            _port = int.Parse(parts[1], CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -157,6 +160,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// </summary>
         internal async Task ReadAndDiscardResponseAsync(CancellationToken cancellationToken)
         {
+            const string headerDelimiter = "\r\n\r\n";
             var buffer = new byte[4096];
             try
             {
@@ -175,10 +179,10 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                     // Check if we've received the complete response (ends with \r\n\r\n for headers,
                     // or we've read the content-length worth of body)
                     var text = responseText.ToString();
-                    if (text.Contains("\r\n\r\n"))
+                    if (text.Contains(headerDelimiter))
                     {
                         // Find Content-Length to know if there's a body to read
-                        var headerEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                        var headerEnd = text.IndexOf(headerDelimiter, StringComparison.Ordinal);
                         var headers = text.Substring(0, headerEnd);
 
                         var contentLengthMatch = System.Text.RegularExpressions.Regex.Match(
@@ -199,6 +203,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                         }
                     }
 
+                    // 16KB is more than enough for the Runtime API response, so we can break here to avoid an infinite loop in case of malformed response
                     if (totalRead > 16384)
                         break; // Safety limit
                 }

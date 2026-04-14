@@ -11,27 +11,33 @@ namespace Amazon.Lambda.Core.ResponseStreaming
 {
     /// <summary>
     /// The HTTP response prelude to be sent as the first chunk of a streaming response when using <see cref="LambdaResponseStreamFactory.CreateHttpStream"/>.
+    /// When using Lambda response streaming with a Lambda Function URL or API Gateway, the response prelude is used to set the HTTP status code,
+    /// headers, and cookies for the response. The prelude must be sent as the first chunk of the response stream, followed by the response body chunks.
+    /// This allows you to set the status code and headers for the response before sending any of the response body.
     /// </summary>
     [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class HttpResponseStreamPrelude
     {
         /// <summary>
-        /// The Http status code to include in the response prelude.
+        /// The Http status code.
         /// </summary>
         public HttpStatusCode? StatusCode { get; set; }
 
         /// <summary>
-        /// The response headers to include in the response prelude. This collection supports setting single value for the same headers.
+        /// The response headers. This collection supports setting single value for the same headers. When using
+        /// Lambda Function URLs as this event source this collection should be used.
         /// </summary>
         public IDictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
 
         /// <summary>
-        /// The response headers to include in the response prelude. This collection supports setting multiple values for the same headers.
+        /// The response headers. This collection supports setting multiple values for the same headers. When using
+        /// API Gateway REST APIs as this event source this collection should be used.
         /// </summary>
         public IDictionary<string, IList<string>> MultiValueHeaders { get; set; } = new Dictionary<string, IList<string>>();
 
         /// <summary>
-        /// The list of cookies to include in the response prelude. This is used for Lambda Function URL responses, which support a separate "cookies" field in the response JSON for setting cookies, rather than requiring cookies to be set via the "Set-Cookie" header.
+        /// The list of cookies. This is used for Lambda Function URL responses, which support a separate "cookies" field in
+        /// the response JSON for setting cookies, rather than requiring cookies to be set via the "Set-Cookie" header.
         /// </summary>
         public IList<string> Cookies { get; set; } = new List<string>();
 

@@ -24,12 +24,10 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
         Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
-
         /// <summary>
         /// Gets the total number of bytes written to the stream so far.
         /// </summary>
         long BytesWritten { get; }
-
 
         /// <summary>
         /// Gets whether an error has been reported.
