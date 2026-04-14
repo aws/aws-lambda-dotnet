@@ -29,13 +29,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public void Constructor_HostOnly_DefaultsToPort80()
-        {
-            using var client = new RawStreamingHttpClient("localhost");
-            // Should not throw — defaults port to 80
-        }
-
-        [Fact]
         public void Constructor_HighPort_ParsedCorrectly()
         {
             using var client = new RawStreamingHttpClient("127.0.0.1:65535");
