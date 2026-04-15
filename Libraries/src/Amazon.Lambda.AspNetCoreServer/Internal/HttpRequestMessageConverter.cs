@@ -1,17 +1,10 @@
-#if NET8_0_OR_GREATER
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Primitives;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -118,4 +111,3 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
     }
 }
-#endif

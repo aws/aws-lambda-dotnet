@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,13 +28,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IServiceProvidersFeature,
                              ITlsConnectionFeature,
                              IHttpRequestIdentifierFeature,
-
                              IHttpResponseBodyFeature
-
-#if NET6_0_OR_GREATER
                             ,IHttpRequestBodyDetectionFeature
                             ,IHttpActivityFeature
-#endif
     /*
     ,
                          IHttpUpgradeFeature,
@@ -54,11 +50,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             this[typeof(ITlsConnectionFeature)] = this;
             this[typeof(IHttpResponseBodyFeature)] = this;
             this[typeof(IHttpRequestIdentifierFeature)] = this;
-
-#if NET6_0_OR_GREATER
             this[typeof(IHttpRequestBodyDetectionFeature)] = this;
             this[typeof(IHttpActivityFeature)] = this;
-#endif
         }
 
         #region IFeatureCollection
@@ -385,7 +378,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #endregion
 
-#if NET6_0_OR_GREATER
         bool IHttpRequestBodyDetectionFeature.CanHaveBody
         {
             get
@@ -396,6 +388,5 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
 
         Activity IHttpActivityFeature.Activity { get; set; }
-#endif
     }
 }

@@ -41,7 +41,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
-                        output.Append(args.Data);
+                        output.AppendLine(args.Data);
                     }
                 };
 
@@ -50,7 +50,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
-                        output.Append(args.Data);
+                        output.AppendLine(args.Data);
                     }
                 };
 

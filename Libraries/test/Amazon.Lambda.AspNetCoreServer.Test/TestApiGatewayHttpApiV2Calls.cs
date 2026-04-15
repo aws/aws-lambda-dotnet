@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -285,7 +282,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             }
         }
 
-        #if NET8_0_OR_GREATER
         /// <summary>
         /// Verifies that <see cref="HttpV2LambdaFunction.GetBeforeSnapshotRequests"/> is invoked during startup.
         /// </summary>
@@ -313,7 +309,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.True(SnapStartController.Invoked);
         }
-        #endif
 
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)
         {

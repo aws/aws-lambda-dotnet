@@ -1,0 +1,100 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Integration test for ASP.NET Core response streaming through API Gateway.",
+  "Resources": {
+    "ApiAccessLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 1
+      }
+    },
+    "StreamingApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "StageName": "prod",
+        "AccessLogSetting": {
+          "DestinationArn": { "Fn::GetAtt": ["ApiAccessLogGroup", "Arn"] },
+          "Format": "$context.requestId $context.identity.sourceIp $context.httpMethod $context.routeKey $context.status $context.responseLength $context.requestTime"
+        },
+        "MethodSettings": [
+          {
+            "ResourcePath": "/*",
+            "HttpMethod": "*",
+            "LoggingLevel": "INFO",
+            "DataTraceEnabled": true,
+            "MetricsEnabled": true
+          }
+        ],
+        "DefinitionBody": {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "ASP.NET Core Streaming Integration Test",
+            "version": "1.0"
+          },
+          "paths": {
+            "/": {
+              "x-amazon-apigateway-any-method": {
+                "x-amazon-apigateway-integration": {
+                  "type": "aws_proxy",
+                  "httpMethod": "POST",
+                  "payloadFormatVersion": "1.0",
+                  "uri": { "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2021-11-15/functions/${AspNetCoreFunction.Arn}/response-streaming-invocations" },
+                  "responseTransferMode": "STREAM",
+                  "timeoutInMillis": 29000
+                }
+              }
+            },
+            "/{proxy+}": {
+              "x-amazon-apigateway-any-method": {
+                "x-amazon-apigateway-integration": {
+                  "type": "aws_proxy",
+                  "httpMethod": "POST",
+                  "payloadFormatVersion": "1.0",
+                  "uri": { "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2021-11-15/functions/${AspNetCoreFunction.Arn}/response-streaming-invocations" },
+                  "responseTransferMode": "STREAM",
+                  "timeoutInMillis": 29000
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "AspNetCoreFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "AspNetCoreStreamingApiGatewayTest",
+        "Runtime": "dotnet10",
+        "CodeUri": "",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambda_FullAccess"
+        ],
+        "Environment" : {
+            "Variables" : {
+                "LAMBDA_NET_SERIALIZER_DEBUG": "true",
+                "LAMBDA_RUNTIMESUPPORT_DEBUG": "true"
+            }
+        }
+      }
+    },
+    "ApiPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": { "Ref": "AspNetCoreFunction" },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": { "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${StreamingApi}/*/*/*" }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiURL": {
+      "Description": "API endpoint URL for Prod environment",
+      "Value": { "Fn::Sub": "https://${StreamingApi}.execute-api.${AWS::Region}.amazonaws.com/prod/" }
+    }
+  }
+}

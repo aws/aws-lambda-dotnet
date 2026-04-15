@@ -54,6 +54,46 @@ namespace Amazon.Lambda.AspNetCoreServer
             apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);
         }
 
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Override for HTTP API v2 to use single-value <c>headers</c> in the streaming prelude
+        /// instead of <c>multiValueHeaders</c>. API Gateway HTTP API v2 expects the <c>headers</c>
+        /// format; using <c>multiValueHeaders</c> causes a 500 Internal Server Error.
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected override Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
+        {
+            var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+            {
+                StatusCode = (System.Net.HttpStatusCode)(responseFeature.StatusCode != 0 ? responseFeature.StatusCode : 200)
+            };
+
+            foreach (var kvp in responseFeature.Headers)
+            {
+                if (string.Equals(kvp.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(kvp.Key, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var value in kvp.Value)
+                    {
+                        prelude.Cookies.Add(value);
+                    }
+                }
+                else
+                {
+                    // HTTP API v2 uses single-value headers. Join multiple values with ", ".
+                    prelude.Headers[kvp.Key] = string.Join(", ", kvp.Value);
+                }
+            }
+
+            return prelude;
+        }
+#endif
+
         /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.
         /// InvokeFeatures is then passed into IHttpApplication to create the ASP.NET Core request objects.

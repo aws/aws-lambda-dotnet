@@ -91,7 +91,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // so the response is properly framed.
             if (_prelude?.Length > 0)
             {
-                _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
+                _logger.LogDebug("Writing prelude to HTTP stream.");
 
                 var combinedLength = _prelude.Length + PreludeDelimiter.Length;
                 var combined = ArrayPool<byte>.Shared.Rent(combinedLength);
