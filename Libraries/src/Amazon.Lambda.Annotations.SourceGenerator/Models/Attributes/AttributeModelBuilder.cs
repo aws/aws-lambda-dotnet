@@ -113,6 +113,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SNSEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = SNSEventAttributeBuilder.Build(att);
+                model = new AttributeModel<SNS.SNSEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAuthorizerAttribute), SymbolEqualityComparer.Default))
             {
                 var data = HttpApiAuthorizerAttributeBuilder.Build(att);

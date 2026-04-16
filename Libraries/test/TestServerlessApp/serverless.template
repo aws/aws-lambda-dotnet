@@ -1414,6 +1414,55 @@
           ]
         }
       }
+    },
+    "SNSMessageHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestTopicEvent"
+        ],
+        "SyncedEventProperties": {
+          "TestTopicEvent": [
+            "Topic.Ref",
+            "FilterPolicy"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "Events": {
+          "TestTopicEvent": {
+            "Type": "SNS",
+            "Properties": {
+              "FilterPolicy": "{ \"store\": [\"example_corp\"] }",
+              "Topic": {
+                "Ref": "TestTopic"
+              }
+            }
+          }
+        },
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SnsMessageProcessing_HandleMessage_Generated::HandleMessage"
+          ]
+        }
+      }
+    },
+    "TestQueue": {
+      "Type": "AWS::SQS::Queue"
+    },
+    "TestS3Bucket": {
+      "Type": "AWS::S3::Bucket"
+    },
+    "TestTopic": {
+      "Type": "AWS::SNS::Topic"
     }
   }
 }
