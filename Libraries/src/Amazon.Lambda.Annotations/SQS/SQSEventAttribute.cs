@@ -60,7 +60,7 @@ namespace Amazon.Lambda.Annotations.SQS
         /// </summary>
         public bool Enabled
         {
-            get => enabled.GetValueOrDefault();
+            get => enabled.GetValueOrDefault(true);
             set => enabled = value;
         }
         private bool? enabled { get; set; }

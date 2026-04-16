@@ -7,6 +7,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.SNS;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
@@ -64,6 +65,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // Validate Events
             ValidateApiGatewayEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSqsEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateSnsEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateS3Events(lambdaFunctionModel, methodLocation, diagnostics);
 
@@ -110,6 +112,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.S3Events") == null)
                 {
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.S3Events"));
+                    return false;
+                }
+            }
+
+            // Check for references to "Amazon.Lambda.SNSEvents" if the Lambda method is annotated with SNSEvent attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.SNSEventAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.SNSEvents") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.SNSEvents"));
                     return false;
                 }
             }
@@ -420,6 +432,45 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
             {
                 var errorMessage = $"When using the {nameof(S3EventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+        }
+
+        private static void ValidateSnsEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.SNS))
+            {
+                return;
+            }
+
+            // Validate SNSEventAttributes
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.SNSEventAttribute)
+                    continue;
+
+                var snsEventAttribute = ((AttributeModel<SNSEventAttribute>)att).Data;
+                var validationErrors = snsEventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidSnsEventAttribute, methodLocation, errorMessage)));
+            }
+
+            // Validate method parameters - When using SNSEventAttribute, the method signature must be (SNSEvent snsEvent) or (SNSEvent snsEvent, ILambdaContext context)
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.SNSEvent) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.SNSEvent || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(SNSEventAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.SNSEvent}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate method return type - When using SNSEventAttribute, the return type must be either void or Task
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
+            {
+                var errorMessage = $"When using the {nameof(SNSEventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
             }
         }

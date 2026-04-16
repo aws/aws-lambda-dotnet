@@ -34,6 +34,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     events.Add(EventType.S3);
                 }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.SNSEventAttribute)
+                {
+                    events.Add(EventType.SNS);
+                }
                 else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAuthorizerAttribute
                     || attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAuthorizerAttribute)
                 {
