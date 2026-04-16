@@ -1,3 +1,8 @@
+## Release 2026-04-16
+
+### Amazon.Lambda.Annotations (1.14.0)
+* Added [SNSEvent] annotation attribute for declaratively configuring SNS topic-triggered Lambda functions with support for topic reference, filter policy, and enabled state.
+
 ## Release 2026-04-14
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.17.1)
