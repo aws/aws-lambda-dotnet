@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Reset the response body stream position to 0 after converting the ASP.NET Core response body to the Lambda response."
+      ]
+    }
+  ]
+}
