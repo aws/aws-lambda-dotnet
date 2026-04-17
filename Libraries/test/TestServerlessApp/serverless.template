@@ -1463,6 +1463,51 @@
     },
     "TestTopic": {
       "Type": "AWS::SNS::Topic"
+    },
+    "DynamoDBStreamHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestTableStream"
+        ],
+        "SyncedEventProperties": {
+          "TestTableStream": [
+            "Stream.Fn::GetAtt",
+            "StartingPosition",
+            "BatchSize"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaDynamoDBExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamoDbStreamProcessing_HandleStream_Generated::HandleStream"
+          ]
+        },
+        "Events": {
+          "TestTableStream": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "Stream": {
+                "Fn::GetAtt": [
+                  "TestTable",
+                  "StreamArn"
+                ]
+              },
+              "StartingPosition": "TRIM_HORIZON",
+              "BatchSize": 100
+            }
+          }
+        }
+      }
     }
   }
 }
