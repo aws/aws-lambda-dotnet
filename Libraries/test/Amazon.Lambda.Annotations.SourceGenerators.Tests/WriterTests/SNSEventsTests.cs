@@ -225,6 +225,63 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("Topic.Ref", syncedEventProperties[eventResourceName][0]);
         }
 
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyManuallySetSNSEventProperties_ArePreserved(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+            var eventResourceName = "MySNSEvent";
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventResourceName}.Properties";
+            var syncedEventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Metadata.SyncedEventProperties";
+
+            var initialAttribute = new SNSEventAttribute(topicArn1)
+            {
+                ResourceName = eventResourceName,
+                FilterPolicy = "{ \"store\": [\"example_corp\"] }"
+            };
+            lambdaFunctionModel.Attributes = [new AttributeModel<SNSEventAttribute> { Data = initialAttribute }];
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert that initial attributes properties are correctly set
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.Equal(topicArn1, templateWriter.GetToken<string>($"{eventPropertiesPath}.Topic"));
+            Assert.Equal("{ \"store\": [\"example_corp\"] }", templateWriter.GetToken<string>($"{eventPropertiesPath}.FilterPolicy"));
+
+            // Verify initial attribute properties are synced
+            var syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("Topic", syncedEventProperties[eventResourceName]);
+            Assert.Contains("FilterPolicy", syncedEventProperties[eventResourceName]);
+
+            // Modify the serverless template by hand and add a new property (Enabled)
+            templateWriter.SetToken($"{eventPropertiesPath}.Enabled", false);
+            mockFileManager.WriteAllText(ServerlessTemplateFilePath, templateWriter.GetContent());
+
+            // Perform another source generation
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert that both the initial properties and the manually added property exists
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.Equal(topicArn1, templateWriter.GetToken<string>($"{eventPropertiesPath}.Topic"));
+            Assert.Equal("{ \"store\": [\"example_corp\"] }", templateWriter.GetToken<string>($"{eventPropertiesPath}.FilterPolicy"));
+            Assert.False(templateWriter.GetToken<bool>($"{eventPropertiesPath}.Enabled"));
+
+            // Assert that the synced event properties are still the same and the manually set property is not synced
+            syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("Topic", syncedEventProperties[eventResourceName]);
+            Assert.Contains("FilterPolicy", syncedEventProperties[eventResourceName]);
+            Assert.DoesNotContain("Enabled", syncedEventProperties[eventResourceName]);
+        }
+
         public class SnsEventsTestData : TheoryData<CloudFormationTemplateFormat, IEnumerable<SNSEventAttribute>>
         {
             public SnsEventsTestData()

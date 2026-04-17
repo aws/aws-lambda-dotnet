@@ -1496,14 +1496,14 @@
           "TestTableStream": {
             "Type": "DynamoDB",
             "Properties": {
+              "StartingPosition": "TRIM_HORIZON",
+              "BatchSize": 100,
               "Stream": {
                 "Fn::GetAtt": [
                   "TestTable",
                   "StreamArn"
                 ]
-              },
-              "StartingPosition": "TRIM_HORIZON",
-              "BatchSize": 100
+              }
             }
           }
         }

@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.Annotations.DynamoDB;
 using Microsoft.CodeAnalysis;
 using System;
@@ -24,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 {
                     data.ResourceName = resourceName;
                 }
-                if (pair.Key == nameof(data.BatchSize) && pair.Value.Value is uint batchSize)
+                else if (pair.Key == nameof(data.BatchSize) && pair.Value.Value is uint batchSize)
                 {
                     data.BatchSize = batchSize;
                 }

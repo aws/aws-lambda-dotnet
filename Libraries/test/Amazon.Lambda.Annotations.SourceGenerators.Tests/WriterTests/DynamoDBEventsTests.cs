@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
@@ -197,6 +200,126 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             Assert.Equal(["MyTable", "StreamArn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Stream.Fn::GetAtt"));
             Assert.Contains("Stream.Fn::GetAtt", syncedEventProperties[eventResourceName]);
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyStreamCanBeSet_FromCloudFormationParameter(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            const string jsonContent = @"{
+                       'Parameters':{
+                          'MyTable':{
+                             'Type':'String',
+                             'Default':'arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00'
+                          }
+                       }
+                    }";
+
+            const string yamlContent = @"Parameters:
+                                          MyTable:
+                                            Type: String
+                                            Default: arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00";
+
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            var content = templateFormat == CloudFormationTemplateFormat.Json ? jsonContent : yamlContent;
+
+            var mockFileManager = GetMockFileManager(content);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            var eventResourceName = "MyDynamoDBEvent";
+            var dynamoDBEventAttribute = new DynamoDBEventAttribute("@MyTable") { ResourceName = eventResourceName };
+            lambdaFunctionModel.Attributes = [new AttributeModel<DynamoDBEventAttribute> { Data = dynamoDBEventAttribute }];
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventResourceName}.Properties";
+            var syncedEventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Metadata.SyncedEventProperties";
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // Verify Stream property exists as a Ref (when @name matches a CF Parameter, writer uses Ref)
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.Equal("MyTable", templateWriter.GetToken<string>($"{eventPropertiesPath}.Stream.Ref"));
+            Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Stream.Fn::GetAtt"));
+
+            // Verify the list of synced event properties
+            var syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("Stream.Ref", syncedEventProperties[eventResourceName]);
+
+            // Change the Stream property to be an ARN and re-generate the template
+            dynamoDBEventAttribute.Stream = streamArn1;
+            lambdaFunctionModel.Attributes = [new AttributeModel<DynamoDBEventAttribute> { Data = dynamoDBEventAttribute }];
+            report = GetAnnotationReport([lambdaFunctionModel]);
+            cloudFormationWriter.ApplyReport(report);
+
+            // Verify Stream property exists as an ARN
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.Equal(streamArn1, templateWriter.GetToken<string>($"{eventPropertiesPath}.Stream"));
+            Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Stream.Fn::GetAtt"));
+            Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Stream.Ref"));
+
+            // Verify the list of synced event properties
+            syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("Stream", syncedEventProperties[eventResourceName]);
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyManuallySetDynamoDBEventProperties_ArePreserved(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+            var eventResourceName = "MyDynamoDBEvent";
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventResourceName}.Properties";
+            var syncedEventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Metadata.SyncedEventProperties";
+
+            var initialAttribute = new DynamoDBEventAttribute(streamArn1)
+            {
+                ResourceName = eventResourceName,
+                BatchSize = 20
+            };
+            lambdaFunctionModel.Attributes = [new AttributeModel<DynamoDBEventAttribute> { Data = initialAttribute }];
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert that initial attributes properties are correctly set
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.Equal(20, templateWriter.GetToken<int>($"{eventPropertiesPath}.BatchSize"));
+            Assert.Equal(streamArn1, templateWriter.GetToken<string>($"{eventPropertiesPath}.Stream"));
+
+            // Verify initial attribute properties are synced
+            var syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("BatchSize", syncedEventProperties[eventResourceName]);
+            Assert.Contains("Stream", syncedEventProperties[eventResourceName]);
+
+            // Modify the serverless template by hand and add a new property
+            templateWriter.SetToken($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds", 30);
+            mockFileManager.WriteAllText(ServerlessTemplateFilePath, templateWriter.GetContent());
+
+            // Perform another source generation
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert that both the initial properties and the manually added property exists
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.Equal(20, templateWriter.GetToken<int>($"{eventPropertiesPath}.BatchSize"));
+            Assert.Equal(streamArn1, templateWriter.GetToken<string>($"{eventPropertiesPath}.Stream"));
+            Assert.Equal(30, templateWriter.GetToken<int>($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
+
+            // Assert that the synced event properties are still the same and the manually set property is not synced
+            syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+            Assert.Contains("BatchSize", syncedEventProperties[eventResourceName]);
+            Assert.Contains("Stream", syncedEventProperties[eventResourceName]);
+            Assert.DoesNotContain("MaximumBatchingWindowInSeconds", syncedEventProperties[eventResourceName]);
         }
 
         public class DynamoDBEventsTestData : TheoryData<CloudFormationTemplateFormat, IEnumerable<DynamoDBEventAttribute>>
