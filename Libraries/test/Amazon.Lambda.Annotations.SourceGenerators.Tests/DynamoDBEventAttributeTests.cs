@@ -47,7 +47,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public void ResourceName_DerivedFromStreamArn()
         {
-            var attr = new DynamoDBEventAttribute("arn:aws:dynamodb:us-east-1:123456789:table/MyTable/stream/2024-01-01T00:00:00.000");
+            var attr = new DynamoDBEventAttribute("arn:aws:dynamodb:us-east-1:123456789012:table/MyTable/stream/2024-01-01T00:00:00.000");
 
             Assert.False(attr.IsResourceNameSet);
             Assert.Equal("MyTable", attr.ResourceName);
@@ -201,7 +201,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public void Validate_ValidStreamArn_ReturnsNoErrors()
         {
-            var attr = new DynamoDBEventAttribute("arn:aws:dynamodb:us-east-1:123456789:table/MyTable/stream/2024-01-01T00:00:00.000");
+            var attr = new DynamoDBEventAttribute("arn:aws:dynamodb:us-east-1:123456789012:table/MyTable/stream/2024-01-01T00:00:00.000");
 
             var errors = attr.Validate();
             Assert.Empty(errors);
@@ -268,6 +268,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var errors = attr.Validate();
             Assert.Single(errors);
             Assert.Contains("StartingPosition", errors[0]);
+        }
+
+        [Fact]
+        public void Validate_AtSignOnly_ReturnsError()
+        {
+            var attr = new DynamoDBEventAttribute("@");
+
+            var errors = attr.Validate();
+            Assert.Single(errors);
+            Assert.Contains("Stream", errors[0]);
+            Assert.Contains("'@' prefix must be followed by a non-empty resource or parameter name", errors[0]);
+        }
+
+        [Fact]
+        public void Validate_AtSignWithWhitespace_ReturnsError()
+        {
+            var attr = new DynamoDBEventAttribute("@   ");
+
+            var errors = attr.Validate();
+            Assert.Single(errors);
+            Assert.Contains("Stream", errors[0]);
+            Assert.Contains("'@' prefix must be followed by a non-empty resource or parameter name", errors[0]);
         }
 
         [Fact]

@@ -140,6 +140,10 @@ namespace Amazon.Lambda.Annotations.DynamoDB
             {
                 validationErrors.Add($"{nameof(DynamoDBEventAttribute.Stream)} must not be null or empty");
             }
+            else if (Stream.StartsWith("@") && string.IsNullOrWhiteSpace(Stream.Substring(1)))
+            {
+                validationErrors.Add($"{nameof(DynamoDBEventAttribute.Stream)} = {Stream}. The '@' prefix must be followed by a non-empty resource or parameter name");
+            }
             else if (!Stream.StartsWith("@"))
             {
                 if (!Stream.Contains(":dynamodb:") || !Stream.Contains("/stream/"))
