@@ -86,6 +86,36 @@ try
         Write-Host "Added TestTopic resource to serverless.template"
     }
 
+    # Add TestTable resource to serverless.template for DynamoDB event integration testing
+    # The source generator creates a Fn::GetAtt reference to TestTable for StreamArn but doesn't define the resource itself
+    $template = Get-Content $templatePath | Out-String | ConvertFrom-Json
+    if (-not $template.Resources.PSObject.Properties['TestTable']) {
+        $testTableResource = @{
+            Type = "AWS::DynamoDB::Table"
+            Properties = @{
+                BillingMode = "PAY_PER_REQUEST"
+                AttributeDefinitions = @(
+                    @{
+                        AttributeName = "Id"
+                        AttributeType = "S"
+                    }
+                )
+                KeySchema = @(
+                    @{
+                        AttributeName = "Id"
+                        KeyType = "HASH"
+                    }
+                )
+                StreamSpecification = @{
+                    StreamViewType = "NEW_AND_OLD_IMAGES"
+                }
+            }
+        }
+        $template.Resources | Add-Member -NotePropertyName "TestTable" -NotePropertyValue $testTableResource -Force
+        $template | ConvertTo-Json -Depth 100 | Set-Content $templatePath
+        Write-Host "Added TestTable resource to serverless.template"
+    }
+
     dotnet restore
     Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch, Runtime $runtime"
     dotnet lambda deploy-serverless --template-parameters "ArchitectureTypeParameter=$arch"
