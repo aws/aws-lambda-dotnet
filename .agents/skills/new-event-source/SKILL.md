@@ -25,8 +25,6 @@ Read these files to understand existing patterns before creating new ones:
 - **DynamoDB (stream-based)**: `Libraries/src/Amazon.Lambda.Annotations/DynamoDB/DynamoDBEventAttribute.cs`
 - **S3 (notification-based)**: `Libraries/src/Amazon.Lambda.Annotations/S3/S3EventAttribute.cs`
 
-Also see `Libraries/src/Amazon.Lambda.Annotations/ADDING_NEW_EVENT_SOURCE.md` for the full detailed developer guide.
-
 ## Steps
 
 ### Step 1: Create the Event Attribute Class
