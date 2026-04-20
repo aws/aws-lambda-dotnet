@@ -1074,6 +1074,24 @@ The `ALBApi` attribute requires an existing ALB listener. Here is a minimal exam
 
 Then your Lambda function references `@MyListener` in the `ALBApi` attribute.
 
+## SNS Event Example
+This example shows how to use the `SNSEvent` attribute to subscribe a Lambda function to an SNS topic.
+
+The `SNSEvent` attribute contains the following properties:
+* **Topic** (Required) - The SNS topic ARN or a reference to an SNS topic resource prefixed with "@".
+* **ResourceName** (Optional) - The CloudFormation resource name for the SNS event.
+* **FilterPolicy** (Optional) - A JSON filter policy applied to the subscription.
+* **Enabled** (Optional) - If false, the event source is disabled. Default is true.
+
+```csharp
+[LambdaFunction(ResourceName = "SNSMessageHandler", Policies = "AWSLambdaSNSTopicExecutionRole")]
+[SNSEvent("@TestTopic", ResourceName = "TestTopicEvent", FilterPolicy = "{ \"store\": [\"example_corp\"] }")]
+public void HandleMessage(SNSEvent evnt, ILambdaContext lambdaContext)
+{
+    lambdaContext.Logger.Log($"Received {evnt.Records.Count} messages");
+}
+```
+
 ## Lambda Function URL Example
 
 [Lambda Function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html) provide a dedicated HTTPS endpoint for your Lambda function without needing API Gateway or an Application Load Balancer. The `FunctionUrl` attribute configures the function to be invoked via a Function URL. Function URLs use the same payload format as HTTP API v2 (`APIGatewayHttpApiV2ProxyRequest`/`APIGatewayHttpApiV2ProxyResponse`).
@@ -1525,6 +1543,8 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `RestApi.Authorizer` using `nameof()`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
 * SQSEvent
     * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol.
+* SNSEvent
+    * Subscribes the Lambda function to an SNS topic. The topic ARN or resource reference (prefixed with '@') is required.
 * ALBApi
     * Configures the Lambda function to be called from an Application Load Balancer. The listener ARN (or `@ResourceName` template reference), path pattern, and priority are required. The source generator creates standalone CloudFormation resources (TargetGroup, ListenerRule, Lambda Permission) rather than SAM event types.
 * FunctionUrl
