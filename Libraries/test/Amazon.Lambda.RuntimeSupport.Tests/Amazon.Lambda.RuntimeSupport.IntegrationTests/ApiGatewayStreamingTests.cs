@@ -37,6 +37,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         {
             _fixture = fixture;
             Output = output;
+            _fixture.Initialize(output);
         }
 
         [Fact]
@@ -238,14 +239,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class RestApiStreamingFixture : StreamingFixture
     {
-        public RestApiStreamingFixture(ITestOutputHelper outputHelper)
-            : base("serverless-restapi.template", "RestApi", outputHelper) { }
+        public RestApiStreamingFixture()
+            : base("serverless-restapi.template", "RestApi") { }
     }
 
     public class FunctionUrlStreamingFixture : StreamingFixture
     {
-        public FunctionUrlStreamingFixture(ITestOutputHelper outputHelper)
-            : base("serverless-functionurl.template", "FunctionUrl", outputHelper) { }
+        public FunctionUrlStreamingFixture()
+            : base("serverless-functionurl.template", "FunctionUrl") { }
     }
 
     /// <summary>
@@ -269,11 +270,15 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         private ITestOutputHelper _outputHelper;
 
-        protected StreamingFixture(string templateFile, string deploymentType, ITestOutputHelper outputHelper)
+        protected StreamingFixture(string templateFile, string deploymentType)
         {
             _templateFile = templateFile;
             _deploymentType = deploymentType;
             _stackName = $"IntegTest-Streaming-{deploymentType}-{DateTime.UtcNow.Ticks}";
+        }
+
+        public void Initialize(ITestOutputHelper outputHelper)
+        {
             _outputHelper = outputHelper;
         }
 
