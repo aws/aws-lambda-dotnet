@@ -58,7 +58,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                     Assert.Equal([att.Stream.Substring(1), "StreamArn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Stream.Fn::GetAtt"));
                 }
 
-                Assert.Equal(att.StartingPosition, templateWriter.GetToken<string>($"{eventPropertiesPath}.StartingPosition"));
+                Assert.Equal(att.StartingPosition.ToString(), templateWriter.GetToken<string>($"{eventPropertiesPath}.StartingPosition"));
 
                 Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.BatchSize"));
                 if (att.IsBatchSizeSet)
@@ -348,7 +348,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                             Filters = "SOME-FILTER1; SOME-FILTER2",
                             MaximumBatchingWindowInSeconds = 15,
                             Enabled = false,
-                            StartingPosition = "TRIM_HORIZON"
+                            StartingPosition = StartingPosition.TRIM_HORIZON
                         }]);
                 }
             }

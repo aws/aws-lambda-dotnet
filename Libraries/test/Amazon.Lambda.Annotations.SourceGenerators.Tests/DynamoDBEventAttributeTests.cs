@@ -23,7 +23,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var attr = new DynamoDBEventAttribute("@MyTable");
 
-            Assert.Equal("LATEST", attr.StartingPosition);
+            Assert.Equal(StartingPosition.LATEST, attr.StartingPosition);
             Assert.False(attr.IsBatchSizeSet);
             Assert.False(attr.IsEnabledSet);
             Assert.False(attr.IsMaximumBatchingWindowInSecondsSet);
@@ -94,7 +94,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var attr = new DynamoDBEventAttribute("@MyTable");
 
-            Assert.Equal("LATEST", attr.StartingPosition);
+            Assert.Equal(StartingPosition.LATEST, attr.StartingPosition);
         }
 
         [Fact]
@@ -102,10 +102,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var attr = new DynamoDBEventAttribute("@MyTable")
             {
-                StartingPosition = "TRIM_HORIZON"
+                StartingPosition = StartingPosition.TRIM_HORIZON
             };
 
-            Assert.Equal("TRIM_HORIZON", attr.StartingPosition);
+            Assert.Equal(StartingPosition.TRIM_HORIZON, attr.StartingPosition);
         }
 
         // ===== MaximumBatchingWindowInSeconds Tests =====
@@ -257,18 +257,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             Assert.Contains("MaximumBatchingWindowInSeconds", errors[0]);
         }
 
-        [Fact]
-        public void Validate_InvalidStartingPosition_ReturnsError()
-        {
-            var attr = new DynamoDBEventAttribute("@MyTable")
-            {
-                StartingPosition = "INVALID"
-            };
-
-            var errors = attr.Validate();
-            Assert.Single(errors);
-            Assert.Contains("StartingPosition", errors[0]);
-        }
 
         [Fact]
         public void Validate_AtSignOnly_ReturnsError()
@@ -298,12 +286,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var attr = new DynamoDBEventAttribute("not-valid")
             {
                 ResourceName = "invalid!",
-                BatchSize = 10001,
-                StartingPosition = "INVALID"
+                BatchSize = 10001
             };
 
             var errors = attr.Validate();
-            Assert.Equal(4, errors.Count);
+            Assert.Equal(3, errors.Count);
         }
 
         [Fact]
@@ -313,7 +300,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 ResourceName = "MyDynamoDBEvent",
                 BatchSize = 100,
-                StartingPosition = "TRIM_HORIZON",
+                StartingPosition = StartingPosition.TRIM_HORIZON,
                 MaximumBatchingWindowInSeconds = 60,
                 Filters = "{\"eventName\": [\"INSERT\"]}",
                 Enabled = true

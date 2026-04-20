@@ -192,3 +192,4 @@ Tip: Run the source generator once to get actual output, then use as snapshot.
 - **Invalid event test spans** must reference exact line numbers in the `.cs.error` file
 - **`.cs.txt` extension** for valid test files (prevents deployment)
 - **`.cs.error` extension** for invalid test files (prevents compilation)
+- **Use enums instead of strings** when you need to represent a fixed, known set of constants that do not change frequently (e.g., `StartingPosition`, `AuthType`, `HttpApiVersion`). Enums provide compile-time type safety, eliminate the need for manual string validation in the `Validate()` method, and prevent invalid values from being set. In attribute builders, enum values come through Roslyn's `AttributeData` as their underlying `int` value and must be cast accordingly (e.g., `(MyEnum)(int)pair.Value.Value`). When writing enum values to CloudFormation templates, use `.ToString()` to convert back to the string representation.

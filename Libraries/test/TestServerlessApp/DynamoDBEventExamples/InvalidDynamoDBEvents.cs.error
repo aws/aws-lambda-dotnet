@@ -15,7 +15,7 @@ namespace TestServerlessApp.DynamoDBEventExamples
     public class InvalidDynamoDBEvents
     {
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
-        [DynamoDBEvent("@testTable", BatchSize = 10001, MaximumBatchingWindowInSeconds = 301, StartingPosition = "INVALID")]
+        [DynamoDBEvent("@testTable", BatchSize = 10001, MaximumBatchingWindowInSeconds = 301)]
         public void ProcessMessageWithInvalidDynamoDBEventAttributes(DynamoDBEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");

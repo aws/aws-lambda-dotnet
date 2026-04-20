@@ -16,7 +16,7 @@ namespace TestServerlessApp.DynamoDBEventExamples
     {
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00", BatchSize = 50, MaximumBatchingWindowInSeconds = 2, Filters = "My-Filter-1; My-Filter-2")]
-        [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable2/stream/2024-01-01T00:00:00", StartingPosition = "TRIM_HORIZON", Enabled = false)]
+        [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable2/stream/2024-01-01T00:00:00", StartingPosition = StartingPosition.TRIM_HORIZON, Enabled = false)]
         [DynamoDBEvent("@testTable", ResourceName = "testTableEvent")]
         public void ProcessMessages(DynamoDBEvent evnt)
         {

@@ -709,7 +709,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             // StartingPosition
-            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "StartingPosition", att.StartingPosition);
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "StartingPosition", att.StartingPosition.ToString());
 
             // BatchSize
             if (att.IsBatchSizeSet)

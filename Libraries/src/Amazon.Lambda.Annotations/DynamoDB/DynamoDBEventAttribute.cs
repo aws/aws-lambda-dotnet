@@ -76,7 +76,7 @@ namespace Amazon.Lambda.Annotations.DynamoDB
         /// The position in the stream where Lambda starts reading. Valid values are TRIM_HORIZON and LATEST.
         /// Default value is LATEST.
         /// </summary>
-        public string StartingPosition { get; set; } = "LATEST";
+        public StartingPosition StartingPosition { get; set; } = StartingPosition.LATEST;
         internal bool IsStartingPositionSet => true;
 
         /// <summary>
@@ -127,14 +127,6 @@ namespace Amazon.Lambda.Annotations.DynamoDB
             if (IsMaximumBatchingWindowInSecondsSet && MaximumBatchingWindowInSeconds > 300)
             {
                 validationErrors.Add($"{nameof(DynamoDBEventAttribute.MaximumBatchingWindowInSeconds)} = {MaximumBatchingWindowInSeconds}. It must be between 0 and 300");
-            }
-            if (string.IsNullOrEmpty(StartingPosition))
-            {
-                validationErrors.Add($"{nameof(DynamoDBEventAttribute.StartingPosition)} must not be null or empty. It must be either TRIM_HORIZON or LATEST");
-            }
-            else if (StartingPosition != "TRIM_HORIZON" && StartingPosition != "LATEST")
-            {
-                validationErrors.Add($"{nameof(DynamoDBEventAttribute.StartingPosition)} = {StartingPosition}. It must be either TRIM_HORIZON or LATEST");
             }
             if (string.IsNullOrWhiteSpace(Stream))
             {

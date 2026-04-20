@@ -1404,6 +1404,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs.error"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -1417,11 +1418,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         DiagnosticResult.CompilerError("AWSLambda0137")
                             .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds = 301. It must be between 0 and 300"),
-
-                        // ProcessMessageWithInvalidDynamoDBEventAttributes: StartingPosition = INVALID
-                        DiagnosticResult.CompilerError("AWSLambda0137")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
-                            .WithArguments("StartingPosition = INVALID. It must be either TRIM_HORIZON or LATEST"),
 
                         // ProcessMessageWithInvalidParameters: too many parameters
                         DiagnosticResult.CompilerError("AWSLambda0117")
@@ -1477,6 +1473,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs.txt"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =

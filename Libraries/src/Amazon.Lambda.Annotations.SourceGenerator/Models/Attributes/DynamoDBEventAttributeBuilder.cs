@@ -31,9 +31,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 {
                     data.BatchSize = batchSize;
                 }
-                else if (pair.Key == nameof(data.StartingPosition) && pair.Value.Value is string startingPosition)
+                else if (pair.Key == nameof(data.StartingPosition) && pair.Value.Value is int startingPosition)
                 {
-                    data.StartingPosition = startingPosition;
+                    data.StartingPosition = (StartingPosition)startingPosition;
                 }
                 else if (pair.Key == nameof(data.Enabled) && pair.Value.Value is bool enabled)
                 {
