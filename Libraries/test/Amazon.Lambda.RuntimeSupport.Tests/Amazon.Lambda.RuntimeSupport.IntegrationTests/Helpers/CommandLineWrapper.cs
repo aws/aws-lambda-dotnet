@@ -4,12 +4,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static async Task Run(string command, string arguments, string workingDirectory, CancellationToken cancellationToken = default)
+    public static async Task Run(string command, string arguments, string workingDirectory, ITestOutputHelper outputHelper, CancellationToken cancellationToken = default)
     {
         var processStartInfo = new ProcessStartInfo
         {
@@ -88,7 +89,13 @@ public static class CommandLineWrapper
                     process.Kill();
                 }
             }
-            
+
+            if (process.ExitCode != 0 && outputHelper != null)
+            {
+                outputHelper.WriteLine($"Command '{command} {arguments}' failed.");
+                outputHelper.WriteLine(output.ToString());
+            }
+
             Assert.True(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
     }

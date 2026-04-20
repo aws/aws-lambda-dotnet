@@ -238,14 +238,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class RestApiStreamingFixture : StreamingFixture
     {
-        public RestApiStreamingFixture()
-            : base("serverless-restapi.template", "RestApi") { }
+        public RestApiStreamingFixture(ITestOutputHelper outputHelper)
+            : base("serverless-restapi.template", "RestApi", outputHelper) { }
     }
 
     public class FunctionUrlStreamingFixture : StreamingFixture
     {
-        public FunctionUrlStreamingFixture()
-            : base("serverless-functionurl.template", "FunctionUrl") { }
+        public FunctionUrlStreamingFixture(ITestOutputHelper outputHelper)
+            : base("serverless-functionurl.template", "FunctionUrl", outputHelper) { }
     }
 
     /// <summary>
@@ -267,11 +267,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private bool _deployed;
         private string _s3BucketName;
 
-        protected StreamingFixture(string templateFile, string deploymentType)
+        private ITestOutputHelper _outputHelper;
+
+        protected StreamingFixture(string templateFile, string deploymentType, ITestOutputHelper outputHelper)
         {
             _templateFile = templateFile;
             _deploymentType = deploymentType;
             _stackName = $"IntegTest-Streaming-{deploymentType}-{DateTime.UtcNow.Ticks}";
+            _outputHelper = outputHelper;
         }
 
         public Task<string> GetApiUrlAsync()
@@ -296,7 +299,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await CommandLineWrapper.Run(
                 lambdaToolPath,
                 $"deploy-serverless --stack-name {_stackName} --template {_templateFile} --s3-bucket {_s3BucketName} --region {TestRegion.SystemName} --disable-interactive true",
-                _testAppPath);
+                _testAppPath,
+                _outputHelper);
 
             _apiUrl = await GetStackOutputAsync(_stackName, "ApiURL");
             if (!_apiUrl.EndsWith("/"))
@@ -319,7 +323,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await CommandLineWrapper.Run(
                         lambdaToolPath,
                         $"delete-serverless --stack-name {_stackName} --region {TestRegion.SystemName}",
-                        _testAppPath);
+                        _testAppPath,
+                        _outputHelper);
 
                     if (_s3BucketName != null)
                     {

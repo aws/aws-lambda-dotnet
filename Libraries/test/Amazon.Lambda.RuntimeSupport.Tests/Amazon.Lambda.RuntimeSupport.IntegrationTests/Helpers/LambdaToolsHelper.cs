@@ -30,7 +30,7 @@ public static class LambdaToolsHelper
         await CommandLineWrapper.Run(
             "dotnet", 
             $"tool install Amazon.Lambda.Tools --tool-path {customToolPath}",
-            Directory.GetCurrentDirectory());
+            Directory.GetCurrentDirectory(), null);
         return customToolPath;
     }
 
@@ -40,7 +40,7 @@ public static class LambdaToolsHelper
         await CommandLineWrapper.Run(
             lambdaToolPath, 
             $"package -c Release --framework {framework} --function-architecture {FunctionArchitecture}", 
-            workingDirectory);
+            workingDirectory, null);
     }
 
     public static void CleanUp(string toolPath)
