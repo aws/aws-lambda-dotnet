@@ -1,0 +1,33 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.DynamoDB;
+using Amazon.Lambda.DynamoDBEvents;
+using System;
+using System.Threading.Tasks;
+
+namespace TestServerlessApp.DynamoDBEventExamples
+{
+    // This file represents valid usage of the DynamoDBEventAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests.
+    // This file is only sent as input to the source generator unit tests.
+
+    public class ValidDynamoDBEvents
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00", BatchSize = 50, MaximumBatchingWindowInSeconds = 2, Filters = "My-Filter-1; My-Filter-2")]
+        [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable2/stream/2024-01-01T00:00:00", StartingPosition = StartingPosition.TRIM_HORIZON, Enabled = false)]
+        [DynamoDBEvent("@testTable", ResourceName = "testTableEvent")]
+        public void ProcessMessages(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00")]
+        public async Task ProcessMessagesAsync(DynamoDBEvent evnt)
+        {
+            await Console.Out.WriteLineAsync($"Event processed: {evnt}");
+        }
+    }
+}
