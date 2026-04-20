@@ -1,3 +1,28 @@
+## Release 2026-04-16
+
+### Amazon.Lambda.Annotations (1.14.0)
+* Added [SNSEvent] annotation attribute for declaratively configuring SNS topic-triggered Lambda functions with support for topic reference, filter policy, and enabled state.
+
+## Release 2026-04-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.17.1)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.RuntimeSupport (1.14.3)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.Annotations (1.13.0)
+* Added [FunctionUrl] attribute for configuring Lambda functions with Function URL endpoints, including optional CORS support
+
+## Release 2026-04-13 #2
+
+### Amazon.Lambda.Annotations (1.12.0)
+* treat warnings as errors and fix unshipped.md
+* Added [S3Event] annotation attribute for declaratively configuring S3 event-triggered Lambda functions with support for bucket reference, event types, key prefix/suffix filters, and enabled state.
+
+## Release 2026-04-08
+
+### Amazon.Lambda.Annotations (1.11.0)
+* Added [ALBApi] attribute for configuring Lambda functions as targets behind an Application Load Balancer
+
 ## Release 2026-03-27
 
 ### Amazon.Lambda.Annotations (1.10.0)

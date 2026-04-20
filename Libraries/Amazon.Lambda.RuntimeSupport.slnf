@@ -14,12 +14,13 @@
       "src\\SnapshotRestore.Registry\\SnapshotRestore.Registry.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.IntegrationTests\\Amazon.Lambda.RuntimeSupport.IntegrationTests.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.UnitTests\\Amazon.Lambda.RuntimeSupport.UnitTests.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\AspNetCoreStreamingApiGatewayTest\\AspNetCoreStreamingApiGatewayTest.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiTest\\CustomRuntimeAspNetCoreMinimalApiTest.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeFunctionTest\\CustomRuntimeFunctionTest.csproj",
-      "test\\SnapshotRestore.Registry.Tests\\SnapshotRestore.Registry.Tests.csproj",
       "test\\HandlerTestNoSerializer\\HandlerTestNoSerializer.csproj",
-      "test\\HandlerTest\\HandlerTest.csproj"
+      "test\\HandlerTest\\HandlerTest.csproj",
+      "test\\SnapshotRestore.Registry.Tests\\SnapshotRestore.Registry.Tests.csproj"
     ]
   }
 }

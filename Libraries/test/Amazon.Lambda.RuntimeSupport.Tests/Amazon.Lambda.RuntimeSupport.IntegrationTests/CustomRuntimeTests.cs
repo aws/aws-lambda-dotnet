@@ -48,7 +48,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
-        public enum TargetFramework { NET6, NET8}
+        public enum TargetFramework { NET8 }
 
         private TargetFramework _targetFramework;
 

@@ -9,8 +9,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         API,
         S3,
         SQS,
+        SNS,
         DynamoDB,
         Schedule,
-        Authorizer
+        Authorizer,
+        ALB
     }
 }

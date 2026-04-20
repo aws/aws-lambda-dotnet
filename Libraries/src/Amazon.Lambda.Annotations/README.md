@@ -19,6 +19,8 @@ Topics:
   - [Amazon API Gateway example](#amazon-api-gateway-example)
   - [Amazon S3 example](#amazon-s3-example)
   - [SQS Event Example](#sqs-event-example)
+  - [Application Load Balancer (ALB) Example](#application-load-balancer-alb-example)
+  - [Lambda Function URL Example](#lambda-function-url-example)
   - [Custom Lambda Authorizer Example](#custom-lambda-authorizer-example)
     - [HTTP API Authorizer](#http-api-authorizer)
     - [REST API Authorizer](#rest-api-authorizer)
@@ -852,6 +854,348 @@ The following SQS event source mapping will be generated for the `SQSMessageHand
     }
 ```
 
+## Application Load Balancer (ALB) Example
+
+This example shows how to use the `ALBApi` attribute to configure a Lambda function as a target behind an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html). Unlike API Gateway event attributes that map to SAM event types, the ALB integration generates standalone CloudFormation resources — a `TargetGroup`, a `ListenerRule`, and a `Lambda::Permission` — to wire the Lambda function to an existing ALB listener.
+
+The `ALBApi` attribute contains the following properties:
+
+| Property | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `ListenerArn` | `string` | Yes | — | The ARN of the existing ALB listener, or a `@ResourceName` reference to a listener resource defined in the CloudFormation template. |
+| `PathPattern` | `string` | Yes | — | The path pattern condition for the listener rule (e.g., `"/api/orders/*"`). Supports wildcard characters `*` and `?`. |
+| `Priority` | `int` | Yes | — | The listener rule priority (1–50000). Lower numbers are evaluated first. Must be unique per listener. |
+| `MultiValueHeaders` | `bool` | No | `false` | When `true`, enables multi-value headers on the target group. The function should then use `MultiValueHeaders` and `MultiValueQueryStringParameters` on request/response objects. |
+| `HostHeader` | `string` | No | `null` | Optional host header condition (e.g., `"api.example.com"`). |
+| `HttpMethod` | `string` | No | `null` | Optional HTTP method condition (e.g., `"GET"`, `"POST"`). Leave null to match all methods. |
+| `ResourceName` | `string` | No | `"{LambdaResourceName}ALB"` | Custom CloudFormation resource name prefix for the generated resources. Must be alphanumeric. |
+
+The `ALBApi` attribute must be applied to a Lambda method along with the `LambdaFunction` attribute.
+
+The Lambda method must conform to the following rules when tagged with the `ALBApi` attribute:
+
+1. It must have at least 1 argument and can have at most 2 arguments.
+   - The first argument is required and must be of type `ApplicationLoadBalancerRequest` defined in the [Amazon.Lambda.ApplicationLoadBalancerEvents](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.ApplicationLoadBalancerEvents) package.
+   - The second argument is optional and must be of type `ILambdaContext`.
+2. The method return type must be `ApplicationLoadBalancerResponse` or `Task<ApplicationLoadBalancerResponse>`.
+
+### Prerequisites
+
+Your CloudFormation template must include an existing ALB and listener. The `ALBApi` attribute references the listener — it does **not** create the ALB or listener for you. You can define them in the same template or reference one that already exists via its ARN.
+
+### Basic Example
+
+This example creates a simple hello endpoint behind an ALB listener that is defined elsewhere in the template:
+
+```csharp
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.Core;
+using System.Collections.Generic;
+
+public class ALBFunctions
+{
+    [LambdaFunction(ResourceName = "ALBHello", MemorySize = 256, Timeout = 15)]
+    [ALBApi("@ALBTestListener", "/hello", 1)]
+    public ApplicationLoadBalancerResponse Hello(ApplicationLoadBalancerRequest request, ILambdaContext context)
+    {
+        context.Logger.LogInformation($"Hello endpoint hit. Path: {request.Path}");
+
+        return new ApplicationLoadBalancerResponse
+        {
+            StatusCode = 200,
+            StatusDescription = "200 OK",
+            IsBase64Encoded = false,
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
+            Body = $"{{\"message\": \"Hello from ALB Lambda!\", \"path\": \"{request.Path}\"}}"
+        };
+    }
+}
+```
+
+In the example above, `@ALBTestListener` references a listener resource called `ALBTestListener` defined in the same CloudFormation template. The `@` prefix tells the source generator to use a `Ref` intrinsic function instead of a literal ARN string.
+
+### Using a Literal Listener ARN
+
+If you want to reference an ALB listener in a different stack or one that was created outside of CloudFormation, use the full ARN:
+
+```csharp
+[LambdaFunction(ResourceName = "ALBHandler")]
+[ALBApi("arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc123/def456", "/api/*", 10)]
+public ApplicationLoadBalancerResponse HandleRequest(ApplicationLoadBalancerRequest request, ILambdaContext context)
+{
+    return new ApplicationLoadBalancerResponse
+    {
+        StatusCode = 200,
+        Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } },
+        Body = "{\"status\": \"ok\"}"
+    };
+}
+```
+
+### Advanced Example with All Options
+
+This example shows all optional properties including host header filtering, HTTP method filtering, multi-value headers, and a custom resource name:
+
+```csharp
+[LambdaFunction(ResourceName = "ALBOrders")]
+[ALBApi("@MyListener", "/api/orders/*", 5,
+    MultiValueHeaders = true,
+    HostHeader = "api.example.com",
+    HttpMethod = "POST",
+    ResourceName = "OrdersALB")]
+public ApplicationLoadBalancerResponse CreateOrder(ApplicationLoadBalancerRequest request, ILambdaContext context)
+{
+    // When MultiValueHeaders is true, use MultiValueHeaders and MultiValueQueryStringParameters
+    var contentTypes = request.MultiValueHeaders?["content-type"];
+
+    return new ApplicationLoadBalancerResponse
+    {
+        StatusCode = 201,
+        StatusDescription = "201 Created",
+        MultiValueHeaders = new Dictionary<string, IList<string>>
+        {
+            { "Content-Type", new List<string> { "application/json" } },
+            { "X-Custom-Header", new List<string> { "value1", "value2" } }
+        },
+        Body = "{\"orderId\": \"12345\"}"
+    };
+}
+```
+
+### Generated CloudFormation Resources
+
+For each `ALBApi` attribute, the source generator creates three CloudFormation resources. Here is an example of the generated template for the basic hello endpoint:
+
+```json
+"ALBHello": {
+  "Type": "AWS::Serverless::Function",
+  "Metadata": {
+    "Tool": "Amazon.Lambda.Annotations"
+  },
+  "Properties": {
+    "Runtime": "dotnet8",
+    "CodeUri": ".",
+    "MemorySize": 512,
+    "Timeout": 15,
+    "Policies": ["AWSLambdaBasicExecutionRole"],
+    "PackageType": "Zip",
+    "Handler": "MyProject::MyNamespace.ALBFunctions_Hello_Generated::Hello"
+  }
+},
+"ALBHelloALBPermission": {
+  "Type": "AWS::Lambda::Permission",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "Properties": {
+    "FunctionName": { "Fn::GetAtt": ["ALBHello", "Arn"] },
+    "Action": "lambda:InvokeFunction",
+    "Principal": "elasticloadbalancing.amazonaws.com"
+  }
+},
+"ALBHelloALBTargetGroup": {
+  "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "DependsOn": "ALBHelloALBPermission",
+  "Properties": {
+    "TargetType": "lambda",
+    "Targets": [
+      { "Id": { "Fn::GetAtt": ["ALBHello", "Arn"] } }
+    ]
+  }
+},
+"ALBHelloALBListenerRule": {
+  "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "Properties": {
+    "ListenerArn": { "Ref": "ALBTestListener" },
+    "Priority": 1,
+    "Conditions": [
+      { "Field": "path-pattern", "Values": ["/hello"] }
+    ],
+    "Actions": [
+      { "Type": "forward", "TargetGroupArn": { "Ref": "ALBHelloALBTargetGroup" } }
+    ]
+  }
+}
+```
+
+When `MultiValueHeaders` is set to `true`, the target group will include a `TargetGroupAttributes` section:
+
+```json
+"TargetGroupAttributes": [
+  { "Key": "lambda.multi_value_headers.enabled", "Value": "true" }
+]
+```
+
+When `HostHeader` or `HttpMethod` are specified, additional conditions are added to the listener rule:
+
+```json
+"Conditions": [
+  { "Field": "path-pattern", "Values": ["/api/orders/*"] },
+  { "Field": "host-header", "Values": ["api.example.com"] },
+  { "Field": "http-request-method", "Values": ["POST"] }
+]
+```
+
+### Setting Up the ALB in the Template
+
+The `ALBApi` attribute requires an existing ALB listener. Here is a minimal example of the infrastructure resources you would add to your `serverless.template`:
+
+```json
+{
+  "MyVPC": { "Type": "AWS::EC2::VPC", "Properties": { "CidrBlock": "10.0.0.0/16" } },
+  "MySubnet1": { "Type": "AWS::EC2::Subnet", "Properties": { "VpcId": { "Ref": "MyVPC" }, "CidrBlock": "10.0.1.0/24" } },
+  "MySubnet2": { "Type": "AWS::EC2::Subnet", "Properties": { "VpcId": { "Ref": "MyVPC" }, "CidrBlock": "10.0.2.0/24" } },
+  "MySecurityGroup": { "Type": "AWS::EC2::SecurityGroup", "Properties": { "GroupDescription": "ALB SG", "VpcId": { "Ref": "MyVPC" } } },
+  "MyALB": {
+    "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+    "Properties": {
+      "Type": "application",
+      "Scheme": "internet-facing",
+      "Subnets": [{ "Ref": "MySubnet1" }, { "Ref": "MySubnet2" }],
+      "SecurityGroups": [{ "Ref": "MySecurityGroup" }]
+    }
+  },
+  "MyListener": {
+    "Type": "AWS::ElasticLoadBalancingV2::Listener",
+    "Properties": {
+      "LoadBalancerArn": { "Ref": "MyALB" },
+      "Port": 80,
+      "Protocol": "HTTP",
+      "DefaultActions": [{ "Type": "fixed-response", "FixedResponseConfig": { "StatusCode": "404" } }]
+    }
+  }
+}
+```
+
+Then your Lambda function references `@MyListener` in the `ALBApi` attribute.
+
+## SNS Event Example
+This example shows how to use the `SNSEvent` attribute to subscribe a Lambda function to an SNS topic.
+
+The `SNSEvent` attribute contains the following properties:
+* **Topic** (Required) - The SNS topic ARN or a reference to an SNS topic resource prefixed with "@".
+* **ResourceName** (Optional) - The CloudFormation resource name for the SNS event.
+* **FilterPolicy** (Optional) - A JSON filter policy applied to the subscription.
+* **Enabled** (Optional) - If false, the event source is disabled. Default is true.
+
+```csharp
+[LambdaFunction(ResourceName = "SNSMessageHandler", Policies = "AWSLambdaSNSTopicExecutionRole")]
+[SNSEvent("@TestTopic", ResourceName = "TestTopicEvent", FilterPolicy = "{ \"store\": [\"example_corp\"] }")]
+public void HandleMessage(SNSEvent evnt, ILambdaContext lambdaContext)
+{
+    lambdaContext.Logger.Log($"Received {evnt.Records.Count} messages");
+}
+```
+
+## Lambda Function URL Example
+
+[Lambda Function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html) provide a dedicated HTTPS endpoint for your Lambda function without needing API Gateway or an Application Load Balancer. The `FunctionUrl` attribute configures the function to be invoked via a Function URL. Function URLs use the same payload format as HTTP API v2 (`APIGatewayHttpApiV2ProxyRequest`/`APIGatewayHttpApiV2ProxyResponse`).
+
+The `FunctionUrl` attribute contains the following properties:
+
+| Property | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `AuthType` | `FunctionUrlAuthType` | No | `NONE` | The authentication type: `NONE` (public) or `AWS_IAM` (IAM-authenticated). |
+| `AllowOrigins` | `string[]` | No | `null` | Allowed origins for CORS requests (e.g., `new[] { "https://example.com" }`). |
+| `AllowMethods` | `LambdaHttpMethod[]` | No | `null` | Allowed HTTP methods for CORS requests, using the `LambdaHttpMethod` enum (e.g., `new[] { LambdaHttpMethod.Get, LambdaHttpMethod.Post }`). |
+| `AllowHeaders` | `string[]` | No | `null` | Allowed headers for CORS requests. |
+| `ExposeHeaders` | `string[]` | No | `null` | Headers to expose in CORS responses. |
+| `AllowCredentials` | `bool` | No | `false` | Whether credentials are included in the CORS request. |
+| `MaxAge` | `int` | No | `0` | Maximum time in seconds that a browser can cache the CORS preflight response. `0` means not set. |
+
+### Basic Example
+
+A simple function with a public Function URL (no authentication):
+
+```csharp
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Core;
+
+public class Functions
+{
+    [LambdaFunction(PackageType = LambdaPackageType.Image)]
+    [FunctionUrl(AuthType = FunctionUrlAuthType.NONE)]
+    public IHttpResult GetItems([FromQuery] string category, ILambdaContext context)
+    {
+        context.Logger.LogLine($"Getting items for category: {category}");
+        return HttpResults.Ok(new { items = new[] { "item1", "item2" }, category });
+    }
+}
+```
+
+### With IAM Authentication
+
+Use `FunctionUrlAuthType.AWS_IAM` to require IAM authentication for the Function URL:
+
+```csharp
+[LambdaFunction(PackageType = LambdaPackageType.Image)]
+[FunctionUrl(AuthType = FunctionUrlAuthType.AWS_IAM)]
+public IHttpResult SecureEndpoint(ILambdaContext context)
+{
+    return HttpResults.Ok(new { message = "This endpoint requires IAM auth" });
+}
+```
+
+### With CORS Configuration
+
+Configure CORS settings directly on the attribute. The `AllowMethods` property uses the type-safe `LambdaHttpMethod` enum, consistent with the `HttpApi` and `RestApi` attributes:
+
+```csharp
+[LambdaFunction(PackageType = LambdaPackageType.Image)]
+[FunctionUrl(
+    AuthType = FunctionUrlAuthType.NONE,
+    AllowOrigins = new[] { "https://example.com", "https://app.example.com" },
+    AllowMethods = new[] { LambdaHttpMethod.Get, LambdaHttpMethod.Post },
+    AllowHeaders = new[] { "Content-Type", "Authorization" },
+    AllowCredentials = true,
+    MaxAge = 3600)]
+public IHttpResult GetData([FromQuery] string id, ILambdaContext context)
+{
+    return HttpResults.Ok(new { id, data = "some data" });
+}
+```
+
+### Generated CloudFormation
+
+The source generator creates a `FunctionUrlConfig` property on the Lambda function resource (not a SAM event source). Here is an example with CORS:
+
+```json
+"GetDataFunction": {
+  "Type": "AWS::Serverless::Function",
+  "Metadata": {
+    "Tool": "Amazon.Lambda.Annotations",
+    "SyncedFunctionUrlConfig": true
+  },
+  "Properties": {
+    "PackageType": "Image",
+    "ImageUri": ".",
+    "ImageConfig": {
+      "Command": ["MyAssembly::MyNamespace.Functions_GetData_Generated::GetData"]
+    },
+    "MemorySize": 512,
+    "Timeout": 30,
+    "FunctionUrlConfig": {
+      "AuthType": "NONE",
+      "Cors": {
+        "AllowOrigins": ["https://example.com", "https://app.example.com"],
+        "AllowMethods": ["GET", "POST"],
+        "AllowHeaders": ["Content-Type", "Authorization"],
+        "AllowCredentials": true,
+        "MaxAge": 3600
+      }
+    }
+  }
+}
+```
+
+> **Note:** Unlike `HttpApi` and `RestApi` which create SAM event sources, `FunctionUrl` configures the `FunctionUrlConfig` property directly on the function resource. If the `FunctionUrl` attribute is removed from the code, the source generator will automatically clean up the `FunctionUrlConfig` from the CloudFormation template.
+
 ## Custom Lambda Authorizer Example
 
 Lambda Annotations supports defining custom Lambda authorizers using attributes. Custom authorizers let you control access to your API Gateway endpoints by running a Lambda function that validates tokens or request parameters before the target function is invoked. The source generator automatically wires up the authorizer resources and references in the CloudFormation template.
@@ -1198,7 +1542,13 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 * RestApiAuthorizer
     * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `RestApi.Authorizer` using `nameof()`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
 * SQSEvent
-    * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol. 
+    * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol.
+* SNSEvent
+    * Subscribes the Lambda function to an SNS topic. The topic ARN or resource reference (prefixed with '@') is required.
+* ALBApi
+    * Configures the Lambda function to be called from an Application Load Balancer. The listener ARN (or `@ResourceName` template reference), path pattern, and priority are required. The source generator creates standalone CloudFormation resources (TargetGroup, ListenerRule, Lambda Permission) rather than SAM event types.
+* FunctionUrl
+    * Configures the Lambda function to be invoked via a Lambda Function URL. Supports `AuthType` (`NONE` or `AWS_IAM`) and CORS configuration including `AllowMethods` (using the `LambdaHttpMethod` enum), `AllowOrigins`, `AllowHeaders`, `AllowCredentials`, and `MaxAge`. The source generator writes a `FunctionUrlConfig` property on the function resource rather than a SAM event source.
 
 ### Parameter Attributes
 
@@ -1277,3 +1627,5 @@ The content type is determined using the following rules.
 ## Project References
 
 If API Gateway event attributes, such as `RestAPI` or `HttpAPI`, are being used then a package reference to `Amazon.Lambda.APIGatewayEvents` must be added to the project, otherwise the project will not compile. We do not include it by default in order to keep the `Amazon.Lambda.Annotations` library lightweight.
+
+Similarly, if the `ALBApi` attribute is being used then a package reference to `Amazon.Lambda.ApplicationLoadBalancerEvents` must be added to the project. This provides the `ApplicationLoadBalancerRequest` and `ApplicationLoadBalancerResponse` types used by ALB Lambda functions.

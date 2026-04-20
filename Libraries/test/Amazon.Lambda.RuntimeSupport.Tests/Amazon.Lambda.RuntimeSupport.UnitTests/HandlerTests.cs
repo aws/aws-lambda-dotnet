@@ -31,7 +31,7 @@ using Xunit.Abstractions;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
-    [Collection("Bootstrap")]
+    [Collection("ResponseStreamFactory")]
     public class HandlerTests
     {
         private const string AggregateExceptionTestMarker = "AggregateExceptionTesting";
@@ -250,7 +250,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var userCodeLoader = new UserCodeLoader(new SystemEnvironmentVariables(), handler, _internalLogger);
             var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
             var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
-            var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)
+            var bootstrap = new LambdaBootstrap(handlerWrapper.Handler, initializer.InitializeAsync, null, _environmentVariables)
             {
                 Client = testRuntimeApiClient
             };
@@ -388,7 +388,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var userCodeLoader = new UserCodeLoader(new SystemEnvironmentVariables(), handler, _internalLogger);
                 var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
                 var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
-                var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)
+                // Pass null initializer to bootstrap so RunAsync won't re-invoke Init(),
+                // which would re-register AssemblyLoad event handlers and re-construct the invoke delegate.
+                var bootstrap = new LambdaBootstrap(handlerWrapper.Handler, null, null, _environmentVariables)
                 {
                     Client = testRuntimeApiClient
                 };
@@ -403,7 +405,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     Assert.DoesNotContain($"^^[{assertLoggedByInitialize}]^^", actionWriter.ToString());
                 }
 
-                await bootstrap.InitializeAsync();
+                await initializer.InitializeAsync();
+
+                // Re-set logging actions after initialization in case Init's AssemblyLoad event
+                // handler overwrote them when loading Amazon.Lambda.Core as a handler dependency.
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingAction(), _internalLogger);
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingWithLevelAction(), _internalLogger);
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingWithLevelAndExceptionAction(), _internalLogger);
 
                 if (assertLoggedByInitialize != null)
                 {

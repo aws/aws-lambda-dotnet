@@ -68,6 +68,24 @@ try
         Write-Host "Added TestQueue resource to serverless.template"
     }
 
+    # Add TestS3Bucket resource to serverless.template for S3 event integration testing
+    # The source generator creates a Ref to TestS3Bucket but doesn't define the resource itself
+    $template = Get-Content $templatePath | Out-String | ConvertFrom-Json
+    if (-not $template.Resources.PSObject.Properties['TestS3Bucket']) {
+        $template.Resources | Add-Member -NotePropertyName "TestS3Bucket" -NotePropertyValue @{ Type = "AWS::S3::Bucket" } -Force
+        $template | ConvertTo-Json -Depth 100 | Set-Content $templatePath
+        Write-Host "Added TestS3Bucket resource to serverless.template"
+    }
+
+    # Add TestTopic resource to serverless.template for SNS event integration testing
+    # The source generator creates a Ref to TestTopic but doesn't define the resource itself
+    $template = Get-Content $templatePath | Out-String | ConvertFrom-Json
+    if (-not $template.Resources.PSObject.Properties['TestTopic']) {
+        $template.Resources | Add-Member -NotePropertyName "TestTopic" -NotePropertyValue @{ Type = "AWS::SNS::Topic" } -Force
+        $template | ConvertTo-Json -Depth 100 | Set-Content $templatePath
+        Write-Host "Added TestTopic resource to serverless.template"
+    }
+
     dotnet restore
     Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch, Runtime $runtime"
     dotnet lambda deploy-serverless --template-parameters "ArchitectureTypeParameter=$arch"

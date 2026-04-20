@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +14,7 @@ using System.Net;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
 using System.Globalization;
+using Amazon.Lambda.Core.ResponseStreaming;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -219,6 +220,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                 lambdaResponse.Headers.Add(new KeyValuePair<string, string>("ErrorType", errorName));
             }
         }
+
+        /// <inheritdoc/>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected override HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature) => throw new NotImplementedException();
 
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)
         {

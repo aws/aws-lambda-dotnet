@@ -17,7 +17,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     {
         public const int FUNCTION_MEMORY_MB = 512;
 
-        protected static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
+        public static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
         protected static readonly string LAMBDA_ASSUME_ROLE_POLICY =
         @"
         {
@@ -63,7 +63,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// <param name="s3Client"></param>
         /// <param name="lambdaClient"></param>
         /// <returns></returns>
-        protected async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
+        public async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
             AmazonIdentityManagementServiceClient iamClient, bool roleAlreadyExisted)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
@@ -109,7 +109,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        protected async Task<bool> PrepareTestResources(IAmazonS3 s3Client, IAmazonLambda lambdaClient,
+        public async Task<bool> PrepareTestResources(IAmazonS3 s3Client, IAmazonLambda lambdaClient,
             AmazonIdentityManagementServiceClient iamClient)
         {
             var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
@@ -288,7 +288,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 Handler = Handler,
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
-                Runtime = Runtime.Dotnet6,
+                Runtime = Runtime.Dotnet10,
                 Role = ExecutionRoleArn
             };
 
@@ -351,7 +351,16 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             if (!File.Exists(deploymentZipFile))
             {
-                throw new NoDeploymentPackageFoundException();
+                var message = new StringBuilder();
+                message.AppendLine($"Deployment package for {DeploymentPackageZipRelativePath} not found at expected path: {deploymentZipFile}");
+                message.AppendLine("Available Test Bundles:");
+                foreach (var kvp in _fixture.TestAppPaths)
+                {
+                    message.AppendLine($"{kvp.Key}: {kvp.Value}");
+                }
+
+
+                throw new NoDeploymentPackageFoundException(message.ToString());
             }
 
             return deploymentZipFile;
@@ -380,7 +389,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected class NoDeploymentPackageFoundException : Exception
         {
+            public NoDeploymentPackageFoundException() { }
 
+            public NoDeploymentPackageFoundException(string message) : base(message) { }
         }
 
         private ApplicationLogLevel ConvertRuntimeLogLevel(RuntimeLogLevel runtimeLogLevel)

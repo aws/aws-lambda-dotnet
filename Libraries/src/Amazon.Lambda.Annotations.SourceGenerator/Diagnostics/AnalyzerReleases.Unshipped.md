@@ -16,3 +16,9 @@ AWSLambda0128 | AWSLambdaCSharpGenerator | Error | Authorizer Payload Version Mi
 AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attribute
 AWSLambda0130 | AWSLambdaCSharpGenerator | Error | Invalid return type IAuthorizerResult
 AWSLambda0131 | AWSLambdaCSharpGenerator | Error | FromBody not supported on Authorizer functions
+AWSLambda0132 | AWSLambdaCSharpGenerator | Error | Invalid ALBApiAttribute
+AWSLambda0133 | AWSLambdaCSharpGenerator | Error | ALB Listener Reference Not Found
+AWSLambda0134 | AWSLambdaCSharpGenerator | Error | FromRoute not supported on ALB functions
+AWSLambda0135 | AWSLambdaCSharpGenerator | Error | Unmapped parameter on ALB function
+AWSLambda0136 | AWSLambdaCSharpGenerator | Error | Invalid S3EventAttribute
+AWSLambda0138 | AWSLambdaCSharpGenerator | Error | Invalid SNSEventAttribute

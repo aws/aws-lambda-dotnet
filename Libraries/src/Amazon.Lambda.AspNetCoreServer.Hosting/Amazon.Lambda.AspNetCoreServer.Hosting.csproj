@@ -4,7 +4,7 @@
 
   <PropertyGroup>
 	<Description>Package for running ASP.NET Core applications using the Minimal API style as a AWS Lambda function.</Description>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Version>1.10.0</Version>
