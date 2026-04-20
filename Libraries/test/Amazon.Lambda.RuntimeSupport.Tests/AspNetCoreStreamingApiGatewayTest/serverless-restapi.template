@@ -10,10 +10,7 @@
         "MethodSettings": [
           {
             "ResourcePath": "/*",
-            "HttpMethod": "*",
-            "LoggingLevel": "INFO",
-            "DataTraceEnabled": true,
-            "MetricsEnabled": true
+            "HttpMethod": "*"
           }
         ],
         "DefinitionBody": {
