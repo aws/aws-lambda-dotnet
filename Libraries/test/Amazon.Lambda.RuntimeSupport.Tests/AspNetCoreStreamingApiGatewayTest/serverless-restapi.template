@@ -3,20 +3,10 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "Integration test for ASP.NET Core response streaming through API Gateway.",
   "Resources": {
-    "ApiAccessLogGroup": {
-      "Type": "AWS::Logs::LogGroup",
-      "Properties": {
-        "RetentionInDays": 1
-      }
-    },
     "StreamingApi": {
       "Type": "AWS::Serverless::Api",
       "Properties": {
         "StageName": "prod",
-        "AccessLogSetting": {
-          "DestinationArn": { "Fn::GetAtt": ["ApiAccessLogGroup", "Arn"] },
-          "Format": "$context.requestId $context.identity.sourceIp $context.httpMethod $context.routeKey $context.status $context.responseLength $context.requestTime"
-        },
         "MethodSettings": [
           {
             "ResourcePath": "/*",
