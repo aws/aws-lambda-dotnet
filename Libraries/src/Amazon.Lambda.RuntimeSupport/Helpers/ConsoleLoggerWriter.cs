@@ -22,9 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-#if NET6_0_OR_GREATER
 using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
-#endif
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
@@ -62,71 +60,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <param name="args">Arguments to be applied to the log message.</param>
         void FormattedWriteLine(string level, Exception exception, string message, params object[] args);
     }
-
-    /// <summary>
-    /// Simple logger to maintain compatibility with versions of .NET before .NET 6
-    /// </summary>
-    public class SimpleLoggerWriter : IConsoleLoggerWriter
-    {
-        readonly TextWriter _writer;
-
-        /// <summary>
-        /// Default Constructor
-        /// </summary>
-        public SimpleLoggerWriter(IEnvironmentVariables environmentVariables)
-        {
-            // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
-            // This will make sure multiline log messages use a single CloudWatch Logs record.
-            var fileDescriptorLogId = environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
-            if (fileDescriptorLogId != null)
-            {
-                try
-                {
-                    _writer = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
-                    InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging");
-                }
-                catch (Exception ex)
-                {
-                    _writer = Console.Out;
-                    InternalLogger.GetDefaultLogger().LogError(ex, "Error creating file descriptor log stream writer. Fallback to stdout.");
-                }
-            }
-            else
-            {
-                _writer = Console.Out;
-                InternalLogger.GetDefaultLogger().LogInformation("Using stdout for logging");
-            }
-        }
-
-        /// <inheritdoc/>
-        public void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders)
-        {
-        }
-
-        /// <inheritdoc/>
-        public void FormattedWriteLine(string message)
-        {
-            _writer.WriteLine(message);
-        }
-
-        /// <inheritdoc/>
-        public void FormattedWriteLine(string level, string message, params object[] args)
-        {
-            _writer.WriteLine(message);
-        }
-
-        /// <inheritdoc/>
-        public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
-        {
-            _writer.WriteLine(message);
-            if (exception != null)
-            {
-                _writer.WriteLine(exception.ToString());
-            }
-        }
-    }
-
-#if NET6_0_OR_GREATER
 
     /// <summary>
     /// Formats log messages with time, request id, log level and message
@@ -597,5 +530,4 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             #endregion
         }
     }
-#endif
 }

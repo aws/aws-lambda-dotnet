@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -40,7 +40,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string CurrentAwsRequestId { get; set; }
 
-#if NET6_0_OR_GREATER
         public void Log(string level, string message)
         {
             _consoleLoggerRedirector.FormattedWriteLine(level, message);
@@ -55,6 +54,5 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             _consoleLoggerRedirector.FormattedWriteLine(level, exception, message, args);
         }
-#endif
     }
 }

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+
+#pragma warning disable CS1591 // Since this class is treated as internal, we can ignore the missing XML comments for public members.
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -28,7 +27,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         public virtual Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
         {
-            this.Application = new ApplicationWrapper<TContext>(application);
+            Application = new ApplicationWrapper<TContext>(application);
             return Task.CompletedTask;
         }
 

@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.</Description>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AspNetCoreServer</AssemblyTitle>
     <Version>9.2.1</Version>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer</AssemblyName>

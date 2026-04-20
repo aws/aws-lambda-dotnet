@@ -82,17 +82,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if(TryLambdaSetup(services, eventSource, configure, out var hostingOptions))
             {
-                services.TryAddSingleton<ILambdaSerializer>(serializer ?? hostingOptions!.Serializer);
+                var localSerializer = serializer ?? hostingOptions!.Serializer;
+                if (localSerializer == null)
+                    throw new ArgumentNullException(nameof(serializer));
+
+                services.TryAddSingleton<ILambdaSerializer>(localSerializer);
             }
 
             return services;
         }
 
-        #if NET8_0_OR_GREATER
         /// <summary>
         /// Adds a <see cref="HttpRequestMessage"/>> that will be used to invoke
         /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
-        /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.  This improves the performance gains
+        /// during <see cref="Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot"/>.  This improves the performance gains
         /// offered by SnapStart.
         /// <para />
         /// <paramref name="beforeSnapStartRequest"/> must have a relative
@@ -105,7 +108,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// When the function handler is called as part of SnapStart warm up, the instance will use a
         /// mock <see cref="ILambdaContext"/>, which will not be fully populated.
         /// <para />
-        /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
+        /// This method automatically registers with <see cref="Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot"/>.
         /// <para />
         /// This method can be called multiple times to register additional urls.
         /// <para />
@@ -142,7 +145,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
-        #endif
 
         private static bool TryLambdaSetup(IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure, out HostingOptions? hostingOptions)
         {

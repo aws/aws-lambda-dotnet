@@ -1,4 +1,3 @@
-#if NET6_0_OR_GREATER
 using System;
 using System.Buffers;
 using System.Collections;
@@ -315,4 +314,3 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         private static string ToInvariantString(object obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
     }
 }
-#endif

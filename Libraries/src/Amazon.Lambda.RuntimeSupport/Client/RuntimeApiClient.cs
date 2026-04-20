@@ -31,11 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
 
-#if NET6_0_OR_GREATER
         private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
-#else
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
-#endif
 
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
@@ -54,11 +50,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
-#if NET6_0_OR_GREATER
             _consoleLoggerRedirector = new LogLevelLoggerWriter(environmentVariables);
-#else
-            _consoleLoggerRedirector = new SimpleLoggerWriter(environmentVariables);
-#endif
 
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
             _httpClient = httpClient;
@@ -147,8 +139,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
-
         /// <summary>
         ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
         /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
@@ -174,8 +164,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return _internalClient.RestoreErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
-#endif
-
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

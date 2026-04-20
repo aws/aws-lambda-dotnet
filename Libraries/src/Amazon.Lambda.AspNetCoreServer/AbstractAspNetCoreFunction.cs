@@ -255,7 +255,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             return builder;
         }
 
-        #if NET8_0_OR_GREATER
         /// <summary>
         /// Return one or more <see cref="HttpRequestMessage"/>s that will be used to invoke
         /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
@@ -294,7 +293,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected virtual IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests() =>
             Enumerable.Empty<HttpRequestMessage>();
-        #endif
 
         private protected bool IsStarted
         {
@@ -306,8 +304,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         private void AddRegisterBeforeSnapshot()
         {
-            #if NET8_0_OR_GREATER
-
             Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
             {
                 var beforeSnapstartRequests = GetBeforeSnapshotRequests();
@@ -339,8 +335,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
             });
-
-            #endif
         }
 
         /// <summary>
@@ -579,16 +573,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
 
         private protected virtual void InternalCustomResponseExceptionHandling(TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
-        {
-
-        }
-
-        /// <summary>
-        /// This method is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
-        /// WebHost hasn't been started yet.
-        /// </summary>
-        /// <param name="webHost"></param>
-        protected virtual void PostCreateWebHost(IWebHost webHost)
         {
 
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,10 +31,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
                              IHttpResponseBodyFeature
 
-#if NET6_0_OR_GREATER
                             ,IHttpRequestBodyDetectionFeature
                             ,IHttpActivityFeature
-#endif
     /*
     ,
                          IHttpUpgradeFeature,
@@ -54,11 +52,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             this[typeof(ITlsConnectionFeature)] = this;
             this[typeof(IHttpResponseBodyFeature)] = this;
             this[typeof(IHttpRequestIdentifierFeature)] = this;
-
-#if NET6_0_OR_GREATER
             this[typeof(IHttpRequestBodyDetectionFeature)] = this;
             this[typeof(IHttpActivityFeature)] = this;
-#endif
         }
 
         #region IFeatureCollection
@@ -215,7 +210,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         internal class EventCallbacks
         {
-            List<EventCallback> _callbacks = new List<EventCallback>();
+            readonly List<EventCallback> _callbacks = new List<EventCallback>();
 
             internal void Add(Func<object, Task> callback, object state)
             {
@@ -252,7 +247,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         #endregion
 
         #region IHttpResponseBodyFeature
+// Disabled in case the user's ASP.NET Core application is still using the older API that set the body on the response feature instead of the new API that sets the body on the HttpResponse object.
+#pragma warning disable CS0618
         Stream IHttpResponseBodyFeature.Stream => ((IHttpResponseFeature)this).Body;
+#pragma warning restore CS0618
 
         private PipeWriter _pipeWriter;
 
@@ -385,7 +383,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #endregion
 
-#if NET6_0_OR_GREATER
         bool IHttpRequestBodyDetectionFeature.CanHaveBody
         {
             get
@@ -396,6 +393,5 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
 
         Activity IHttpActivityFeature.Activity { get; set; }
-#endif
     }
 }
