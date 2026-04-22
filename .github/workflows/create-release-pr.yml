@@ -13,6 +13,7 @@ on:
 
 permissions:
   id-token: write
+  repository-projects: read
 
 jobs:
   release-pr:

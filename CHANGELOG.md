@@ -1,3 +1,8 @@
+## Release 2026-04-22 #2
+
+### Amazon.Lambda.Annotations (1.15.1)
+* The ScheduleEvent Input property now supports file paths (relative to the project root or absolute) in addition to literal JSON strings. If the value resolves to an existing file, its contents are read and used as the input in the CloudFormation template.
+
 ## Release 2026-04-22
 
 ### Amazon.Lambda.Annotations (1.15.0)
