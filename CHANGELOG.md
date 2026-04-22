@@ -1,3 +1,9 @@
+## Release 2026-04-22
+
+### Amazon.Lambda.Annotations (1.15.0)
+* Added [DynamoDBEvent] annotation attribute for declaratively configuring DynamoDB stream-triggered Lambda functions with support for stream reference, batch size, starting position, batching window, filters, and enabled state.
+* Added [ScheduleEvent] annotation attribute for declaratively configuring schedule-triggered Lambda functions with support for rate and cron expressions, description, input, and enabled state.
+
 ## Release 2026-04-16
 
 ### Amazon.Lambda.Annotations (1.14.0)
