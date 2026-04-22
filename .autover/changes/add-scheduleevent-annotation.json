@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Added [ScheduleEvent] annotation attribute for declaratively configuring schedule-triggered Lambda functions with support for rate and cron expressions, description, input, and enabled state."
+      ]
+    }
+  ]
+}

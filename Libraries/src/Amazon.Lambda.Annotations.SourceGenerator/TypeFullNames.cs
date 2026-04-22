@@ -68,6 +68,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string SNSEvent = "Amazon.Lambda.SNSEvents.SNSEvent";
         public const string SNSEventAttribute = "Amazon.Lambda.Annotations.SNS.SNSEventAttribute";
 
+        public const string ScheduledEvent = "Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent";
+        public const string ScheduleEventAttribute = "Amazon.Lambda.Annotations.Schedule.ScheduleEventAttribute";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
@@ -99,7 +102,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             ALBApiAttribute,
             S3EventAttribute,
             DynamoDBEventAttribute,
-            SNSEventAttribute
+            SNSEventAttribute,
+            ScheduleEventAttribute
         };
     }
 }
