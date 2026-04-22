@@ -1,0 +1,42 @@
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.Core;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace TestServerlessApp.ALBEventExamples
+{
+    // This file represents valid usage of the ALBApiAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests.
+    // This file is only sent as input to the source generator unit tests.
+    // Refer to VerifyValidALBEvents unit test.
+
+    public class ValidALBEvents
+    {
+        [LambdaFunction(ResourceName = "ALBHelloWorld")]
+        [ALBApi("arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def", "/hello", 1)]
+        public ApplicationLoadBalancerResponse Hello(ApplicationLoadBalancerRequest request, ILambdaContext context)
+        {
+            return new ApplicationLoadBalancerResponse
+            {
+                StatusCode = 200,
+                StatusDescription = "200 OK",
+                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } },
+                Body = "Hello from ALB Lambda!"
+            };
+        }
+
+        [LambdaFunction(ResourceName = "ALBWithOptions")]
+        [ALBApi("@MyALBListener", "/api/*", 5, MultiValueHeaders = true, HostHeader = "api.example.com", HttpMethod = "POST")]
+        public async Task<ApplicationLoadBalancerResponse> HandleRequest(ApplicationLoadBalancerRequest request, ILambdaContext context)
+        {
+            await Task.CompletedTask;
+            return new ApplicationLoadBalancerResponse
+            {
+                StatusCode = 200,
+                StatusDescription = "200 OK",
+                Body = "OK"
+            };
+        }
+    }
+}

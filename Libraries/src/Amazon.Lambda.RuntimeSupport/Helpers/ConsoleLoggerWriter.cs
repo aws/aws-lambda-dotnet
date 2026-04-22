@@ -160,6 +160,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <param name="stdErrorWriter"></param>
         public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
+            _environmentVariables = new SystemEnvironmentVariables();
             Initialize(stdOutWriter, stdErrorWriter);
         }
 
@@ -258,7 +259,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             {
                 get
                 {
-                    if (Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    if (_currentRuntimeApiHeadersStorage != null && Utils.IsUsingMultiConcurrency(_environmentVariables))
                     {
                         return _currentRuntimeApiHeadersStorage.Value;
                     }
@@ -266,7 +267,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
                 set
                 {
-                    if (Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    if (_currentRuntimeApiHeadersStorage != null && Utils.IsUsingMultiConcurrency(_environmentVariables))
                     {
                         _currentRuntimeApiHeadersStorage.Value = value;
                     }

@@ -17,6 +17,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
                     return false;
                 }
 
+                // ALB request types are forwarded to lambda method if specified, there is no parameter conversion required.
+                if (TypeFullNames.ALBRequests.Contains(p.Type.FullName))
+                {
+                    return false;
+                }
+
                 // ILambdaContext is forwarded to lambda method if specified, there is no parameter conversion required.
                 if (p.Type.FullName == TypeFullNames.ILambdaContext)
                 {
@@ -24,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
                 }
 
                 // Body parameter with target type as string doesn't require conversion because body is string by nature.
-                if (p.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute) && p.Type.IsString())
+                if (p.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute || att.Type.FullName == TypeFullNames.ALBFromBodyAttribute) && p.Type.IsString())
                 {
                     return false;
                 }

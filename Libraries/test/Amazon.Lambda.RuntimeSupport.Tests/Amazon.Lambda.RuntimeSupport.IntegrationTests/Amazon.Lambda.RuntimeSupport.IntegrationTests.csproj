@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudFormation" Version="4.0.8.19" />
     <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.18" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.14.1" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.21.2" />

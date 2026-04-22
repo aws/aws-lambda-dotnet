@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -21,7 +24,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             { "RestApiAuthorizerAttribute", "RestApiAuthorizer" },
             { "HttpApiAttribute", "HttpApi" },
             { "RestApiAttribute", "RestApi" },
-            { "SQSEventAttribute", "SQSEvent" }
+            { "FunctionUrlAttribute", "FunctionUrl" },
+            { "SQSEventAttribute", "SQSEvent" },
+            { "ALBApiAttribute", "ALBApi" },
+            { "S3EventAttribute", "S3Event" },
+            { "DynamoDBEventAttribute", "DynamoDBEvent" },
+            { "SNSEventAttribute", "SNSEvent" }
         };
 
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();

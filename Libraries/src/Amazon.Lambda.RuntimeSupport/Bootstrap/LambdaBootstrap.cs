@@ -20,6 +20,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -220,6 +221,19 @@ namespace Amazon.Lambda.RuntimeSupport
                 return;
             }
 
+
+            try
+            {
+                // Initalize in Amazon.Lambda.Core the factory for creating the response stream and related logic for supporting response streaming.
+                ResponseStreamLambdaCoreInitializerIsolated.InitializeCore();
+            }
+            catch (TypeLoadException)
+            {
+                _logger.LogDebug("Failed to configure Amazon.Lambda.Core with factory to create response stream. This happens when the version of Amazon.Lambda.Core referenced by the Lambda function is out of date.");
+            }
+
+
+
             // Check if Initialization type is SnapStart, and invoke the snapshot restore logic.
             if (_configuration.IsInitTypeSnapstart)
             {
@@ -343,6 +357,7 @@ namespace Amazon.Lambda.RuntimeSupport
             _logger.LogInformation("Starting InvokeOnceAsync");
 
             var invocation = await Client.GetNextInvocationAsync(cancellationToken);
+            var isMultiConcurrency = Utils.IsUsingMultiConcurrency(_environmentVariables);
 
             Func<Task> processingFunc = async () =>
             {
@@ -350,6 +365,17 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
+                }
+
+                // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
+                var runtimeApiClient = Client as RuntimeApiClient;
+                if (runtimeApiClient != null)
+                {
+                    ResponseStreamFactory.InitializeInvocation(
+                        invocation.LambdaContext.AwsRequestId,
+                        isMultiConcurrency,
+                        runtimeApiClient,
+                        cancellationToken);
                 }
 
                 try
@@ -366,15 +392,41 @@ namespace Amazon.Lambda.RuntimeSupport
                     catch (Exception exception)
                     {
                         WriteUnhandledExceptionToLog(exception);
+
+                        var responseStream = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        if (responseStream != null)
+                        {
+                            responseStream.ReportError(exception);
+                        }
+                        else
+                        {
                         await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+                    }
                     }
                     finally
                     {
                         _logger.LogInformation("Finished invoking handler");
                     }
 
-                    if (invokeSucceeded)
+                    var streamIfCreated = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                    if (streamIfCreated != null)
                     {
+                        streamIfCreated.MarkCompleted();
+
+                        // If streaming was started, await the HTTP send task to ensure it completes
+                        var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency);
+                        if (sendTask != null)
+                        {
+                            // Wait for the streaming response to finish sending before allowing the next invocation to be processed. This ensures that responses are sent in the order the invocations were received.
+                            await sendTask;
+                            sendTask.Result.Dispose();
+                        }
+
+                        streamIfCreated.Dispose();
+                    }
+                    else if (invokeSucceeded)
+                    {
+                        // No streaming — send buffered response
                         _logger.LogInformation("Starting sending response");
                         try
                         {
@@ -409,6 +461,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
+                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
                     invocation.Dispose();
                 }
             };

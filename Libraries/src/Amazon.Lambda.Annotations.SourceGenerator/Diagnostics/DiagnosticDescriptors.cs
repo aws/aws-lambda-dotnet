@@ -242,5 +242,58 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAlbApiAttribute = new DiagnosticDescriptor(
+            id: "AWSLambda0132",
+            title: "Invalid ALBApiAttribute",
+            messageFormat: "Invalid ALBApiAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbListenerReferenceNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0133",
+            title: "ALB Listener Reference Not Found",
+            messageFormat: "The ALBApi ListenerArn references '@{0}', but no resource or parameter named '{0}' was found in the CloudFormation template. Add the listener resource to the template or correct the reference name.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromRouteNotSupportedOnAlb = new DiagnosticDescriptor(
+            id: "AWSLambda0134",
+            title: "FromRoute not supported on ALB functions",
+            messageFormat: "[FromRoute] is not supported on ALB functions. ALB does not support route path template parameters. Use [FromHeader], [FromQuery], or [FromBody] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbUnmappedParameter = new DiagnosticDescriptor(
+            id: "AWSLambda0135",
+            title: "Unmapped parameter on ALB function",
+            messageFormat: "Parameter '{0}' on ALB function has no binding attribute. Use [FromHeader], [FromQuery], [FromBody], or [FromServices], or use the ApplicationLoadBalancerRequest or ILambdaContext types.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidS3EventAttribute = new DiagnosticDescriptor(id: "AWSLambda0136",
+            title: "Invalid S3EventAttribute",
+            messageFormat: "Invalid S3EventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidDynamoDBEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0137",
+            title: "Invalid DynamoDBEventAttribute",
+            messageFormat: "Invalid DynamoDBEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidSnsEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0138",
+            title: "Invalid SNSEventAttribute",
+            messageFormat: "Invalid SNSEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

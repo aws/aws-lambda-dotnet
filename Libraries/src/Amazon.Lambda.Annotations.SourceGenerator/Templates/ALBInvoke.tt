@@ -1,0 +1,98 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName)
+        {
+            // User already returns ApplicationLoadBalancerResponse (or Task<ApplicationLoadBalancerResponse>),
+            // just pass through.
+            if (_model.LambdaMethod.ReturnsVoid)
+            {
+#>
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+            }
+            else if (_model.LambdaMethod.ReturnsVoidTask)
+            {
+#>
+            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+            }
+            else
+            {
+#>
+            var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+            return response;
+<#
+            }
+        }
+        else
+        {
+            // User returns a non-ALB type, we need to wrap in ApplicationLoadBalancerResponse
+            if (_model.LambdaMethod.ReturnsVoid)
+            {
+#>
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+            }
+            else if (_model.LambdaMethod.ReturnsVoidTask)
+            {
+#>
+            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+            }
+            else
+            {
+#>
+            var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+                if (_model.LambdaMethod.ReturnType.IsValueType)
+                {
+#>
+
+            var body = response.ToString();
+<#
+                }
+                else if (_model.LambdaMethod.ReturnType.IsString())
+                {
+                    // no action needed, response is already a string
+                }
+                else
+                {
+#>
+            var memoryStream = new MemoryStream();
+            serializer.Serialize(response, memoryStream);
+            memoryStream.Position = 0;
+
+            // convert stream to string
+            StreamReader reader = new StreamReader( memoryStream );
+            var body = reader.ReadToEnd();
+<#
+                }
+            }
+#>
+
+            return new Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse
+            {
+<#
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
+            {
+#>
+                Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "response" : "body" #>,
+                Headers = new Dictionary<string, string>
+                {
+                    {"Content-Type", <#= _model.LambdaMethod.ReturnType.IsString() ? "\"text/plain\"" : "\"application/json\"" #>}
+                },
+<#
+            }
+#>
+                StatusCode = 200
+            };
+<#
+        }
+#>

@@ -1,5 +1,11 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
+using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.DynamoDB;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 
@@ -30,7 +36,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromQueryAttribute), SymbolEqualityComparer.Default))
             {
                 var data = FromQueryAttributeBuilder.Build(att);
-                model = new AttributeModel<FromQueryAttribute>
+                model = new AttributeModel<APIGateway.FromQueryAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
@@ -39,7 +45,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromHeaderAttribute), SymbolEqualityComparer.Default))
             {
                 var data = FromHeaderAttributeBuilder.Build(att);
-                model = new AttributeModel<FromHeaderAttribute>
+                model = new AttributeModel<APIGateway.FromHeaderAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
@@ -90,6 +96,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.S3EventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = S3EventAttributeBuilder.Build(att);
+                model = new AttributeModel<S3EventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FunctionUrlAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = FunctionUrlAttributeBuilder.Build(att);
+                model = new AttributeModel<FunctionUrlAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.DynamoDBEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = DynamoDBEventAttributeBuilder.Build(att);
+                model = new AttributeModel<DynamoDBEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SNSEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = SNSEventAttributeBuilder.Build(att);
+                model = new AttributeModel<SNS.SNSEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAuthorizerAttribute), SymbolEqualityComparer.Default))
             {
                 var data = HttpApiAuthorizerAttributeBuilder.Build(att);
@@ -103,6 +145,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = RestApiAuthorizerAttributeBuilder.Build(att);
                 model = new AttributeModel<RestApiAuthorizerAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBApiAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBApiAttributeBuilder.Build(att);
+                model = new AttributeModel<ALBApiAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromQueryAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBFromQueryAttributeBuilder.Build(att);
+                model = new AttributeModel<ALB.FromQueryAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromHeaderAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBFromHeaderAttributeBuilder.Build(att);
+                model = new AttributeModel<ALB.FromHeaderAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromBodyAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = new ALB.FromBodyAttribute();
+                model = new AttributeModel<ALB.FromBodyAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

@@ -104,6 +104,49 @@ namespace Amazon.Lambda.AspNetCoreServer
             apiGatewayResponse.MultiValueHeaders["ErrorType"] = new List<string> { ex.GetType().Name };
         }
 
+        /// <summary>
+        /// Builds an <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/> from the current
+        /// ASP.NET Core response feature. The status code defaults to 200 when <see cref="IHttpResponseFeature.StatusCode"/>
+        /// is 0. <c>Set-Cookie</c> header values are moved to <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude.Cookies"/>;
+        /// all other headers are placed in <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude.MultiValueHeaders"/>.
+        /// </summary>
+        /// <param name="responseFeature">The ASP.NET Core response feature for the current invocation.</param>
+        /// <returns>A populated <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/>.</returns>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected override Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
+        {
+            var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+            {
+                StatusCode = (System.Net.HttpStatusCode)(responseFeature.StatusCode != 0 ? responseFeature.StatusCode : 200)
+            };
+
+            foreach (var kvp in responseFeature.Headers)
+            {
+                // Skip hop-by-hop and framing headers that are meaningless for streaming
+                // responses. Content-Length conflicts with chunked transfer encoding and
+                // can cause API Gateway to reject the response with a 502.
+                if (string.Equals(kvp.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(kvp.Key, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var value in kvp.Value)
+                    {
+                        prelude.Cookies.Add(value);
+                    }
+                }
+                else
+                {
+                    prelude.MultiValueHeaders[kvp.Key] = kvp.Value.ToArray();
+                }
+            }
+
+            return prelude;
+        }
+
 
         /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.

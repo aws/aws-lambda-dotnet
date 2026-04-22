@@ -60,15 +60,19 @@ namespace IntegrationTests.Helpers
         {
             try
             {
-               var response = await _cloudFormationClient.DescribeStackResourcesAsync(
-                    new DescribeStackResourcesRequest { StackName = stackName });
+                // Use DescribeStackResource (singular) to query a specific resource by logical ID.
+                // DescribeStackResources (plural) returns at most 100 resources without pagination,
+                // which causes resources to be silently missed in large stacks (>100 resources).
+                var response = await _cloudFormationClient.DescribeStackResourceAsync(
+                    new DescribeStackResourceRequest
+                    {
+                        StackName = stackName,
+                        LogicalResourceId = logicalResourceId
+                    });
 
-                Console.WriteLine($"[CloudFormationHelper] Stack '{stackName}' has {response.StackResources.Count} resources: " +
-                    string.Join(", ", response.StackResources.Select(r => $"{r.LogicalResourceId}={r.PhysicalResourceId} ({r.ResourceStatus})")));
+                var physicalId = response.StackResourceDetail?.PhysicalResourceId;
 
-                var physicalId = response.StackResources
-                    .FirstOrDefault(r => string.Equals(r.LogicalResourceId, logicalResourceId))
-                    ?.PhysicalResourceId;
+                Console.WriteLine($"[CloudFormationHelper] Resource '{logicalResourceId}' in stack '{stackName}': PhysicalId={physicalId}, Status={response.StackResourceDetail?.ResourceStatus}");
 
                 if (physicalId == null)
                 {

@@ -33,5 +33,13 @@ namespace IntegrationTests.Helpers
             var response = await _s3Client.ListBucketsAsync(new ListBucketsRequest());
             return response.Buckets.Any(x => x.BucketName.Equals(bucketName));
         }
+
+        public async Task<GetBucketNotificationResponse> GetBucketNotificationAsync(string bucketName)
+        {
+            return await _s3Client.GetBucketNotificationAsync(new GetBucketNotificationRequest
+            {
+                BucketName = bucketName
+            });
+        }
     }
 }

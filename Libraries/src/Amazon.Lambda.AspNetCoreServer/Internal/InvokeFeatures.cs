@@ -28,9 +28,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IServiceProvidersFeature,
                              ITlsConnectionFeature,
                              IHttpRequestIdentifierFeature,
-
                              IHttpResponseBodyFeature
-
                             ,IHttpRequestBodyDetectionFeature
                             ,IHttpActivityFeature
     /*

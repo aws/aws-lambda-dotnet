@@ -8,8 +8,8 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// </summary>
     /// <remarks>
     /// This attribute must be used in conjunction with the <see cref="LambdaFunctionAttribute"/>.
-    /// The authorizer function should return Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse
-    /// when <see cref="EnableSimpleResponses"/> is true, or Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2IamResponse
+    /// The authorizer function should return <c>APIGatewayCustomAuthorizerV2SimpleResponse</c>
+    /// when <see cref="EnableSimpleResponses"/> is true, or <c>APIGatewayCustomAuthorizerV2IamResponse</c>
     /// when <see cref="EnableSimpleResponses"/> is false.
     /// </remarks>
     /// <example>
@@ -45,8 +45,8 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// Defaults to true for simpler implementation.
         /// </summary>
         /// <remarks>
-        /// When true, the authorizer should return Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse.
-        /// When false, the authorizer should return Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2IamResponse.
+        /// When true, the authorizer should return <c>APIGatewayCustomAuthorizerV2SimpleResponse</c>.
+        /// When false, the authorizer should return <c>APIGatewayCustomAuthorizerV2IamResponse</c>.
         /// </remarks>
         public bool EnableSimpleResponses { get; set; } = true;
 

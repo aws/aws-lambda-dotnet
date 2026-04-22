@@ -11,8 +11,6 @@ on:
   # Allows to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
 
-
-
 jobs:
   auto-update:
     runs-on: ubuntu-latest
@@ -27,8 +25,7 @@ jobs:
       NET_11_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net11/arm64/Dockerfile"
 
     steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE
-      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # v4.2.2
         with:
           ref: 'dev'
 
@@ -149,34 +146,49 @@ jobs:
         id: commit-push
         shell: pwsh
         run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+
+          $remoteBranch = "chore/auto-update-Dockerfiles-daily"
+
+          # Try to fetch the remote branch (it may not exist yet)
+          git fetch origin $remoteBranch 2>$null
+          $remoteExists = ($LASTEXITCODE -eq 0)
+
           # Check if there are any changes to commit
           if (git status --porcelain) {
-            git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
-            git config --global user.name "aws-sdk-dotnet-automation"
-            
+
             # Generate timestamp for unique local branch name
             $timestamp = Get-Date -Format "yyyyMMddHHmmss"
             $localBranch = "chore/auto-update-Dockerfiles-daily-$timestamp"
-            $remoteBranch = "chore/auto-update-Dockerfiles-daily"
-            
+
             # Always create a new unique local branch
             git checkout -b $localBranch
-            
+
             git add "**/*Dockerfile"
             git commit -m "chore: Daily ASP.NET Core version update in Dockerfiles"
-            
-            # Always delete the remote branch before pushing to avoid stale branch errors
+
+            # If remote branch exists and there is no diff vs remote branch, skip pushing and PR creation
+            if ($remoteExists) {
+              git diff --quiet "origin/$remoteBranch...HEAD"
+              if ($LASTEXITCODE -eq 0) {
+                echo "No diff vs origin/$remoteBranch. Skipping push/PR creation."
+                Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=false"
+                exit 0
+              }
+            }
+
+            # Only now delete + push (because we know it's different)
             git push origin --delete $remoteBranch 2>$null
-            
-            # Push local branch to remote branch (force push to consistent remote branch name)
             git push --force origin "${localBranch}:${remoteBranch}"
-            
+
             # Write the remote branch name to GITHUB_OUTPUT for use in the PR step
             Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$remoteBranch"
             Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=true"
             echo "Changes committed to local branch $localBranch and pushed to remote branch $remoteBranch"
           } else {
             echo "No changes detected in Dockerfiles, skipping PR creation"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=false"
           }
 
       # Create a Pull Request

@@ -1,0 +1,93 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "TestServerlessAppSNSEventExamplesValidSNSEventsProcessMessagesGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "MyTopic",
+          "testTopicEvent"
+        ],
+        "SyncedEventProperties": {
+          "MyTopic": [
+            "Topic",
+            "FilterPolicy"
+          ],
+          "testTopicEvent": [
+            "Topic.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.SNSEventExamples.ValidSNSEvents_ProcessMessages_Generated::ProcessMessages"
+          ]
+        },
+        "Events": {
+          "MyTopic": {
+            "Type": "SNS",
+            "Properties": {
+              "Topic": "arn:aws:sns:us-east-2:444455556666:MyTopic",
+              "FilterPolicy": "{ \"store\": [\"example_corp\"] }"
+            }
+          },
+          "testTopicEvent": {
+            "Type": "SNS",
+            "Properties": {
+              "Topic": {
+                "Ref": "testTopic"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppSNSEventExamplesValidSNSEventsProcessMessagesAsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "MyTopic"
+        ],
+        "SyncedEventProperties": {
+          "MyTopic": [
+            "Topic"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.SNSEventExamples.ValidSNSEvents_ProcessMessagesAsync_Generated::ProcessMessagesAsync"
+          ]
+        },
+        "Events": {
+          "MyTopic": {
+            "Type": "SNS",
+            "Properties": {
+              "Topic": "arn:aws:sns:us-east-2:444455556666:MyTopic"
+            }
+          }
+        }
+      }
+    }
+  }
+}

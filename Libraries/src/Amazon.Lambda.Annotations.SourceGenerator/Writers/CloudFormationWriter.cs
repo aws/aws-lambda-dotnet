@@ -1,8 +1,15 @@
-﻿using Amazon.Lambda.Annotations.APIGateway;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.DynamoDB;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SNS;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System;
@@ -203,6 +210,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         {
             var currentSyncedEvents = new List<string>();
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
+            var currentAlbResources = new List<string>();
+            var hasFunctionUrl = false;
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -221,10 +230,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
+                    case AttributeModel<ALBApiAttribute> albAttributeModel:
+                        var albResourceNames = ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
+                        currentAlbResources.AddRange(albResourceNames);
+                        break;
+                    case AttributeModel<S3EventAttribute> s3AttributeModel:
+                        eventName = ProcessS3Attribute(lambdaFunction, s3AttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<FunctionUrlAttribute> functionUrlAttributeModel:
+                        ProcessFunctionUrlAttribute(lambdaFunction, functionUrlAttributeModel.Data);
+                        _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig", true);
+                        hasFunctionUrl = true;
+                        break;
+                    case AttributeModel<DynamoDBEventAttribute> dynamoDBAttributeModel:
+                        eventName = ProcessDynamoDBAttribute(lambdaFunction, dynamoDBAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<SNSEventAttribute> snsAttributeModel:
+                        eventName = ProcessSnsAttribute(lambdaFunction, snsAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                }
+            }
+
+            // Remove FunctionUrlConfig only if it was previously created by Annotations (tracked via metadata).
+            // This preserves any manually-added FunctionUrlConfig that was not created by the source generator.
+            if (!hasFunctionUrl)
+            {
+                var syncedFunctionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig";
+                if (_templateWriter.GetToken<bool>(syncedFunctionUrlConfigPath, false))
+                {
+                    _templateWriter.RemoveToken($"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig");
+                    _templateWriter.RemoveToken(syncedFunctionUrlConfigPath);
                 }
             }
 
             SynchronizeEventsAndProperties(currentSyncedEvents, currentSyncedEventProperties, lambdaFunction);
+            SynchronizeAlbResources(currentAlbResources, lambdaFunction);
         }
 
         /// <summary>
@@ -288,6 +331,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return eventName;
+        }
+
+        /// <summary>
+        /// Writes the <see cref="FunctionUrlAttribute"/> configuration to the serverless template.
+        /// Unlike HttpApi/RestApi, Function URLs are configured as a property on the function resource
+        /// rather than as an event source.
+        /// </summary>
+        private void ProcessFunctionUrlAttribute(ILambdaFunctionSerializable lambdaFunction, FunctionUrlAttribute functionUrlAttribute)
+        {
+            var functionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig";
+            _templateWriter.SetToken($"{functionUrlConfigPath}.AuthType", functionUrlAttribute.AuthType.ToString());
+
+            // Always remove the existing Cors block first to clear any stale properties
+            // from a previous generation pass, then re-emit only the currently configured values.
+            var corsPath = $"{functionUrlConfigPath}.Cors";
+            _templateWriter.RemoveToken(corsPath);
+
+            var hasCors = functionUrlAttribute.AllowOrigins != null
+                || functionUrlAttribute.AllowMethods != null
+                || functionUrlAttribute.AllowHeaders != null
+                || functionUrlAttribute.ExposeHeaders != null
+                || functionUrlAttribute.AllowCredentials
+                || functionUrlAttribute.MaxAge > 0;
+
+            if (hasCors)
+            {
+                if (functionUrlAttribute.AllowOrigins != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowOrigins", new List<string>(functionUrlAttribute.AllowOrigins), TokenType.List);
+
+                if (functionUrlAttribute.AllowMethods != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowMethods", functionUrlAttribute.AllowMethods.Select(m => m == LambdaHttpMethod.Any ? "*" : m.ToString().ToUpper()).ToList(), TokenType.List);
+
+                if (functionUrlAttribute.AllowHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowHeaders", new List<string>(functionUrlAttribute.AllowHeaders), TokenType.List);
+
+                if (functionUrlAttribute.ExposeHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.ExposeHeaders", new List<string>(functionUrlAttribute.ExposeHeaders), TokenType.List);
+
+                if (functionUrlAttribute.AllowCredentials)
+                    _templateWriter.SetToken($"{corsPath}.AllowCredentials", true);
+
+                if (functionUrlAttribute.MaxAge > 0)
+                    _templateWriter.SetToken($"{corsPath}.MaxAge", functionUrlAttribute.MaxAge);
+            }
         }
 
         /// <summary>
@@ -597,8 +684,384 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
-        /// Writes all properties associated with <see cref="LambdaFunctionRoleAttribute"/> to the serverless template.
+        /// Writes all properties associated with <see cref="DynamoDBEventAttribute"/> to the serverless template.
         /// </summary>
+        private string ProcessDynamoDBAttribute(ILambdaFunctionSerializable lambdaFunction, DynamoDBEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "DynamoDB");
+
+            // Stream
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Stream");
+            if (!att.Stream.StartsWith("@"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Stream", att.Stream);
+            }
+            else
+            {
+                var resource = att.Stream.Substring(1);
+                if (_templateWriter.Exists($"{PARAMETERS}.{resource}"))
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Stream.{REF}", resource);
+                else
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Stream.{GET_ATTRIBUTE}", new List<string> { resource, "StreamArn" }, TokenType.List);
+            }
+
+            // StartingPosition
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "StartingPosition", att.StartingPosition.ToString());
+
+            // BatchSize
+            if (att.IsBatchSizeSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "BatchSize", att.BatchSize);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            // MaximumBatchingWindowInSeconds
+            if (att.IsMaximumBatchingWindowInSecondsSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "MaximumBatchingWindowInSeconds", att.MaximumBatchingWindowInSeconds);
+            }
+
+            // FilterCriteria
+            if (att.IsFiltersSet)
+            {
+                const char SEPERATOR = ';';
+                var filters = att.Filters.Split(SEPERATOR).Select(x => x.Trim()).ToList();
+                var filterList = new List<Dictionary<string, string>>();
+                foreach (var filter in filters)
+                {
+                    filterList.Add(new Dictionary<string, string> { { "Pattern", filter } });
+                }
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterCriteria.Filters", filterList, TokenType.List);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="SNSEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessSnsAttribute(ILambdaFunctionSerializable lambdaFunction, SNSEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "SNS");
+
+            // Topic - SNS topics use Ref to get the ARN
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Topic");
+            if (!att.Topic.StartsWith("@"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Topic", att.Topic);
+            }
+            else
+            {
+                var topic = att.Topic.Substring(1);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Topic.{REF}", topic);
+            }
+
+            // FilterPolicy
+            if (att.IsFilterPolicySet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterPolicy", att.FilterPolicy);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="S3EventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessS3Attribute(ILambdaFunctionSerializable lambdaFunction, S3EventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "S3");
+
+            // Bucket - always a Ref since S3 events require the bucket resource in the same template (validated to start with "@")
+            var bucketName = att.Bucket.Substring(1);
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Bucket");
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Bucket.{REF}", bucketName);
+
+            // Events - list of S3 event types (always written since S3 SAM events require it; uses default "s3:ObjectCreated:*" if not explicitly set)
+            {
+                var events = att.Events.Split(';').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Events", events, TokenType.List);
+            }
+
+            // Filter - S3 key filter rules
+            if (att.IsFilterPrefixSet || att.IsFilterSuffixSet)
+            {
+                var rules = new List<Dictionary<string, string>>();
+
+                if (att.IsFilterPrefixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "prefix" }, { "Value", att.FilterPrefix } });
+                }
+
+                if (att.IsFilterSuffixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "suffix" }, { "Value", att.FilterSuffix } });
+                }
+
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Filter.S3Key.Rules", rules, TokenType.List);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Generates CloudFormation resources for an Application Load Balancer target.
+        /// Unlike API Gateway events which map to SAM event types, ALB integration requires
+        /// generating standalone CloudFormation resources: a TargetGroup, a ListenerRule, and a Lambda Permission.
+        /// </summary>
+        /// <returns>List of the three generated CloudFormation resource names for tracking/synchronization.</returns>
+        private List<string> ProcessAlbApiAttribute(ILambdaFunctionSerializable lambdaFunction, ALBApiAttribute att)
+        {
+            var baseName = att.IsResourceNameSet ? att.ResourceName : $"{lambdaFunction.ResourceName}ALB";
+            var permissionName = $"{baseName}Permission";
+            var targetGroupName = $"{baseName}TargetGroup";
+            var listenerRuleName = $"{baseName}ListenerRule";
+
+            // 1. Lambda Permission - allows ELB to invoke the Lambda function
+            var permPath = $"Resources.{permissionName}";
+            if (!_templateWriter.Exists(permPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{permPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{permPath}.Type", "AWS::Lambda::Permission");
+                _templateWriter.SetToken($"{permPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{permPath}.Properties.FunctionName.{GET_ATTRIBUTE}", new List<string> { lambdaFunction.ResourceName, "Arn" }, TokenType.List);
+                _templateWriter.SetToken($"{permPath}.Properties.Action", "lambda:InvokeFunction");
+                _templateWriter.SetToken($"{permPath}.Properties.Principal", "elasticloadbalancing.amazonaws.com");
+            }
+
+            // 2. Target Group - registers the Lambda function as a target
+            var tgPath = $"Resources.{targetGroupName}";
+            if (!_templateWriter.Exists(tgPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{tgPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{tgPath}.Type", "AWS::ElasticLoadBalancingV2::TargetGroup");
+                _templateWriter.SetToken($"{tgPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{tgPath}.DependsOn", permissionName);
+                _templateWriter.SetToken($"{tgPath}.Properties.TargetType", "lambda");
+
+                // MultiValueHeaders must be set via TargetGroupAttributes, not as a top-level property.
+                // The CFN property "MultiValueHeadersEnabled" does not exist on AWS::ElasticLoadBalancingV2::TargetGroup.
+                if (att.MultiValueHeaders)
+                {
+                    _templateWriter.SetToken($"{tgPath}.Properties.TargetGroupAttributes",
+                        new List<Dictionary<string, string>>
+                        {
+                            new Dictionary<string, string>
+                            {
+                                { "Key", "lambda.multi_value_headers.enabled" },
+                                { "Value", "true" }
+                            }
+                        }, TokenType.List);
+                }
+                else
+                {
+                    _templateWriter.RemoveToken($"{tgPath}.Properties.TargetGroupAttributes");
+                }
+
+                _templateWriter.SetToken($"{tgPath}.Properties.Targets", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Id", new Dictionary<string, List<string>> { { GET_ATTRIBUTE, new List<string> { lambdaFunction.ResourceName, "Arn" } } } }
+                    }
+                }, TokenType.List);
+            }
+
+            // 3. Listener Rule - routes traffic from the ALB listener to the target group
+            var rulePath = $"Resources.{listenerRuleName}";
+            if (!_templateWriter.Exists(rulePath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{rulePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{rulePath}.Type", "AWS::ElasticLoadBalancingV2::ListenerRule");
+                _templateWriter.SetToken($"{rulePath}.Metadata.Tool", CREATION_TOOL);
+
+                // ListenerArn - handle @reference vs literal ARN
+                _templateWriter.RemoveToken($"{rulePath}.Properties.ListenerArn");
+                if (!string.IsNullOrEmpty(att.ListenerArn) && att.ListenerArn.StartsWith("@"))
+                {
+                    var refName = att.ListenerArn.Substring(1);
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn.{REF}", refName);
+
+                    // Warn if the referenced resource/parameter doesn't exist in the template
+                    if (!_templateWriter.Exists($"Resources.{refName}") && !_templateWriter.Exists($"{PARAMETERS}.{refName}"))
+                    {
+                        _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.AlbListenerReferenceNotFound, Location.None, refName));
+                    }
+                }
+                else
+                {
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn", att.ListenerArn);
+                }
+
+                // Priority
+                _templateWriter.SetToken($"{rulePath}.Properties.Priority", att.Priority);
+
+                // Conditions
+                var conditions = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Field", "path-pattern" },
+                        { "PathPatternConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.PathPattern } }
+                            }
+                        }
+                    }
+                };
+                if (!string.IsNullOrEmpty(att.HostHeader))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "host-header" },
+                        { "HostHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HostHeader } }
+                            }
+                        }
+                    });
+                }
+                if (!string.IsNullOrEmpty(att.HttpMethod))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-request-method" },
+                        { "HttpRequestMethodConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HttpMethod.ToUpper() } }
+                            }
+                        }
+                    });
+                }
+                if (!string.IsNullOrEmpty(att.HttpHeaderConditionName) && att.HttpHeaderConditionValues != null && att.HttpHeaderConditionValues.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-header" },
+                        { "HttpHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "HttpHeaderName", att.HttpHeaderConditionName },
+                                { "Values", att.HttpHeaderConditionValues.ToList() }
+                            }
+                        }
+                    });
+                }
+                if (att.QueryStringConditions != null && att.QueryStringConditions.Length > 0)
+                {
+                    var keyValuePairs = new List<Dictionary<string, string>>();
+                    foreach (var entry in att.QueryStringConditions)
+                    {
+                        var separatorIndex = entry.IndexOf('=');
+                        if (separatorIndex >= 0)
+                        {
+                            var key = entry.Substring(0, separatorIndex);
+                            var value = entry.Substring(separatorIndex + 1);
+                            var kvp = new Dictionary<string, string>();
+                            if (!string.IsNullOrEmpty(key))
+                            {
+                                kvp["Key"] = key;
+                            }
+                            kvp["Value"] = value;
+                            keyValuePairs.Add(kvp);
+                        }
+                    }
+                    if (keyValuePairs.Any())
+                    {
+                        conditions.Add(new Dictionary<string, object>
+                        {
+                            { "Field", "query-string" },
+                            { "QueryStringConfig", new Dictionary<string, object>
+                                {
+                                    { "Values", keyValuePairs }
+                                }
+                            }
+                        });
+                    }
+                }
+                if (att.SourceIpConditions != null && att.SourceIpConditions.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "source-ip" },
+                        { "SourceIpConfig", new Dictionary<string, object>
+                            {
+                                { "Values", att.SourceIpConditions.ToList() }
+                            }
+                        }
+                    });
+                }
+                _templateWriter.SetToken($"{rulePath}.Properties.Conditions", conditions, TokenType.List);
+
+                // Actions - forward to target group
+                _templateWriter.SetToken($"{rulePath}.Properties.Actions", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Type", "forward" },
+                        { "TargetGroupArn", new Dictionary<string, string> { { REF, targetGroupName } } }
+                    }
+                }, TokenType.List);
+            }
+
+            return new List<string> { permissionName, targetGroupName, listenerRuleName };
+        }
+
+        /// <summary>
+        /// Synchronizes ALB resources for a given Lambda function. ALB resources (Permission, TargetGroup, ListenerRule)
+        /// are standalone top-level CloudFormation resources, so they need separate tracking from SAM events.
+        /// Previously generated ALB resources that are no longer present in the current compilation are removed.
+        /// </summary>
+        private void SynchronizeAlbResources(List<string> currentAlbResources, ILambdaFunctionSerializable lambdaFunction)
+        {
+            var syncedAlbResourcesPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedAlbResources";
+
+            // Get previously synced ALB resources
+            var previousAlbResources = _templateWriter.GetToken<List<string>>(syncedAlbResourcesPath, new List<string>());
+
+            // Remove orphaned ALB resources
+            var orphanedAlbResources = previousAlbResources.Except(currentAlbResources).ToList();
+            foreach (var resourceName in orphanedAlbResources)
+            {
+                var resourcePath = $"Resources.{resourceName}";
+                // Only remove if it was created by this tool
+                if (_templateWriter.Exists(resourcePath) &&
+                    string.Equals(_templateWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    _templateWriter.RemoveToken(resourcePath);
+                }
+            }
+
+            // Update synced ALB resources in the template metadata
+            _templateWriter.RemoveToken(syncedAlbResourcesPath);
+            if (currentAlbResources.Any())
+                _templateWriter.SetToken(syncedAlbResourcesPath, currentAlbResources, TokenType.List);
+        }
 
         /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.
