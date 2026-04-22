@@ -1211,7 +1211,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedFunctionContent),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Core", "Amazon.Lambda.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Core", "Amazon.Lambda.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
+                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
                     }
                 }
             }.RunAsync();
@@ -1388,13 +1394,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
                     }
@@ -1503,13 +1509,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs", validDynamoDBEventsProcessMessagesAsyncGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();
@@ -1604,13 +1610,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSNSEvents_ProcessMessages_Generated.g.cs", validSNSEventsProcessMessagesGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidSNSEvents_ProcessMessagesAsync_Generated.g.cs", validSNSEventsProcessMessagesAsyncGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidSNSEvents_ProcessMessages_Generated.g.cs", validSNSEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();
@@ -2230,6 +2236,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 540, 135, 540, 142).WithArguments(runtimeApiContext, "Default"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 13, 34, 13, 71).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyBeforeSnapshotCallbacksToRegistry"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 14, 34, 14, 69).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyAfterRestoreCallbacksToRegistry"),
+                DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}LambdaBootstrap.cs", 228, 17, 228, 60).WithArguments("Amazon.Lambda.RuntimeSupport.ResponseStreamLambdaCoreInitializerIsolated"),
             };
         }
     }
