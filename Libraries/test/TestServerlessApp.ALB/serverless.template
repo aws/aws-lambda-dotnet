@@ -167,28 +167,6 @@
         ]
       }
     },
-    "ALBHello": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedAlbResources": [
-          "ALBHelloALBPermission",
-          "ALBHelloALBTargetGroup",
-          "ALBHelloALBListenerRule"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 15,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Hello_Generated::Hello"
-      }
-    },
     "ALBHelloALBPermission": {
       "Type": "AWS::Lambda::Permission",
       "Metadata": {
@@ -253,28 +231,6 @@
         "ListenerArn": {
           "Ref": "ALBTestListener"
         }
-      }
-    },
-    "ALBHealth": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedAlbResources": [
-          "ALBHealthALBPermission",
-          "ALBHealthALBTargetGroup",
-          "ALBHealthALBListenerRule"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 128,
-        "Timeout": 5,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Health_Generated::Health"
       }
     },
     "ALBHealthALBPermission": {
@@ -343,28 +299,6 @@
         }
       }
     },
-    "ALBGreeting": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedAlbResources": [
-          "ALBGreetingALBPermission",
-          "ALBGreetingALBTargetGroup",
-          "ALBGreetingALBListenerRule"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 15,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Greeting_Generated::Greeting"
-      }
-    },
     "ALBGreetingALBPermission": {
       "Type": "AWS::Lambda::Permission",
       "Metadata": {
@@ -429,28 +363,6 @@
         "ListenerArn": {
           "Ref": "ALBTestListener"
         }
-      }
-    },
-    "ALBCreateItem": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedAlbResources": [
-          "ALBCreateItemALBPermission",
-          "ALBCreateItemALBTargetGroup",
-          "ALBCreateItemALBListenerRule"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 15,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_CreateItem_Generated::CreateItem"
       }
     },
     "ALBCreateItemALBPermission": {
@@ -525,6 +437,94 @@
         "ListenerArn": {
           "Ref": "ALBTestListener"
         }
+      }
+    },
+    "ALBHello": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBHelloALBPermission",
+          "ALBHelloALBTargetGroup",
+          "ALBHelloALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Hello_Generated::Hello"
+      }
+    },
+    "ALBHealth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBHealthALBPermission",
+          "ALBHealthALBTargetGroup",
+          "ALBHealthALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 128,
+        "Timeout": 5,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Health_Generated::Health"
+      }
+    },
+    "ALBGreeting": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBGreetingALBPermission",
+          "ALBGreetingALBTargetGroup",
+          "ALBGreetingALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Greeting_Generated::Greeting"
+      }
+    },
+    "ALBCreateItem": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBCreateItemALBPermission",
+          "ALBCreateItemALBTargetGroup",
+          "ALBCreateItemALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_CreateItem_Generated::CreateItem"
       }
     }
   },

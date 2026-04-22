@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.9.0.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.14.0.0).",
   "Resources": {
     "AnnotationsHttpApi": {
       "Type": "AWS::Serverless::HttpApi",
@@ -11,7 +11,7 @@
       "Properties": {
         "Auth": {
           "Authorizers": {
-            "HttpApiAuthorize": {
+            "CustomAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizer",
@@ -28,7 +28,7 @@
               "EnableFunctionDefaultPermissions": true,
               "AuthorizerResultTtlInSeconds": 0
             },
-            "HttpApiAuthorizeV1": {
+            "CustomAuthorizerV1": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizerV1",
@@ -45,7 +45,7 @@
               "EnableFunctionDefaultPermissions": true,
               "AuthorizerResultTtlInSeconds": 0
             },
-            "SimpleHttpApiAuthorize": {
+            "SimpleAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "SimpleAuthorizer",
@@ -72,7 +72,7 @@
         "StageName": "Prod",
         "Auth": {
           "Authorizers": {
-            "RestApiAuthorize": {
+            "RestApiAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "RestApiAuthorizer",
@@ -85,7 +85,7 @@
               "FunctionPayloadType": "TOKEN",
               "AuthorizerResultTtlInSeconds": 0
             },
-            "SimpleRestApiAuthorize": {
+            "SimpleRestAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "SimpleRestAuthorizer",
@@ -223,7 +223,7 @@
               "Path": "/api/protected",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "CustomAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -266,7 +266,7 @@
               "Path": "/api/user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "CustomAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -348,7 +348,7 @@
               "Path": "/api/rest-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "RestApiAuthorize"
+                "Authorizer": "RestApiAuthorizer"
               },
               "RestApiId": {
                 "Ref": "AnnotationsRestApi"
@@ -393,7 +393,7 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0",
               "Auth": {
-                "Authorizer": "HttpApiAuthorizeV1"
+                "Authorizer": "CustomAuthorizerV1"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -436,7 +436,7 @@
               "Path": "/api/ihttpresult-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "CustomAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -479,7 +479,7 @@
               "Path": "/api/simple-httpapi-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "SimpleHttpApiAuthorize"
+                "Authorizer": "SimpleAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -522,7 +522,7 @@
               "Path": "/api/simple-restapi-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "SimpleRestApiAuthorize"
+                "Authorizer": "SimpleRestAuthorizer"
               },
               "RestApiId": {
                 "Ref": "AnnotationsRestApi"
@@ -565,7 +565,7 @@
               "Path": "/api/nonstring-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "CustomAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"

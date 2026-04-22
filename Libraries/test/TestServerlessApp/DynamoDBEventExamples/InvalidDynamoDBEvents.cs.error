@@ -1,0 +1,68 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.DynamoDB;
+using Amazon.Lambda.DynamoDBEvents;
+using System;
+
+namespace TestServerlessApp.DynamoDBEventExamples
+{
+    // This file represents invalid usage of the DynamoDBEventAttribute.
+    // This file is sent as input to the source generator unit tests and we assert that compilation errors are thrown with the appropriate diagnostic message.
+
+    public class InvalidDynamoDBEvents
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("@testTable", BatchSize = 10001, MaximumBatchingWindowInSeconds = 301)]
+        public void ProcessMessageWithInvalidDynamoDBEventAttributes(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("@testTable")]
+        public void ProcessMessageWithInvalidParameters(DynamoDBEvent evnt, bool invalidParameter1, int invalidParameter2)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("@testTable")]
+        public bool ProcessMessageWithInvalidReturnType(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+            return true;
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [RestApi(LambdaHttpMethod.Get, "/")]
+        [DynamoDBEvent("@testTable")]
+        public void ProcessMessageWithMultipleEventTypes(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("not-a-valid-arn")]
+        public void ProcessMessageWithInvalidStreamArn(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("@testTable", ResourceName = "dynamo-event-source")]
+        public void ProcessMessageWithInvalidResourceName(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [DynamoDBEvent("@testTable", ResourceName = "")]
+        public void ProcessMessageWithEmptyResourceName(DynamoDBEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+    }
+}
