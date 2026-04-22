@@ -51,6 +51,9 @@ namespace Amazon.Lambda.Annotations.Schedule
 
         /// <summary>
         /// A JSON string to pass as input to the Lambda function.
+        /// This can also be a file path (relative to the project root or absolute) pointing to a JSON file.
+        /// If the value resolves to an existing file, its contents will be read and used as the input.
+        /// Examples: "{\"key\": \"value\"}", "./schedule-input.json", "C:\config\input.json"
         /// </summary>
         public string Input { get; set; } = null;
         internal bool IsInputSet => Input != null;
