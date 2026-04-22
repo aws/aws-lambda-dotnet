@@ -50,16 +50,16 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// <param name="append">If true it will append the values to the existing value in the Headers collection.</param>
         public void SetHeaderValues(string headerName, IEnumerable<string> values, bool append)
         {
-            if (this.Headers == null)
-                this.Headers = new Dictionary<string, string>();
+            if (Headers == null)
+                Headers = new Dictionary<string, string>();
 
-            if(this.Headers.ContainsKey(headerName) && append)
+            if(Headers.ContainsKey(headerName) && append)
             {
-                this.Headers[headerName] = this.Headers[headerName] + "," + string.Join(",", values);
+                Headers[headerName] = Headers[headerName] + "," + string.Join(",", values);
             }
             else
             {
-                this.Headers[headerName] = string.Join(",", values);
+                Headers[headerName] = string.Join(",", values);
             }
         }
 

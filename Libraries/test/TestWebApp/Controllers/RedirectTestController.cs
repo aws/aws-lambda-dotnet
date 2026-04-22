@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,7 +14,7 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public ActionResult Get()
         {
-            return this.Redirect("redirecttarget");
+            return Redirect("redirecttarget");
         }
     }
 

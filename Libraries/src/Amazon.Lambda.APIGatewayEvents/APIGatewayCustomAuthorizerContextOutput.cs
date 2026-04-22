@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System;
     using System.Collections.Generic;
@@ -19,7 +19,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("stringKey", out value))
+                if (TryGetValue("stringKey", out value))
                     return value.ToString();
                 return null;
             }
@@ -38,7 +38,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("numKey", out value))
+                if (TryGetValue("numKey", out value))
                 {
                     int i;
                     if (int.TryParse(value?.ToString(), out i))
@@ -64,7 +64,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("boolKey", out value))
+                if (TryGetValue("boolKey", out value))
                 {
                     bool b;
                     if (bool.TryParse(value?.ToString(), out b))

@@ -26,7 +26,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             get
             {
                 object value;
-                if (this.TryGetValue("principalId", out value))
+                if (TryGetValue("principalId", out value))
                     return value.ToString();
                 return null;
             }
@@ -45,7 +45,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             get
             {
                 object value;
-                if (this.TryGetValue("stringKey", out value))
+                if (TryGetValue("stringKey", out value))
                     return value.ToString();
                 return null;
             }
@@ -64,7 +64,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             get
             {
                 object value;
-                if (this.TryGetValue("numKey", out value))
+                if (TryGetValue("numKey", out value))
                 {
                     int i;
                     if (int.TryParse(value?.ToString(), out i))
@@ -90,7 +90,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             get
             {
                 object value;
-                if (this.TryGetValue("boolKey", out value))
+                if (TryGetValue("boolKey", out value))
                 {
                     bool b;
                     if(bool.TryParse(value?.ToString(), out b))
@@ -120,7 +120,7 @@ namespace Amazon.Lambda.APIGatewayEvents
                     _claims = new Dictionary<string, string>();
 
                     object value;
-                    if(this.TryGetValue("claims", out value))
+                    if(TryGetValue("claims", out value))
                     {
 #if NETSTANDARD2_0
                         JObject jsonClaims = value as JObject;
@@ -151,7 +151,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             }
             set
             {
-                this._claims = value;
+                _claims = value;
             }
         }
     }
