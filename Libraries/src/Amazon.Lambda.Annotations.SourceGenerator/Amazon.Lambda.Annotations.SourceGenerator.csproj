@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     
     <Authors>Amazon Web Services</Authors>
     <PackageTags>AWS Amazon Lambda</PackageTags>
@@ -33,8 +33,6 @@
   <ItemGroup>
     <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
     <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
     <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
     

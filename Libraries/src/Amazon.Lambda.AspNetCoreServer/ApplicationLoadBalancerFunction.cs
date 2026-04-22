@@ -76,7 +76,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             // marshalling the response to know whether to fill in the the Headers or MultiValueHeaders collection.
             // Since a Lambda function compute environment is only one processing one event at a time it is safe to store
             // this as a member variable.
-            this._multiHeaderValuesEnabled = lambdaRequest.MultiValueHeaders != null;
+            _multiHeaderValuesEnabled = lambdaRequest.MultiValueHeaders != null;
 
             {
                 var requestFeatures = (IHttpRequestFeature)features;
@@ -159,14 +159,14 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if (responseFeatures.Headers != null)
             {
-                if (this._multiHeaderValuesEnabled)
+                if (_multiHeaderValuesEnabled)
                     response.MultiValueHeaders = new Dictionary<string, IList<string>>();
                 else
                     response.Headers = new Dictionary<string, string>();
 
                 foreach (var kvp in responseFeatures.Headers)
                 {
-                    if (this._multiHeaderValuesEnabled)
+                    if (_multiHeaderValuesEnabled)
                     {
                         response.MultiValueHeaders[kvp.Key] = kvp.Value.ToList();
                     }
@@ -213,7 +213,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var errorName = ex.GetType().Name;
 
-            if (this._multiHeaderValuesEnabled)
+            if (_multiHeaderValuesEnabled)
             {
                 lambdaResponse.MultiValueHeaders.Add(new KeyValuePair<string, IList<string>>("ErrorType", new List<string> { errorName }));
             }
@@ -225,7 +225,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)
         {
-            if (this._multiHeaderValuesEnabled)
+            if (_multiHeaderValuesEnabled)
             {
                 var kvp = request.MultiValueHeaders.FirstOrDefault(x => string.Equals(x.Key, headerName, StringComparison.OrdinalIgnoreCase));
                 if (!kvp.Equals(default(KeyValuePair<string, IList<string>>)))

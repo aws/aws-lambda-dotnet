@@ -1,43 +1,43 @@
 #pragma warning disable 618
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.CloudWatchEvents.BatchEvents;
+using Amazon.Lambda.CloudWatchEvents.ECSEvents;
+using Amazon.Lambda.CloudWatchEvents.S3Events;
+using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
+using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
+using Amazon.Lambda.CloudWatchLogsEvents;
+using Amazon.Lambda.CognitoEvents;
+using Amazon.Lambda.ConfigEvents;
+using Amazon.Lambda.ConnectEvents;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.DynamoDBEvents;
+using Amazon.Lambda.KafkaEvents;
+using Amazon.Lambda.KinesisAnalyticsEvents;
+using Amazon.Lambda.KinesisEvents;
+using Amazon.Lambda.KinesisFirehoseEvents;
+using Amazon.Lambda.LexEvents;
+using Amazon.Lambda.LexV2Events;
+using Amazon.Lambda.MQEvents;
+using Amazon.Lambda.S3Events;
+using Amazon.Lambda.Serialization.Json;
+using Amazon.Lambda.SimpleEmailEvents;
+using Amazon.Lambda.SNSEvents;
+using Amazon.Lambda.SQSEvents;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Xunit;
+using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
+
 namespace Amazon.Lambda.Tests
 {
-    using Amazon.Lambda.APIGatewayEvents;
-    using Amazon.Lambda.ApplicationLoadBalancerEvents;
-    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
-    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
-    using Amazon.Lambda.CloudWatchEvents.S3Events;
-    using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
-    using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
-    using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
-    using Amazon.Lambda.CloudWatchLogsEvents;
-    using Amazon.Lambda.CognitoEvents;
-    using Amazon.Lambda.ConfigEvents;
-    using Amazon.Lambda.ConnectEvents;
-    using Amazon.Lambda.Core;
-    using Amazon.Lambda.DynamoDBEvents;
-    using Amazon.Lambda.KafkaEvents;
-    using Amazon.Lambda.KinesisAnalyticsEvents;
-    using Amazon.Lambda.KinesisEvents;
-    using Amazon.Lambda.KinesisFirehoseEvents;
-    using Amazon.Lambda.LexEvents;
-    using Amazon.Lambda.LexV2Events;
-    using Amazon.Lambda.MQEvents;
-    using Amazon.Lambda.S3Events;
-    using Amazon.Lambda.Serialization.Json;
-    using Amazon.Lambda.SimpleEmailEvents;
-    using Amazon.Lambda.SNSEvents;
-    using Amazon.Lambda.SQSEvents;
-    using Amazon.Runtime.Internal.Transform;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json.Serialization;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using Xunit;
-    using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
 
     public class EventTest
     {
@@ -52,7 +52,7 @@ namespace Amazon.Lambda.Tests
         public string SerializeJson<T>(ILambdaSerializer serializer, T response)
         {
             string serializedJson;
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 serializer.Serialize(response, stream);
 
@@ -64,10 +64,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void HttpApiV2Format(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -95,7 +93,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("value1", request.StageVariables["stageVariable1"]);
                 Assert.Equal("value2", request.StageVariables["stageVariable2"]);
 
-                Assert.Equal(1, request.PathParameters.Count);
+                Assert.Single(request.PathParameters);
                 Assert.Equal("value1", request.PathParameters["parameter1"]);
 
                 var rc = request.RequestContext;
@@ -141,10 +139,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void HttpApiV2FormatLambdaAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -157,10 +153,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void HttpApiV2FormatIAMAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -201,10 +195,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void S3ObjectLambdaEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -245,10 +237,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void S3PutTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -256,25 +246,25 @@ namespace Amazon.Lambda.Tests
             {
                 var s3Event = serializer.Deserialize<S3Event>(fileStream);
 
-                Assert.Equal(s3Event.Records.Count, 2);
+                Assert.Equal(2, s3Event.Records.Count);
                 var record = s3Event.Records[0];
-                Assert.Equal(record.EventVersion, "2.0");
-                Assert.Equal(record.EventTime.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
-                Assert.Equal(record.RequestParameters.SourceIPAddress, "127.0.0.1");
-                Assert.Equal(record.S3.ConfigurationId, "testConfigRule");
-                Assert.Equal(record.S3.Object.ETag, "0123456789abcdef0123456789abcdef");
-                Assert.Equal(record.S3.Object.Key, "HappyFace.jpg");
-                Assert.Equal(record.S3.Object.Size, 1024);
-                Assert.Equal(record.S3.Bucket.Arn, "arn:aws:s3:::mybucket");
-                Assert.Equal(record.S3.Bucket.Name, "sourcebucket");
-                Assert.Equal(record.S3.Bucket.OwnerIdentity.PrincipalId, "EXAMPLE");
-                Assert.Equal(record.S3.S3SchemaVersion, "1.0");
-                Assert.Equal(record.ResponseElements.XAmzId2, "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH");
-                Assert.Equal(record.ResponseElements.XAmzRequestId, "EXAMPLE123456789");
-                Assert.Equal(record.AwsRegion, "us-east-1");
-                Assert.Equal(record.EventName, "ObjectCreated:Put");
-                Assert.Equal(record.UserIdentity.PrincipalId, "EXAMPLE");
-                Assert.Equal(record.EventSource, "aws:s3");
+                Assert.Equal("2.0", record.EventVersion);
+                Assert.Equal(DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime(), record.EventTime.ToUniversalTime());
+                Assert.Equal("127.0.0.1", record.RequestParameters.SourceIPAddress);
+                Assert.Equal("testConfigRule", record.S3.ConfigurationId);
+                Assert.Equal("0123456789abcdef0123456789abcdef", record.S3.Object.ETag);
+                Assert.Equal("HappyFace.jpg", record.S3.Object.Key);
+                Assert.Equal(1024, record.S3.Object.Size);
+                Assert.Equal("arn:aws:s3:::mybucket", record.S3.Bucket.Arn);
+                Assert.Equal("sourcebucket", record.S3.Bucket.Name);
+                Assert.Equal("EXAMPLE", record.S3.Bucket.OwnerIdentity.PrincipalId);
+                Assert.Equal("1.0", record.S3.S3SchemaVersion);
+                Assert.Equal("EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH", record.ResponseElements.XAmzId2);
+                Assert.Equal("EXAMPLE123456789", record.ResponseElements.XAmzRequestId);
+                Assert.Equal("us-east-1", record.AwsRegion);
+                Assert.Equal("ObjectCreated:Put", record.EventName);
+                Assert.Equal("EXAMPLE", record.UserIdentity.PrincipalId);
+                Assert.Equal("aws:s3", record.EventSource);
 
                 // In the events file the key is New+File.jpg simulating the key being url encoded.
                 Assert.Equal("New File.jpg", s3Event.Records[1].S3.Object.KeyDecoded);
@@ -294,31 +284,29 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("kinesis-event.json"))
             {
                 var kinesisEvent = serializer.Deserialize<KinesisEvent>(fileStream);
-                Assert.Equal(kinesisEvent.Records.Count, 2);
+                Assert.Equal(2, kinesisEvent.Records.Count);
                 var record = kinesisEvent.Records[0];
-                Assert.Equal(record.EventId, "shardId-000000000000:49568167373333333333333333333333333333333333333333333333");
-                Assert.Equal(record.EventVersion, "1.0");
-                Assert.Equal(record.Kinesis.PartitionKey, "s1");
+                Assert.Equal("shardId-000000000000:49568167373333333333333333333333333333333333333333333333", record.EventId);
+                Assert.Equal("1.0", record.EventVersion);
+                Assert.Equal("s1", record.Kinesis.PartitionKey);
                 var dataBytes = record.Kinesis.Data.ToArray();
-                Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8gV29ybGQ=");
-                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello World");
-                Assert.Equal(record.Kinesis.KinesisSchemaVersion, "1.0");
-                Assert.Equal(record.Kinesis.SequenceNumber, "49568167373333333333333333333333333333333333333333333333");
-                Assert.Equal(record.InvokeIdentityArn, "arn:aws:iam::123456789012:role/LambdaRole");
-                Assert.Equal(record.EventName, "aws:kinesis:record");
-                Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream");
-                Assert.Equal(record.EventSource, "aws:kinesis");
-                Assert.Equal(record.AwsRegion, "us-east-1");
+                Assert.Equal("SGVsbG8gV29ybGQ=", Convert.ToBase64String(dataBytes));
+                Assert.Equal("Hello World", Encoding.UTF8.GetString(dataBytes));
+                Assert.Equal("1.0", record.Kinesis.KinesisSchemaVersion);
+                Assert.Equal("49568167373333333333333333333333333333333333333333333333", record.Kinesis.SequenceNumber);
+                Assert.Equal("arn:aws:iam::123456789012:role/LambdaRole", record.InvokeIdentityArn);
+                Assert.Equal("aws:kinesis:record", record.EventName);
+                Assert.Equal("arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream", record.EventSourceARN);
+                Assert.Equal("aws:kinesis", record.EventSource);
+                Assert.Equal("us-east-1", record.AwsRegion);
 #if NET8_0_OR_GREATER
                 // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
                 // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
@@ -345,10 +333,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisBatchItemFailuresTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -356,10 +342,10 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisStreamsEventResponse = serializer.Deserialize<KinesisEvents.StreamsEventResponse>(fileStream);
 
-                Assert.Equal(1, kinesisStreamsEventResponse.BatchItemFailures.Count);
+                Assert.Single(kinesisStreamsEventResponse.BatchItemFailures);
                 Assert.Equal("1405400000000002063282832", kinesisStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize(kinesisStreamsEventResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -372,10 +358,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisTimeWindowTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -383,35 +367,35 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisTimeWindowEvent = serializer.Deserialize<KinesisTimeWindowEvent>(fileStream);
 
-                Assert.Equal(kinesisTimeWindowEvent.ShardId, "shardId-000000000006");
-                Assert.Equal(kinesisTimeWindowEvent.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream");
+                Assert.Equal("shardId-000000000006", kinesisTimeWindowEvent.ShardId);
+                Assert.Equal("arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream", kinesisTimeWindowEvent.EventSourceARN);
                 Assert.False(kinesisTimeWindowEvent.IsFinalInvokeForWindow);
                 Assert.False(kinesisTimeWindowEvent.IsWindowTerminatedEarly);
-                Assert.Equal(kinesisTimeWindowEvent.State.Count, 2);
+                Assert.Equal(2, kinesisTimeWindowEvent.State.Count);
                 Assert.True(kinesisTimeWindowEvent.State.ContainsKey("1"));
-                Assert.Equal(kinesisTimeWindowEvent.State["1"], "282");
+                Assert.Equal("282", kinesisTimeWindowEvent.State["1"]);
                 Assert.True(kinesisTimeWindowEvent.State.ContainsKey("2"));
-                Assert.Equal(kinesisTimeWindowEvent.State["2"], "715");
+                Assert.Equal("715", kinesisTimeWindowEvent.State["2"]);
                 Assert.NotNull(kinesisTimeWindowEvent.Window);
                 Assert.Equal(637430942400000000, kinesisTimeWindowEvent.Window.Start.Ticks);
                 Assert.Equal(637430943600000000, kinesisTimeWindowEvent.Window.End.Ticks);
 
-                Assert.Equal(kinesisTimeWindowEvent.Records.Count, 1);
+                Assert.Single(kinesisTimeWindowEvent.Records);
                 var record = kinesisTimeWindowEvent.Records[0];
-                Assert.Equal(record.EventId, "shardId-000000000006:49590338271490256608559692538361571095921575989136588898");
-                Assert.Equal(record.EventName, "aws:kinesis:record");
-                Assert.Equal(record.EventVersion, "1.0");
-                Assert.Equal(record.EventSource, "aws:kinesis");
-                Assert.Equal(record.InvokeIdentityArn, "arn:aws:iam::123456789012:role/lambda-kinesis-role");
-                Assert.Equal(record.AwsRegion, "us-east-1");
-                Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream");
+                Assert.Equal("shardId-000000000006:49590338271490256608559692538361571095921575989136588898", record.EventId);
+                Assert.Equal("aws:kinesis:record", record.EventName);
+                Assert.Equal("1.0", record.EventVersion);
+                Assert.Equal("aws:kinesis", record.EventSource);
+                Assert.Equal("arn:aws:iam::123456789012:role/lambda-kinesis-role", record.InvokeIdentityArn);
+                Assert.Equal("us-east-1", record.AwsRegion);
+                Assert.Equal("arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream", record.EventSourceARN);
 
-                Assert.Equal(record.Kinesis.KinesisSchemaVersion, "1.0");
-                Assert.Equal(record.Kinesis.PartitionKey, "1");
-                Assert.Equal(record.Kinesis.SequenceNumber, "49590338271490256608559692538361571095921575989136588898");
+                Assert.Equal("1.0", record.Kinesis.KinesisSchemaVersion);
+                Assert.Equal("1", record.Kinesis.PartitionKey);
+                Assert.Equal("49590338271490256608559692538361571095921575989136588898", record.Kinesis.SequenceNumber);
                 var dataBytes = record.Kinesis.Data.ToArray();
-                Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0Lg==");
-                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test.");
+                Assert.Equal("SGVsbG8sIHRoaXMgaXMgYSB0ZXN0Lg==", Convert.ToBase64String(dataBytes));
+                Assert.Equal("Hello, this is a test.", Encoding.UTF8.GetString(dataBytes));
                 Assert.Equal(637430942750000000, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
 
                 Handle(kinesisTimeWindowEvent);
@@ -432,10 +416,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisTimeWindowResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -443,38 +425,36 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisTimeWindowResponse = serializer.Deserialize<KinesisTimeWindowResponse>(fileStream);
 
-                Assert.Equal(kinesisTimeWindowResponse.State.Count, 2);
+                Assert.Equal(2, kinesisTimeWindowResponse.State.Count);
                 Assert.True(kinesisTimeWindowResponse.State.ContainsKey("1"));
-                Assert.Equal(kinesisTimeWindowResponse.State["1"], "282");
+                Assert.Equal("282", kinesisTimeWindowResponse.State["1"]);
                 Assert.True(kinesisTimeWindowResponse.State.ContainsKey("2"));
-                Assert.Equal(kinesisTimeWindowResponse.State["2"], "715");
-                Assert.Equal(kinesisTimeWindowResponse.BatchItemFailures.Count, 0);
+                Assert.Equal("715", kinesisTimeWindowResponse.State["2"]);
+                Assert.Empty(kinesisTimeWindowResponse.BatchItemFailures);
             }
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void DynamoDbUpdateTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             Stream json = LoadJsonTestFile("dynamodb-event.json");
             var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
-            Assert.Equal(dynamodbEvent.Records.Count, 2);
+            Assert.Equal(2, dynamodbEvent.Records.Count);
 
             var record = dynamodbEvent.Records[0];
-            Assert.Equal(record.EventID, "f07f8ca4b0b26cb9c4e5e77e69f274ee");
-            Assert.Equal(record.EventVersion, "1.1");
-            Assert.Equal(record.Dynamodb.Keys.Count, 2);
-            Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
-            Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Equal("f07f8ca4b0b26cb9c4e5e77e69f274ee", record.EventID);
+            Assert.Equal("1.1", record.EventVersion);
+            Assert.Equal(2, record.Dynamodb.Keys.Count);
+            Assert.Equal("binary", record.Dynamodb.Keys["key"].S);
+            Assert.Equal("data", record.Dynamodb.Keys["val"].S);
             Assert.Null(record.UserIdentity);
             Assert.Null(record.Dynamodb.OldImage);
-            Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
-            Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Equal("data", record.Dynamodb.NewImage["val"].S);
+            Assert.Equal("binary", record.Dynamodb.NewImage["key"].S);
             Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
             Assert.Null(record.Dynamodb.NewImage["key"].L);
             Assert.Null(record.Dynamodb.NewImage["key"].M);
@@ -482,26 +462,26 @@ namespace Amazon.Lambda.Tests
             Assert.Null(record.Dynamodb.NewImage["key"].NS);
             Assert.Null(record.Dynamodb.NewImage["key"].NULL);
             Assert.Null(record.Dynamodb.NewImage["key"].SS);
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
-            Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]), "QSoBAA==");
-            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-            Assert.Equal(record.Dynamodb.SequenceNumber, "1405400000000002063282832");
-            Assert.Equal(record.Dynamodb.SizeBytes, 54);
-            Assert.Equal(record.AwsRegion, "us-east-1");
-            Assert.Equal(record.EventName, "INSERT");
-            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000");
-            Assert.Equal(record.EventSource, "aws:dynamodb");
+            Assert.Equal("AAEqQQ==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B));
+            Assert.Equal(2, record.Dynamodb.NewImage["asdf2"].BS.Count);
+            Assert.Equal("AAEqQQ==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]));
+            Assert.Equal("QSoBAA==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]));
+            Assert.Equal("NEW_AND_OLD_IMAGES", record.Dynamodb.StreamViewType);
+            Assert.Equal("1405400000000002063282832", record.Dynamodb.SequenceNumber);
+            Assert.Equal(54, record.Dynamodb.SizeBytes);
+            Assert.Equal("us-east-1", record.AwsRegion);
+            Assert.Equal("INSERT", record.EventName);
+            Assert.Equal("arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000", record.EventSourceArn);
+            Assert.Equal("aws:dynamodb", record.EventSource);
             var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
-            Assert.Equal(recordDateTime.Ticks, 636162388200000000);
+            Assert.Equal(636162388200000000, recordDateTime.Ticks);
 
             var topLevelList = record.Dynamodb.NewImage["misc1"].L;
-            Assert.Equal(0, topLevelList.Count);
+            Assert.Empty(topLevelList);
 
             var nestedMap = record.Dynamodb.NewImage["misc2"].M;
             Assert.NotNull(nestedMap);
-            Assert.Equal(0, nestedMap["ItemsEmpty"].L.Count);
+            Assert.Empty(nestedMap["ItemsEmpty"].L);
             Assert.Equal(3, nestedMap["ItemsNonEmpty"].L.Count);
             Assert.False(nestedMap["ItemBoolean"].BOOL);
             Assert.True(nestedMap["ItemNull"].NULL);
@@ -527,27 +507,25 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void DynamoDbWithMillisecondsTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             Stream json = LoadJsonTestFile("dynamodb-with-ms-event.json");
             var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
-            Assert.Equal(dynamodbEvent.Records.Count, 2);
+            Assert.Equal(2, dynamodbEvent.Records.Count);
 
             var record = dynamodbEvent.Records[0];
-            Assert.Equal(record.EventID, "f07f8ca4b0b26cb9c4e5e77e69f274ee");
-            Assert.Equal(record.EventVersion, "1.1");
-            Assert.Equal(record.Dynamodb.Keys.Count, 2);
-            Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
-            Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Equal("f07f8ca4b0b26cb9c4e5e77e69f274ee", record.EventID);
+            Assert.Equal("1.1", record.EventVersion);
+            Assert.Equal(2, record.Dynamodb.Keys.Count);
+            Assert.Equal("binary", record.Dynamodb.Keys["key"].S);
+            Assert.Equal("data", record.Dynamodb.Keys["val"].S);
             Assert.Null(record.UserIdentity);
             Assert.Null(record.Dynamodb.OldImage);
-            Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
-            Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Equal("data", record.Dynamodb.NewImage["val"].S);
+            Assert.Equal("binary", record.Dynamodb.NewImage["key"].S);
             Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
             Assert.Null(record.Dynamodb.NewImage["key"].L);
             Assert.Null(record.Dynamodb.NewImage["key"].M);
@@ -555,26 +533,26 @@ namespace Amazon.Lambda.Tests
             Assert.Null(record.Dynamodb.NewImage["key"].NS);
             Assert.Null(record.Dynamodb.NewImage["key"].NULL);
             Assert.Null(record.Dynamodb.NewImage["key"].SS);
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
-            Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
-            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]), "QSoBAA==");
-            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-            Assert.Equal(record.Dynamodb.SequenceNumber, "1405400000000002063282832");
-            Assert.Equal(record.Dynamodb.SizeBytes, 54);
-            Assert.Equal(record.AwsRegion, "us-east-1");
-            Assert.Equal(record.EventName, "INSERT");
-            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000");
-            Assert.Equal(record.EventSource, "aws:dynamodb");
+            Assert.Equal("AAEqQQ==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B));
+            Assert.Equal(2, record.Dynamodb.NewImage["asdf2"].BS.Count);
+            Assert.Equal("AAEqQQ==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]));
+            Assert.Equal("QSoBAA==", MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]));
+            Assert.Equal("NEW_AND_OLD_IMAGES", record.Dynamodb.StreamViewType);
+            Assert.Equal("1405400000000002063282832", record.Dynamodb.SequenceNumber);
+            Assert.Equal(54, record.Dynamodb.SizeBytes);
+            Assert.Equal("us-east-1", record.AwsRegion);
+            Assert.Equal("INSERT", record.EventName);
+            Assert.Equal("arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000", record.EventSourceArn);
+            Assert.Equal("aws:dynamodb", record.EventSource);
             var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
-            Assert.Equal(recordDateTime.Ticks, 636162388200000000);
+            Assert.Equal(636162388200000000, recordDateTime.Ticks);
 
             var topLevelList = record.Dynamodb.NewImage["misc1"].L;
-            Assert.Equal(0, topLevelList.Count);
+            Assert.Empty(topLevelList);
 
             var nestedMap = record.Dynamodb.NewImage["misc2"].M;
             Assert.NotNull(nestedMap);
-            Assert.Equal(0, nestedMap["ItemsEmpty"].L.Count);
+            Assert.Empty(nestedMap["ItemsEmpty"].L);
             Assert.Equal(3, nestedMap["ItemsNonEmpty"].L.Count);
             Assert.False(nestedMap["ItemBoolean"].BOOL);
             Assert.True(nestedMap["ItemNull"].NULL);
@@ -600,10 +578,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void DynamoDbBatchItemFailuresTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -611,10 +587,10 @@ namespace Amazon.Lambda.Tests
             {
                 var dynamoDbStreamsEventResponse = serializer.Deserialize<DynamoDBEvents.StreamsEventResponse>(fileStream);
 
-                Assert.Equal(1, dynamoDbStreamsEventResponse.BatchItemFailures.Count);
+                Assert.Single(dynamoDbStreamsEventResponse.BatchItemFailures);
                 Assert.Equal("1405400000000002063282832", dynamoDbStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize(dynamoDbStreamsEventResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -638,10 +614,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void DynamoDBTimeWindowTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -649,80 +623,78 @@ namespace Amazon.Lambda.Tests
             {
                 var dynamoDBTimeWindowEvent = serializer.Deserialize<DynamoDBTimeWindowEvent>(fileStream);
 
-                Assert.Equal(dynamoDBTimeWindowEvent.ShardId, "shard123456789");
-                Assert.Equal(dynamoDBTimeWindowEvent.EventSourceArn, "stream-ARN");
+                Assert.Equal("shard123456789", dynamoDBTimeWindowEvent.ShardId);
+                Assert.Equal("stream-ARN", dynamoDBTimeWindowEvent.EventSourceArn);
                 Assert.False(dynamoDBTimeWindowEvent.IsFinalInvokeForWindow);
                 Assert.False(dynamoDBTimeWindowEvent.IsWindowTerminatedEarly);
-                Assert.Equal(dynamoDBTimeWindowEvent.State.Count, 1);
+                Assert.Single(dynamoDBTimeWindowEvent.State);
                 Assert.True(dynamoDBTimeWindowEvent.State.ContainsKey("1"));
-                Assert.Equal(dynamoDBTimeWindowEvent.State["1"], "state1");
+                Assert.Equal("state1", dynamoDBTimeWindowEvent.State["1"]);
                 Assert.NotNull(dynamoDBTimeWindowEvent.Window);
                 Assert.Equal(637317252000000000, dynamoDBTimeWindowEvent.Window.Start.Ticks);
                 Assert.Equal(637317255000000000, dynamoDBTimeWindowEvent.Window.End.Ticks);
 
-                Assert.Equal(dynamoDBTimeWindowEvent.Records.Count, 3);
+                Assert.Equal(3, dynamoDBTimeWindowEvent.Records.Count);
 
                 var record1 = dynamoDBTimeWindowEvent.Records[0];
-                Assert.Equal(record1.EventID, "1");
-                Assert.Equal(record1.EventName, "INSERT");
-                Assert.Equal(record1.EventVersion, "1.0");
-                Assert.Equal(record1.EventSource, "aws:dynamodb");
-                Assert.Equal(record1.AwsRegion, "us-east-1");
-                Assert.Equal(record1.EventSourceArn, "stream-ARN");
-                Assert.Equal(record1.Dynamodb.Keys.Count, 1);
-                Assert.Equal(record1.Dynamodb.Keys["Id"].N, "101");
-                Assert.Equal(record1.Dynamodb.SequenceNumber, "111");
-                Assert.Equal(record1.Dynamodb.SizeBytes, 26);
-                Assert.Equal(record1.Dynamodb.StreamViewType, "NEW_IMAGE");
-                Assert.Equal(record1.Dynamodb.NewImage.Count, 2);
-                Assert.Equal(record1.Dynamodb.NewImage["Message"].S, "New item!");
-                Assert.Equal(record1.Dynamodb.NewImage["Id"].N, "101");
+                Assert.Equal("1", record1.EventID);
+                Assert.Equal("INSERT", record1.EventName);
+                Assert.Equal("1.0", record1.EventVersion);
+                Assert.Equal("aws:dynamodb", record1.EventSource);
+                Assert.Equal("us-east-1", record1.AwsRegion);
+                Assert.Equal("stream-ARN", record1.EventSourceArn);
+                Assert.Single(record1.Dynamodb.Keys);
+                Assert.Equal("101", record1.Dynamodb.Keys["Id"].N);
+                Assert.Equal("111", record1.Dynamodb.SequenceNumber);
+                Assert.Equal(26, record1.Dynamodb.SizeBytes);
+                Assert.Equal("NEW_IMAGE", record1.Dynamodb.StreamViewType);
+                Assert.Equal(2, record1.Dynamodb.NewImage.Count);
+                Assert.Equal("New item!", record1.Dynamodb.NewImage["Message"].S);
+                Assert.Equal("101", record1.Dynamodb.NewImage["Id"].N);
                 Assert.Null(record1.Dynamodb.OldImage);
 
                 var record2 = dynamoDBTimeWindowEvent.Records[1];
-                Assert.Equal(record2.EventID, "2");
-                Assert.Equal(record2.EventName, "MODIFY");
-                Assert.Equal(record2.EventVersion, "1.0");
-                Assert.Equal(record2.EventSource, "aws:dynamodb");
-                Assert.Equal(record2.AwsRegion, "us-east-1");
-                Assert.Equal(record2.EventSourceArn, "stream-ARN");
-                Assert.Equal(record2.Dynamodb.Keys.Count, 1);
-                Assert.Equal(record2.Dynamodb.Keys["Id"].N, "101");
-                Assert.Equal(record2.Dynamodb.SequenceNumber, "222");
-                Assert.Equal(record2.Dynamodb.SizeBytes, 59);
-                Assert.Equal(record2.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-                Assert.Equal(record2.Dynamodb.NewImage.Count, 2);
-                Assert.Equal(record2.Dynamodb.NewImage["Message"].S, "This item has changed");
-                Assert.Equal(record2.Dynamodb.NewImage["Id"].N, "101");
-                Assert.Equal(record2.Dynamodb.OldImage.Count, 2);
-                Assert.Equal(record2.Dynamodb.OldImage["Message"].S, "New item!");
-                Assert.Equal(record2.Dynamodb.OldImage["Id"].N, "101");
+                Assert.Equal("2", record2.EventID);
+                Assert.Equal("MODIFY", record2.EventName);
+                Assert.Equal("1.0", record2.EventVersion);
+                Assert.Equal("aws:dynamodb", record2.EventSource);
+                Assert.Equal("us-east-1", record2.AwsRegion);
+                Assert.Equal("stream-ARN", record2.EventSourceArn);
+                Assert.Single(record2.Dynamodb.Keys);
+                Assert.Equal("101", record2.Dynamodb.Keys["Id"].N);
+                Assert.Equal("222", record2.Dynamodb.SequenceNumber);
+                Assert.Equal(59, record2.Dynamodb.SizeBytes);
+                Assert.Equal("NEW_AND_OLD_IMAGES", record2.Dynamodb.StreamViewType);
+                Assert.Equal(2, record2.Dynamodb.NewImage.Count);
+                Assert.Equal("This item has changed", record2.Dynamodb.NewImage["Message"].S);
+                Assert.Equal("101", record2.Dynamodb.NewImage["Id"].N);
+                Assert.Equal(2, record2.Dynamodb.OldImage.Count);
+                Assert.Equal("New item!", record2.Dynamodb.OldImage["Message"].S);
+                Assert.Equal("101", record2.Dynamodb.OldImage["Id"].N);
 
                 var record3 = dynamoDBTimeWindowEvent.Records[2];
-                Assert.Equal(record3.EventID, "3");
-                Assert.Equal(record3.EventName, "REMOVE");
-                Assert.Equal(record3.EventVersion, "1.0");
-                Assert.Equal(record3.EventSource, "aws:dynamodb");
-                Assert.Equal(record3.AwsRegion, "us-east-1");
-                Assert.Equal(record3.EventSourceArn, "stream-ARN");
-                Assert.Equal(record3.Dynamodb.Keys.Count, 1);
-                Assert.Equal(record3.Dynamodb.Keys["Id"].N, "101");
-                Assert.Equal(record3.Dynamodb.SequenceNumber, "333");
-                Assert.Equal(record3.Dynamodb.SizeBytes, 38);
-                Assert.Equal(record3.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
+                Assert.Equal("3", record3.EventID);
+                Assert.Equal("REMOVE", record3.EventName);
+                Assert.Equal("1.0", record3.EventVersion);
+                Assert.Equal("aws:dynamodb", record3.EventSource);
+                Assert.Equal("us-east-1", record3.AwsRegion);
+                Assert.Equal("stream-ARN", record3.EventSourceArn);
+                Assert.Single(record3.Dynamodb.Keys);
+                Assert.Equal("101", record3.Dynamodb.Keys["Id"].N);
+                Assert.Equal("333", record3.Dynamodb.SequenceNumber);
+                Assert.Equal(38, record3.Dynamodb.SizeBytes);
+                Assert.Equal("NEW_AND_OLD_IMAGES", record3.Dynamodb.StreamViewType);
                 Assert.Null(record3.Dynamodb.NewImage);
-                Assert.Equal(record3.Dynamodb.OldImage.Count, 2);
-                Assert.Equal(record3.Dynamodb.OldImage["Message"].S, "This item has changed");
-                Assert.Equal(record3.Dynamodb.OldImage["Id"].N, "101");
+                Assert.Equal(2, record3.Dynamodb.OldImage.Count);
+                Assert.Equal("This item has changed", record3.Dynamodb.OldImage["Message"].S);
+                Assert.Equal("101", record3.Dynamodb.OldImage["Id"].N);
             }
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void DynamoDBTimeWindowResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -730,38 +702,36 @@ namespace Amazon.Lambda.Tests
             {
                 var dynamoDBTimeWindowResponse = serializer.Deserialize<DynamoDBTimeWindowResponse>(fileStream);
 
-                Assert.Equal(dynamoDBTimeWindowResponse.State.Count, 2);
+                Assert.Equal(2, dynamoDBTimeWindowResponse.State.Count);
                 Assert.True(dynamoDBTimeWindowResponse.State.ContainsKey("1"));
-                Assert.Equal(dynamoDBTimeWindowResponse.State["1"], "282");
+                Assert.Equal("282", dynamoDBTimeWindowResponse.State["1"]);
                 Assert.True(dynamoDBTimeWindowResponse.State.ContainsKey("2"));
-                Assert.Equal(dynamoDBTimeWindowResponse.State["2"], "715");
-                Assert.Equal(dynamoDBTimeWindowResponse.BatchItemFailures.Count, 0);
+                Assert.Equal("715", dynamoDBTimeWindowResponse.State["2"]);
+                Assert.Empty(dynamoDBTimeWindowResponse.BatchItemFailures);
             }
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("cognito-event.json"))
             {
                 var cognitoEvent = serializer.Deserialize<CognitoEvent>(fileStream);
-                Assert.Equal(cognitoEvent.Version, 2);
-                Assert.Equal(cognitoEvent.EventType, "SyncTrigger");
-                Assert.Equal(cognitoEvent.Region, "us-east-1");
-                Assert.Equal(cognitoEvent.DatasetName, "datasetName");
-                Assert.Equal(cognitoEvent.IdentityPoolId, "identityPoolId");
-                Assert.Equal(cognitoEvent.IdentityId, "identityId");
-                Assert.Equal(cognitoEvent.DatasetRecords.Count, 1);
+                Assert.Equal(2, cognitoEvent.Version);
+                Assert.Equal("SyncTrigger", cognitoEvent.EventType);
+                Assert.Equal("us-east-1", cognitoEvent.Region);
+                Assert.Equal("datasetName", cognitoEvent.DatasetName);
+                Assert.Equal("identityPoolId", cognitoEvent.IdentityPoolId);
+                Assert.Equal("identityId", cognitoEvent.IdentityId);
+                Assert.Single(cognitoEvent.DatasetRecords);
                 Assert.True(cognitoEvent.DatasetRecords.ContainsKey("SampleKey1"));
-                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].NewValue, "newValue1");
-                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].OldValue, "oldValue1");
-                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].Op, "replace");
+                Assert.Equal("newValue1", cognitoEvent.DatasetRecords["SampleKey1"].NewValue);
+                Assert.Equal("oldValue1", cognitoEvent.DatasetRecords["SampleKey1"].OldValue);
+                Assert.Equal("replace", cognitoEvent.DatasetRecords["SampleKey1"].Op);
 
                 Handle(cognitoEvent);
             }
@@ -780,10 +750,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPreSignUpEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -809,7 +777,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(cognitoPreSignupEvent.Response.AutoVerifyPhone);
                 Assert.True(cognitoPreSignupEvent.Response.AutoVerifyEmail);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoPreSignupEvent>(cognitoPreSignupEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -822,10 +790,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPostConfirmationEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -841,7 +807,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("metadata_2", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[1].Key);
                 Assert.Equal("metadata_value_2", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[1].Value);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoPostConfirmationEvent>(cognitoPostConfirmationEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -854,10 +820,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPreAuthenticationEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -875,7 +839,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.True(cognitoPreAuthenticationEvent.Request.UserNotFound);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoPreAuthenticationEvent>(cognitoPreAuthenticationEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -888,10 +852,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPostAuthenticationEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -928,10 +890,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoDefineAuthChallengeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -966,7 +926,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(cognitoDefineAuthChallengeEvent.Response.IssueTokens);
                 Assert.True(cognitoDefineAuthChallengeEvent.Response.FailAuthentication);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoDefineAuthChallengeEvent>(cognitoDefineAuthChallengeEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -979,10 +939,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoDefineAuthChallengeEventWithNullValuesTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1020,10 +978,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoCreateAuthChallengeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1070,7 +1026,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("challenge", cognitoCreateAuthChallengeEvent.Response.ChallengeMetadata);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoCreateAuthChallengeEvent>(cognitoCreateAuthChallengeEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1083,10 +1039,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoVerifyAuthChallengeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1115,7 +1069,7 @@ namespace Amazon.Lambda.Tests
             
                 Assert.True(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoVerifyAuthChallengeEvent>(cognitoVerifyAuthChallengeEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1129,10 +1083,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoVerifyAuthChallengeEventWithNullValuesTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1160,10 +1112,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPreTokenGenerationEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1209,7 +1159,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("role", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.PreferredRole);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoPreTokenGenerationEvent>(cognitoPreTokenGenerationEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1222,10 +1172,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoPreTokenGenerationV2EventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1301,7 +1249,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("role", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.PreferredRole);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoPreTokenGenerationV2Event>(cognitoPreTokenGenerationV2Event, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1314,10 +1262,8 @@ namespace Amazon.Lambda.Tests
         
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoMigrateUserEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1358,7 +1304,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(cognitoMigrateUserEvent.Response.ForceAliasCreation);
 
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoMigrateUserEvent>(cognitoMigrateUserEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1371,10 +1317,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoCustomMessageEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1397,7 +1341,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("email", cognitoCustomMessageEvent.Response.EmailMessage);
                 Assert.Equal("subject", cognitoCustomMessageEvent.Response.EmailSubject);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoCustomMessageEvent>(cognitoCustomMessageEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1410,10 +1354,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoCustomEmailSenderEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1426,7 +1368,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("code", cognitoCustomEmailSenderEvent.Request.Code);
                 Assert.Equal("type", cognitoCustomEmailSenderEvent.Request.Type);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<CognitoCustomEmailSenderEvent>(cognitoCustomEmailSenderEvent, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1439,10 +1381,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CognitoCustomSmsSenderEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1489,30 +1429,28 @@ namespace Amazon.Lambda.Tests
             Assert.NotNull(cognitoTriggerEvent.Response);
         }
 
-        String ConfigInvokingEvent = "{\"configSnapshotId\":\"00000000-0000-0000-0000-000000000000\",\"s3ObjectKey\":\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\",\"s3Bucket\":\"config-bucket\",\"notificationCreationTime\":\"2016-02-24T18:23:20.328Z\",\"messageType\":\"ConfigurationSnapshotDeliveryCompleted\",\"recordVersion\":\"1.1\"}";
+        const string ConfigInvokingEvent = "{\"configSnapshotId\":\"00000000-0000-0000-0000-000000000000\",\"s3ObjectKey\":\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\",\"s3Bucket\":\"config-bucket\",\"notificationCreationTime\":\"2016-02-24T18:23:20.328Z\",\"messageType\":\"ConfigurationSnapshotDeliveryCompleted\",\"recordVersion\":\"1.1\"}";
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ConfigTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("config-event.json"))
             {
                 var configEvent = serializer.Deserialize<ConfigEvent>(fileStream);
-                Assert.Equal(configEvent.ConfigRuleId, "config-rule-0123456");
-                Assert.Equal(configEvent.Version, "1.0");
-                Assert.Equal(configEvent.ConfigRuleName, "periodic-config-rule");
-                Assert.Equal(configEvent.ConfigRuleArn, "arn:aws:config:us-east-1:012345678912:config-rule/config-rule-0123456");
-                Assert.Equal(configEvent.InvokingEvent, ConfigInvokingEvent);
-                Assert.Equal(configEvent.ResultToken, "myResultToken");
-                Assert.Equal(configEvent.EventLeftScope, false);
-                Assert.Equal(configEvent.RuleParameters, "{\"<myParameterKey>\":\"<myParameterValue>\"}");
-                Assert.Equal(configEvent.ExecutionRoleArn, "arn:aws:iam::012345678912:role/config-role");
-                Assert.Equal(configEvent.AccountId, "012345678912");
+                Assert.Equal("config-rule-0123456", configEvent.ConfigRuleId);
+                Assert.Equal("1.0", configEvent.Version);
+                Assert.Equal("periodic-config-rule", configEvent.ConfigRuleName);
+                Assert.Equal("arn:aws:config:us-east-1:012345678912:config-rule/config-rule-0123456", configEvent.ConfigRuleArn);
+                Assert.Equal(ConfigInvokingEvent, configEvent.InvokingEvent);
+                Assert.Equal("myResultToken", configEvent.ResultToken);
+                Assert.False(configEvent.EventLeftScope);
+                Assert.Equal("{\"<myParameterKey>\":\"<myParameterValue>\"}", configEvent.RuleParameters);
+                Assert.Equal("arn:aws:iam::012345678912:role/config-role", configEvent.ExecutionRoleArn);
+                Assert.Equal("012345678912", configEvent.AccountId);
 
                 Handle(configEvent);
             }
@@ -1527,50 +1465,46 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ConnectContactFlowTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("connect-contactflow-event.json"))
             {
                 var contactFlowEvent = serializer.Deserialize<ContactFlowEvent>(fileStream);
-                Assert.Equal(contactFlowEvent.Name, "ContactFlowEvent");
+                Assert.Equal("ContactFlowEvent", contactFlowEvent.Name);
                 Assert.NotNull(contactFlowEvent.Details);
 
                 Assert.NotNull(contactFlowEvent.Details.ContactData);
                 Assert.NotNull(contactFlowEvent.Details.ContactData.Attributes);
-                Assert.Equal(contactFlowEvent.Details.ContactData.Attributes.Count, 0);
-                Assert.Equal(contactFlowEvent.Details.ContactData.Channel, "VOICE");
-                Assert.Equal(contactFlowEvent.Details.ContactData.ContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
+                Assert.Empty(contactFlowEvent.Details.ContactData.Attributes);
+                Assert.Equal("VOICE", contactFlowEvent.Details.ContactData.Channel);
+                Assert.Equal("4a573372-1f28-4e26-b97b-XXXXXXXXXXX", contactFlowEvent.Details.ContactData.ContactId);
                 Assert.NotNull(contactFlowEvent.Details.ContactData.CustomerEndpoint);
-                Assert.Equal(contactFlowEvent.Details.ContactData.CustomerEndpoint.Address, "+1234567890");
-                Assert.Equal(contactFlowEvent.Details.ContactData.CustomerEndpoint.Type, "TELEPHONE_NUMBER");
-                Assert.Equal(contactFlowEvent.Details.ContactData.InitialContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
-                Assert.Equal(contactFlowEvent.Details.ContactData.InitiationMethod, "INBOUND | OUTBOUND | TRANSFER | CALLBACK");
-                Assert.Equal(contactFlowEvent.Details.ContactData.InstanceARN, "arn:aws:connect:aws-region:1234567890:instance/c8c0e68d-2200-4265-82c0-XXXXXXXXXX");
-                Assert.Equal(contactFlowEvent.Details.ContactData.PreviousContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
+                Assert.Equal("+1234567890", contactFlowEvent.Details.ContactData.CustomerEndpoint.Address);
+                Assert.Equal("TELEPHONE_NUMBER", contactFlowEvent.Details.ContactData.CustomerEndpoint.Type);
+                Assert.Equal("4a573372-1f28-4e26-b97b-XXXXXXXXXXX", contactFlowEvent.Details.ContactData.InitialContactId);
+                Assert.Equal("INBOUND | OUTBOUND | TRANSFER | CALLBACK", contactFlowEvent.Details.ContactData.InitiationMethod);
+                Assert.Equal("arn:aws:connect:aws-region:1234567890:instance/c8c0e68d-2200-4265-82c0-XXXXXXXXXX", contactFlowEvent.Details.ContactData.InstanceARN);
+                Assert.Equal("4a573372-1f28-4e26-b97b-XXXXXXXXXXX", contactFlowEvent.Details.ContactData.PreviousContactId);
                 Assert.NotNull(contactFlowEvent.Details.ContactData.Queue);
-                Assert.Equal(contactFlowEvent.Details.ContactData.Queue.Arn, "arn:aws:connect:eu-west-2:111111111111:instance/cccccccc-bbbb-dddd-eeee-ffffffffffff/queue/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-                Assert.Equal(contactFlowEvent.Details.ContactData.Queue.Name, "PasswordReset");
+                Assert.Equal("arn:aws:connect:eu-west-2:111111111111:instance/cccccccc-bbbb-dddd-eeee-ffffffffffff/queue/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", contactFlowEvent.Details.ContactData.Queue.Arn);
+                Assert.Equal("PasswordReset", contactFlowEvent.Details.ContactData.Queue.Name);
                 Assert.NotNull(contactFlowEvent.Details.ContactData.SystemEndpoint);
-                Assert.Equal(contactFlowEvent.Details.ContactData.SystemEndpoint.Address, "+1234567890");
-                Assert.Equal(contactFlowEvent.Details.ContactData.SystemEndpoint.Type, "TELEPHONE_NUMBER");
+                Assert.Equal("+1234567890", contactFlowEvent.Details.ContactData.SystemEndpoint.Address);
+                Assert.Equal("TELEPHONE_NUMBER", contactFlowEvent.Details.ContactData.SystemEndpoint.Type);
 
                 Assert.NotNull(contactFlowEvent.Details.Parameters);
-                Assert.Equal(contactFlowEvent.Details.Parameters.Count, 1);
-                Assert.Equal(contactFlowEvent.Details.Parameters["sentAttributeKey"], "sentAttributeValue");
+                Assert.Single(contactFlowEvent.Details.Parameters);
+                Assert.Equal("sentAttributeValue", contactFlowEvent.Details.Parameters["sentAttributeKey"]);
             }
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SimpleEmailTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1578,67 +1512,65 @@ namespace Amazon.Lambda.Tests
             {
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
-                Assert.Equal(sesEvent.Records.Count, 1);
+                Assert.Single(sesEvent.Records);
                 var record = sesEvent.Records[0];
 
-                Assert.Equal(record.EventVersion, "1.0");
-                Assert.Equal(record.EventSource, "aws:ses");
+                Assert.Equal("1.0", record.EventVersion);
+                Assert.Equal("aws:ses", record.EventSource);
 
-                Assert.Equal(record.Ses.Mail.CommonHeaders.From.Count, 1);
-                Assert.Equal(record.Ses.Mail.CommonHeaders.From[0], "Amazon Web Services <aws@amazon.com>");
-                Assert.Equal(record.Ses.Mail.CommonHeaders.To.Count, 1);
-                Assert.Equal(record.Ses.Mail.CommonHeaders.To[0], "lambda@amazon.com");
-                Assert.Equal(record.Ses.Mail.CommonHeaders.ReturnPath, "aws@amazon.com");
-                Assert.Equal(record.Ses.Mail.CommonHeaders.MessageId, "<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>");
-                Assert.Equal(record.Ses.Mail.CommonHeaders.Date, "Mon, 5 Dec 2016 18:40:08 -0800");
-                Assert.Equal(record.Ses.Mail.CommonHeaders.Subject, "Test Subject");
-                Assert.Equal(record.Ses.Mail.Source, "aws@amazon.com");
-                Assert.Equal(record.Ses.Mail.Timestamp.ToUniversalTime(), DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime());
-                Assert.Equal(record.Ses.Mail.Destination.Count, 1);
-                Assert.Equal(record.Ses.Mail.Destination[0], "lambda@amazon.com");
-                Assert.Equal(record.Ses.Mail.Headers.Count, 10);
-                Assert.Equal(record.Ses.Mail.Headers[0].Name, "Return-Path");
-                Assert.Equal(record.Ses.Mail.Headers[0].Value, "<aws@amazon.com>");
-                Assert.Equal(record.Ses.Mail.Headers[1].Name, "Received");
-                Assert.Equal(record.Ses.Mail.Headers[1].Value, "from mx.amazon.com (mx.amazon.com [127.0.0.1]) by inbound-smtp.us-east-1.amazonaws.com with SMTP id 6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1 for lambda@amazon.com; Tue, 06 Dec 2016 02:40:10 +0000 (UTC)");
-                Assert.Equal(record.Ses.Mail.Headers[2].Name, "DKIM-Signature");
-                Assert.Equal(record.Ses.Mail.Headers[2].Value, "v=1; a=rsa-sha256; c=relaxed/relaxed; d=iatn.net; s=amazon; h=mime-version:from:date:message-id:subject:to; bh=chlJxa/vZ11+0O9lf4tKDM/CcPjup2nhhdITm+hSf3c=; b=SsoNPK0wX7umtWnw8pln3YSib+E09XO99d704QdSc1TR1HxM0OTti/UaFxVD4e5b0+okBqo3rgVeWgNZ0sWZEUhBaZwSL3kTd/nHkcPexeV0XZqEgms1vmbg75F6vlz9igWflO3GbXyTRBNMM0gUXKU/686hpVW6aryEIfM/rLY=");
-                Assert.Equal(record.Ses.Mail.Headers[3].Name, "MIME-Version");
-                Assert.Equal(record.Ses.Mail.Headers[3].Value, "1.0");
-                Assert.Equal(record.Ses.Mail.Headers[4].Name, "From");
-                Assert.Equal(record.Ses.Mail.Headers[4].Value, "Amazon Web Services <aws@amazon.com>");
-                Assert.Equal(record.Ses.Mail.Headers[5].Name, "Date");
-                Assert.Equal(record.Ses.Mail.Headers[5].Value, "Mon, 5 Dec 2016 18:40:08 -0800");
-                Assert.Equal(record.Ses.Mail.Headers[6].Name, "Message-ID");
-                Assert.Equal(record.Ses.Mail.Headers[6].Value, "<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>");
-                Assert.Equal(record.Ses.Mail.Headers[7].Name, "Subject");
-                Assert.Equal(record.Ses.Mail.Headers[7].Value, "Test Subject");
-                Assert.Equal(record.Ses.Mail.Headers[8].Name, "To");
-                Assert.Equal(record.Ses.Mail.Headers[8].Value, "lambda@amazon.com");
-                Assert.Equal(record.Ses.Mail.Headers[9].Name, "Content-Type");
-                Assert.Equal(record.Ses.Mail.Headers[9].Value, "multipart/alternative; boundary=94eb2c0742269658b10542f452a9");
-                Assert.Equal(record.Ses.Mail.HeadersTruncated, false);
-                Assert.Equal(record.Ses.Mail.MessageId, "6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1");
+                Assert.Single(record.Ses.Mail.CommonHeaders.From);
+                Assert.Equal("Amazon Web Services <aws@amazon.com>", record.Ses.Mail.CommonHeaders.From[0]);
+                Assert.Single(record.Ses.Mail.CommonHeaders.To);
+                Assert.Equal("lambda@amazon.com", record.Ses.Mail.CommonHeaders.To[0]);
+                Assert.Equal("aws@amazon.com", record.Ses.Mail.CommonHeaders.ReturnPath);
+                Assert.Equal("<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>", record.Ses.Mail.CommonHeaders.MessageId);
+                Assert.Equal("Mon, 5 Dec 2016 18:40:08 -0800", record.Ses.Mail.CommonHeaders.Date);
+                Assert.Equal("Test Subject", record.Ses.Mail.CommonHeaders.Subject);
+                Assert.Equal("aws@amazon.com", record.Ses.Mail.Source);
+                Assert.Equal(DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime(), record.Ses.Mail.Timestamp.ToUniversalTime());
+                Assert.Single(record.Ses.Mail.Destination);
+                Assert.Equal("lambda@amazon.com", record.Ses.Mail.Destination[0]);
+                Assert.Equal(10, record.Ses.Mail.Headers.Count);
+                Assert.Equal("Return-Path", record.Ses.Mail.Headers[0].Name);
+                Assert.Equal("<aws@amazon.com>", record.Ses.Mail.Headers[0].Value);
+                Assert.Equal("Received", record.Ses.Mail.Headers[1].Name);
+                Assert.Equal("from mx.amazon.com (mx.amazon.com [127.0.0.1]) by inbound-smtp.us-east-1.amazonaws.com with SMTP id 6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1 for lambda@amazon.com; Tue, 06 Dec 2016 02:40:10 +0000 (UTC)", record.Ses.Mail.Headers[1].Value);
+                Assert.Equal("DKIM-Signature", record.Ses.Mail.Headers[2].Name);
+                Assert.Equal("v=1; a=rsa-sha256; c=relaxed/relaxed; d=iatn.net; s=amazon; h=mime-version:from:date:message-id:subject:to; bh=chlJxa/vZ11+0O9lf4tKDM/CcPjup2nhhdITm+hSf3c=; b=SsoNPK0wX7umtWnw8pln3YSib+E09XO99d704QdSc1TR1HxM0OTti/UaFxVD4e5b0+okBqo3rgVeWgNZ0sWZEUhBaZwSL3kTd/nHkcPexeV0XZqEgms1vmbg75F6vlz9igWflO3GbXyTRBNMM0gUXKU/686hpVW6aryEIfM/rLY=", record.Ses.Mail.Headers[2].Value);
+                Assert.Equal("MIME-Version", record.Ses.Mail.Headers[3].Name);
+                Assert.Equal("1.0", record.Ses.Mail.Headers[3].Value);
+                Assert.Equal("From", record.Ses.Mail.Headers[4].Name);
+                Assert.Equal("Amazon Web Services <aws@amazon.com>", record.Ses.Mail.Headers[4].Value);
+                Assert.Equal("Date", record.Ses.Mail.Headers[5].Name);
+                Assert.Equal("Mon, 5 Dec 2016 18:40:08 -0800", record.Ses.Mail.Headers[5].Value);
+                Assert.Equal("Message-ID", record.Ses.Mail.Headers[6].Name);
+                Assert.Equal("<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>", record.Ses.Mail.Headers[6].Value);
+                Assert.Equal("Subject", record.Ses.Mail.Headers[7].Name);
+                Assert.Equal("Test Subject", record.Ses.Mail.Headers[7].Value);
+                Assert.Equal("To", record.Ses.Mail.Headers[8].Name);
+                Assert.Equal("lambda@amazon.com", record.Ses.Mail.Headers[8].Value);
+                Assert.Equal("Content-Type", record.Ses.Mail.Headers[9].Name);
+                Assert.Equal("multipart/alternative; boundary=94eb2c0742269658b10542f452a9", record.Ses.Mail.Headers[9].Value);
+                Assert.False(record.Ses.Mail.HeadersTruncated);
+                Assert.Equal("6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1", record.Ses.Mail.MessageId);
 
-                Assert.Equal(record.Ses.Receipt.Recipients.Count, 1);
-                Assert.Equal(record.Ses.Receipt.Recipients[0], "lambda@amazon.com");
-                Assert.Equal(record.Ses.Receipt.Timestamp.ToUniversalTime(), DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime());
-                Assert.Equal(record.Ses.Receipt.SpamVerdict.Status, "PASS");
-                Assert.Equal(record.Ses.Receipt.DKIMVerdict.Status, "PASS");
-                Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
-                Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
-                Assert.Equal(record.Ses.Receipt.DMARCVerdict.Status, "PASS");
-                Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
+                Assert.Single(record.Ses.Receipt.Recipients);
+                Assert.Equal("lambda@amazon.com", record.Ses.Receipt.Recipients[0]);
+                Assert.Equal(DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime(), record.Ses.Receipt.Timestamp.ToUniversalTime());
+                Assert.Equal("PASS", record.Ses.Receipt.SpamVerdict.Status);
+                Assert.Equal("PASS", record.Ses.Receipt.DKIMVerdict.Status);
+                Assert.Equal("PASS", record.Ses.Receipt.SPFVerdict.Status);
+                Assert.Equal("PASS", record.Ses.Receipt.VirusVerdict.Status);
+                Assert.Equal("PASS", record.Ses.Receipt.DMARCVerdict.Status);
+                Assert.Equal(574, record.Ses.Receipt.ProcessingTimeMillis);
 
                 Handle(sesEvent);
             }
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SimpleEmailLambdaActionTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1646,22 +1578,20 @@ namespace Amazon.Lambda.Tests
             {
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
-                Assert.Equal(sesEvent.Records.Count, 1);
+                Assert.Single(sesEvent.Records);
                 var record = sesEvent.Records[0];
 
-                Assert.Equal(record.Ses.Receipt.Action.Type, "Lambda");
-                Assert.Equal(record.Ses.Receipt.Action.InvocationType, "Event");
-                Assert.Equal(record.Ses.Receipt.Action.FunctionArn, "arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function");
+                Assert.Equal("Lambda", record.Ses.Receipt.Action.Type);
+                Assert.Equal("Event", record.Ses.Receipt.Action.InvocationType);
+                Assert.Equal("arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function", record.Ses.Receipt.Action.FunctionArn);
 
                 Handle(sesEvent);
             }
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SimpleEmailS3ActionTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1669,14 +1599,14 @@ namespace Amazon.Lambda.Tests
             {
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.S3ReceiptAction>>(fileStream);
 
-                Assert.Equal(sesEvent.Records.Count, 1);
+                Assert.Single(sesEvent.Records);
                 var record = sesEvent.Records[0];
 
-                Assert.Equal(record.Ses.Receipt.Action.Type, "S3");
-                Assert.Equal(record.Ses.Receipt.Action.TopicArn, "arn:aws:sns:eu-west-1:123456789:ses-email-received");
-                Assert.Equal(record.Ses.Receipt.Action.BucketName, "my-ses-inbox");
-                Assert.Equal(record.Ses.Receipt.Action.ObjectKeyPrefix, "important");
-                Assert.Equal(record.Ses.Receipt.Action.ObjectKey, "important/fiddlyfaddlyhiddlyhoodly");
+                Assert.Equal("S3", record.Ses.Receipt.Action.Type);
+                Assert.Equal("arn:aws:sns:eu-west-1:123456789:ses-email-received", record.Ses.Receipt.Action.TopicArn);
+                Assert.Equal("my-ses-inbox", record.Ses.Receipt.Action.BucketName);
+                Assert.Equal("important", record.Ses.Receipt.Action.ObjectKeyPrefix);
+                Assert.Equal("important/fiddlyfaddlyhiddlyhoodly", record.Ses.Receipt.Action.ObjectKey);
 
                 Handle(sesEvent);
             }
@@ -1693,10 +1623,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SNSTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1704,27 +1632,27 @@ namespace Amazon.Lambda.Tests
             {
                 var snsEvent = serializer.Deserialize<SNSEvent>(fileStream);
 
-                Assert.Equal(snsEvent.Records.Count, 1);
+                Assert.Single(snsEvent.Records);
                 var record = snsEvent.Records[0];
-                Assert.Equal(record.EventVersion, "1.0");
-                Assert.Equal(record.EventSubscriptionArn, "arn:aws:sns:EXAMPLE");
-                Assert.Equal(record.EventSource, "aws:sns");
-                Assert.Equal(record.Sns.SignatureVersion, "1");
-                Assert.Equal(record.Sns.Timestamp.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
-                Assert.Equal(record.Sns.Signature, "EXAMPLE");
-                Assert.Equal(record.Sns.SigningCertUrl, "EXAMPLE");
-                Assert.Equal(record.Sns.MessageId, "95df01b4-ee98-5cb9-9903-4c221d41eb5e");
-                Assert.Equal(record.Sns.Message, "Hello from SNS!");
+                Assert.Equal("1.0", record.EventVersion);
+                Assert.Equal("arn:aws:sns:EXAMPLE", record.EventSubscriptionArn);
+                Assert.Equal("aws:sns", record.EventSource);
+                Assert.Equal("1", record.Sns.SignatureVersion);
+                Assert.Equal(DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime(), record.Sns.Timestamp.ToUniversalTime());
+                Assert.Equal("EXAMPLE", record.Sns.Signature);
+                Assert.Equal("EXAMPLE", record.Sns.SigningCertUrl);
+                Assert.Equal("95df01b4-ee98-5cb9-9903-4c221d41eb5e", record.Sns.MessageId);
+                Assert.Equal("Hello from SNS!", record.Sns.Message);
                 Assert.True(record.Sns.MessageAttributes.ContainsKey("Test"));
-                Assert.Equal(record.Sns.MessageAttributes["Test"].Type, "String");
-                Assert.Equal(record.Sns.MessageAttributes["Test"].Value, "TestString");
+                Assert.Equal("String", record.Sns.MessageAttributes["Test"].Type);
+                Assert.Equal("TestString", record.Sns.MessageAttributes["Test"].Value);
                 Assert.True(record.Sns.MessageAttributes.ContainsKey("TestBinary"));
-                Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Type, "Binary");
-                Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Value, "TestBinary");
-                Assert.Equal(record.Sns.Type, "Notification");
-                Assert.Equal(record.Sns.UnsubscribeUrl, "EXAMPLE");
-                Assert.Equal(record.Sns.TopicArn, "arn:aws:sns:EXAMPLE");
-                Assert.Equal(record.Sns.Subject, "TestInvoke");
+                Assert.Equal("Binary", record.Sns.MessageAttributes["TestBinary"].Type);
+                Assert.Equal("TestBinary", record.Sns.MessageAttributes["TestBinary"].Value);
+                Assert.Equal("Notification", record.Sns.Type);
+                Assert.Equal("EXAMPLE", record.Sns.UnsubscribeUrl);
+                Assert.Equal("arn:aws:sns:EXAMPLE", record.Sns.TopicArn);
+                Assert.Equal("TestInvoke", record.Sns.Subject);
 
                 Handle(snsEvent);
             }
@@ -1741,10 +1669,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SQSTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1752,7 +1678,7 @@ namespace Amazon.Lambda.Tests
             {
                 var sqsEvent = serializer.Deserialize<SQSEvent>(fileStream);
 
-                Assert.Equal(sqsEvent.Records.Count, 1);
+                Assert.Single(sqsEvent.Records);
                 var record = sqsEvent.Records[0];
                 Assert.Equal("MessageID", record.MessageId);
                 Assert.Equal("MessageReceiptHandle", record.ReceiptHandle);
@@ -1811,10 +1737,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void SQSBatchResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1822,7 +1746,7 @@ namespace Amazon.Lambda.Tests
             {
                 var sqsBatchResponse = serializer.Deserialize<SQSBatchResponse>(fileStream);
 
-                Assert.Equal(sqsBatchResponse.BatchItemFailures.Count, 2);
+                Assert.Equal(2, sqsBatchResponse.BatchItemFailures.Count);
                 {
                     var item1 = sqsBatchResponse.BatchItemFailures[0];
                     Assert.NotNull(item1);
@@ -1848,10 +1772,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayProxyRequestTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1859,48 +1781,48 @@ namespace Amazon.Lambda.Tests
             {
                 var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
 
-                Assert.Equal(proxyEvent.Resource, "/{proxy+}");
-                Assert.Equal(proxyEvent.Path, "/hello/world");
-                Assert.Equal(proxyEvent.HttpMethod, "POST");
-                Assert.Equal(proxyEvent.Body, "{\r\n\t\"a\": 1\r\n}");
+                Assert.Equal("/{proxy+}", proxyEvent.Resource);
+                Assert.Equal("/hello/world", proxyEvent.Path);
+                Assert.Equal("POST", proxyEvent.HttpMethod);
+                Assert.Equal("{\r\n\t\"a\": 1\r\n}", proxyEvent.Body);
 
                 var headers = proxyEvent.Headers;
-                Assert.Equal(headers["Accept"], "*/*");
-                Assert.Equal(headers["Accept-Encoding"], "gzip, deflate");
-                Assert.Equal(headers["cache-control"], "no-cache");
-                Assert.Equal(headers["CloudFront-Forwarded-Proto"], "https");
+                Assert.Equal("*/*", headers["Accept"]);
+                Assert.Equal("gzip, deflate", headers["Accept-Encoding"]);
+                Assert.Equal("no-cache", headers["cache-control"]);
+                Assert.Equal("https", headers["CloudFront-Forwarded-Proto"]);
 
                 var queryStringParameters = proxyEvent.QueryStringParameters;
-                Assert.Equal(queryStringParameters["name"], "me");
+                Assert.Equal("me", queryStringParameters["name"]);
 
                 var pathParameters = proxyEvent.PathParameters;
-                Assert.Equal(pathParameters["proxy"], "hello/world");
+                Assert.Equal("hello/world", pathParameters["proxy"]);
 
                 var stageVariables = proxyEvent.StageVariables;
-                Assert.Equal(stageVariables["stageVariableName"], "stageVariableValue");
+                Assert.Equal("stageVariableValue", stageVariables["stageVariableName"]);
 
                 var requestContext = proxyEvent.RequestContext;
-                Assert.Equal(requestContext.AccountId, "12345678912");
-                Assert.Equal(requestContext.ResourceId, "roq9wj");
-                Assert.Equal(requestContext.Stage, "testStage");
-                Assert.Equal(requestContext.RequestId, "deef4878-7910-11e6-8f14-25afc3e9ae33");
-                Assert.Equal(requestContext.ConnectionId, "d034bc98-beed-4fdf-9e85-11bfc15bf734");
-                Assert.Equal(requestContext.DomainName, "somerandomdomain.net");
+                Assert.Equal("12345678912", requestContext.AccountId);
+                Assert.Equal("roq9wj", requestContext.ResourceId);
+                Assert.Equal("testStage", requestContext.Stage);
+                Assert.Equal("deef4878-7910-11e6-8f14-25afc3e9ae33", requestContext.RequestId);
+                Assert.Equal("d034bc98-beed-4fdf-9e85-11bfc15bf734", requestContext.ConnectionId);
+                Assert.Equal("somerandomdomain.net", requestContext.DomainName);
                 Assert.Equal(1519166937665, requestContext.RequestTimeEpoch);
                 Assert.Equal("20/Feb/2018:22:48:57 +0000", requestContext.RequestTime);
 
                 var identity = requestContext.Identity;
-                Assert.Equal(identity.CognitoIdentityPoolId, "theCognitoIdentityPoolId");
-                Assert.Equal(identity.AccountId, "theAccountId");
-                Assert.Equal(identity.CognitoIdentityId, "theCognitoIdentityId");
-                Assert.Equal(identity.Caller, "theCaller");
-                Assert.Equal(identity.ApiKey, "theApiKey");
-                Assert.Equal(identity.SourceIp, "192.168.196.186");
-                Assert.Equal(identity.CognitoAuthenticationType, "theCognitoAuthenticationType");
-                Assert.Equal(identity.CognitoAuthenticationProvider, "theCognitoAuthenticationProvider");
-                Assert.Equal(identity.UserArn, "theUserArn");
-                Assert.Equal(identity.UserAgent, "PostmanRuntime/2.4.5");
-                Assert.Equal(identity.User, "theUser");
+                Assert.Equal("theCognitoIdentityPoolId", identity.CognitoIdentityPoolId);
+                Assert.Equal("theAccountId", identity.AccountId);
+                Assert.Equal("theCognitoIdentityId", identity.CognitoIdentityId);
+                Assert.Equal("theCaller", identity.Caller);
+                Assert.Equal("theApiKey", identity.ApiKey);
+                Assert.Equal("192.168.196.186", identity.SourceIp);
+                Assert.Equal("theCognitoAuthenticationType", identity.CognitoAuthenticationType);
+                Assert.Equal("theCognitoAuthenticationProvider", identity.CognitoAuthenticationProvider);
+                Assert.Equal("theUserArn", identity.UserArn);
+                Assert.Equal("PostmanRuntime/2.4.5", identity.UserAgent);
+                Assert.Equal("theUser", identity.User);
                 Assert.Equal("IAM_user_access_key", identity.AccessKey);
 
                 var clientCert = identity.ClientCert;
@@ -1932,10 +1854,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayProxyResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1955,28 +1875,28 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
-            Assert.Equal(root["statusCode"], 200);
-            Assert.Equal(root["body"], "theBody");
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            Assert.Equal(200, root["statusCode"]);
+            Assert.Equal("theBody", root["body"]);
 
             Assert.NotNull(root["headers"]);
             var headers = root["headers"] as JObject;
-            Assert.Equal(headers["Header1"], "Value1");
-            Assert.Equal(headers["Header2"], "Value2");
+            Assert.Equal("Value1", headers["Header1"]);
+            Assert.Equal("Value2", headers["Header2"]);
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayAuthorizerResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
-            var context = new APIGatewayCustomAuthorizerContextOutput();
-            context["field1"] = "value1";
-            context["field2"] = "value2";
+            var context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["field1"] = "value1",
+                ["field2"] = "value2"
+            };
 
             var response = new APIGatewayCustomAuthorizerResponse
             {
@@ -1990,7 +1910,7 @@ namespace Amazon.Lambda.Tests
                     {
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
-                            Action = new HashSet<string>{ "execute-api:Invoke" },
+                            Action = ["execute-api:Invoke"],
                             Effect = "Allow",
                             Resource = new HashSet<string>{ "*" }
                         }
@@ -2007,7 +1927,7 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
             Assert.Equal("prin1", root["principalId"]);
             Assert.Equal("usageKey", root["usageIdentifierKey"]);
@@ -2023,16 +1943,16 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayAuthorizerWithSimpleIAMConditionResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
-            var context = new APIGatewayCustomAuthorizerContextOutput();
-            context["field1"] = "value1";
-            context["field2"] = "value2";
+            var context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["field1"] = "value1",
+                ["field2"] = "value2"
+            };
 
             var response = new APIGatewayCustomAuthorizerResponse
             {
@@ -2042,8 +1962,8 @@ namespace Amazon.Lambda.Tests
                 PolicyDocument = new APIGatewayCustomAuthorizerPolicy
                 {
                     Version = "2012-10-17",
-                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
-                    {
+                    Statement =
+                    [
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
                             Action = new HashSet<string>{ "execute-api:Invoke" },
@@ -2058,7 +1978,7 @@ namespace Amazon.Lambda.Tests
                                 }
                             }
                         }
-                    }
+                    ]
                 }
             };
 
@@ -2071,7 +1991,7 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
             Assert.Equal("prin1", root["principalId"]);
             Assert.Equal("usageKey", root["usageIdentifierKey"]);
@@ -2087,16 +2007,16 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayAuthorizerWithMultiValueIAMConditionResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
-            var context = new APIGatewayCustomAuthorizerContextOutput();
-            context["field1"] = "value1";
-            context["field2"] = "value2";
+            var context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["field1"] = "value1",
+                ["field2"] = "value2"
+            };
 
             var response = new APIGatewayCustomAuthorizerResponse
             {
@@ -2106,8 +2026,8 @@ namespace Amazon.Lambda.Tests
                 PolicyDocument = new APIGatewayCustomAuthorizerPolicy
                 {
                     Version = "2012-10-17",
-                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
-                    {
+                    Statement =
+                    [
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
                             Action = new HashSet<string>{ "execute-api:Invoke" },
@@ -2132,7 +2052,7 @@ namespace Amazon.Lambda.Tests
                                 }
                             }
                         }
-                    }
+                    ]
                 }
             };
 
@@ -2145,7 +2065,7 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
             Assert.Equal("prin1", root["principalId"]);
             Assert.Equal("usageKey", root["usageIdentifierKey"]);
@@ -2170,16 +2090,16 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayAuthorizerResponseNotResourceTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
-            var context = new APIGatewayCustomAuthorizerContextOutput();
-            context["field1"] = "value1";
-            context["field2"] = "value2";
+            var context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["field1"] = "value1",
+                ["field2"] = "value2"
+            };
 
             var response = new APIGatewayCustomAuthorizerResponse
             {
@@ -2189,19 +2109,19 @@ namespace Amazon.Lambda.Tests
                 PolicyDocument = new APIGatewayCustomAuthorizerPolicy
                 {
                     Version = "2012-10-17",
-                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
-                    {
+                    Statement =
+                    [
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
                             Action = new HashSet<string>{ "execute-api:Invoke" },
                             Effect = "Deny",
-                            NotResource = new HashSet<string>
-                            {
+                            NotResource =
+                            [
                                 "arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource1",
                                 "arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource2"
-                            }
+                            ]
                         }
-                    }
+                    ]
                 }
             };
 
@@ -2214,7 +2134,7 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
             Assert.Equal("prin1", root["principalId"]);
             Assert.Equal("usageKey", root["usageIdentifierKey"]);
@@ -2236,10 +2156,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void WebSocketApiConnectTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2253,63 +2171,61 @@ namespace Amazon.Lambda.Tests
                 Assert.Null(proxyEvent.Body);
 
                 var headers = proxyEvent.Headers;
-                Assert.Equal(headers["HeaderAuth1"], "headerValue1");
-                Assert.Equal(headers["Host"], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
-                Assert.Equal(headers["Sec-WebSocket-Extensions"], "permessage-deflate; client_max_window_bits");
-                Assert.Equal(headers["Sec-WebSocket-Key"], "BvlrrFKoKAPDYOlwBcGKWw==");
-                Assert.Equal(headers["Sec-WebSocket-Version"], "13");
-                Assert.Equal(headers["X-Amzn-Trace-Id"], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
-                Assert.Equal(headers["X-Forwarded-For"], "52.95.4.0");
-                Assert.Equal(headers["X-Forwarded-Port"], "443");
-                Assert.Equal(headers["X-Forwarded-Proto"], "https");
+                Assert.Equal("headerValue1", headers["HeaderAuth1"]);
+                Assert.Equal("lg10ltpf4f.execute-api.us-east-2.amazonaws.com", headers["Host"]);
+                Assert.Equal("permessage-deflate; client_max_window_bits", headers["Sec-WebSocket-Extensions"]);
+                Assert.Equal("BvlrrFKoKAPDYOlwBcGKWw==", headers["Sec-WebSocket-Key"]);
+                Assert.Equal("13", headers["Sec-WebSocket-Version"]);
+                Assert.Equal("Root=1-625d9ad1-37a5d33a61dd9be33ae3a247", headers["X-Amzn-Trace-Id"]);
+                Assert.Equal("52.95.4.0", headers["X-Forwarded-For"]);
+                Assert.Equal("443", headers["X-Forwarded-Port"]);
+                Assert.Equal("https", headers["X-Forwarded-Proto"]);
 
                 var multiValueHeaders = proxyEvent.MultiValueHeaders;
-                Assert.Equal(multiValueHeaders["HeaderAuth1"].Count, 1);
-                Assert.Equal(multiValueHeaders["HeaderAuth1"][0], "headerValue1");
-                Assert.Equal(multiValueHeaders["Host"].Count, 1);
-                Assert.Equal(multiValueHeaders["Host"][0], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"].Count, 1);
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"][0], "permessage-deflate; client_max_window_bits");
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"].Count, 1);
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"][0], "BvlrrFKoKAPDYOlwBcGKWw==");
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"].Count, 1);
-                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"][0], "13");
-                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"].Count, 1);
-                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"][0], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
-                Assert.Equal(multiValueHeaders["X-Forwarded-For"].Count, 1);
-                Assert.Equal(multiValueHeaders["X-Forwarded-For"][0], "52.95.4.0");
-                Assert.Equal(multiValueHeaders["X-Forwarded-Port"].Count, 1);
-                Assert.Equal(multiValueHeaders["X-Forwarded-Port"][0], "443");
-                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"].Count, 1);
-                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"][0], "https");
+                Assert.Single(multiValueHeaders["HeaderAuth1"]);
+                Assert.Equal("headerValue1", multiValueHeaders["HeaderAuth1"][0]);
+                Assert.Single(multiValueHeaders["Host"]);
+                Assert.Equal("lg10ltpf4f.execute-api.us-east-2.amazonaws.com", multiValueHeaders["Host"][0]);
+                Assert.Single(multiValueHeaders["Sec-WebSocket-Extensions"]);
+                Assert.Equal("permessage-deflate; client_max_window_bits", multiValueHeaders["Sec-WebSocket-Extensions"][0]);
+                Assert.Single(multiValueHeaders["Sec-WebSocket-Key"]);
+                Assert.Equal("BvlrrFKoKAPDYOlwBcGKWw==", multiValueHeaders["Sec-WebSocket-Key"][0]);
+                Assert.Single(multiValueHeaders["Sec-WebSocket-Version"]);
+                Assert.Equal("13", multiValueHeaders["Sec-WebSocket-Version"][0]);
+                Assert.Single(multiValueHeaders["X-Amzn-Trace-Id"]);
+                Assert.Equal("Root=1-625d9ad1-37a5d33a61dd9be33ae3a247", multiValueHeaders["X-Amzn-Trace-Id"][0]);
+                Assert.Single(multiValueHeaders["X-Forwarded-For"]);
+                Assert.Equal("52.95.4.0", multiValueHeaders["X-Forwarded-For"][0]);
+                Assert.Single(multiValueHeaders["X-Forwarded-Port"]);
+                Assert.Equal("443", multiValueHeaders["X-Forwarded-Port"][0]);
+                Assert.Single(multiValueHeaders["X-Forwarded-Proto"]);
+                Assert.Equal("https", multiValueHeaders["X-Forwarded-Proto"][0]);
 
                 var requestContext = proxyEvent.RequestContext;
-                Assert.Equal(requestContext.RouteKey, "$connect");
-                Assert.Equal(requestContext.EventType, "CONNECT");
-                Assert.Equal(requestContext.ExtendedRequestId, "QyUg1HJgCYcFvbw=");
-                Assert.Equal(requestContext.RequestTime, "18/Apr/2022:17:07:29 +0000");
-                Assert.Equal(requestContext.MessageDirection, "IN");
-                Assert.Equal(requestContext.Stage, "production");
-                Assert.Equal(requestContext.ConnectedAt, 1650301649973);
-                Assert.Equal(requestContext.RequestTimeEpoch, 1650301649973);
-                Assert.Equal(requestContext.RequestId, "QyUg1HJgCYcFvbw=");
-                Assert.Equal(requestContext.DomainName, "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
-                Assert.Equal(requestContext.ConnectionId, "QyUg1czHCYcCHXw=");
-                Assert.Equal(requestContext.ApiId, "lg10ltpf4f");
+                Assert.Equal("$connect", requestContext.RouteKey);
+                Assert.Equal("CONNECT", requestContext.EventType);
+                Assert.Equal("QyUg1HJgCYcFvbw=", requestContext.ExtendedRequestId);
+                Assert.Equal("18/Apr/2022:17:07:29 +0000", requestContext.RequestTime);
+                Assert.Equal("IN", requestContext.MessageDirection);
+                Assert.Equal("production", requestContext.Stage);
+                Assert.Equal(1650301649973, requestContext.ConnectedAt);
+                Assert.Equal(1650301649973, requestContext.RequestTimeEpoch);
+                Assert.Equal("QyUg1HJgCYcFvbw=", requestContext.RequestId);
+                Assert.Equal("lg10ltpf4f.execute-api.us-east-2.amazonaws.com", requestContext.DomainName);
+                Assert.Equal("QyUg1czHCYcCHXw=", requestContext.ConnectionId);
+                Assert.Equal("lg10ltpf4f", requestContext.ApiId);
 
                 Assert.False(proxyEvent.IsBase64Encoded);
 
                 var identity = requestContext.Identity;
-                Assert.Equal(identity.SourceIp, "52.95.4.0");
+                Assert.Equal("52.95.4.0", identity.SourceIp);
             }
         }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ApplicationLoadBalancerRequestSingleValueTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2317,9 +2233,9 @@ namespace Amazon.Lambda.Tests
             {
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
 
-                Assert.Equal(evnt.Path, "/");
-                Assert.Equal(evnt.HttpMethod, "GET");
-                Assert.Equal(evnt.Body, "not really base64");
+                Assert.Equal("/", evnt.Path);
+                Assert.Equal("GET", evnt.HttpMethod);
+                Assert.Equal("not really base64", evnt.Body);
                 Assert.True(evnt.IsBase64Encoded);
 
                 Assert.Equal(2, evnt.QueryStringParameters.Count);
@@ -2331,17 +2247,15 @@ namespace Amazon.Lambda.Tests
 
 
                 var requestContext = evnt.RequestContext;
-                Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
+                Assert.Equal("arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09", requestContext.Elb.TargetGroupArn);
             }
         }
 
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ApplicationLoadBalancerRequestMultiValueTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2349,9 +2263,9 @@ namespace Amazon.Lambda.Tests
             {
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
 
-                Assert.Equal(evnt.Path, "/");
-                Assert.Equal(evnt.HttpMethod, "GET");
-                Assert.Equal(evnt.Body, "not really base64");
+                Assert.Equal("/", evnt.Path);
+                Assert.Equal("GET", evnt.HttpMethod);
+                Assert.Equal("not really base64", evnt.Body);
                 Assert.True(evnt.IsBase64Encoded);
 
                 Assert.Equal(2, evnt.MultiValueQueryStringParameters.Count);
@@ -2372,17 +2286,15 @@ namespace Amazon.Lambda.Tests
 
 
                 var requestContext = evnt.RequestContext;
-                Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
+                Assert.Equal("arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09", requestContext.Elb.TargetGroupArn);
             }
         }
 
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ApplicationLoadBalancerSingleHeaderResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2409,7 +2321,7 @@ namespace Amazon.Lambda.Tests
                 serializedJson = Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            var root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
             Assert.Equal("h1-value1", root["headers"]["Head1"]);
             Assert.Equal("h2-value1", root["headers"]["Head2"]);
@@ -2422,10 +2334,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ApplicationLoadBalancerMultiHeaderResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2453,7 +2363,7 @@ namespace Amazon.Lambda.Tests
 
             JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
-            Assert.Equal(1, root["multiValueHeaders"]["Head1"].Count());
+            Assert.Single(root["multiValueHeaders"]["Head1"]);
             Assert.Equal("h1-value1", root["multiValueHeaders"]["Head1"].First());
 
             Assert.Equal(2, root["multiValueHeaders"]["Head2"].Count());
@@ -2469,10 +2379,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void LexEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2536,10 +2444,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void LexResponse(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2562,12 +2468,12 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("slot-name", lexResponse.DialogAction.SlotToElicit);
                 Assert.Equal(3, lexResponse.DialogAction.ResponseCard.Version);
                 Assert.Equal("application/vnd.amazonaws.card.generic", lexResponse.DialogAction.ResponseCard.ContentType);
-                Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments.Count);
+                Assert.Single(lexResponse.DialogAction.ResponseCard.GenericAttachments);
                 Assert.Equal("card-title", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Title);
                 Assert.Equal("card-sub-title", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].SubTitle);
                 Assert.Equal("URL of the image to be shown", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].ImageUrl);
                 Assert.Equal("URL of the attachment to be associated with the card", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].AttachmentLinkUrl);
-                Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons.Count);
+                Assert.Single(lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons);
                 Assert.Equal("button-text", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Text);
                 Assert.Equal("value sent to server on button click", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Value);
 
@@ -2624,13 +2530,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("List", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Shape);
                 Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.ResolvedValues[0]);
-                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values.Count);
+                Assert.Single(lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values);
                 Assert.Equal("Scalar", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Shape);
                 Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
                 Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Values);
                 Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionDate"]);
@@ -2644,20 +2550,20 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(0.5, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Neutral);
                 Assert.Equal(0.9, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Positive);
                 Assert.Equal("FallbackIntent", lexV2Event.Interpretations[1].Intent.Name);
-                Assert.Equal(0, lexV2Event.Interpretations[1].Intent.Slots.Count);
+                Assert.Empty(lexV2Event.Interpretations[1].Intent.Slots);
 
                 Assert.Equal("ActionDate", lexV2Event.ProposedNextState.DialogAction.SlotToElicit);
                 Assert.Equal("ConfirmIntent", lexV2Event.ProposedNextState.DialogAction.Type);
                 Assert.Equal("NextIntent", lexV2Event.ProposedNextState.Intent.Name);
                 Assert.Equal("None", lexV2Event.ProposedNextState.Intent.ConfirmationState);
-                Assert.Equal(0, lexV2Event.ProposedNextState.Intent.Slots.Count);
+                Assert.Empty(lexV2Event.ProposedNextState.Intent.Slots);
                 Assert.Equal("Waiting", lexV2Event.ProposedNextState.Intent.State);
 
                 Assert.Equal(2, lexV2Event.RequestAttributes.Count);
                 Assert.Equal("value1", lexV2Event.RequestAttributes["key1"]);
                 Assert.Equal("value2", lexV2Event.RequestAttributes["key2"]);
 
-                Assert.Equal(1, lexV2Event.SessionState.ActiveContexts.Count);
+                Assert.Single(lexV2Event.SessionState.ActiveContexts);
                 Assert.Equal(2, lexV2Event.SessionState.ActiveContexts[0].ContextAttributes.Count);
                 Assert.Equal("contextattributevalue1", lexV2Event.SessionState.ActiveContexts[0].ContextAttributes["contextattribute1"]);
                 Assert.Equal("contextattributevalue2", lexV2Event.SessionState.ActiveContexts[0].ContextAttributes["contextattribute2"]);
@@ -2671,13 +2577,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("List", lexV2Event.SessionState.Intent.Slots["ActionType"].Shape);
                 Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues[0]);
-                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Values.Count);
+                Assert.Single(lexV2Event.SessionState.Intent.Slots["ActionType"].Values);
                 Assert.Equal("Scalar", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Shape);
                 Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
                 Assert.Null(lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Values);
                 Assert.Null(lexV2Event.SessionState.Intent.Slots["ActionDate"]);
@@ -2685,8 +2591,8 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("InProgress", lexV2Event.SessionState.Intent.State);
                 Assert.Equal("None", lexV2Event.SessionState.Intent.ConfirmationState);
                 Assert.Equal("85f22c97-b5d3-4a74-9e3d-95446768ecaa", lexV2Event.SessionState.OriginatingRequestId);
-                Assert.Equal(1, lexV2Event.SessionState.RuntimeHints.SlotHints.Count);
-                Assert.Equal(1, lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"].Count);
+                Assert.Single(lexV2Event.SessionState.RuntimeHints.SlotHints);
+                Assert.Single(lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]);
                 Assert.Equal(2, lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues.Count);
                 Assert.Equal("hintvalue1_1", lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[0].Phrase);
                 Assert.Equal("hintvalue1_2", lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[1].Phrase);
@@ -2694,21 +2600,21 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("sessionvalue1", lexV2Event.SessionState.SessionAttributes["sessionattribute1"]);
                 Assert.Equal("sessionvalue2", lexV2Event.SessionState.SessionAttributes["sessionattribute2"]);
 
-                Assert.Equal(1, lexV2Event.Transcriptions.Count);
+                Assert.Single(lexV2Event.Transcriptions);
                 Assert.Equal("testtranscription", lexV2Event.Transcriptions[0].Transcription);
                 Assert.Equal(0.8, lexV2Event.Transcriptions[0].TranscriptionConfidence);
                 Assert.Equal("TestAction", lexV2Event.Transcriptions[0].ResolvedContext.Intent);
-                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots.Count);
+                Assert.Single(lexV2Event.Transcriptions[0].ResolvedSlots);
                 Assert.Equal("List", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Shape);
                 Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.ResolvedValues[0]);
-                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values.Count);
+                Assert.Single(lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values);
                 Assert.Equal("Scalar", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Shape);
                 Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.ResolvedValues[0]);
                 Assert.Null(lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Values);
             }
@@ -2725,16 +2631,16 @@ namespace Amazon.Lambda.Tests
             {
                 var lexV2Response = serializer.Deserialize<LexV2Response>(fileStream);
 
-                Assert.Equal(1, lexV2Response.Messages.Count);
+                Assert.Single(lexV2Response.Messages);
                 Assert.Equal("Test Content", lexV2Response.Messages[0].Content);
                 Assert.Equal("ImageResponseCard", lexV2Response.Messages[0].ContentType);
-                Assert.Equal(1, lexV2Response.Messages[0].ImageResponseCard.Buttons.Count);
+                Assert.Single(lexV2Response.Messages[0].ImageResponseCard.Buttons);
                 Assert.Equal("Take Action", lexV2Response.Messages[0].ImageResponseCard.Buttons[0].Text);
                 Assert.Equal("takeaction", lexV2Response.Messages[0].ImageResponseCard.Buttons[0].Value);
                 Assert.Equal("http://somedomain.com/testimage.png", lexV2Response.Messages[0].ImageResponseCard.ImageUrl);
                 Assert.Equal("Click button to take action", lexV2Response.Messages[0].ImageResponseCard.Subtitle);
                 Assert.Equal("Take Action", lexV2Response.Messages[0].ImageResponseCard.Title);
-                Assert.Equal(1, lexV2Response.SessionState.ActiveContexts.Count);
+                Assert.Single(lexV2Response.SessionState.ActiveContexts);
                 Assert.Equal(2, lexV2Response.SessionState.ActiveContexts[0].ContextAttributes.Count);
                 Assert.Equal("contextattributevalue1", lexV2Response.SessionState.ActiveContexts[0].ContextAttributes["contextattribute1"]);
                 Assert.Equal("contextattributevalue2", lexV2Response.SessionState.ActiveContexts[0].ContextAttributes["contextattribute2"]);
@@ -2748,13 +2654,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("List", lexV2Response.SessionState.Intent.Slots["ActionType"].Shape);
                 Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Response.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues[0]);
-                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Values.Count);
+                Assert.Single(lexV2Response.SessionState.Intent.Slots["ActionType"].Values);
                 Assert.Equal("Scalar", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Shape);
                 Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
                 Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
-                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Single(lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues);
                 Assert.Equal("action value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
                 Assert.Null(lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Values);
                 Assert.Null(lexV2Response.SessionState.Intent.Slots["ActionDate"]);
@@ -2762,8 +2668,8 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("InProgress", lexV2Response.SessionState.Intent.State);
                 Assert.Equal("None", lexV2Response.SessionState.Intent.ConfirmationState);
                 Assert.Equal("85f22c97-b5d3-4a74-9e3d-95446768ecaa", lexV2Response.SessionState.OriginatingRequestId);
-                Assert.Equal(1, lexV2Response.SessionState.RuntimeHints.SlotHints.Count);
-                Assert.Equal(1, lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"].Count);
+                Assert.Single(lexV2Response.SessionState.RuntimeHints.SlotHints);
+                Assert.Single(lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]);
                 Assert.Equal(2, lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues.Count);
                 Assert.Equal("hintvalue1_1", lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[0].Phrase);
                 Assert.Equal("hintvalue1_2", lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[1].Phrase);
@@ -2774,7 +2680,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("value1", lexV2Response.RequestAttributes["key1"]);
                 Assert.Equal("value2", lexV2Response.RequestAttributes["key2"]);
 
-                MemoryStream ms = new MemoryStream();
+                var ms = new MemoryStream();
                 serializer.Serialize<LexV2Response>(lexV2Response, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -2785,14 +2691,10 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        // Test is temporary disabled due to a bug in .NET 8 RC2
-        // https://github.com/dotnet/runtime/issues/93903
-#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisFirehoseEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2802,7 +2704,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisEvent.InvocationId);
                 Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisEvent.DeliveryStreamArn);
                 Assert.Equal("us-east-1", kinesisEvent.Region);
-                Assert.Equal(1, kinesisEvent.Records.Count);
+                Assert.Single(kinesisEvent.Records);
 
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisEvent.Records[0].RecordId);
                 Assert.Equal("aGVsbG8gd29ybGQ=", kinesisEvent.Records[0].Base64EncodedData);
@@ -2813,10 +2715,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisFirehoseResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2824,7 +2724,7 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisResponse = serializer.Deserialize<KinesisFirehoseResponse>(fileStream);
 
-                Assert.Equal(1, kinesisResponse.Records.Count);
+                Assert.Single(kinesisResponse.Records);
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisResponse.Records[0].RecordId);
                 Assert.Equal(KinesisFirehoseResponse.TRANSFORMED_STATE_OK, kinesisResponse.Records[0].Result);
                 Assert.Equal("SEVMTE8gV09STEQ=", kinesisResponse.Records[0].Base64EncodedData);
@@ -2846,10 +2746,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsOutputDeliveryEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2866,10 +2764,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsOutputDeliveryResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2877,7 +2773,7 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisAnalyticsResponse = serializer.Deserialize<KinesisAnalyticsOutputDeliveryResponse>(fileStream);
 
-                Assert.Equal(1, kinesisAnalyticsResponse.Records.Count);
+                Assert.Single(kinesisAnalyticsResponse.Records);
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsResponse.Records[0].RecordId);
                 Assert.Equal(KinesisAnalyticsOutputDeliveryResponse.OK, kinesisAnalyticsResponse.Records[0].Result);
 
@@ -2892,14 +2788,10 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        // Test is temporary disabled due to a bug in .NET 8 RC2
-        // https://github.com/dotnet/runtime/issues/93903
-#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsInputProcessingEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2909,7 +2801,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
                 Assert.Equal("arn:aws:kinesis:us-east-1:AAAAAAAAAAAA:stream/lambda-test", kinesisAnalyticsEvent.StreamArn);
                 Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
-                Assert.Equal(1, kinesisAnalyticsEvent.Records.Count);
+                Assert.Single(kinesisAnalyticsEvent.Records);
 
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordId);
                 Assert.Equal("aGVsbG8gd29ybGQ=", kinesisAnalyticsEvent.Records[0].Base64EncodedData);
@@ -2918,10 +2810,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsInputProcessingResponseTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2929,7 +2819,7 @@ namespace Amazon.Lambda.Tests
             {
                 var kinesisAnalyticsResponse = serializer.Deserialize<KinesisAnalyticsInputPreprocessingResponse>(fileStream);
 
-                Assert.Equal(1, kinesisAnalyticsResponse.Records.Count);
+                Assert.Single(kinesisAnalyticsResponse.Records);
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsResponse.Records[0].RecordId);
                 Assert.Equal(KinesisAnalyticsInputPreprocessingResponse.OK, kinesisAnalyticsResponse.Records[0].Result);
                 Assert.Equal("SEVMTE8gV09STEQ=", kinesisAnalyticsResponse.Records[0].Base64EncodedData);
@@ -2948,14 +2838,10 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        // Test is temporary disabled due to a bug in .NET 8 RC2
-        // https://github.com/dotnet/runtime/issues/93903
-#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsStreamsInputProcessingEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2965,7 +2851,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
                 Assert.Equal("arn:aws:kinesis:us-east-1:AAAAAAAAAAAA:stream/lambda-test", kinesisAnalyticsEvent.StreamArn);
                 Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
-                Assert.Equal(1, kinesisAnalyticsEvent.Records.Count);
+                Assert.Single(kinesisAnalyticsEvent.Records);
 
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordId);
                 Assert.Equal("aGVsbG8gd29ybGQ=", kinesisAnalyticsEvent.Records[0].Base64EncodedData);
@@ -2978,14 +2864,10 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        // Test is temporary disabled due to a bug in .NET 8 RC2
-        // https://github.com/dotnet/runtime/issues/93903
-#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KinesisAnalyticsFirehoseInputProcessingEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -2995,7 +2877,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
                 Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisAnalyticsEvent.StreamArn);
                 Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
-                Assert.Equal(1, kinesisAnalyticsEvent.Records.Count);
+                Assert.Single(kinesisAnalyticsEvent.Records);
 
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordId);
                 Assert.Equal("aGVsbG8gd29ybGQ=", kinesisAnalyticsEvent.Records[0].Base64EncodedData);
@@ -3007,10 +2889,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchLogEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3037,10 +2917,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void BatchJobStateChangeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3048,177 +2926,177 @@ namespace Amazon.Lambda.Tests
             {
                 var jobStateChangeEvent = serializer.Deserialize<BatchJobStateChangeEvent>(fileStream);
 
-                Assert.Equal(jobStateChangeEvent.Version, "0");
-                Assert.Equal(jobStateChangeEvent.Id, "c8f9c4b5-76e5-d76a-f980-7011e206042b");
-                Assert.Equal(jobStateChangeEvent.DetailType, "Batch Job State Change");
-                Assert.Equal(jobStateChangeEvent.Source, "aws.batch");
-                Assert.Equal(jobStateChangeEvent.Account, "aws_account_id");
-                Assert.Equal(jobStateChangeEvent.Time.ToUniversalTime(), DateTime.Parse("2017-10-23T17:56:03Z").ToUniversalTime());
-                Assert.Equal(jobStateChangeEvent.Region, "us-east-1");
-                Assert.Equal(jobStateChangeEvent.Resources.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Resources[0], "arn:aws:batch:us-east-1:aws_account_id:job/4c7599ae-0a82-49aa-ba5a-4727fcce14a8");
-                Assert.IsType(typeof(Job), jobStateChangeEvent.Detail);
-                Assert.Equal(jobStateChangeEvent.Detail.JobName, "event-test");
-                Assert.Equal(jobStateChangeEvent.Detail.JobId, "4c7599ae-0a82-49aa-ba5a-4727fcce14a8");
-                Assert.Equal(jobStateChangeEvent.Detail.JobQueue, "arn:aws:batch:us-east-1:aws_account_id:job-queue/HighPriority");
-                Assert.Equal(jobStateChangeEvent.Detail.Status, "RUNNABLE");
-                Assert.Equal(jobStateChangeEvent.Detail.Attempts.Count, 0);
-                Assert.Equal(jobStateChangeEvent.Detail.CreatedAt, 1508781340401);
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.Attempts, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].Action, "EXIT");
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnExitCode, "*");
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnReason, "*");
-                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnStatusReason, "*");
-                Assert.Equal(jobStateChangeEvent.Detail.DependsOn.Count, 0);
-                Assert.Equal(jobStateChangeEvent.Detail.JobDefinition, "arn:aws:batch:us-east-1:aws_account_id:job-definition/first-run-job-definition:1");
-                Assert.Equal(jobStateChangeEvent.Detail.Parameters.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Parameters["test"], "abc");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Image, "busybox");
+                Assert.Equal("0", jobStateChangeEvent.Version);
+                Assert.Equal("c8f9c4b5-76e5-d76a-f980-7011e206042b", jobStateChangeEvent.Id);
+                Assert.Equal("Batch Job State Change", jobStateChangeEvent.DetailType);
+                Assert.Equal("aws.batch", jobStateChangeEvent.Source);
+                Assert.Equal("aws_account_id", jobStateChangeEvent.Account);
+                Assert.Equal(DateTime.Parse("2017-10-23T17:56:03Z").ToUniversalTime(), jobStateChangeEvent.Time.ToUniversalTime());
+                Assert.Equal("us-east-1", jobStateChangeEvent.Region);
+                Assert.Single(jobStateChangeEvent.Resources);
+                Assert.Equal("arn:aws:batch:us-east-1:aws_account_id:job/4c7599ae-0a82-49aa-ba5a-4727fcce14a8", jobStateChangeEvent.Resources[0]);
+                Assert.IsType<Job>(jobStateChangeEvent.Detail);
+                Assert.Equal("event-test", jobStateChangeEvent.Detail.JobName);
+                Assert.Equal("4c7599ae-0a82-49aa-ba5a-4727fcce14a8", jobStateChangeEvent.Detail.JobId);
+                Assert.Equal("arn:aws:batch:us-east-1:aws_account_id:job-queue/HighPriority", jobStateChangeEvent.Detail.JobQueue);
+                Assert.Equal("RUNNABLE", jobStateChangeEvent.Detail.Status);
+                Assert.Empty(jobStateChangeEvent.Detail.Attempts);
+                Assert.Equal(1508781340401, jobStateChangeEvent.Detail.CreatedAt);
+                Assert.Equal(1, jobStateChangeEvent.Detail.RetryStrategy.Attempts);
+                Assert.Single(jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit);
+                Assert.Equal("EXIT", jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].Action);
+                Assert.Equal("*", jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnExitCode);
+                Assert.Equal("*", jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnReason);
+                Assert.Equal("*", jobStateChangeEvent.Detail.RetryStrategy.EvaluateOnExit[0].OnStatusReason);
+                Assert.Empty(jobStateChangeEvent.Detail.DependsOn);
+                Assert.Equal("arn:aws:batch:us-east-1:aws_account_id:job-definition/first-run-job-definition:1", jobStateChangeEvent.Detail.JobDefinition);
+                Assert.Single(jobStateChangeEvent.Detail.Parameters);
+                Assert.Equal("abc", jobStateChangeEvent.Detail.Parameters["test"]);
+                Assert.Equal("busybox", jobStateChangeEvent.Detail.Container.Image);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.ResourceRequirements);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.ResourceRequirements.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.ResourceRequirements[0].Type, "MEMORY");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.ResourceRequirements[0].Value, "2000");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.ResourceRequirements[1].Type, "VCPU");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.ResourceRequirements[1].Value, "2");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Vcpus, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Memory, 2000);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Command.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Command[0], "echo");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Command[1], "'hello world'");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[0].Name, "myhostsource");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[0].Host.SourcePath, "/data");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].Name, "efs");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.AccessPointId, "fsap-XXXXXXXXXXXXXXXXX");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.Iam, "ENABLED");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.FileSystemId, "fs-XXXXXXXXX");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.RootDirectory, "/");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.TransitEncryption, "ENABLED");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.TransitEncryptionPort, 12345);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.ResourceRequirements.Count);
+                Assert.Equal("MEMORY", jobStateChangeEvent.Detail.Container.ResourceRequirements[0].Type);
+                Assert.Equal("2000", jobStateChangeEvent.Detail.Container.ResourceRequirements[0].Value);
+                Assert.Equal("VCPU", jobStateChangeEvent.Detail.Container.ResourceRequirements[1].Type);
+                Assert.Equal("2", jobStateChangeEvent.Detail.Container.ResourceRequirements[1].Value);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.Vcpus);
+                Assert.Equal(2000, jobStateChangeEvent.Detail.Container.Memory);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.Command.Count);
+                Assert.Equal("echo", jobStateChangeEvent.Detail.Container.Command[0]);
+                Assert.Equal("'hello world'", jobStateChangeEvent.Detail.Container.Command[1]);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.Volumes.Count);
+                Assert.Equal("myhostsource", jobStateChangeEvent.Detail.Container.Volumes[0].Name);
+                Assert.Equal("/data", jobStateChangeEvent.Detail.Container.Volumes[0].Host.SourcePath);
+                Assert.Equal("efs", jobStateChangeEvent.Detail.Container.Volumes[1].Name);
+                Assert.Equal("fsap-XXXXXXXXXXXXXXXXX", jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.AccessPointId);
+                Assert.Equal("ENABLED", jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.Iam);
+                Assert.Equal("fs-XXXXXXXXX", jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.FileSystemId);
+                Assert.Equal("/", jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.RootDirectory);
+                Assert.Equal("ENABLED", jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.TransitEncryption);
+                Assert.Equal(12345, jobStateChangeEvent.Detail.Container.Volumes[1].EfsVolumeConfiguration.TransitEncryptionPort);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.Environment);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Environment.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Environment[0].Name, "MANAGED_BY_AWS");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Environment[0].Value, "STARTED_BY_STEP_FUNCTIONS");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints[0].ContainerPath, "/data");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints[0].ReadOnly, true);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints[0].SourceVolume, "myhostsource");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints[1].ContainerPath, "/mount/efs");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints[1].SourceVolume, "efs");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Ulimits.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Ulimits[0].HardLimit, 2048);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Ulimits[0].Name, "nofile");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Ulimits[0].SoftLimit, 2048);
+                Assert.Single(jobStateChangeEvent.Detail.Container.Environment);
+                Assert.Equal("MANAGED_BY_AWS", jobStateChangeEvent.Detail.Container.Environment[0].Name);
+                Assert.Equal("STARTED_BY_STEP_FUNCTIONS", jobStateChangeEvent.Detail.Container.Environment[0].Value);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.MountPoints.Count);
+                Assert.Equal("/data", jobStateChangeEvent.Detail.Container.MountPoints[0].ContainerPath);
+                Assert.True(jobStateChangeEvent.Detail.Container.MountPoints[0].ReadOnly);
+                Assert.Equal("myhostsource", jobStateChangeEvent.Detail.Container.MountPoints[0].SourceVolume);
+                Assert.Equal("/mount/efs", jobStateChangeEvent.Detail.Container.MountPoints[1].ContainerPath);
+                Assert.Equal("efs", jobStateChangeEvent.Detail.Container.MountPoints[1].SourceVolume);
+                Assert.Single(jobStateChangeEvent.Detail.Container.Ulimits);
+                Assert.Equal(2048, jobStateChangeEvent.Detail.Container.Ulimits[0].HardLimit);
+                Assert.Equal("nofile", jobStateChangeEvent.Detail.Container.Ulimits[0].Name);
+                Assert.Equal(2048, jobStateChangeEvent.Detail.Container.Ulimits[0].SoftLimit);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.LinuxParameters);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].ContainerPath, "/dev/sda");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].HostPath, "/dev/xvdc");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].Permissions.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].Permissions[0], "MKNOD");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.InitProcessEnabled, true);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.SharedMemorySize, 64);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.MaxSwap, 1024);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Swappiness, 55);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].ContainerPath, "/run");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].Size, 65536);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions[0], "noexec");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions[1], "nosuid");
+                Assert.Single(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices);
+                Assert.Equal("/dev/sda", jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].ContainerPath);
+                Assert.Equal("/dev/xvdc", jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].HostPath);
+                Assert.Single(jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].Permissions);
+                Assert.Equal("MKNOD", jobStateChangeEvent.Detail.Container.LinuxParameters.Devices[0].Permissions[0]);
+                Assert.True(jobStateChangeEvent.Detail.Container.LinuxParameters.InitProcessEnabled);
+                Assert.Equal(64, jobStateChangeEvent.Detail.Container.LinuxParameters.SharedMemorySize);
+                Assert.Equal(1024, jobStateChangeEvent.Detail.Container.LinuxParameters.MaxSwap);
+                Assert.Equal(55, jobStateChangeEvent.Detail.Container.LinuxParameters.Swappiness);
+                Assert.Single(jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs);
+                Assert.Equal("/run", jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].ContainerPath);
+                Assert.Equal(65536, jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].Size);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions.Count);
+                Assert.Equal("noexec", jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions[0]);
+                Assert.Equal("nosuid", jobStateChangeEvent.Detail.Container.LinuxParameters.Tmpfs[0].MountOptions[1]);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.LogConfiguration);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.LogDriver, "json-file");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.Options.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.Options["max-size"], "10m");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.Options["max-file"], "3");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions[0].Name, "apikey");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions[0].ValueFrom, "ddApiKey");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Secrets.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Secrets[0].Name, "DATABASE_PASSWORD");
-                Assert.Equal(jobStateChangeEvent.Detail.Container.Secrets[0].ValueFrom, "arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter");
+                Assert.Equal("json-file", jobStateChangeEvent.Detail.Container.LogConfiguration.LogDriver);
+                Assert.Equal(2, jobStateChangeEvent.Detail.Container.LogConfiguration.Options.Count);
+                Assert.Equal("10m", jobStateChangeEvent.Detail.Container.LogConfiguration.Options["max-size"]);
+                Assert.Equal("3", jobStateChangeEvent.Detail.Container.LogConfiguration.Options["max-file"]);
+                Assert.Single(jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions);
+                Assert.Equal("apikey", jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions[0].Name);
+                Assert.Equal("ddApiKey", jobStateChangeEvent.Detail.Container.LogConfiguration.SecretOptions[0].ValueFrom);
+                Assert.Single(jobStateChangeEvent.Detail.Container.Secrets);
+                Assert.Equal("DATABASE_PASSWORD", jobStateChangeEvent.Detail.Container.Secrets[0].Name);
+                Assert.Equal("arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter", jobStateChangeEvent.Detail.Container.Secrets[0].ValueFrom);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.NetworkConfiguration);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.NetworkConfiguration.AssignPublicIp, "ENABLED");
+                Assert.Equal("ENABLED", jobStateChangeEvent.Detail.Container.NetworkConfiguration.AssignPublicIp);
                 Assert.NotNull(jobStateChangeEvent.Detail.Container.FargatePlatformConfiguration);
-                Assert.Equal(jobStateChangeEvent.Detail.Container.FargatePlatformConfiguration.PlatformVersion, "LATEST");
+                Assert.Equal("LATEST", jobStateChangeEvent.Detail.Container.FargatePlatformConfiguration.PlatformVersion);
                 Assert.NotNull(jobStateChangeEvent.Detail.NodeProperties);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.MainNode, 0);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NumNodes, 0);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].TargetNodes, "0:1");
+                Assert.Equal(0, jobStateChangeEvent.Detail.NodeProperties.MainNode);
+                Assert.Equal(0, jobStateChangeEvent.Detail.NodeProperties.NumNodes);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties);
+                Assert.Equal("0:1", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].TargetNodes);
                 Assert.NotNull(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Image, "busybox");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[0].Type, "MEMORY");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[0].Value, "2000");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[1].Type, "VCPU");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[1].Value, "2");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Vcpus, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Memory, 2000);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command[0], "echo");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command[1], "'hello world'");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[0].Name, "myhostsource");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[0].Host.SourcePath, "/data");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].Name, "efs");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.AccessPointId, "fsap-XXXXXXXXXXXXXXXXX");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.Iam, "ENABLED");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.FileSystemId, "fs-XXXXXXXXX");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.RootDirectory, "/");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.TransitEncryption, "ENABLED");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.TransitEncryptionPort, 12345);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment[0].Name, "MANAGED_BY_AWS");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment[0].Value, "STARTED_BY_STEP_FUNCTIONS");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].ContainerPath, "/data");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].ReadOnly, true);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].SourceVolume, "myhostsource");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[1].ContainerPath, "/mount/efs");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[1].SourceVolume, "efs");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].HardLimit, 2048);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].Name, "nofile");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].SoftLimit, 2048);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ExecutionRoleArn, "arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.InstanceType, "p3.2xlarge");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.User, "testuser");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.JobRoleArn, "arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].HostPath, "/dev/xvdc");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].ContainerPath, "/dev/sda");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].Permissions.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].Permissions[0], "MKNOD");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.InitProcessEnabled, true);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.SharedMemorySize, 64);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.MaxSwap, 1024);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Swappiness, 55);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].ContainerPath, "/run");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].Size, 65536);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions.Count, 2);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions[0], "noexec");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions[1], "nosuid");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.LogDriver, "awslogs");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.Options["awslogs-group"], "awslogs-wordpress");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.Options["awslogs-stream-prefix"], "awslogs-example");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions[0].Name, "apikey");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions[0].ValueFrom, "ddApiKey");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets[0].Name, "DATABASE_PASSWORD");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets[0].ValueFrom, "arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.NetworkConfiguration.AssignPublicIp, "DISABLED");
-                Assert.Equal(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.FargatePlatformConfiguration.PlatformVersion, "LATEST");
-                Assert.Equal(jobStateChangeEvent.Detail.PropagateTags, true);
-                Assert.Equal(jobStateChangeEvent.Detail.Timeout.AttemptDurationSeconds, 90);
-                Assert.Equal(jobStateChangeEvent.Detail.Tags.Count, 3);
-                Assert.Equal(jobStateChangeEvent.Detail.Tags["Service"], "Batch");
-                Assert.Equal(jobStateChangeEvent.Detail.Tags["Name"], "JobDefinitionTag");
-                Assert.Equal(jobStateChangeEvent.Detail.Tags["Expected"], "MergeTag");
-                Assert.Equal(jobStateChangeEvent.Detail.PlatformCapabilities.Count, 1);
-                Assert.Equal(jobStateChangeEvent.Detail.PlatformCapabilities[0], "FARGATE");
+                Assert.Equal("busybox", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Image);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements.Count);
+                Assert.Equal("MEMORY", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[0].Type);
+                Assert.Equal("2000", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[0].Value);
+                Assert.Equal("VCPU", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[1].Type);
+                Assert.Equal("2", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ResourceRequirements[1].Value);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Vcpus);
+                Assert.Equal(2000, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Memory);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command.Count);
+                Assert.Equal("echo", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command[0]);
+                Assert.Equal("'hello world'", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Command[1]);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes.Count);
+                Assert.Equal("myhostsource", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[0].Name);
+                Assert.Equal("/data", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[0].Host.SourcePath);
+                Assert.Equal("efs", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].Name);
+                Assert.Equal("fsap-XXXXXXXXXXXXXXXXX", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.AccessPointId);
+                Assert.Equal("ENABLED", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.AuthorizationConfig.Iam);
+                Assert.Equal("fs-XXXXXXXXX", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.FileSystemId);
+                Assert.Equal("/", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.RootDirectory);
+                Assert.Equal("ENABLED", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.TransitEncryption);
+                Assert.Equal(12345, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Volumes[1].EfsVolumeConfiguration.TransitEncryptionPort);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment);
+                Assert.Equal("MANAGED_BY_AWS", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment[0].Name);
+                Assert.Equal("STARTED_BY_STEP_FUNCTIONS", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Environment[0].Value);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints.Count);
+                Assert.Equal("/data", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].ContainerPath);
+                Assert.True(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].ReadOnly);
+                Assert.Equal("myhostsource", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[0].SourceVolume);
+                Assert.Equal("/mount/efs", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[1].ContainerPath);
+                Assert.Equal("efs", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.MountPoints[1].SourceVolume);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits);
+                Assert.Equal(2048, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].HardLimit);
+                Assert.Equal("nofile", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].Name);
+                Assert.Equal(2048, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Ulimits[0].SoftLimit);
+                Assert.Equal("arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.ExecutionRoleArn);
+                Assert.Equal("p3.2xlarge", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.InstanceType);
+                Assert.Equal("testuser", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.User);
+                Assert.Equal("arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.JobRoleArn);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices);
+                Assert.Equal("/dev/xvdc", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].HostPath);
+                Assert.Equal("/dev/sda", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].ContainerPath);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].Permissions);
+                Assert.Equal("MKNOD", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Devices[0].Permissions[0]);
+                Assert.True(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.InitProcessEnabled);
+                Assert.Equal(64, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.SharedMemorySize);
+                Assert.Equal(1024, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.MaxSwap);
+                Assert.Equal(55, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Swappiness);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs);
+                Assert.Equal("/run", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].ContainerPath);
+                Assert.Equal(65536, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].Size);
+                Assert.Equal(2, jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions.Count);
+                Assert.Equal("noexec", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions[0]);
+                Assert.Equal("nosuid", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LinuxParameters.Tmpfs[0].MountOptions[1]);
+                Assert.Equal("awslogs", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.LogDriver);
+                Assert.Equal("awslogs-wordpress", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.Options["awslogs-group"]);
+                Assert.Equal("awslogs-example", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.Options["awslogs-stream-prefix"]);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions);
+                Assert.Equal("apikey", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions[0].Name);
+                Assert.Equal("ddApiKey", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.LogConfiguration.SecretOptions[0].ValueFrom);
+                Assert.Single(jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets);
+                Assert.Equal("DATABASE_PASSWORD", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets[0].Name);
+                Assert.Equal("arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.Secrets[0].ValueFrom);
+                Assert.Equal("DISABLED", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.NetworkConfiguration.AssignPublicIp);
+                Assert.Equal("LATEST", jobStateChangeEvent.Detail.NodeProperties.NodeRangeProperties[0].Container.FargatePlatformConfiguration.PlatformVersion);
+                Assert.True(jobStateChangeEvent.Detail.PropagateTags);
+                Assert.Equal(90, jobStateChangeEvent.Detail.Timeout.AttemptDurationSeconds);
+                Assert.Equal(3, jobStateChangeEvent.Detail.Tags.Count);
+                Assert.Equal("Batch", jobStateChangeEvent.Detail.Tags["Service"]);
+                Assert.Equal("JobDefinitionTag", jobStateChangeEvent.Detail.Tags["Name"]);
+                Assert.Equal("MergeTag", jobStateChangeEvent.Detail.Tags["Expected"]);
+                Assert.Single(jobStateChangeEvent.Detail.PlatformCapabilities);
+                Assert.Equal("FARGATE", jobStateChangeEvent.Detail.PlatformCapabilities[0]);
 
                 Handle(jobStateChangeEvent);
             }
@@ -3231,26 +3109,24 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ScheduledEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("scheduled-event.json"))
             {
                 var scheduledEvent = serializer.Deserialize<ScheduledEvent>(fileStream);
-                Assert.Equal(scheduledEvent.Version, "0");
-                Assert.Equal(scheduledEvent.Id, "cdc73f9d-aea9-11e3-9d5a-835b769c0d9c");
-                Assert.Equal(scheduledEvent.DetailType, "Scheduled Event");
-                Assert.Equal(scheduledEvent.Source, "aws.events");
-                Assert.Equal(scheduledEvent.Account, "123456789012");
-                Assert.Equal(scheduledEvent.Time.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00Z").ToUniversalTime());
-                Assert.Equal(scheduledEvent.Region, "us-east-1");
-                Assert.Equal(scheduledEvent.Resources.Count, 1);
-                Assert.Equal(scheduledEvent.Resources[0], "arn:aws:events:us-east-1:123456789012:rule/my-schedule");
-                Assert.IsType(typeof(Detail), scheduledEvent.Detail);
+                Assert.Equal("0", scheduledEvent.Version);
+                Assert.Equal("cdc73f9d-aea9-11e3-9d5a-835b769c0d9c", scheduledEvent.Id);
+                Assert.Equal("Scheduled Event", scheduledEvent.DetailType);
+                Assert.Equal("aws.events", scheduledEvent.Source);
+                Assert.Equal("123456789012", scheduledEvent.Account);
+                Assert.Equal(DateTime.Parse("1970-01-01T00:00:00Z").ToUniversalTime(), scheduledEvent.Time.ToUniversalTime());
+                Assert.Equal("us-east-1", scheduledEvent.Region);
+                Assert.Single(scheduledEvent.Resources);
+                Assert.Equal("arn:aws:events:us-east-1:123456789012:rule/my-schedule", scheduledEvent.Resources[0]);
+                Assert.IsType<Detail>(scheduledEvent.Detail);
 
                 Handle(scheduledEvent);
             }
@@ -3263,10 +3139,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ECSContainerInstanceStateChangeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3274,38 +3148,38 @@ namespace Amazon.Lambda.Tests
             {
                 var ecsEvent = serializer.Deserialize<ECSContainerInstanceStateChangeEvent>(fileStream);
 
-                Assert.Equal(ecsEvent.Version, "0");
-                Assert.Equal(ecsEvent.Id, "8952ba83-7be2-4ab5-9c32-6687532d15a2");
-                Assert.Equal(ecsEvent.DetailType, "ECS Container Instance State Change");
-                Assert.Equal(ecsEvent.Source, "aws.ecs");
-                Assert.Equal(ecsEvent.Account, "111122223333");
-                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Region, "us-east-1");
-                Assert.Equal(ecsEvent.Resources.Count, 1);
-                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
-                Assert.IsType(typeof(ContainerInstance), ecsEvent.Detail);
-                Assert.Equal(ecsEvent.Detail.AgentConnected, true);
-                Assert.Equal(ecsEvent.Detail.Attributes.Count, 14);
-                Assert.Equal(ecsEvent.Detail.Attributes[0].Name, "com.amazonaws.ecs.capability.logging-driver.syslog");
-                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
-                Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
-                Assert.Equal(ecsEvent.Detail.Ec2InstanceId, "i-f3a8506b");
-                Assert.Equal(ecsEvent.Detail.RegisteredResources.Count, 4);
-                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Name, "CPU");
-                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Type, "INTEGER");
-                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].IntegerValue, 2048);
-                Assert.Equal(ecsEvent.Detail.RegisteredResources[2].StringSetValue[0], "22");
-                Assert.Equal(ecsEvent.Detail.RemainingResources.Count, 4);
-                Assert.Equal(ecsEvent.Detail.RemainingResources[0].Name, "CPU");
-                Assert.Equal(ecsEvent.Detail.RemainingResources[0].Type, "INTEGER");
-                Assert.Equal(ecsEvent.Detail.RemainingResources[0].IntegerValue, 1988);
-                Assert.Equal(ecsEvent.Detail.RemainingResources[2].StringSetValue[0], "22");
-                Assert.Equal(ecsEvent.Detail.Status, "ACTIVE");
-                Assert.Equal(ecsEvent.Detail.Version, 14801);
-                Assert.Equal(ecsEvent.Detail.VersionInfo.AgentHash, "aebcbca");
-                Assert.Equal(ecsEvent.Detail.VersionInfo.AgentVersion, "1.13.0");
-                Assert.Equal(ecsEvent.Detail.VersionInfo.DockerVersion, "DockerVersion: 1.11.2");
-                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.991Z").ToUniversalTime());
+                Assert.Equal("0", ecsEvent.Version);
+                Assert.Equal("8952ba83-7be2-4ab5-9c32-6687532d15a2", ecsEvent.Id);
+                Assert.Equal("ECS Container Instance State Change", ecsEvent.DetailType);
+                Assert.Equal("aws.ecs", ecsEvent.Source);
+                Assert.Equal("111122223333", ecsEvent.Account);
+                Assert.Equal(DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime(), ecsEvent.Time.ToUniversalTime());
+                Assert.Equal("us-east-1", ecsEvent.Region);
+                Assert.Single(ecsEvent.Resources);
+                Assert.Equal("arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315", ecsEvent.Resources[0]);
+                Assert.IsType<ContainerInstance>(ecsEvent.Detail);
+                Assert.True(ecsEvent.Detail.AgentConnected);
+                Assert.Equal(14, ecsEvent.Detail.Attributes.Count);
+                Assert.Equal("com.amazonaws.ecs.capability.logging-driver.syslog", ecsEvent.Detail.Attributes[0].Name);
+                Assert.Equal("arn:aws:ecs:us-east-1:111122223333:cluster/default", ecsEvent.Detail.ClusterArn);
+                Assert.Equal("arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315", ecsEvent.Detail.ContainerInstanceArn);
+                Assert.Equal("i-f3a8506b", ecsEvent.Detail.Ec2InstanceId);
+                Assert.Equal(4, ecsEvent.Detail.RegisteredResources.Count);
+                Assert.Equal("CPU", ecsEvent.Detail.RegisteredResources[0].Name);
+                Assert.Equal("INTEGER", ecsEvent.Detail.RegisteredResources[0].Type);
+                Assert.Equal(2048, ecsEvent.Detail.RegisteredResources[0].IntegerValue);
+                Assert.Equal("22", ecsEvent.Detail.RegisteredResources[2].StringSetValue[0]);
+                Assert.Equal(4, ecsEvent.Detail.RemainingResources.Count);
+                Assert.Equal("CPU", ecsEvent.Detail.RemainingResources[0].Name);
+                Assert.Equal("INTEGER", ecsEvent.Detail.RemainingResources[0].Type);
+                Assert.Equal(1988, ecsEvent.Detail.RemainingResources[0].IntegerValue);
+                Assert.Equal("22", ecsEvent.Detail.RemainingResources[2].StringSetValue[0]);
+                Assert.Equal("ACTIVE", ecsEvent.Detail.Status);
+                Assert.Equal(14801, ecsEvent.Detail.Version);
+                Assert.Equal("aebcbca", ecsEvent.Detail.VersionInfo.AgentHash);
+                Assert.Equal("1.13.0", ecsEvent.Detail.VersionInfo.AgentVersion);
+                Assert.Equal("DockerVersion: 1.11.2", ecsEvent.Detail.VersionInfo.DockerVersion);
+                Assert.Equal(DateTime.Parse("2016-12-06T16:41:06.991Z").ToUniversalTime(), ecsEvent.Detail.UpdatedAt.ToUniversalTime());
 
                 Handle(ecsEvent);
             }
@@ -3314,10 +3188,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ECSTaskStateChangeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3325,78 +3197,78 @@ namespace Amazon.Lambda.Tests
             {
                 var ecsEvent = serializer.Deserialize<ECSTaskStateChangeEvent>(fileStream);
 
-                Assert.Equal(ecsEvent.Version, "0");
-                Assert.Equal(ecsEvent.Id, "3317b2af-7005-947d-b652-f55e762e571a");
-                Assert.Equal(ecsEvent.DetailType, "ECS Task State Change");
-                Assert.Equal(ecsEvent.Source, "aws.ecs");
-                Assert.Equal(ecsEvent.Account, "111122223333");
-                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Region, "us-west-2");
+                Assert.Equal("0", ecsEvent.Version);
+                Assert.Equal("3317b2af-7005-947d-b652-f55e762e571a", ecsEvent.Id);
+                Assert.Equal("ECS Task State Change", ecsEvent.DetailType);
+                Assert.Equal("aws.ecs", ecsEvent.Source);
+                Assert.Equal("111122223333", ecsEvent.Account);
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:58Z").ToUniversalTime(), ecsEvent.Time.ToUniversalTime());
+                Assert.Equal("us-west-2", ecsEvent.Region);
                 Assert.NotNull(ecsEvent.Resources);
-                Assert.Equal(ecsEvent.Resources.Count, 1);
-                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
+                Assert.Single(ecsEvent.Resources);
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad", ecsEvent.Resources[0]);
                 Assert.NotNull(ecsEvent.Detail);
-                Assert.IsType(typeof(Task), ecsEvent.Detail);
+                Assert.IsType<Task>(ecsEvent.Detail);
 
                 Assert.NotNull(ecsEvent.Detail.Attachments);
-                Assert.Equal(ecsEvent.Detail.Attachments.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Id, "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Type, "eni");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Status, "ATTACHED");
+                Assert.Single(ecsEvent.Detail.Attachments);
+                Assert.Equal("1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8", ecsEvent.Detail.Attachments[0].Id);
+                Assert.Equal("eni", ecsEvent.Detail.Attachments[0].Type);
+                Assert.Equal("ATTACHED", ecsEvent.Detail.Attachments[0].Status);
                 Assert.NotNull(ecsEvent.Detail.Attachments[0].Details);
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details.Count, 4);
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[0].Name, "subnetId");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[0].Value, "subnet-abcd1234");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[1].Name, "networkInterfaceId");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[1].Value, "eni-abcd1234");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[2].Name, "macAddress");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[2].Value, "0a:98:eb:a7:29:ba");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[3].Name, "privateIPv4Address");
-                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[3].Value, "10.0.0.139");
+                Assert.Equal(4, ecsEvent.Detail.Attachments[0].Details.Count);
+                Assert.Equal("subnetId", ecsEvent.Detail.Attachments[0].Details[0].Name);
+                Assert.Equal("subnet-abcd1234", ecsEvent.Detail.Attachments[0].Details[0].Value);
+                Assert.Equal("networkInterfaceId", ecsEvent.Detail.Attachments[0].Details[1].Name);
+                Assert.Equal("eni-abcd1234", ecsEvent.Detail.Attachments[0].Details[1].Value);
+                Assert.Equal("macAddress", ecsEvent.Detail.Attachments[0].Details[2].Name);
+                Assert.Equal("0a:98:eb:a7:29:ba", ecsEvent.Detail.Attachments[0].Details[2].Value);
+                Assert.Equal("privateIPv4Address", ecsEvent.Detail.Attachments[0].Details[3].Name);
+                Assert.Equal("10.0.0.139", ecsEvent.Detail.Attachments[0].Details[3].Value);
 
-                Assert.Equal(ecsEvent.Detail.AvailabilityZone, "us-west-2c");
-                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-west-2:111122223333:cluster/FargateCluster");
+                Assert.Equal("us-west-2c", ecsEvent.Detail.AvailabilityZone);
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:cluster/FargateCluster", ecsEvent.Detail.ClusterArn);
 
                 Assert.NotNull(ecsEvent.Detail.Containers);
-                Assert.Equal(ecsEvent.Detail.Containers.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Containers[0].ContainerArn, "arn:aws:ecs:us-west-2:111122223333:container/cf159fd6-3e3f-4a9e-84f9-66cbe726af01");
-                Assert.Equal(ecsEvent.Detail.Containers[0].ExitCode, 0);
-                Assert.Equal(ecsEvent.Detail.Containers[0].LastStatus, "RUNNING");
-                Assert.Equal(ecsEvent.Detail.Containers[0].Name, "FargateApp");
-                Assert.Equal(ecsEvent.Detail.Containers[0].Image, "111122223333.dkr.ecr.us-west-2.amazonaws.com/hello-repository:latest");
-                Assert.Equal(ecsEvent.Detail.Containers[0].ImageDigest, "sha256:74b2c688c700ec95a93e478cdb959737c148df3fbf5ea706abe0318726e885e6");
-                Assert.Equal(ecsEvent.Detail.Containers[0].RuntimeId, "ad64cbc71c7fb31c55507ec24c9f77947132b03d48d9961115cf24f3b7307e1e");
-                Assert.Equal(ecsEvent.Detail.Containers[0].TaskArn, "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
+                Assert.Single(ecsEvent.Detail.Containers);
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:container/cf159fd6-3e3f-4a9e-84f9-66cbe726af01", ecsEvent.Detail.Containers[0].ContainerArn);
+                Assert.Equal(0, ecsEvent.Detail.Containers[0].ExitCode);
+                Assert.Equal("RUNNING", ecsEvent.Detail.Containers[0].LastStatus);
+                Assert.Equal("FargateApp", ecsEvent.Detail.Containers[0].Name);
+                Assert.Equal("111122223333.dkr.ecr.us-west-2.amazonaws.com/hello-repository:latest", ecsEvent.Detail.Containers[0].Image);
+                Assert.Equal("sha256:74b2c688c700ec95a93e478cdb959737c148df3fbf5ea706abe0318726e885e6", ecsEvent.Detail.Containers[0].ImageDigest);
+                Assert.Equal("ad64cbc71c7fb31c55507ec24c9f77947132b03d48d9961115cf24f3b7307e1e", ecsEvent.Detail.Containers[0].RuntimeId);
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad", ecsEvent.Detail.Containers[0].TaskArn);
                 Assert.NotNull(ecsEvent.Detail.Containers[0].NetworkInterfaces);
-                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces[0].AttachmentId, "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8");
-                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces[0].PrivateIpv4Address, "10.0.0.139");
-                Assert.Equal(ecsEvent.Detail.Containers[0].Cpu, "0");
+                Assert.Single(ecsEvent.Detail.Containers[0].NetworkInterfaces);
+                Assert.Equal("1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8", ecsEvent.Detail.Containers[0].NetworkInterfaces[0].AttachmentId);
+                Assert.Equal("10.0.0.139", ecsEvent.Detail.Containers[0].NetworkInterfaces[0].PrivateIpv4Address);
+                Assert.Equal("0", ecsEvent.Detail.Containers[0].Cpu);
 
-                Assert.Equal(ecsEvent.Detail.CreatedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:34.402Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.LaunchType, "FARGATE");
-                Assert.Equal(ecsEvent.Detail.Cpu, "256");
-                Assert.Equal(ecsEvent.Detail.Memory, "512");
-                Assert.Equal(ecsEvent.Detail.DesiredStatus, "RUNNING");
-                Assert.Equal(ecsEvent.Detail.Group, "family:sample-fargate");
-                Assert.Equal(ecsEvent.Detail.LastStatus, "RUNNING");
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:34.402Z").ToUniversalTime(), ecsEvent.Detail.CreatedAt.ToUniversalTime());
+                Assert.Equal("FARGATE", ecsEvent.Detail.LaunchType);
+                Assert.Equal("256", ecsEvent.Detail.Cpu);
+                Assert.Equal("512", ecsEvent.Detail.Memory);
+                Assert.Equal("RUNNING", ecsEvent.Detail.DesiredStatus);
+                Assert.Equal("family:sample-fargate", ecsEvent.Detail.Group);
+                Assert.Equal("RUNNING", ecsEvent.Detail.LastStatus);
 
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Name, "FargateApp");
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Name, "testname");
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Value, "testvalue");
+                Assert.Single(ecsEvent.Detail.Overrides.ContainerOverrides);
+                Assert.Equal("FargateApp", ecsEvent.Detail.Overrides.ContainerOverrides[0].Name);
+                Assert.Single(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment);
+                Assert.Equal("testname", ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Name);
+                Assert.Equal("testvalue", ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Value);
 
-                Assert.Equal(ecsEvent.Detail.Connectivity, "CONNECTED");
-                Assert.Equal(ecsEvent.Detail.ConnectivityAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:38.453Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.PullStartedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:52.103Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.StartedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.PullStoppedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:55.103Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.TaskArn, "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
-                Assert.Equal(ecsEvent.Detail.TaskDefinitionArn, "arn:aws:ecs:us-west-2:111122223333:task-definition/sample-fargate:1");
-                Assert.Equal(ecsEvent.Detail.Version, 4);
-                Assert.Equal(ecsEvent.Detail.PlatformVersion, "1.3.0");
+                Assert.Equal("CONNECTED", ecsEvent.Detail.Connectivity);
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:38.453Z").ToUniversalTime(), ecsEvent.Detail.ConnectivityAt.ToUniversalTime());
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:52.103Z").ToUniversalTime(), ecsEvent.Detail.PullStartedAt.ToUniversalTime());
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime(), ecsEvent.Detail.StartedAt.ToUniversalTime());
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:55.103Z").ToUniversalTime(), ecsEvent.Detail.PullStoppedAt.ToUniversalTime());
+                Assert.Equal(DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime(), ecsEvent.Detail.UpdatedAt.ToUniversalTime());
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad", ecsEvent.Detail.TaskArn);
+                Assert.Equal("arn:aws:ecs:us-west-2:111122223333:task-definition/sample-fargate:1", ecsEvent.Detail.TaskDefinitionArn);
+                Assert.Equal(4, ecsEvent.Detail.Version);
+                Assert.Equal("1.3.0", ecsEvent.Detail.PlatformVersion);
 
                 Handle(ecsEvent);
             }
@@ -3414,10 +3286,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void KafkaEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3425,40 +3295,38 @@ namespace Amazon.Lambda.Tests
             {
                 var kafkaEvent = serializer.Deserialize<KafkaEvent>(fileStream);
                 Assert.NotNull(kafkaEvent);
-                Assert.Equal(kafkaEvent.EventSource, "aws:kafka");
-                Assert.Equal(kafkaEvent.EventSourceArn, "arn:aws:kafka:us-east-1:123456789012:cluster/vpc-3432434/4834-3547-3455-9872-7929");
-                Assert.Equal(kafkaEvent.BootstrapServers, "b-2.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092,b-1.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092");
+                Assert.Equal("aws:kafka", kafkaEvent.EventSource);
+                Assert.Equal("arn:aws:kafka:us-east-1:123456789012:cluster/vpc-3432434/4834-3547-3455-9872-7929", kafkaEvent.EventSourceArn);
+                Assert.Equal("b-2.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092,b-1.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092", kafkaEvent.BootstrapServers);
 
                 Assert.NotNull(kafkaEvent.Records);
-                Assert.Equal(kafkaEvent.Records.Count, 1);
+                Assert.Single(kafkaEvent.Records);
 
                 var record = kafkaEvent.Records.FirstOrDefault();
-                Assert.NotNull(record);
-                Assert.Equal(record.Key, "mytopic-0");
+                Assert.Equal("mytopic-0", record.Key);
 
-                Assert.Equal(record.Value.Count, 1);
+                Assert.Single(record.Value);
                 var eventRecord = record.Value.FirstOrDefault();
-                Assert.Equal(eventRecord.Topic, "mytopic");
-                Assert.Equal(eventRecord.Partition, 12);
-                Assert.Equal(eventRecord.Offset, 3043205);
-                Assert.Equal(eventRecord.Timestamp, 1545084650987);
-                Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
+                Assert.Equal("mytopic", eventRecord.Topic);
+                Assert.Equal(12, eventRecord.Partition);
+                Assert.Equal(3043205, eventRecord.Offset);
+                Assert.Equal(1545084650987, eventRecord.Timestamp);
+                Assert.Equal("CREATE_TIME", eventRecord.TimestampType);
 
-                Assert.Equal(new StreamReader(eventRecord.Value).ReadToEnd(), "Hello, this is a test.");
+                Assert.Equal("Hello, this is a test.", new StreamReader(eventRecord.Value).ReadToEnd());
 
-                Assert.Equal(eventRecord.Headers.Count, 8);
+                Assert.Equal(8, eventRecord.Headers.Count);
                 var eventRecordHeader = eventRecord.Headers.FirstOrDefault();
                 Assert.NotNull(eventRecordHeader);
-                Assert.Equal(eventRecordHeader.Count, 1);
+                Assert.Single(eventRecordHeader);
                 var eventRecordHeaderValue = eventRecordHeader.FirstOrDefault();
-                Assert.NotNull(eventRecordHeaderValue);
-                Assert.Equal(eventRecordHeaderValue.Key, "headerKey");
+                Assert.Equal("headerKey", eventRecordHeaderValue.Key);
 
                 // Convert sbyte[] to byte[] array.
                 var tempHeaderValueByteArray = new byte[eventRecordHeaderValue.Value.Length];
                 Buffer.BlockCopy(eventRecordHeaderValue.Value, 0, tempHeaderValueByteArray, 0, tempHeaderValueByteArray.Length);
 
-                Assert.Equal(Encoding.UTF8.GetString(tempHeaderValueByteArray), "headerValue");
+                Assert.Equal("headerValue", Encoding.UTF8.GetString(tempHeaderValueByteArray));
 
                 Handle(kafkaEvent);
             }
@@ -3479,10 +3347,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void ActiveMQEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3522,10 +3388,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void RabbitMQEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3536,7 +3400,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("aws:rmq", rabbitmqEvent.EventSource);
                 Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:pizzaBroker:b-9bcfa592-423a-4942-879d-eb284b418fc8", rabbitmqEvent.EventSourceArn);
 
-                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue.Count);
+                Assert.Single(rabbitmqEvent.RmqMessagesByQueue);
                 Assert.Equal(2, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"].Count);
 
                 var firstMessage = rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0];
@@ -3563,7 +3427,7 @@ namespace Amazon.Lambda.Tests
                 Assert.NotNull(secondMessage.BasicProperties);
                 Assert.Null(secondMessage.BasicProperties.ContentType);
                 Assert.Null(secondMessage.BasicProperties.ContentEncoding);
-                Assert.Equal(0, secondMessage.BasicProperties.Headers.Count);
+                Assert.Empty(secondMessage.BasicProperties.Headers);
                 Assert.Equal(1, secondMessage.BasicProperties.DeliveryMode);
                 Assert.Null(secondMessage.BasicProperties.Priority);
                 Assert.Null(secondMessage.BasicProperties.CorrelationId);
@@ -3583,10 +3447,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayCustomAuthorizerV2Request(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3655,10 +3517,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayCustomAuthorizerV2SimpleResponse(Type serializerType)
         {
             var response = new APIGatewayCustomAuthorizerV2SimpleResponse
@@ -3680,10 +3540,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void APIGatewayCustomAuthorizerV2IamResponse(Type serializerType)
         {
             var response = new APIGatewayCustomAuthorizerV2IamResponse
@@ -3695,7 +3553,7 @@ namespace Amazon.Lambda.Tests
                     {
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
-                            Action = new HashSet<string> { "execute-api:Invoke" },
+                            Action = ["execute-api:Invoke"],
                             Effect = "Allow",
                             Resource = new HashSet<string>{ "arn:aws:execute-api:{regionId}:{accountId}:{apiId}/{stage}/{httpVerb}/[{resource}/[{child-resources}]]" }
                         }
@@ -3757,10 +3615,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchEventsS3ObjectCreate(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3787,10 +3643,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchEventsS3ObjectDelete(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3817,10 +3671,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchEventsS3ObjectRestore(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3846,10 +3698,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchTranscribeJobStateChangeCompleted(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3868,10 +3718,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchTranscribeJobStateChangeFailed(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3890,10 +3738,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchTranslateTextTranslationJobStateChange(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3911,10 +3757,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchTranslateParallelDataStateChangeCreate(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3933,10 +3777,8 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void CloudWatchTranslateParallelDataStateChangeUpdate(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3967,7 +3809,7 @@ namespace Amazon.Lambda.Tests
                 SomeOtherValue = null
             };
 
-            MemoryStream ms = new MemoryStream();
+            var ms = new MemoryStream();
             serializer.Serialize(response, ms);
             ms.Position = 0;
             var json = new StreamReader(ms).ReadToEnd();

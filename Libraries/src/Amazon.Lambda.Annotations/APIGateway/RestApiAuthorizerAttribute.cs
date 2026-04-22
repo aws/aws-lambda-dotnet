@@ -26,7 +26,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// </summary>
     /// <remarks>
     /// This attribute must be used in conjunction with the <see cref="LambdaFunctionAttribute"/>.
-    /// The authorizer function should return <see cref="Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse"/>.
+    /// The authorizer function should return Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse.
     /// </remarks>
     /// <example>
     /// <code>

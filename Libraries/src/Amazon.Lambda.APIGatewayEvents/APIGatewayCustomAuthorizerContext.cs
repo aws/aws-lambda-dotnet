@@ -1,10 +1,10 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-#if NETSTANDARD_2_0
+#if NETSTANDARD2_0
     using Newtonsoft.Json.Linq;
 #else
     using System.Text.Json;
@@ -122,7 +122,7 @@
                     object value;
                     if(this.TryGetValue("claims", out value))
                     {
-#if NETSTANDARD_2_0
+#if NETSTANDARD2_0
                         JObject jsonClaims = value as JObject;
                         if (jsonClaims != null)
                         {

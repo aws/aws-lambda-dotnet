@@ -22,7 +22,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class CustomRuntimeAspNetCoreMinimalApiTest : BaseCustomRuntimeTest
     {
         public CustomRuntimeAspNetCoreMinimalApiTest(IntegrationTestFixture fixture)
-            : base(fixture, "CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiTest.zip", "bootstrap")
+            : base(fixture, "CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiTest.zip", "bootstrap")
         {
         }
 

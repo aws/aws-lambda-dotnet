@@ -1,4 +1,4 @@
-﻿#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -77,7 +77,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             : base(jsonWriterCustomizer)
         {
             SerializerOptions = CreateDefaultJsonSerializationOptions();
-            customizer?.Invoke(this.SerializerOptions);
+            customizer?.Invoke(SerializerOptions);
 
             var constructor = typeof(TSGContext).GetConstructor(new Type[] { typeof(JsonSerializerOptions) });
             if(constructor == null)
@@ -85,7 +85,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 throw new ApplicationException($"The serializer {typeof(TSGContext).FullName} is missing a constructor that takes in JsonSerializerOptions object");
             }
 
-            _jsonSerializerContext = constructor.Invoke(new object[] { this.SerializerOptions }) as TSGContext;
+            _jsonSerializerContext = constructor.Invoke(new object[] { SerializerOptions }) as TSGContext;
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             : base(jsonWriterCustomizer)
         {
             SerializerOptions = CreateDefaultJsonSerializationOptions();
-            customizer?.Invoke(this.SerializerOptions);
+            customizer?.Invoke(SerializerOptions);
 
             _jsonSerializerContext = jsonSerializerContext;
         }

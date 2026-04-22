@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -58,7 +58,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
-                this._debug = true;
+                _debug = true;
             }            
         }
 
@@ -70,7 +70,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
             : this()
         {
-            customizer?.Invoke(this._options);
+            customizer?.Invoke(_options);
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
             : this(customizer)
         {
-            jsonWriterCustomizer?.Invoke(this.WriterOptions);
+            jsonWriterCustomizer?.Invoke(WriterOptions);
         }
 
         /// <summary>

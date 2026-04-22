@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -115,7 +115,7 @@ namespace Amazon.Lambda.PowerShellTests
             }
 
             Assert.NotNull(foundException);
-            Assert.True(foundException.GetType().Name.EndsWith(exceptionType));
+            Assert.EndsWith(exceptionType, foundException.GetType().Name);
 
             if(message != null)
             {

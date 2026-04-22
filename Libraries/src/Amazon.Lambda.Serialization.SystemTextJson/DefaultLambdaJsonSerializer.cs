@@ -59,8 +59,8 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         {
             SerializerOptions = CreateDefaultJsonSerializationOptions();
 
-            customizer?.Invoke(this.SerializerOptions);
-            jsonWriterCustomizer?.Invoke(this.WriterOptions);
+            customizer?.Invoke(SerializerOptions);
+            jsonWriterCustomizer?.Invoke(WriterOptions);
         }
 
         /// <inheritdoc/>

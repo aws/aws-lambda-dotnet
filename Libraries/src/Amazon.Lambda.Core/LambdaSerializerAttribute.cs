@@ -26,7 +26,7 @@ namespace Amazon.Lambda.Core
         /// <param name="serializerType"></param>
         public LambdaSerializerAttribute(Type serializerType)
         {
-            this.SerializerType = serializerType;
+            SerializerType = serializerType;
         }
 
     }

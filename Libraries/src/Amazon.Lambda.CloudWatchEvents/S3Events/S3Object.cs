@@ -30,7 +30,7 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// The version ID of the object.
         /// </summary>
         [DataMember(Name = "version-id")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("version-id")]
 #endif
         public string VersionId { get; set; }

@@ -114,7 +114,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         public IEnumerator<KeyValuePair<Type, object>> GetEnumerator()
         {
-            return this._features.GetEnumerator();
+            return _features.GetEnumerator();
         }
 
         public void Set<TFeature>(TFeature instance)
@@ -122,12 +122,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             if (instance == null)
                 return;
 
-            this._features[typeof(TFeature)] = instance;
+            _features[typeof(TFeature)] = instance;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this._features.GetEnumerator();
+            return _features.GetEnumerator();
         }
 
 #endregion
@@ -194,18 +194,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         void IHttpResponseFeature.OnStarting(Func<object, Task> callback, object state)
         {
             if (ResponseStartingEvents == null)
-                this.ResponseStartingEvents = new EventCallbacks();
+                ResponseStartingEvents = new EventCallbacks();
 
-            this.ResponseStartingEvents.Add(callback, state);
+            ResponseStartingEvents.Add(callback, state);
         }
 
         internal EventCallbacks ResponseCompletedEvents { get; private set; }
         void IHttpResponseFeature.OnCompleted(Func<object, Task> callback, object state)
         {
-            if (this.ResponseCompletedEvents == null)
-                this.ResponseCompletedEvents = new EventCallbacks();
+            if (ResponseCompletedEvents == null)
+                ResponseCompletedEvents = new EventCallbacks();
 
-            this.ResponseCompletedEvents.Add(callback, state);
+            ResponseCompletedEvents.Add(callback, state);
         }
 
         internal class EventCallbacks
@@ -214,7 +214,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
             internal void Add(Func<object, Task> callback, object state)
             {
-                this._callbacks.Add(new EventCallback(callback, state));
+                _callbacks.Add(new EventCallback(callback, state));
             }
 
             internal async Task ExecuteAsync()
@@ -229,8 +229,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             {
                 internal EventCallback(Func<object, Task> callback, object state)
                 {
-                    this.Callback = callback;
-                    this.State = state;
+                    Callback = callback;
+                    State = state;
                 }
 
                 Func<object, Task> Callback { get; }
@@ -238,7 +238,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
                 internal Task ExecuteAsync()
                 {
-                    var task = Callback(this.State);
+                    var task = Callback(State);
                     return task;
                 }
             }
@@ -378,7 +378,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 _traceIdentifier = (new Microsoft.AspNetCore.Http.Features.HttpRequestIdentifierFeature()).TraceIdentifier;
                 return _traceIdentifier;
             }
-            set { this._traceIdentifier = value; }
+            set { _traceIdentifier = value; }
         }
 
         #endregion

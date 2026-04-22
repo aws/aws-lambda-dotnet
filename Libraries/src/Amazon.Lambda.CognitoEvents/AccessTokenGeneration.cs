@@ -14,7 +14,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// groupOverrideDetails instead.
         /// </summary>
         [DataMember(Name = "claimsToAddOrOverride")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsToAddOrOverride")]
 # endif
         public Dictionary<string, object> ClaimsToAddOrOverride { get; set; } = new Dictionary<string, object>();
@@ -23,7 +23,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// A list that contains claims to be suppressed from the identity token.
         /// </summary>
         [DataMember(Name = "claimsToSuppress")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsToSuppress")]
 # endif
         public List<string> ClaimsToSuppress { get; set; } = new List<string>();
@@ -33,7 +33,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// add scope values that contain one or more blank-space characters.
         /// </summary>
         [DataMember(Name = "scopesToAdd")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("scopesToAdd")]
 # endif
         public List<string> ScopesToAdd { get; set; } = new List<string>();
@@ -42,7 +42,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// A list of OAuth 2.0 scopes that you want to remove from the scope claim in your user's access token.
         /// </summary>
         [DataMember(Name = "scopesToSuppress")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("scopesToSuppress")]
 # endif
         public List<string> ScopesToSuppress { get; set; } = new List<string>();

@@ -44,7 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
-        private IntegrationTestFixture _fixture;
+        private readonly IntegrationTestFixture _fixture;
 
         protected BaseCustomRuntimeTest(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
         {
@@ -288,7 +288,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 Handler = Handler,
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
-                Runtime = Runtime.Dotnet6,
+                Runtime = Runtime.ProvidedAl2023,
                 Role = ExecutionRoleArn
             };
 

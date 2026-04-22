@@ -105,7 +105,7 @@ public class NonStringAuthorizerTests
         // Verify TenantId is returned as a number, not a string
         var tenantIdToken = json["TenantId"];
         Assert.NotNull(tenantIdToken);
-        Assert.Equal(JTokenType.Integer, tenantIdToken.Type);
+        Assert.Equal(JTokenType.Integer, tenantIdToken!.Type);
     }
 
     /// <summary>
@@ -129,6 +129,6 @@ public class NonStringAuthorizerTests
         // Verify IsAdmin is returned as a boolean, not a string
         var isAdminToken = json["IsAdmin"];
         Assert.NotNull(isAdminToken);
-        Assert.Equal(JTokenType.Boolean, isAdminToken.Type);
+        Assert.Equal(JTokenType.Boolean, isAdminToken!.Type);
     }
 }

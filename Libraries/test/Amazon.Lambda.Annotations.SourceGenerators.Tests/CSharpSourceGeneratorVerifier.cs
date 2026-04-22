@@ -24,15 +24,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
     public static class CSharpSourceGeneratorVerifier<TSourceGenerator>
         where TSourceGenerator : ISourceGenerator, new()
     {
-        public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
+        public class Test : CSharpSourceGeneratorTest<TSourceGenerator, DefaultVerifier>
         {
             public enum ReferencesMode {All, NoApiGatewayEvents}
 
-            public enum TargetFramework { Net60, Net80 }
+            public enum TargetFramework { Net8_0, Net10_0 }
 
             private ImmutableArray<string> PreprocessorSymbols { get; set; } = ImmutableArray<string>.Empty;
 
-            public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net60)
+            public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net10_0)
             {
                 PreprocessorSymbols = ImmutableArray.Create<string>("ANALYZER_UNIT_TESTS");
 
@@ -47,6 +47,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SnapshotRestore.Registry.RestoreHooksRegistry).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
 
@@ -64,12 +65,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SnapshotRestore.Registry.RestoreHooksRegistry).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
                 }
 
                 // Set up the target framework moniker and reference assemblies 
-                if (targetFramework == TargetFramework.Net60)
+                if (targetFramework == TargetFramework.Net10_0)
                 {
                     SolutionTransforms.Add((solution, projectId) => 
                     {
@@ -78,13 +80,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             "TargetFrameworkConfig.editorconfig", 
                             SourceText.From("""
                                                 is_global = true
-                                                build_property.TargetFramework = net6.0
+                                                build_property.TargetFramework = net10.0
                                             """),
                             filePath: "/TargetFrameworkConfig.editorconfig");
                     });
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60;
+                    ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), Path.Combine("ref", "net10.0"));
                 }
-                else if (targetFramework == TargetFramework.Net80) 
+                else if (targetFramework == TargetFramework.Net8_0) 
                 {
                     SolutionTransforms.Add((solution, projectId) =>
                     {

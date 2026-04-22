@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System.Collections.Generic;
     using System.Runtime.Serialization;
@@ -14,7 +14,7 @@
         /// Gets or sets the ID of the principal.
         /// </summary>
         [DataMember(Name = "principalId")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("principalId")]
 #endif
         public string PrincipalID { get; set; }
@@ -23,7 +23,7 @@
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerPolicy"/> policy document.
         /// </summary>
         [DataMember(Name = "policyDocument")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("policyDocument")]
 #endif
         public APIGatewayCustomAuthorizerPolicy PolicyDocument { get; set; } = new APIGatewayCustomAuthorizerPolicy();
@@ -32,7 +32,7 @@
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("context")]
 #endif
         public Dictionary<string, object> Context { get; set; }

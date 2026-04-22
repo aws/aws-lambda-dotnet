@@ -68,7 +68,7 @@ public class HostingOptionsTests
         var options = new HostingOptions();
 
         // Act
-        options.RegisterResponseContentEncodingForContentType(null, ResponseContentEncoding.Base64);
+        options.RegisterResponseContentEncodingForContentType(null!, ResponseContentEncoding.Base64);
 
         // Assert
         Assert.Empty(options.ContentTypeEncodings);
@@ -144,7 +144,7 @@ public class HostingOptionsTests
         var options = new HostingOptions();
 
         // Act
-        options.RegisterResponseContentEncodingForContentEncoding(null, ResponseContentEncoding.Base64);
+        options.RegisterResponseContentEncodingForContentEncoding(null!, ResponseContentEncoding.Base64);
 
         // Assert
         Assert.Empty(options.ContentEncodingEncodings);

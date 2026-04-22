@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,13 +12,14 @@ namespace TestWebApp
     {
         public static void Main(string[] args)
         {
+#pragma warning disable ASPDEPR008,ASPDEPR004
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
-
+#pragma warning restore ASPDEPR008,ASPDEPR004
             host.Run();
         }
     }

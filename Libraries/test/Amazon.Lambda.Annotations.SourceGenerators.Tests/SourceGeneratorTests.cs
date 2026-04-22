@@ -1178,7 +1178,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var expectedFunctionContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"));
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"));
 
-            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net80)
+            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net8_0)
             {
                 TestState =
                 {
@@ -1324,16 +1324,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent),
-
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs", validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs", validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs", validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();

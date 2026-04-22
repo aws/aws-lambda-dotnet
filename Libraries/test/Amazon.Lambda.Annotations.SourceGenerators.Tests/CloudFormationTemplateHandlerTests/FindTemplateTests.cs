@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Xunit;
@@ -39,7 +39,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.CloudFormationTemplat
                 'profile': 'default',
                 'region': 'us-west-2',
                 'configuration': 'Release',
-                'framework': 'netcoreapp3.1',
+                'framework': 'net10.0',
                 's3-prefix': 'AWSServerless1/',
                 'template': 'serverless.template',
                 'template-parameters': ''
@@ -75,7 +75,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.CloudFormationTemplat
                 'profile': 'default',
                 'region': 'us-west-2',
                 'configuration': 'Release',
-                'framework': 'netcoreapp3.1',
+                'framework': 'net10.0',
                 's3-prefix': 'AWSServerless1/'
             }";
 
