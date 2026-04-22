@@ -282,9 +282,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor InvalidDynamoDBEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0137",
+            title: "Invalid DynamoDBEventAttribute",
+            messageFormat: "Invalid DynamoDBEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         public static readonly DiagnosticDescriptor InvalidSnsEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0138",
             title: "Invalid SNSEventAttribute",
             messageFormat: "Invalid SNSEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidScheduleEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0139",
+            title: "Invalid ScheduleEventAttribute",
+            messageFormat: "Invalid ScheduleEventAttribute encountered: {0}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

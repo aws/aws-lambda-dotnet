@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.DynamoDB;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SNS;
+using Amazon.Lambda.Annotations.Schedule;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
@@ -242,8 +244,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig", true);
                         hasFunctionUrl = true;
                         break;
+                    case AttributeModel<DynamoDBEventAttribute> dynamoDBAttributeModel:
+                        eventName = ProcessDynamoDBAttribute(lambdaFunction, dynamoDBAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
                     case AttributeModel<SNSEventAttribute> snsAttributeModel:
                         eventName = ProcessSnsAttribute(lambdaFunction, snsAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<ScheduleEventAttribute> scheduleAttributeModel:
+                        eventName = ProcessScheduleAttribute(lambdaFunction, scheduleAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
                 }
@@ -679,6 +689,68 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
+        /// Writes all properties associated with <see cref="DynamoDBEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessDynamoDBAttribute(ILambdaFunctionSerializable lambdaFunction, DynamoDBEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "DynamoDB");
+
+            // Stream
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Stream");
+            if (!att.Stream.StartsWith("@"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Stream", att.Stream);
+            }
+            else
+            {
+                var resource = att.Stream.Substring(1);
+                if (_templateWriter.Exists($"{PARAMETERS}.{resource}"))
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Stream.{REF}", resource);
+                else
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Stream.{GET_ATTRIBUTE}", new List<string> { resource, "StreamArn" }, TokenType.List);
+            }
+
+            // StartingPosition
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "StartingPosition", att.StartingPosition.ToString());
+
+            // BatchSize
+            if (att.IsBatchSizeSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "BatchSize", att.BatchSize);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            // MaximumBatchingWindowInSeconds
+            if (att.IsMaximumBatchingWindowInSecondsSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "MaximumBatchingWindowInSeconds", att.MaximumBatchingWindowInSeconds);
+            }
+
+            // FilterCriteria
+            if (att.IsFiltersSet)
+            {
+                const char SEPERATOR = ';';
+                var filters = att.Filters.Split(SEPERATOR).Select(x => x.Trim()).ToList();
+                var filterList = new List<Dictionary<string, string>>();
+                foreach (var filter in filters)
+                {
+                    filterList.Add(new Dictionary<string, string> { { "Pattern", filter } });
+                }
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterCriteria.Filters", filterList, TokenType.List);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
         /// Writes all properties associated with <see cref="SNSEventAttribute"/> to the serverless template.
         /// </summary>
         private string ProcessSnsAttribute(ILambdaFunctionSerializable lambdaFunction, SNSEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
@@ -704,6 +776,40 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (att.IsFilterPolicySet)
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterPolicy", att.FilterPolicy);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="ScheduleEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessScheduleAttribute(ILambdaFunctionSerializable lambdaFunction, ScheduleEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "Schedule");
+
+            // Schedule expression
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Schedule", att.Schedule);
+
+            // Description
+            if (att.IsDescriptionSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Description", att.Description);
+            }
+
+            // Input
+            if (att.IsInputSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Input", att.Input);
             }
 
             // Enabled

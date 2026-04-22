@@ -7,7 +7,9 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.DynamoDB;
 using Amazon.Lambda.Annotations.SNS;
+using Amazon.Lambda.Annotations.Schedule;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
@@ -65,7 +67,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // Validate Events
             ValidateApiGatewayEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSqsEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateDynamoDBEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSnsEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateScheduleEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateS3Events(lambdaFunctionModel, methodLocation, diagnostics);
 
@@ -116,12 +120,32 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 }
             }
 
+            // Check for references to "Amazon.Lambda.DynamoDBEvents" if the Lambda method is annotated with DynamoDBEvent attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.DynamoDBEventAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.DynamoDBEvents") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.DynamoDBEvents"));
+                    return false;
+                }
+            }
+
             // Check for references to "Amazon.Lambda.SNSEvents" if the Lambda method is annotated with SNSEvent attribute.
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.SNSEventAttribute))
             {
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.SNSEvents") == null)
                 {
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.SNSEvents"));
+                    return false;
+                }
+            }
+
+            // Check for references to "Amazon.Lambda.CloudWatchEvents" if the Lambda method is annotated with ScheduleEvent attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ScheduleEventAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.CloudWatchEvents") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.CloudWatchEvents"));
                     return false;
                 }
             }
@@ -436,6 +460,45 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             }
         }
 
+        private static void ValidateDynamoDBEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.DynamoDB))
+            {
+                return;
+            }
+
+            // Validate DynamoDBEventAttributes
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.DynamoDBEventAttribute)
+                    continue;
+
+                var dynamoDBEventAttribute = ((AttributeModel<DynamoDBEventAttribute>)att).Data;
+                var validationErrors = dynamoDBEventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidDynamoDBEventAttribute, methodLocation, errorMessage)));
+            }
+
+            // Validate method parameters - When using DynamoDBEventAttribute, the method signature must be (DynamoDBEvent evnt) or (DynamoDBEvent evnt, ILambdaContext context)
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.DynamoDBEvent) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.DynamoDBEvent || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(DynamoDBEventAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.DynamoDBEvent}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate method return type - When using DynamoDBEventAttribute, the return type must be either void or Task
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
+            {
+                var errorMessage = $"When using the {nameof(DynamoDBEventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+        }
+
         private static void ValidateSnsEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
         {
             if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.SNS))
@@ -471,6 +534,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
             {
                 var errorMessage = $"When using the {nameof(SNSEventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+        }
+
+        private static void ValidateScheduleEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Schedule))
+            {
+                return;
+            }
+
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.ScheduleEventAttribute)
+                    continue;
+
+                var scheduleEventAttribute = ((AttributeModel<ScheduleEventAttribute>)att).Data;
+                var validationErrors = scheduleEventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidScheduleEventAttribute, methodLocation, errorMessage)));
+            }
+
+            // Validate method parameters - When using ScheduleEventAttribute, the method signature must be (ScheduledEvent evnt) or (ScheduledEvent evnt, ILambdaContext context)
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.ScheduledEvent) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.ScheduledEvent || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(ScheduleEventAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.ScheduledEvent}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate return type - must be void or Task
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
+            {
+                var errorMessage = $"When using the {nameof(ScheduleEventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
             }
         }

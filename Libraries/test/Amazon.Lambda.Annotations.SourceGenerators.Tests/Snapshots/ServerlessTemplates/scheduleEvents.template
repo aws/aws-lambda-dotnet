@@ -1,0 +1,83 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "TestServerlessAppScheduleEventExamplesValidScheduleEventsProcessScheduledEventGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "rate5minutes"
+        ],
+        "SyncedEventProperties": {
+          "rate5minutes": [
+            "Schedule",
+            "Description",
+            "Input"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.ScheduleEventExamples.ValidScheduleEvents_ProcessScheduledEvent_Generated::ProcessScheduledEvent"
+          ]
+        },
+        "Events": {
+          "rate5minutes": {
+            "Type": "Schedule",
+            "Properties": {
+              "Schedule": "rate(5 minutes)",
+              "Description": "Runs every 5 minutes",
+              "Input": "{ \"key\": \"value\" }"
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppScheduleEventExamplesValidScheduleEventsProcessScheduledEventAsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "DailyNoonSchedule"
+        ],
+        "SyncedEventProperties": {
+          "DailyNoonSchedule": [
+            "Schedule"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.ScheduleEventExamples.ValidScheduleEvents_ProcessScheduledEventAsync_Generated::ProcessScheduledEventAsync"
+          ]
+        },
+        "Events": {
+          "DailyNoonSchedule": {
+            "Type": "Schedule",
+            "Properties": {
+              "Schedule": "cron(0 12 * * ? *)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,7 +3,10 @@
 
 using System;
 using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.Schedule;
 using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.DynamoDB;
+using Amazon.Lambda.Annotations.SNS;
 using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
@@ -113,10 +116,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.DynamoDBEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = DynamoDBEventAttributeBuilder.Build(att);
+                model = new AttributeModel<DynamoDBEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SNSEventAttribute), SymbolEqualityComparer.Default))
             {
                 var data = SNSEventAttributeBuilder.Build(att);
                 model = new AttributeModel<SNS.SNSEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ScheduleEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ScheduleEventAttributeBuilder.Build(att);
+                model = new AttributeModel<ScheduleEventAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

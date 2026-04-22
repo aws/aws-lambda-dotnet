@@ -1227,59 +1227,59 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("BatchSize = 0. It must be between 1 and 10000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds = 302. It must be between 0 and 300"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("MaximumConcurrency = 1. It must be between 2 and 1000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 22, 9, 27, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 25, 9, 30, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can accept at most 2 parameters. " +
                             "The first parameter is required and must be of type Amazon.Lambda.SQSEvents.SQSEvent. " +
                             "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 29, 9, 35, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 32, 9, 38, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can return either " +
                             "void, System.Threading.Tasks.Task, Amazon.Lambda.SQSEvents.SQSBatchResponse or Task<Amazon.Lambda.SQSEvents.SQSBatchResponse>"),
 
                         DiagnosticResult
                             .CompilerError("AWSLambda0102")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 37, 9, 43, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 40, 9, 46, 10)
                             .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 45, 9, 50, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 48, 9, 53, 10)
                             .WithArguments("Queue = test-queue. The SQS queue ARN is invalid. The ARN format is 'arn:<partition>:sqs:<region>:<account-id>:<queue-name>'"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 52, 9, 57, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 55, 9, 60, 10)
                             .WithArguments("ResourceName = sqs-event-source. It must only contain alphanumeric characters and must not be an empty string"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 59, 9, 64, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 62, 9, 67, 10)
                             .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 66, 9, 71, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 69, 9, 74, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 73, 9, 78, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 76, 9, 81, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 83, 9, 88, 10)
                             .WithArguments("BatchSize = 100. It must be less than or equal to 10 when the event source mapping is for a FIFO queue"),
             
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                        .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                        .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 83, 9, 88, 10)
                         .WithArguments("MaximumBatchingWindowInSeconds must not be set when the event source mapping is for a FIFO queue")
                     }
                 }
@@ -1392,6 +1392,173 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyInvalidDynamoDBEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidDynamoDBEventAttributes: BatchSize = 10001
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("BatchSize = 10001. It must be between 1 and 10000"),
+
+                        // ProcessMessageWithInvalidDynamoDBEventAttributes: MaximumBatchingWindowInSeconds = 301
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("MaximumBatchingWindowInSeconds = 301. It must be between 0 and 300"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the DynamoDBEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.DynamoDBEvents.DynamoDBEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the DynamoDBEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidStreamArn: invalid ARN
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("Stream = not-a-valid-arn. The DynamoDB stream ARN is invalid"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = dynamo-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 61, 9, 66, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidDynamoDBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "dynamoDBEvents.template"));
+            var validDynamoDBEventsProcessMessagesGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs"));
+            var validDynamoDBEventsProcessMessagesAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs", validDynamoDBEventsProcessMessagesAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidSNSEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "SNSEventExamples", "InvalidSNSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SNSEventExamples", "InvalidSNSEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidTopicArn: invalid ARN
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("Topic = not-a-valid-arn. The SNS topic ARN is invalid. The ARN format is 'arn:<partition>:sns:<region>:<account-id>:<topic-name>'"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the SNSEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.SNSEvents.SNSEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the SNSEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("ResourceName = sns-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task VerifyValidSNSEvents()
         {
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "snsEvents.template"));
@@ -1433,6 +1600,107 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidScheduleEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "scheduleEvents.template"));
+            var validScheduleEventsProcessScheduledEventGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs"));
+            var validScheduleEventsProcessScheduledEventAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs", validScheduleEventsProcessScheduledEventGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs", validScheduleEventsProcessScheduledEventAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidScheduleEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidScheduleExpression: invalid schedule expression
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("Schedule = every 5 minutes. It must start with 'rate(' or 'cron('"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("ResourceName = invalid-name!. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
                     }
                 }
             }.RunAsync();

@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.Annotations;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SQS;
 using Amazon.Lambda.SQSEvents;
