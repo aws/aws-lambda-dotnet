@@ -62,6 +62,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string S3Event = "Amazon.Lambda.S3Events.S3Event";
         public const string S3EventAttribute = "Amazon.Lambda.Annotations.S3.S3EventAttribute";
 
+        public const string DynamoDBEvent = "Amazon.Lambda.DynamoDBEvents.DynamoDBEvent";
+        public const string DynamoDBEventAttribute = "Amazon.Lambda.Annotations.DynamoDB.DynamoDBEventAttribute";
+
         public const string SNSEvent = "Amazon.Lambda.SNSEvents.SNSEvent";
         public const string SNSEventAttribute = "Amazon.Lambda.Annotations.SNS.SNSEventAttribute";
 
@@ -95,6 +98,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             SQSEventAttribute,
             ALBApiAttribute,
             S3EventAttribute,
+            DynamoDBEventAttribute,
             SNSEventAttribute
         };
     }

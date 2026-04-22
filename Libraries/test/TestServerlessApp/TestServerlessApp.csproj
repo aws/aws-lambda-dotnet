@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
