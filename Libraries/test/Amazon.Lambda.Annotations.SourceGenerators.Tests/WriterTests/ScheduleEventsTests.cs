@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.Annotations.SourceGenerator;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Amazon.Lambda.Annotations.Schedule;
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
@@ -139,6 +141,136 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Description"));
             Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Input"));
             Assert.False(templateWriter.Exists($"{eventPropertiesPath}.Enabled"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyScheduleEventInput_RelativeFilePath_ReadsFileContents(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Set up a mock file manager with a JSON file at a relative path
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var expectedJson = "{\"action\": \"cleanup\", \"target\": \"logs\"}";
+            var inputFilePath = Path.Combine(ProjectRootDirectory, "schedule-input.json");
+            mockFileManager.WriteAllText(inputFilePath, expectedJson);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var att = new ScheduleEventAttribute("rate(1 hour)")
+            {
+                ResourceName = "HourlyCleanup",
+                Input = "schedule-input.json"
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ScheduleEventAttribute> { Data = att });
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - The file contents should be used instead of the file path
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.HourlyCleanup.Properties";
+            Assert.Equal(expectedJson, templateWriter.GetToken<string>($"{eventPropertiesPath}.Input"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyScheduleEventInput_AbsoluteFilePath_ReadsFileContents(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Set up a mock file manager with a JSON file at an absolute path
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var expectedJson = "{\"environment\": \"production\"}";
+            var absoluteInputPath = Path.Combine("C:", "config", "schedule-input.json");
+            mockFileManager.WriteAllText(absoluteInputPath, expectedJson);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var att = new ScheduleEventAttribute("rate(5 minutes)")
+            {
+                ResourceName = "FrequentCheck",
+                Input = absoluteInputPath
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ScheduleEventAttribute> { Data = att });
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - The file contents should be used instead of the file path
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.FrequentCheck.Properties";
+            Assert.Equal(expectedJson, templateWriter.GetToken<string>($"{eventPropertiesPath}.Input"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyScheduleEventInput_LiteralJson_UsedAsIs(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Input is a literal JSON string, not a file path
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var literalJson = "{\"key\": \"value\"}";
+            var att = new ScheduleEventAttribute("rate(5 minutes)")
+            {
+                ResourceName = "LiteralInputSchedule",
+                Input = literalJson
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ScheduleEventAttribute> { Data = att });
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - The literal JSON should be used as-is since it doesn't resolve to a file
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.LiteralInputSchedule.Properties";
+            Assert.Equal(literalJson, templateWriter.GetToken<string>($"{eventPropertiesPath}.Input"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void VerifyScheduleEventInput_NonExistentFilePath_UsedAsIs(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Input looks like a file path but the file doesn't exist
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var nonExistentPath = "does-not-exist.json";
+            var att = new ScheduleEventAttribute("rate(5 minutes)")
+            {
+                ResourceName = "MissingFileSchedule",
+                Input = nonExistentPath
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ScheduleEventAttribute> { Data = att });
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - The path string should be used as-is since the file doesn't exist
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            var eventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.MissingFileSchedule.Properties";
+            Assert.Equal(nonExistentPath, templateWriter.GetToken<string>($"{eventPropertiesPath}.Input"));
         }
     }
 }
