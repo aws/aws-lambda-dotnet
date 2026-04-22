@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Processes;
 
-public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
+public class ApiGatewayEmulatorProcessTests
 {
     [Theory]
     [InlineData(ApiGatewayEmulatorMode.Rest, HttpStatusCode.Forbidden, "{\"message\":\"Missing Authentication Token\"}")]

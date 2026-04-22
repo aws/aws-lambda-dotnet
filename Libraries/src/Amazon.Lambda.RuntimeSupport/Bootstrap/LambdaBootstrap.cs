@@ -195,16 +195,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>A Task that represents the operation.</returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
             Justification = "Unreferenced code paths are excluded when RuntimeFeature.IsDynamicCodeSupported is false.")]
-#endif
-
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-#if NET8_0_OR_GREATER
             AdjustMemorySettings();
-#endif
 
             if (_configuration.IsCallPreJit)
             {
@@ -225,7 +220,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 return;
             }
-#if NET8_0_OR_GREATER
+
 
             try
             {
@@ -276,7 +271,6 @@ namespace Amazon.Lambda.RuntimeSupport
                     return;
                 };
             }
-#endif
 
             var processingTasksCount = Utils.DetermineProcessingTaskCount(_environmentVariables, Environment.ProcessorCount);
             _logger.LogInformation($"Using {processingTasksCount} tasks for invoke processing loops");
@@ -348,12 +342,12 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 WriteUnhandledExceptionToLog(exception);
                 await Client.ReportInitializationErrorAsync(exception);
-#if NET8_0_OR_GREATER
+
                 if (_configuration.IsInitTypeSnapstart)
                 {
                     System.Environment.Exit(1); // This needs to be non-zero for Lambda Sandbox to know that Runtime client encountered an exception
                 }
-#endif
+
                 throw;
             }
         }
@@ -406,8 +400,8 @@ namespace Amazon.Lambda.RuntimeSupport
                         }
                         else
                         {
-                            await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
-                        }
+                        await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+                    }
                     }
                     finally
                     {
@@ -540,7 +534,6 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
 
-#if NET6_0_OR_GREATER
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
             var handler = new SocketsHttpHandler
             {
@@ -553,24 +546,15 @@ namespace Amazon.Lambda.RuntimeSupport
                 : $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
 
             var client = new HttpClient(handler);
-#else
-            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
-            var client = new HttpClient();
-#endif
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
             return client;
         }
 
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
-#if NET6_0_OR_GREATER
             Client.ConsoleLogger.FormattedWriteLine(Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(), exception, null);
-#else
-            Console.Error.WriteLine(exception);
-#endif
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// The .NET runtime does not recognize the memory limits placed by Lambda via Lambda's cgroups. This method is run during startup to inform the
         /// .NET runtime the max memory configured for Lambda function. The max memory can be determined using the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable
@@ -614,7 +598,6 @@ namespace Amazon.Lambda.RuntimeSupport
                 _logger.LogError(ex, "Failed to communicate to the .NET runtime the amount of memory configured for the Lambda function via the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable.");
             }
         }
-#endif
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

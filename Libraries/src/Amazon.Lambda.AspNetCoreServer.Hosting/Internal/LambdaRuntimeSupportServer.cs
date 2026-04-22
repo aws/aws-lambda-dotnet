@@ -84,7 +84,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
 #pragma warning restore CA2252
             Func<APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, Serializer);
         }
 
         /// <summary>
@@ -128,6 +128,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
+            /// <inheritdoc/>
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
@@ -135,6 +136,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                         yield return collector.Request;
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallRequestFeature(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
@@ -143,6 +145,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallRequestFeature?.Invoke(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse lambdaResponse, ILambdaContext lambdaContext)
             {
                 base.PostMarshallResponseFeature(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
@@ -151,6 +154,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallResponseFeature?.Invoke(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -159,6 +163,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallHttpAuthenticationFeature(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
@@ -167,6 +172,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallHttpAuthenticationFeature?.Invoke(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallTlsConnectionFeature(ITlsConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallTlsConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -175,6 +181,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallTlsConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
@@ -213,7 +220,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
 #pragma warning restore CA2252
             Func<APIGatewayEvents.APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, Serializer);
         }
 
         /// <summary>
@@ -257,6 +264,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
+            /// <inheritdoc/>
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
@@ -264,6 +272,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                         yield return collector.Request;
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallRequestFeature(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
@@ -272,6 +281,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallRequestFeature?.Invoke(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayEvents.APIGatewayProxyResponse lambdaResponse, ILambdaContext lambdaContext)
             {
                 base.PostMarshallResponseFeature(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
@@ -280,6 +290,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallResponseFeature?.Invoke(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -288,6 +299,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallHttpAuthenticationFeature(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
@@ -296,6 +308,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallHttpAuthenticationFeature?.Invoke(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallTlsConnectionFeature(ITlsConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallTlsConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -304,6 +317,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallTlsConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
@@ -342,7 +356,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
 #pragma warning restore CA2252
             Func<ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest, ILambdaContext, Task<ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse>> bufferedHandler = handler.FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, Serializer);
         }
 
         /// <summary>
@@ -386,6 +400,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
+            /// <inheritdoc/>
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
@@ -393,6 +408,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                         yield return collector.Request;
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallRequestFeature(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
@@ -401,6 +417,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallRequestFeature?.Invoke(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse lambdaResponse, ILambdaContext lambdaContext)
             {
                 base.PostMarshallResponseFeature(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
@@ -409,6 +426,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallResponseFeature?.Invoke(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -417,6 +435,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallHttpAuthenticationFeature(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
@@ -425,6 +444,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallHttpAuthenticationFeature?.Invoke(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallTlsConnectionFeature(ITlsConnectionFeature aspNetCoreConnectionFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallTlsConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
@@ -433,6 +453,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 _hostingOptions?.PostMarshallTlsConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
             }
 
+            /// <inheritdoc/>
             protected override void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);

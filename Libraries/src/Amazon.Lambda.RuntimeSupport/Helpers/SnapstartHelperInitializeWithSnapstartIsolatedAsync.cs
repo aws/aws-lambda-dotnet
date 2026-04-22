@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
-#if NET8_0_OR_GREATER
     /// <summary>
     /// Anywhere this class is used in RuntimeSupport it should be wrapped around a try/catch block catching TypeLoadException. 
     /// If the version of Amazon.Lambda.Core in the deployment bundle is out of date the type that is accessing SnapshotRestore
@@ -50,5 +49,4 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             return true;
         }
     }
-#endif
 }

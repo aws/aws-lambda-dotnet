@@ -22,7 +22,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
         public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest(IntegrationTestFixture fixture)
-            : base(fixture, "CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
+            : base(fixture, "CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
         {
         }
 
@@ -39,7 +39,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
                     await InvokeSuccessToWeatherForecastController(lambdaClient);
                 }
                 catch (NoDeploymentPackageFoundException)
@@ -69,7 +69,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
                     await InvokeLoggerTestController(lambdaClient);
                 }
                 catch (NoDeploymentPackageFoundException)

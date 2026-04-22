@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
@@ -275,7 +275,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             // Remove "-----BEGIN CERTIFICATE-----\n" and "-----END CERTIFICATE-----"
             clientCertPem = clientCertPem.Substring(28, clientCertPem.Length - 53);
 
+#if NET10_0_OR_GREATER
+            return X509CertificateLoader.LoadCertificate(Convert.FromBase64String(clientCertPem));
+#else
             return new X509Certificate2(Convert.FromBase64String(clientCertPem));
+#endif
         }
     }
 }

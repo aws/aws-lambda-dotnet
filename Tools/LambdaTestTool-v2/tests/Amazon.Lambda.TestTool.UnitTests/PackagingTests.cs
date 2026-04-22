@@ -89,7 +89,7 @@ public class PackagingTests : IDisposable
     public void VerifyPackageContentsHasRuntimeSupport()
     {
         var projectPath = Path.Combine(_workingDirectory, "Tools", "LambdaTestTool-v2", "src", "Amazon.Lambda.TestTool", "Amazon.Lambda.TestTool.csproj");
-        var expectedFrameworks = new string[] { "net6.0", "net8.0", "net9.0", "net10.0" };
+        var expectedFrameworks = new string[] { "net8.0", "net9.0", "net10.0" };
         _output.WriteLine("Packing TestTool...");
         var packProcess = new Process
         {

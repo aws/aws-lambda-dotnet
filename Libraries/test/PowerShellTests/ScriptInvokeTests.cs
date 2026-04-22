@@ -123,7 +123,7 @@ namespace Amazon.Lambda.PowerShellTests
             Assert.Contains("AWS Lambda", resultString);
         }
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NET8_0_OR_GREATER
         [Fact]
         public void ForObjectParallelTest()
         {

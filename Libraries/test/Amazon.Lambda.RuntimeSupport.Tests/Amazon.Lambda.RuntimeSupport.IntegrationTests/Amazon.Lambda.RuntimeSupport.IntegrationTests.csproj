@@ -19,11 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.CloudFormation" Version="4.0.7.7" />
-    <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.9" />
-    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.3" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.18.8" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="AWSSDK.CloudFormation" Version="4.0.8.19" />
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.18" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.14.1" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.21.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -32,7 +32,7 @@
     <PackageReference Include="xunit" Version="2.9.3" />
 
     <!-- This needs to be referenced to allow testing via AssumeRole credentials -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.11" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6" />
   </ItemGroup>
 
   <ItemGroup>

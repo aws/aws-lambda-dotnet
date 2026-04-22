@@ -73,7 +73,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 LambdaContext = new LambdaContext(
                     new RuntimeApiHeaders(_headers),
                     new LambdaEnvironment(_environmentVariables),
-                    new TestDateTimeHelper(), new SimpleLoggerWriter(_environmentVariables))
+                    new TestDateTimeHelper(), ConsoleLogger)
             };
         }
 
@@ -123,13 +123,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             return new NoOpDisposable();
         }
 
-#if NET8_0_OR_GREATER
         public new Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
         public new Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-#endif
     }
 
     /// <summary>

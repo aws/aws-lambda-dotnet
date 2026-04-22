@@ -1,4 +1,3 @@
-#if NET6_0_OR_GREATER
 using System;
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
@@ -51,4 +50,3 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         public Exception Exception { get; set; }
     }
 }
-#endif

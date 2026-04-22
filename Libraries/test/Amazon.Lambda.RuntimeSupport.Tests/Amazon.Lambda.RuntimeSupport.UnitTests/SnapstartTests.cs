@@ -7,10 +7,10 @@ using static Amazon.Lambda.RuntimeSupport.Bootstrap.Constants;
 namespace Amazon.Lambda.RuntimeSupport.UnitTests;
 public class SnapstartTests 
 {
-    TestHandler _testFunction;
-    TestInitializer _testInitializer;
-    TestRuntimeApiClient _testRuntimeApiClient;
-    TestEnvironmentVariables _environmentVariables;
+    readonly TestHandler _testFunction;
+    readonly TestInitializer _testInitializer;
+    readonly TestRuntimeApiClient _testRuntimeApiClient;
+    readonly TestEnvironmentVariables _environmentVariables;
 
     public SnapstartTests()
     {
@@ -30,7 +30,7 @@ public class SnapstartTests
     }
 
     [Fact]
-    public async void VerifyRestoreNextIsCalledWhenSnapstartIsEnabled()
+    public async Task VerifyRestoreNextIsCalledWhenSnapstartIsEnabled()
     {
         using var bootstrap =
             new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeTrueAsync, configuration: new LambdaBootstrapConfiguration(false, true));
@@ -40,7 +40,7 @@ public class SnapstartTests
     }
 
     [Fact]
-    public async void VerifyRestoreNextIsNotCalledWhenSnapstartIsDisabled()
+    public async Task VerifyRestoreNextIsNotCalledWhenSnapstartIsDisabled()
     {
         using var bootstrap =
             new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeTrueAsync, configuration: new LambdaBootstrapConfiguration(false, false));
@@ -52,7 +52,7 @@ public class SnapstartTests
 
 
     [Fact]
-    public async void VerifyInitializeErrorIsCalledWhenExceptionInBeforeSnapshotCallables()
+    public async Task VerifyInitializeErrorIsCalledWhenExceptionInBeforeSnapshotCallables()
     {
         using var bootstrap =
             new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeTrueAsync, configuration: new LambdaBootstrapConfiguration(false, true));
@@ -65,7 +65,7 @@ public class SnapstartTests
     }
 
     [Fact]
-    public async void VerifyRestoreErrorIsCalledWhenExceptionInAfterRestoreCallables()
+    public async Task VerifyRestoreErrorIsCalledWhenExceptionInAfterRestoreCallables()
     {
         using (var bootstrap =
                new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeTrueAsync,  new LambdaBootstrapConfiguration(false, true)))

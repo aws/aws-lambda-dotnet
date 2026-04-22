@@ -3,7 +3,7 @@ using System.Runtime.Versioning;
 
 namespace Amazon.Lambda.Core
 {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
     /// <summary>
     /// Log Level for logging messages
     /// </summary>
@@ -62,7 +62,7 @@ namespace Amazon.Lambda.Core
         /// <param name="message"></param>
         void LogLine(string message);
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
 
         /// <summary>
         /// Log message categorized by the given log level

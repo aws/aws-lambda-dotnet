@@ -6,6 +6,9 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Microsoft.AspNetCore.WebUtilities;
 
+#pragma warning disable CS1591 // Since this class is treated as internal, we can ignore the missing XML comments for public members.
+
+
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
     /// <summary>

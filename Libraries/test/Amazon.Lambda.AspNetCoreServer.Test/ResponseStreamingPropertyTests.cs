@@ -107,17 +107,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         [Theory]
         [MemberData(nameof(RequestMarshallingCases))]
-        public void Property1_RequestMarshalling_IdenticalInStreamingAndBufferedModes(
+        public async Task Property1_RequestMarshalling_IdenticalInStreamingAndBufferedModes(
             string method, string path, Dictionary<string, string> headers, string body)
         {
             var function = new PropertyTestStreamingFunction();
             var context = new TestLambdaContext();
 
             // Warm up so the host is started
-            function.FunctionHandlerAsync(MakeRequest(), context).GetAwaiter().GetResult();
+            await function.FunctionHandlerAsync(MakeRequest(), context);
 
             var request = MakeRequest(method, path, headers, body);
-            function.FunctionHandlerAsync(request, context).GetAwaiter().GetResult();
+            await function.FunctionHandlerAsync(request, context);
             var streamingReq = (IHttpRequestFeature)function.CapturedFeatures;
 
             var bufferedFeatures = new InvokeFeatures();
@@ -151,7 +151,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         [Theory]
         [MemberData(nameof(BufferedModeCases))]
-        public void Property2_BufferedMode_Unaffected(
+        public async Task Property2_BufferedMode_Unaffected(
             string method, string path, Dictionary<string, string> headers, string body)
         {
             // Use a fresh function with streaming OFF
@@ -159,8 +159,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
 
-            var response = function.FunctionHandlerAsync(MakeRequest(method, path, headers, body), context)
-                .GetAwaiter().GetResult();
+            var response = await function.FunctionHandlerAsync(MakeRequest(method, path, headers, body), context);
 
             Assert.NotNull(response);
             Assert.True(function.MarshallResponseCalled, "MarshallResponse must be called in buffered mode");
@@ -355,7 +354,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [InlineData(2)]
         [InlineData(3)]
         [InlineData(5)]
-        public void Property8_OnCompletedCallbacks_FireAfterStreamClose(int cbCount)
+        public async Task Property8_OnCompletedCallbacks_FireAfterStreamClose(int cbCount)
         {
             int sequenceCounter = 0;
             var completedSequences = new List<int>();
@@ -370,7 +369,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            function.FunctionHandlerAsync(request, context).GetAwaiter().GetResult();
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.Equal(cbCount, completedSequences.Count);
             Assert.True(streamClosedSequence >= 0, "Stream was never closed");

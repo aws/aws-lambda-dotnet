@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 
 using System;
 using System.IO;
@@ -492,4 +491,3 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
     }
 }
-#endif

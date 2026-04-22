@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
@@ -68,9 +68,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The record metadata.
             /// </value>
             [DataMember(Name = "kinesisStreamRecordMetadata")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("kinesisStreamRecordMetadata")]
-#endif
             public KinesisStreamRecordMetadata RecordMetadata { get; set; }
 
             /// <summary>
@@ -101,9 +99,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
                 /// The approximate time the record was sent to Kinesis Steam.
                 /// </summary>
                 [IgnoreDataMember]
-#if NETCOREAPP3_1_OR_GREATER
                 [System.Text.Json.Serialization.JsonIgnore]
-#endif
                 public DateTime ApproximateArrivalTimestamp
                 {
                     get
@@ -117,9 +113,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
                 /// The approximate time the record was sent to Kinesis stream in epoch.
                 /// </summary>
                 [DataMember(Name = "approximateArrivalTimestamp")]
-#if NETCOREAPP3_1_OR_GREATER
                 [System.Text.Json.Serialization.JsonPropertyName("approximateArrivalTimestamp")]
-#endif
                 public long ApproximateArrivalEpoch { get; set; }
 
                 /// <summary>
@@ -140,9 +134,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The base64 encoded data.
             /// </value>
             [DataMember(Name = "data")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
-#endif
             public string Base64EncodedData { get; set; }
 
             /// <summary>
@@ -151,7 +143,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// <returns></returns>
             public string DecodeData()
             {
-                var decodedData = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(this.Base64EncodedData));
+                var decodedData = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(Base64EncodedData));
                 return decodedData;
             }
         }

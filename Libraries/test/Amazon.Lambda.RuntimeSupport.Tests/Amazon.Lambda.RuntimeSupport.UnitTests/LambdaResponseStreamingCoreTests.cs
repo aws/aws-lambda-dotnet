@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 #pragma warning disable CA2252
 
 using System;
@@ -399,7 +398,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     // LambdaResponseStreamFactory tests
     // ─────────────────────────────────────────────────────────────────────────────
 
-    [Collection("ResponseStreamFactory")]
+    [Collection("RuntimeSupportStateCheck")]
     public class LambdaResponseStreamFactoryTests : IDisposable
     {
 
@@ -555,4 +554,3 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
     }
 }
-#endif

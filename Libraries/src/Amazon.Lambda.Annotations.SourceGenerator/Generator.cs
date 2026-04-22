@@ -26,14 +26,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         /// </summary>
         internal static readonly Dictionary<string, string> _targetFrameworksToRuntimes = new Dictionary<string, string>(2)
         {
-            { "net6.0", "dotnet6" },
             { "net8.0", "dotnet8" },
             { "net10.0", "dotnet10" }
         };
 
         internal static readonly List<string> _allowedRuntimeValues = new List<string>(4)
         {
-            "dotnet6",
             "provided.al2",
             "provided.al2023",
             "dotnet8",
@@ -102,7 +100,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var globalPropertiesAttribute = assemblyAttributes
                     .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGlobalPropertiesAttribute));
 
-                var defaultRuntime = "dotnet6";
+                var defaultRuntime = "dotnet10";
 
                 // Try to determine the target framework from the source generator context
                 if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property.TargetFramework", out var targetFramework))

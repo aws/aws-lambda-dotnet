@@ -40,7 +40,7 @@ namespace TestCustomAuthorizerApp
             var tenantId = default(int);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("numericTenantId") == false)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogDebug("Authorizer attribute 'numericTenantId' was missing, returning unauthorized.");
 #else
                 __context__.Logger.Log("Authorizer attribute 'numericTenantId' was missing, returning unauthorized.");
@@ -64,7 +64,7 @@ namespace TestCustomAuthorizerApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogError(e, "Failed to convert authorizer attribute 'numericTenantId', returning unauthorized.");
 #else
                 __context__.Logger.Log("Failed to convert authorizer attribute 'numericTenantId', returning unauthorized. Exception: " + e.ToString());
@@ -84,7 +84,7 @@ namespace TestCustomAuthorizerApp
             var isAdmin = default(bool);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("isAdmin") == false)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogDebug("Authorizer attribute 'isAdmin' was missing, returning unauthorized.");
 #else
                 __context__.Logger.Log("Authorizer attribute 'isAdmin' was missing, returning unauthorized.");
@@ -108,7 +108,7 @@ namespace TestCustomAuthorizerApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogError(e, "Failed to convert authorizer attribute 'isAdmin', returning unauthorized.");
 #else
                 __context__.Logger.Log("Failed to convert authorizer attribute 'isAdmin', returning unauthorized. Exception: " + e.ToString());
@@ -128,7 +128,7 @@ namespace TestCustomAuthorizerApp
             var score = default(double);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("score") == false)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogDebug("Authorizer attribute 'score' was missing, returning unauthorized.");
 #else
                 __context__.Logger.Log("Authorizer attribute 'score' was missing, returning unauthorized.");
@@ -152,7 +152,7 @@ namespace TestCustomAuthorizerApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogError(e, "Failed to convert authorizer attribute 'score', returning unauthorized.");
 #else
                 __context__.Logger.Log("Failed to convert authorizer attribute 'score', returning unauthorized. Exception: " + e.ToString());

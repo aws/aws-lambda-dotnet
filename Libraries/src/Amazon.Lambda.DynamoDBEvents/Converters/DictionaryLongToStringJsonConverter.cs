@@ -1,12 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Amazon.Lambda.DynamoDBEvents.Converters
 {
+    /// <summary>
+    /// JSON converter to convert a JSON object with string keys and long values to a Dictionary&lt;string, string&gt; where the long values are converted to strings.
+    /// </summary>
     public class DictionaryLongToStringJsonConverter : JsonConverter<Dictionary<string, string>>
     {
+        /// <inheritdoc/>
         public override Dictionary<string, string> Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
@@ -38,25 +42,21 @@ namespace Amazon.Lambda.DynamoDBEvents.Converters
 
                 // Get the value.
                 reader.Read();
-                var keyValue = ExtractValue(ref reader, options);
+                var keyValue = ExtractValue(ref reader);
                 dictionary.Add(propertyName, keyValue);
             }
 
             return dictionary;
         }
 
+        /// <inheritdoc/>
         public override void Write(Utf8JsonWriter writer, Dictionary<string, string> value, JsonSerializerOptions options)
         {
-#if NET8_0_OR_GREATER
             // For .NET 8+ use source generation for serialization to be trimming complaint
             JsonSerializer.Serialize(writer, value, typeof(Dictionary<string, string>), new DictionaryStringStringJsonSerializerContext(options));
-#else
-            // Use the built-in serializer, because it can handle dictionaries with string keys.
-            JsonSerializer.Serialize(writer, value, options);
-#endif
         }
 
-        private string ExtractValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private string ExtractValue(ref Utf8JsonReader reader)
         {
             switch (reader.TokenType)
             {
@@ -76,7 +76,6 @@ namespace Amazon.Lambda.DynamoDBEvents.Converters
 
     }
 
-#if NET8_0_OR_GREATER
     /// <summary>
     /// Context used for writing converter
     /// </summary>
@@ -85,5 +84,4 @@ namespace Amazon.Lambda.DynamoDBEvents.Converters
     {
 
     }
-#endif
 }

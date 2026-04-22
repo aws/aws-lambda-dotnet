@@ -19,7 +19,7 @@ public class HostingOptions
     /// The ILambdaSerializer used by Lambda to convert the incoming event JSON into the .NET event type and serialize the .NET response type
     /// back to JSON to return to Lambda.
     /// </summary>
-    public ILambdaSerializer Serializer { get; set; }
+    public ILambdaSerializer? Serializer { get; set; }
 
     /// <summary>
     /// The default response content encoding to use when no explicit content type or content encoding mapping is registered.

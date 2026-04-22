@@ -18,7 +18,7 @@ namespace Amazon.Lambda.Tests
 		private const string SHOULD_NOT_APPEAR = "TextThatShouldNotAppear";
 		private const string SHOULD_APPEAR_EVENT = "EventThatShouldAppear";
 		private const string SHOULD_APPEAR_EXCEPTION = "ExceptionThatShouldAppear";
-		private static string APPSETTINGS_DIR = Directory.GetCurrentDirectory();
+		private static readonly string APPSETTINGS_DIR = Directory.GetCurrentDirectory();
 		private static readonly Func<int, EventId> GET_SHOULD_APPEAR_EVENT = (id) => new EventId(451, SHOULD_APPEAR_EVENT + id);
 		private static readonly EventId SHOULD_NOT_APPEAR_EVENT = new EventId(333, "EventThatShoulNotdAppear");
 		private static readonly Func<int, Exception> GET_SHOULD_APPEAR_EXCEPTION = (id) => new Exception(SHOULD_APPEAR_EXCEPTION + id);
@@ -436,7 +436,6 @@ namespace Amazon.Lambda.Tests
 
                 // act
                 var httpClientLogger = loggerFactory.CreateLogger<System.Net.HttpListener>();
-                var authMngrLogger = loggerFactory.CreateLogger<System.Net.AuthenticationManager>();
                 var arrayLogger = loggerFactory.CreateLogger<System.Array>();
 
                 httpClientLogger.LogTrace(SHOULD_NOT_APPEAR);
@@ -445,13 +444,6 @@ namespace Amazon.Lambda.Tests
                 httpClientLogger.LogWarning(SHOULD_APPEAR);
                 httpClientLogger.LogError(SHOULD_APPEAR);
                 httpClientLogger.LogCritical(SHOULD_APPEAR);
-
-                authMngrLogger.LogTrace(SHOULD_NOT_APPEAR);
-                authMngrLogger.LogDebug(SHOULD_NOT_APPEAR);
-                authMngrLogger.LogInformation(SHOULD_APPEAR);
-                authMngrLogger.LogWarning(SHOULD_APPEAR);
-                authMngrLogger.LogError(SHOULD_APPEAR);
-                authMngrLogger.LogCritical(SHOULD_APPEAR);
 
                 arrayLogger.LogTrace(SHOULD_NOT_APPEAR);
                 arrayLogger.LogDebug(SHOULD_NOT_APPEAR);

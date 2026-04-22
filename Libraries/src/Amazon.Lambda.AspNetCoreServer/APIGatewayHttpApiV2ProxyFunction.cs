@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -54,7 +54,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Override for HTTP API v2 to use single-value <c>headers</c> in the streaming prelude
         /// instead of <c>multiValueHeaders</c>. API Gateway HTTP API v2 expects the <c>headers</c>
@@ -92,7 +91,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             return prelude;
         }
-#endif
 
         /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.
@@ -287,6 +285,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.Headers["Content-Type"] = null;
             }
 
+// Disabled in case the user's ASP.NET Core application is still using the older API that set the body on the response feature instead of the new API that sets the body on the HttpResponse object.
+#pragma warning disable CS0618
             if (responseFeatures.Body != null)
             {
                 // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
@@ -299,6 +299,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
 
             }
+#pragma warning restore CS0618
 
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 

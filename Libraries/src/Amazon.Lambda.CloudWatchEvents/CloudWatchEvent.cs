@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.CloudWatchEvents
+namespace Amazon.Lambda.CloudWatchEvents
 {
     using System;
     using System.Collections.Generic;
@@ -40,9 +40,7 @@
         /// For example, ScheduledEvent will be null
         /// For example, ECSEvent could be "ECS Container Instance State Change" or "ECS Task State Change"
         /// </summary>
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("detail-type")]
-#endif
         public string DetailType { get; set; }
 
         /// <summary>

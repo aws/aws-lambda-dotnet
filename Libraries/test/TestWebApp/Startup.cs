@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,22 +8,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Runtime.Serialization.Json;
 using System.IO;
 using Microsoft.AspNetCore.Http.Features;
-
-#if NETCOREAPP_2_1
-using Newtonsoft.Json.Linq;
-using Swashbuckle.AspNetCore.Swagger;
-#else
 using System.Text.Json;
-#endif
 
 namespace TestWebApp
 {
     public class Startup
     {
+#pragma warning disable CS0618
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -34,6 +27,7 @@ namespace TestWebApp
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
         }
+#pragma warning restore CS0618
 
         public IConfigurationRoot Configuration { get; }
 
@@ -52,28 +46,16 @@ namespace TestWebApp
                 options.MimeTypes = new string[] { "application/json-compress" };
             });
 
-#if NETCOREAPP_2_1
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
-            });
-
-            // Add framework services.
-            services.AddApplicationInsightsTelemetry(Configuration);
-
-            services.AddMvc();
-#elif NETCOREAPP3_1_OR_GREATER
             services.AddControllers();
-#endif
         }
 
+#pragma warning disable CS0618
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseMiddleware<Middleware>();
             app.UseResponseCompression();
 
-#if NETCOREAPP3_1_OR_GREATER
             app.UseRouting();
 
             app.UseAuthorization();
@@ -82,35 +64,10 @@ namespace TestWebApp
             {
                 endpoints.MapControllers();
             });
-#else
-            app.UseSwagger();
-
-            app.UseMvc();
-#endif
             app.Run(async (context) =>
             {
                 var rawTarget = context.Features.Get<IHttpRequestFeature>()?.RawTarget;
 
-#if NETCOREAPP_2_1
-                var root = new JObject();
-                root["Path"] = new JValue(context.Request.Path);
-                root["PathBase"] = new JValue(context.Request.PathBase);
-                root["RawTarget"] = new JValue(rawTarget);
-
-                var query = new JObject();
-                foreach(var queryKey in context.Request.Query.Keys)
-                {
-                    var variables = new JArray();
-                    foreach(var v in context.Request.Query[queryKey])
-                    {
-                        variables.Add(new JValue(v));
-                    }
-                    query[queryKey] = variables;
-                }
-                root["QueryVariables"] = query;
-
-                var body = root.ToString();
-#else
                 var stream = new MemoryStream();
                 var writer = new Utf8JsonWriter(stream);
                 writer.WriteStartObject();
@@ -132,10 +89,11 @@ namespace TestWebApp
                 writer.Dispose();
                 stream.Position = 0;
                 var body = new StreamReader(stream).ReadToEnd();
-#endif
+
                 context.Response.Headers["Content-Type"] = "application/json";
                 await context.Response.WriteAsync(body);
             });
         }
+#pragma warning restore CS0618
     }
 }

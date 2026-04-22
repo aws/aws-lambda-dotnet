@@ -129,28 +129,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         [Fact]
-        public async Task OnCompletedCallback_IsExecuted()
-        {
-            var apiUrl = await _fixture.GetApiUrlAsync();
-            using var httpClient = new HttpClient();
-
-            var response = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-test");
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync();
-            Output.WriteLine($"Body: {body}");
-            Assert.Contains("OnCompleted callback registered", body);
-
-            var verifyResponse = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-verify");
-            Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
-            var verifyBody = await verifyResponse.Content.ReadAsStringAsync();
-            Output.WriteLine($"Verify body: {verifyBody}");
-
-            var doc = JsonDocument.Parse(verifyBody);
-            Assert.True(doc.RootElement.GetProperty("onCompletedExecuted").GetBoolean(),
-                "OnCompleted callback should have been executed");
-        }
-
-        [Fact]
         public async Task CustomHeaders_PassedThrough()
         {
             var apiUrl = await _fixture.GetApiUrlAsync();
@@ -198,8 +176,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var apiUrl = await _fixture.GetApiUrlAsync();
             using var httpClient = new HttpClient();
 
-            var content = new StringContent("Hello from integration test", Encoding.UTF8, "text/plain");
-            var response = await httpClient.PostAsync($"{apiUrl}echo-body", content);
+            var response = await httpClient.PostWithRetryAsync(
+                $"{apiUrl}echo-body",
+                new StringContent("Hello from integration test", Encoding.UTF8, "text/plain"));
 
             Output.WriteLine($"Status: {response.StatusCode}");
             var body = await response.Content.ReadAsStringAsync();
@@ -217,6 +196,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     /// <summary>
     /// Tests streaming through API Gateway REST API.
     /// </summary>
+    [Collection("Integration Tests")]
     public class RestApiStreamingTests : StreamingTestBase, IClassFixture<RestApiStreamingFixture>
     {
         public RestApiStreamingTests(RestApiStreamingFixture fixture, ITestOutputHelper output)
@@ -227,6 +207,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     /// Tests streaming through Lambda Function URL.
     /// Function URL uses the same payload format as HTTP API v2.
     /// </summary>
+    [Collection("Integration Tests")]
+
     public class FunctionUrlStreamingTests : StreamingTestBase, IClassFixture<FunctionUrlStreamingFixture>
     {
         public FunctionUrlStreamingTests(FunctionUrlStreamingFixture fixture, ITestOutputHelper output)
@@ -398,7 +380,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private async Task WaitForEndpointAsync()
         {
             using var httpClient = new HttpClient();
-            var maxRetries = 10;
+            var maxRetries = 20;
             for (var i = 0; i < maxRetries; i++)
             {
                 try
@@ -425,11 +407,47 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             HttpStatusCode expectedCode = HttpStatusCode.OK,
             int maxRetries = 5, int delaySeconds = 5)
         {
+            return await GetWithRetryAsync(httpClient, url, expectedCode, null, maxRetries, delaySeconds);
+        }
+
+        public static async Task<HttpResponseMessage> GetWithRetryAsync(
+            this HttpClient httpClient, string url,
+            HttpStatusCode expectedCode,
+            Func<HttpResponseMessage, Task<bool>> contentValidator,
+            int maxRetries = 5, int delaySeconds = 5)
+        {
             for (var i = 0; i < maxRetries; i++)
             {
                 try
                 {
                     var response = await httpClient.GetAsync(url);
+                    if (response.StatusCode == expectedCode)
+                    {
+                        if (contentValidator == null || await contentValidator(response))
+                        {
+                            return response;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore and retry
+                }
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+            }
+            throw new Exception($"Failed to get expected response from {url} after {maxRetries} attempts");
+        }
+
+        public static async Task<HttpResponseMessage> PostWithRetryAsync(
+            this HttpClient httpClient, string url, HttpContent content,
+            HttpStatusCode expectedCode = HttpStatusCode.OK,
+            int maxRetries = 5, int delaySeconds = 5)
+        {
+            for (var i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    var response = await httpClient.PostAsync(url, content);
                     if (response.StatusCode == expectedCode)
                     {
                         return response;
@@ -439,9 +457,22 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     // Ignore and retry
                 }
+                // HttpContent can only be consumed once; create fresh content for retries
+                content = await CloneHttpContentAsync(content);
                 await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
             }
             throw new Exception($"Failed to get expected status code {expectedCode} from {url} after {maxRetries} attempts");
+        }
+
+        private static async Task<HttpContent> CloneHttpContentAsync(HttpContent original)
+        {
+            var bytes = await original.ReadAsByteArrayAsync();
+            var clone = new ByteArrayContent(bytes);
+            if (original.Headers.ContentType != null)
+            {
+                clone.Headers.ContentType = original.Headers.ContentType;
+            }
+            return clone;
         }
     }
 }

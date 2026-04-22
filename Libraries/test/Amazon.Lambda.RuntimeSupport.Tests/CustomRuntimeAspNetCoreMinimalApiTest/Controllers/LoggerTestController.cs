@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Amazon.Lambda.Core;
 
 namespace CustomRuntimeAspNetCoreMinimalApiTest.Controllers
@@ -10,7 +10,7 @@ namespace CustomRuntimeAspNetCoreMinimalApiTest.Controllers
         [HttpGet()]
         public long Get()
         {
-            var lambdaContext = this.HttpContext.Items["LambdaContext"] as ILambdaContext;
+            var lambdaContext = HttpContext.Items["LambdaContext"] as ILambdaContext;
 
             const int maxLogs = 10000;
             long actualLogsWritten = 0;

@@ -18,7 +18,7 @@ namespace IntegrationTests.Helpers
         public async Task<StackStatus> GetStackStatusAsync(string stackName)
         {
             var stack = await GetStackAsync(stackName);
-            return stack?.StackStatus;
+            return stack?.StackStatus ?? StackStatus.CREATE_FAILED;
         }
 
         public async Task<bool> IsDeletedAsync(string stackName)

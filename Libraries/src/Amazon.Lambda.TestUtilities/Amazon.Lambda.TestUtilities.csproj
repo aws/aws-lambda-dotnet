@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon.Lambda.TestUtilties includes stub implementations of interfaces defined in Amazon.Lambda.Core and helper methods.</Description>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.TestUtilities</AssemblyTitle>
     <Version>3.0.1</Version>
     <AssemblyName>Amazon.Lambda.TestUtilities</AssemblyName>

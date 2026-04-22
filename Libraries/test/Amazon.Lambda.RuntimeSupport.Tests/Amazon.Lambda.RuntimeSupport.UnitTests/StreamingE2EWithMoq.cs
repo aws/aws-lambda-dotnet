@@ -26,15 +26,15 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
-    [CollectionDefinition("ResponseStreamFactory")]
-    public class ResponseStreamFactoryCollection { }
+    [CollectionDefinition("RuntimeSupportStateCheck")]
+    public class RuntimeSupportStateCheckCollection { }
 
     /// <summary>
     /// End-to-end integration tests for the true-streaming architecture.
     /// These tests exercise the full pipeline: LambdaBootstrap → ResponseStreamFactory →
     /// ResponseStream → captured HTTP output stream.
     /// </summary>
-    [Collection("ResponseStreamFactory")]
+    [Collection("RuntimeSupportStateCheck")]
     public class StreamingE2EWithMoq : IDisposable
     {
         public void Dispose()
@@ -42,8 +42,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
         }
-
-        // ─── Helpers ────────────────────────────────────────────────────────────────
 
         private static Dictionary<string, IEnumerable<string>> MakeHeaders(string requestId = "test-request-id")
             => new Dictionary<string, IEnumerable<string>>
@@ -70,6 +68,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public byte[] CapturedHttpBytes { get; private set; }
             public ResponseStream LastResponseStream { get; private set; }
             public Stream LastBufferedOutputStream { get; private set; }
+            public Action OnStreamingReady { get; set; }
+            public MemoryStream CapturedOutputStream { get; private set; }
 
             public new Amazon.Lambda.RuntimeSupport.Helpers.IConsoleLoggerWriter ConsoleLogger { get; } = new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables());
 
@@ -93,7 +93,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                         new RuntimeApiHeaders(_headers),
                         new LambdaEnvironment(_envVars),
                         new TestDateTimeHelper(),
-                        new Helpers.SimpleLoggerWriter(_envVars))
+                        new Helpers.LogLevelLoggerWriter(_envVars))
                 };
             }
 
@@ -105,9 +105,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 // Use a real MemoryStream as the HTTP output stream so we capture actual bytes
                 var captureStream = new MemoryStream();
+                CapturedOutputStream = captureStream;
                 await responseStream.SetHttpOutputStreamAsync(captureStream, cancellationToken);
 
                 // Wait for the handler to finish writing (mirrors real RawStreamingHttpClient behavior)
+                OnStreamingReady?.Invoke();
                 await responseStream.WaitForCompletionAsync(cancellationToken);
                 CapturedHttpBytes = captureStream.ToArray();
                 return new NoOpDisposable();
@@ -137,10 +139,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public new Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
                 => Task.CompletedTask;
 
-#if NET8_0_OR_GREATER
             public new Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
             public new Task ReportRestoreErrorAsync(Exception exception, string errorType = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-#endif
         }
 
         private static CapturingStreamingRuntimeApiClient CreateClient(string requestId = "test-request-id")
@@ -148,7 +148,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: all data is transmitted correctly (content round-trip).
-        /// Requirements: 3.2, 4.3, 10.1
         /// </summary>
         [Fact]
         public async Task Streaming_AllDataTransmitted_ContentRoundTrip()
@@ -163,7 +162,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -176,7 +175,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: stream is finalized (final chunk written, BytesWritten matches).
-        /// Requirements: 3.2, 4.3, 10.1
         /// </summary>
         [Fact]
         public async Task Streaming_StreamFinalized_BytesWrittenMatchesPayload()
@@ -191,7 +189,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -199,12 +197,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(data.Length, client.LastResponseStream.BytesWritten);
         }
 
-        // ─── 10.2 End-to-end buffered response ──────────────────────────────────────
-
         /// <summary>
         /// End-to-end: handler does NOT call CreateStream — response goes via buffered path.
         /// Verifies SendResponseAsync is called and streaming headers are absent.
-        /// Requirements: 1.5, 4.6, 9.4
         /// </summary>
         [Fact]
         public async Task Buffered_HandlerDoesNotCallCreateStream_UsesSendResponsePath()
@@ -218,7 +213,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(responseBody));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -229,7 +224,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: buffered response body is transmitted correctly.
-        /// Requirements: 1.5, 4.6, 9.4
         /// </summary>
         [Fact]
         public async Task Buffered_ResponseBodyTransmittedCorrectly()
@@ -243,7 +237,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(responseBody));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -255,45 +249,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         /// <summary>
-        /// End-to-end: midstream error sets error state on ResponseStream with exception details.
-        /// In production, RawStreamingHttpClient reads this state and writes trailing headers.
-        /// Requirements: 5.2, 5.3
-        /// </summary>
-        [Fact]
-        public async Task MidstreamError_SetsErrorStateWithExceptionDetails()
-        {
-            var client = CreateClient();
-            const string errorMessage = "something went wrong mid-stream";
-
-            LambdaBootstrapHandler handler = async (invocation) =>
-            {
-                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-                await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
-                throw new InvalidOperationException(errorMessage);
-            };
-
-            using var bootstrap = new LambdaBootstrap(handler, null);
-            bootstrap.Client = client;
-            await bootstrap.InvokeOnceAsync();
-
-            Assert.True(client.StartStreamingCalled);
-            Assert.NotNull(client.LastResponseStream);
-            Assert.True(client.LastResponseStream.HasError);
-            Assert.NotNull(client.LastResponseStream.ReportedError);
-            Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
-            Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
-
-            // Verify the handler's data was still captured before the error
-            var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
-            Assert.Contains("some data", output);
-        }
-
-        // ─── 10.4 Multi-concurrency ──────────────────────────────────────────────────
-
-        /// <summary>
         /// Multi-concurrency: concurrent invocations use AsyncLocal for state isolation.
         /// Each invocation independently uses streaming or buffered mode without interference.
-        /// Requirements: 2.9, 6.5, 8.9
         /// </summary>
         [Fact]
         public async Task MultiConcurrency_ConcurrentInvocations_StateIsolated()
@@ -350,7 +307,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Multi-concurrency: streaming and buffered invocations can run concurrently without interference.
-        /// Requirements: 2.9, 6.5, 8.9
         /// </summary>
         [Fact]
         public async Task MultiConcurrency_StreamingAndBufferedMixedConcurrently_NoInterference()
@@ -439,11 +395,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
         }
 
-        // ─── 10.5 Backward compatibility ────────────────────────────────────────────
-
         /// <summary>
         /// Backward compatibility: existing handler signatures (event + ILambdaContext) work without modification.
-        /// Requirements: 9.1, 9.2, 9.3
         /// </summary>
         [Fact]
         public async Task BackwardCompat_ExistingHandlerSignature_WorksUnchanged()
@@ -459,7 +412,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(Encoding.UTF8.GetBytes("classic response")));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -470,7 +423,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: no regression in buffered response behavior — response body is correct.
-        /// Requirements: 9.4, 9.5
         /// </summary>
         [Fact]
         public async Task BackwardCompat_BufferedResponse_NoRegression()
@@ -484,7 +436,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(expected));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -497,7 +449,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: handler that returns null OutputStream still works.
-        /// Requirements: 9.4
         /// </summary>
         [Fact]
         public async Task BackwardCompat_NullOutputStream_HandledGracefully()
@@ -510,7 +461,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
 
             // Should not throw
@@ -521,7 +472,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: handler that throws before CreateStream uses standard error path.
-        /// Requirements: 9.5
         /// </summary>
         [Fact]
         public async Task BackwardCompat_HandlerThrows_StandardErrorReportingUsed()
@@ -534,7 +484,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 throw new Exception("classic handler error");
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 

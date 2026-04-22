@@ -48,13 +48,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
             string errorJson, string xrayCause, CancellationToken cancellationToken)
             => Task.FromResult(EmptyStatusResponse);
 
-#if NET8_0_OR_GREATER
         public Task<SwaggerResponse<Stream>> RestoreNextAsync(CancellationToken cancellationToken)
             => Task.FromResult(new SwaggerResponse<Stream>(200, new Dictionary<string, IEnumerable<string>>(), Stream.Null));
 
         public Task<SwaggerResponse<StatusResponse>> RestoreErrorAsync(
             string lambda_Runtime_Function_Error_Type, string errorJson, CancellationToken cancellationToken)
             => Task.FromResult(EmptyStatusResponse);
-#endif
     }
 }

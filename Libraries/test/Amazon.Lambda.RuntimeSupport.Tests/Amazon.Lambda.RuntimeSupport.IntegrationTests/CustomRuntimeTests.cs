@@ -32,15 +32,15 @@ using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     [Collection("Integration Tests")]
-    public class CustomRuntimeNET8Tests : CustomRuntimeTests
+    public class CustomRuntimeNET10Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET8Tests(IntegrationTestFixture fixture)
-            : base(fixture, "CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
+        public CustomRuntimeNET10Tests(IntegrationTestFixture fixture)
+            : base(fixture, "CustomRuntimeNET10FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net10.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET10)
         {
         }
 
         [Fact]
-        public async Task TestAllNET8HandlersAsync()
+        public async Task TestAllNET10HandlersAsync()
         {
             await base.TestAllHandlersAsync();
         }
@@ -48,9 +48,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
-        public enum TargetFramework { NET8 }
+        public enum TargetFramework { NET8, NET10}
 
-        private TargetFramework _targetFramework;
+        private readonly TargetFramework _targetFramework;
 
         public CustomRuntimeTests(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
             : base(fixture, functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
@@ -69,15 +69,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
 
-                    // .NET API to address setting memory constraint was added for .NET 8
-                    if (_targetFramework == TargetFramework.NET8)
-                    {
-                        await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
-                        await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
-                        await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
-                    }
+                    await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                    await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                    await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
 
                     await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
