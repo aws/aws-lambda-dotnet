@@ -183,9 +183,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void VerifyScheduleEventInput_AbsoluteFilePath_ReadsFileContents(CloudFormationTemplateFormat templateFormat)
         {
             // ARRANGE - Set up a mock file manager with a JSON file at an absolute path
+            // Use Path.GetTempPath() to ensure the path is rooted on both Windows and Linux
             var mockFileManager = GetMockFileManager(string.Empty);
             var expectedJson = "{\"environment\": \"production\"}";
-            var absoluteInputPath = Path.Combine("C:", "config", "schedule-input.json");
+            var absoluteInputPath = Path.Combine(Path.GetTempPath(), "config", "schedule-input.json");
             mockFileManager.WriteAllText(absoluteInputPath, expectedJson);
 
             var lambdaFunctionModel = GetLambdaFunctionModel();
