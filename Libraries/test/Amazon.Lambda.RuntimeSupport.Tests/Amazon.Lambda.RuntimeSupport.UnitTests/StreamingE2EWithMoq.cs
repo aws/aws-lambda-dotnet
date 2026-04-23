@@ -269,6 +269,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             {
                 var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
+                await Task.Delay(1000);
                 throw new InvalidOperationException(errorMessage);
             };
 
