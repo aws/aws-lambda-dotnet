@@ -60,10 +60,8 @@ public class TestToolProcess
         builder.Services.AddHttpContextAccessor();
 
         var wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        if (builder.Environment.IsProduction())
-        {
-            builder.Services.AddSingleton<IFileProvider>(new PhysicalFileProvider(wwwrootPath));
-        }
+        var wwwrootFileProvider = new PhysicalFileProvider(wwwrootPath);
+        builder.Services.AddSingleton<IFileProvider>(wwwrootFileProvider);
         builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
 
         var serviceHttp = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
@@ -87,19 +85,20 @@ public class TestToolProcess
 
         var app = builder.Build();
 
-        if (app.Environment.IsProduction())
-        {
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(wwwrootPath)
-            });
-        }
-        else
+        if (!app.Environment.IsProduction())
         {
             // nosemgrep: csharp.lang.security.stacktrace-disclosure.stacktrace-disclosure
             app.UseDeveloperExceptionPage();
-            app.UseStaticFiles();
         }
+
+        // Always use the explicit file provider to serve static files from the tool's install
+        // directory. Without this, non-Production environments attempt to use the static web
+        // assets manifest which contains absolute paths from the build machine and will fail
+        // when running as an installed global tool on a different machine.
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = wwwrootFileProvider
+        });
 
         app.UseAntiforgery();
 
