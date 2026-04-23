@@ -72,14 +72,21 @@ namespace IntegrationTests.Helpers
             {
                 while (true)
                 {
-                    var response = await _lambdaClient.GetFunctionConfigurationAsync(new GetFunctionConfigurationRequest { FunctionName = function });
-                    if (response.State == State.Pending)
+                    try
                     {
-                        await Task.Delay(1000);
+                        var response = await _lambdaClient.GetFunctionConfigurationAsync(new GetFunctionConfigurationRequest { FunctionName = function });
+                        if (response.State == State.Pending)
+                        {
+                            await Task.Delay(1000);
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
-                    else
+                    catch(TooManyRequestsException)
                     {
-                        break;
+                        await Task.Delay(10000);
                     }
                 }
             }
