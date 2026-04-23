@@ -69,7 +69,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
 
                     await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
                     await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");

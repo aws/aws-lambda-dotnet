@@ -39,7 +39,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
                     await InvokeSuccessToWeatherForecastController(lambdaClient);
                 }
                 catch (NoDeploymentPackageFoundException)
@@ -69,7 +69,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
                     await InvokeLoggerTestController(lambdaClient);
                 }
                 catch (NoDeploymentPackageFoundException)
