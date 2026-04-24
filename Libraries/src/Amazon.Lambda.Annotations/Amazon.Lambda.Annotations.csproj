@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <!-- The .NET Standard 2.0 target is required for the source generator -->
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>false</IsPackable>
     

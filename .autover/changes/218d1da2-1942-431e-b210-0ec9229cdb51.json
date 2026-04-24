@@ -1,0 +1,221 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Remove .NET Standard 2.0, .NET Core 3.1 and .NET 6 build targets"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.ApplicationLoadBalancerEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AppSyncEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 8 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchLogsEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CognitoEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.ConfigEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.ConnectEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET 6 and .NET 8 to .NET Standard 2.0, .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KafkaEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 and .NET 8 to .NET Standard 2.0, .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.KinesisAnalyticsEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisFirehoseEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.LexEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.LexV2Events",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.MQEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.PowerShellHost",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.S3Events",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Serialization.Json",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.Serialization.SystemTextJson",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Core 3.1, .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SimpleEmailEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.SNSEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },	
+    {
+      "Name": "Amazon.Lambda.SQSEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+      ]
+    }
+  ]
+}

@@ -3,6 +3,9 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>	
+	
 
     <Authors>Amazon Web Services</Authors>
 	
