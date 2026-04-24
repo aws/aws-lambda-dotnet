@@ -39,19 +39,29 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 PreprocessorSymbols = ImmutableArray.Create<string>("ANALYZER_UNIT_TESTS");
 
+                var assemblyResolver = (Type t) =>
+                {
+                    var path = t.Assembly.Location;
+                    if (targetFramework == TargetFramework.Net8_0 && path.Contains("net10.0"))
+                        path = path.Replace("net10.0", "net8.0");
+
+                    return path;
+                };
+
                 if (referencesMode == ReferencesMode.NoApiGatewayEvents)
                 {
                     SolutionTransforms.Add((solution, projectId) =>
                     {
-                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SnapshotRestore.Registry.RestoreHooksRegistry).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
+                        return solution
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ILambdaContext))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IServiceCollection))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ServiceProvider))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(RestApiAttribute))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DefaultLambdaJsonSerializer))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(HostApplicationBuilder))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IHost))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SnapshotRestore.Registry.RestoreHooksRegistry))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(LambdaBootstrapBuilder))));
                     });
 
                 }
@@ -59,20 +69,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 {
                     SolutionTransforms.Add((solution, projectId) =>
                     {
-                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DynamoDBEvent).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SNSEvent).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SQSEvent).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ApplicationLoadBalancerRequest).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SnapshotRestore.Registry.RestoreHooksRegistry).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
+                        return solution
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ILambdaContext))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(APIGatewayProxyRequest))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DynamoDBEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SNSEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SQSEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ApplicationLoadBalancerRequest))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IServiceCollection))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ServiceProvider))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(RestApiAttribute))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DefaultLambdaJsonSerializer))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(HostApplicationBuilder))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IHost))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SnapshotRestore.Registry.RestoreHooksRegistry))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(LambdaBootstrapBuilder))));
                     });
                 }
 

@@ -267,7 +267,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8, dotnet10"),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: provided.al2, provided.al2023, dotnet8, dotnet10"),
                     }
                 }
             };
@@ -1212,12 +1212,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedFunctionContent),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Core", "Amazon.Lambda.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Core", "Amazon.Lambda.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"),
-                        DiagnosticResult.CompilerError("CS1705").WithArguments("Amazon.Lambda.Serialization.SystemTextJson", "Amazon.Lambda.Serialization.SystemTextJson, Version=0.0.0.0, Culture=neutral, PublicKeyToken=885c28607f98e604", "System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Runtime", "System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
                     }
                 }
             }.RunAsync();
