@@ -130,11 +130,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         {
             var serializer = new JsonSerializerOptions()
             {
-#if NET8_0_OR_GREATER
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-#else
-                IgnoreNullValues = true,
-#endif
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = new AwsNamingPolicy(),
                 Converters =

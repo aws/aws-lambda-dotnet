@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -139,10 +139,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public new Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
                 => Task.CompletedTask;
 
-#if NET8_0_OR_GREATER
             public new Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
             public new Task ReportRestoreErrorAsync(Exception exception, string errorType = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-#endif
         }
 
         private static CapturingStreamingRuntimeApiClient CreateClient(string requestId = "test-request-id")

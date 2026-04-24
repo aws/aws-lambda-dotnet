@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -15,9 +15,7 @@ namespace Amazon.Lambda.S3Events
         /// <summary>
         /// The Amazon S3 request ID for this request. We recommend that you log this value to help with debugging.
         /// </summary>
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("xAmzRequestId")]
-#endif
         public string XAmzRequestId { get; set; }
 
         /// <summary>

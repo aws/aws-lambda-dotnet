@@ -3,10 +3,8 @@ namespace Amazon.Lambda.DynamoDBEvents
     using System;
     using System.Collections.Generic;
 
-#if NET8_0_OR_GREATER
     using Amazon.Lambda.DynamoDBEvents.Converters;
     using System.Text.Json.Serialization;
-#endif
 
     /// <summary>
     /// Represents an Amazon DynamodDB event when using time windows.
@@ -22,9 +20,7 @@ namespace Amazon.Lambda.DynamoDBEvents
         /// <summary>
         /// State being built up to this invoke in the time window.
         /// </summary>
-#if NET8_0_OR_GREATER
         [JsonConverter(typeof(DictionaryLongToStringJsonConverter))]
-#endif
         public Dictionary<string, string> State { get; set; }
 
         /// <summary>

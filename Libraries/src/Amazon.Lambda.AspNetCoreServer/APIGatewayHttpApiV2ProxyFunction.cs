@@ -54,7 +54,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Override for HTTP API v2 to use single-value <c>headers</c> in the streaming prelude
         /// instead of <c>multiValueHeaders</c>. API Gateway HTTP API v2 expects the <c>headers</c>
@@ -92,7 +91,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             return prelude;
         }
-#endif
 
         /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.

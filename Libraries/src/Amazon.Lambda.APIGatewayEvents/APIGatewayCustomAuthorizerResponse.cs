@@ -12,36 +12,28 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// Gets or sets the ID of the principal.
         /// </summary>
         [DataMember(Name = "principalId")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("principalId")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("principalId")]
         public string PrincipalID { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerPolicy"/> policy document.
         /// </summary>
         [DataMember(Name = "policyDocument")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("policyDocument")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("policyDocument")]
         public APIGatewayCustomAuthorizerPolicy PolicyDocument { get; set; } = new APIGatewayCustomAuthorizerPolicy();
 
         /// <summary>
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("context")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("context")]
         public APIGatewayCustomAuthorizerContextOutput Context { get; set; }
 
         /// <summary>
         /// Gets or sets the usageIdentifierKey.
         /// </summary>
         [DataMember(Name = "usageIdentifierKey")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("usageIdentifierKey")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("usageIdentifierKey")]
         public string UsageIdentifierKey { get; set; }
     }
 }

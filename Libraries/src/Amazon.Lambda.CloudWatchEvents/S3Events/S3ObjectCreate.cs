@@ -12,9 +12,7 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// The source IP of the API request.
         /// </summary>
         [DataMember(Name = "source-ip-address")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("source-ip-address")]
-#endif
         public string SourceIpAddress { get; set; }
 
         /// <summary>

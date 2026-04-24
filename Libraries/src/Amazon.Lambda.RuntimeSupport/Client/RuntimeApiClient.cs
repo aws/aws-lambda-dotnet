@@ -166,7 +166,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return _internalClient.RestoreErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Start sending a streaming response to the Lambda Runtime API.
         /// Uses a raw TCP connection with chunked transfer encoding to support HTTP/1.1
@@ -192,7 +191,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return rawClient;
         }
-#endif
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

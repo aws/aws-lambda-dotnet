@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CognitoEvents
 {
@@ -11,18 +11,14 @@ namespace Amazon.Lambda.CognitoEvents
         /// The type of sender request.
         /// </summary>
         [DataMember(Name = "type")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("type")]
-# endif
         public string Type { get; set; }
 
         /// <summary>
         /// The encrypted temporary authorization code.
         /// </summary>
         [DataMember(Name = "code")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("code")]
-#endif
         public string Code { get; set; }
     }
 }

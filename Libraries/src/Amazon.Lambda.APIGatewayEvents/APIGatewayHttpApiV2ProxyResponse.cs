@@ -17,18 +17,14 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The HTTP status code for the request
         /// </summary>
         [DataMember(Name = "statusCode")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
         public int StatusCode { get; set; }
 
         /// <summary>
         /// The Http headers returned in the response. Multiple header values set for the the same header should be separate by a comma.
         /// </summary>
         [DataMember(Name = "headers")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("headers")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
@@ -67,27 +63,21 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The cookies returned in the response.
         /// </summary>
         [DataMember(Name = "cookies")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("cookies")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("cookies")]
         public string[] Cookies { get; set; }
 
         /// <summary>
         /// The response body
         /// </summary>
         [DataMember(Name = "body")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("body")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("body")]
         public string Body { get; set; }
 
         /// <summary>
         /// Flag indicating whether the body should be treated as a base64-encoded string
         /// </summary>
         [DataMember(Name = "isBase64Encoded")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
         public bool IsBase64Encoded { get; set; }
     }
 }

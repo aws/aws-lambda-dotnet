@@ -14,18 +14,14 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// Gets or sets authorization result.
         /// </summary>
         [DataMember(Name = "isAuthorized")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("isAuthorized")]
-#endif
         public bool IsAuthorized { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("context")]
-#endif
         public Dictionary<string, object> Context { get; set; }
     }
 }

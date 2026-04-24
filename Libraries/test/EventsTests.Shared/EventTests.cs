@@ -307,13 +307,9 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream", record.EventSourceARN);
                 Assert.Equal("aws:kinesis", record.EventSource);
                 Assert.Equal("us-east-1", record.AwsRegion);
-#if NET8_0_OR_GREATER
                 // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
                 // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
                 Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
-#else
-                Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
-#endif
 
                 Handle(kinesisEvent);
             }

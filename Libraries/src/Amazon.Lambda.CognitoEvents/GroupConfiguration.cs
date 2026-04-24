@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CognitoEvents
@@ -13,27 +13,21 @@ namespace Amazon.Lambda.CognitoEvents
         /// A list of the group names that are associated with the user that the identity token is issued for.
         /// </summary>
         [DataMember(Name = "groupsToOverride")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("groupsToOverride")]
-# endif
         public List<string> GroupsToOverride { get; set; } = new List<string>();
 
         /// <summary>
         /// A list of the current IAM roles associated with these groups.
         /// </summary>
         [DataMember(Name = "iamRolesToOverride")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("iamRolesToOverride")]
-# endif
         public List<string> IamRolesToOverride { get; set; } = new List<string>();
 
         /// <summary>
         /// A string indicating the preferred IAM role.
         /// </summary>
         [DataMember(Name = "preferredRole")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("preferredRole")]
-# endif
         public string PreferredRole { get; set; }
     }
 }

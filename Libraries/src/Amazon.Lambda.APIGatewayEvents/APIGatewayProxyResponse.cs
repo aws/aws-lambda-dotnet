@@ -14,9 +14,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The HTTP status code for the request
         /// </summary>
         [DataMember(Name = "statusCode")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
         public int StatusCode { get; set; }
 
         /// <summary>
@@ -25,9 +23,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// before returning back the headers to the caller.
         /// </summary>
         [DataMember(Name = "headers")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("headers")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
@@ -36,27 +32,21 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// before returning back the headers to the caller.
         /// </summary>
         [DataMember(Name = "multiValueHeaders")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("multiValueHeaders")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("multiValueHeaders")]
         public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
         /// <summary>
         /// The response body
         /// </summary>
         [DataMember(Name = "body")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("body")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("body")]
         public string Body { get; set; }
 
         /// <summary>
         /// Flag indicating whether the body should be treated as a base64-encoded string
         /// </summary>
         [DataMember(Name = "isBase64Encoded")]
-#if NET8_0_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
         public bool IsBase64Encoded { get; set; }
     }
 }

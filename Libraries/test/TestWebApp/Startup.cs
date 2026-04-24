@@ -8,17 +8,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Runtime.Serialization.Json;
 using System.IO;
 using Microsoft.AspNetCore.Http.Features;
-
-#if NETCOREAPP_2_1
-using Newtonsoft.Json.Linq;
-using Swashbuckle.AspNetCore.Swagger;
-#else
 using System.Text.Json;
-#endif
 
 namespace TestWebApp
 {

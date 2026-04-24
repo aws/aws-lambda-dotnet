@@ -4,11 +4,7 @@ namespace Amazon.Lambda.APIGatewayEvents
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-#if NETSTANDARD2_0
-    using Newtonsoft.Json.Linq;
-#else
     using System.Text.Json;
-#endif
 
 
     /// <summary>
@@ -122,17 +118,6 @@ namespace Amazon.Lambda.APIGatewayEvents
                     object value;
                     if(TryGetValue("claims", out value))
                     {
-#if NETSTANDARD2_0
-                        JObject jsonClaims = value as JObject;
-                        if (jsonClaims != null)
-                        {
-                            foreach (JProperty property in jsonClaims.Properties())
-                            {
-                                _claims[property.Name] = property.Value?.ToString();
-
-                            }
-                        }
-#else
                         if(value is JsonElement jsonClaims)
                         {
                             foreach(JsonProperty property in jsonClaims.EnumerateObject())
@@ -143,7 +128,6 @@ namespace Amazon.Lambda.APIGatewayEvents
                                 }
                             }
                         }
-#endif
                     }
                 }
 

@@ -14,27 +14,21 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// Gets or sets the ID of the principal.
         /// </summary>
         [DataMember(Name = "principalId")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("principalId")]
-#endif
         public string PrincipalID { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerPolicy"/> policy document.
         /// </summary>
         [DataMember(Name = "policyDocument")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("policyDocument")]
-#endif
         public APIGatewayCustomAuthorizerPolicy PolicyDocument { get; set; } = new APIGatewayCustomAuthorizerPolicy();
 
         /// <summary>
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("context")]
-#endif
         public Dictionary<string, object> Context { get; set; }
     }
 }

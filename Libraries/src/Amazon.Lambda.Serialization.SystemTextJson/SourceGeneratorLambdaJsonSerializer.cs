@@ -1,12 +1,9 @@
-#if NET8_0_OR_GREATER
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.SystemTextJson.Converters;
 
 namespace Amazon.Lambda.Serialization.SystemTextJson
 {
@@ -133,4 +130,3 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         }
     }
 }
-#endif

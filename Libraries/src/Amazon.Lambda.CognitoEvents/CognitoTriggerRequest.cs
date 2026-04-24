@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CognitoEvents
@@ -13,9 +13,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// One or more pairs of user attribute names and values.Each pair is in the form "name": "value".
         /// </summary>
         [DataMember(Name = "userAttributes")]
-#if NET8_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("userAttributes")]
-#endif
         public Dictionary<string, string> UserAttributes { get; set; } = new Dictionary<string, string>();
     }
 }
