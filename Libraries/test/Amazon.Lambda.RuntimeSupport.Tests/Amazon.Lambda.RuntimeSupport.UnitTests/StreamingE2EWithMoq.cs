@@ -71,6 +71,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public ResponseStream LastResponseStream { get; private set; }
             public Stream LastBufferedOutputStream { get; private set; }
             public Action OnStreamingReady { get; set; }
+            public MemoryStream CapturedOutputStream { get; private set; }
 
             public new Amazon.Lambda.RuntimeSupport.Helpers.IConsoleLoggerWriter ConsoleLogger { get; } = new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables());
 
@@ -106,6 +107,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 // Use a real MemoryStream as the HTTP output stream so we capture actual bytes
                 var captureStream = new MemoryStream();
+                CapturedOutputStream = captureStream;
                 await responseStream.SetHttpOutputStreamAsync(captureStream, cancellationToken);
 
                 // Wait for the handler to finish writing (mirrors real RawStreamingHttpClient behavior)
@@ -291,8 +293,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
             Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
 
-            // Verify the handler's data was still captured before the error
-            var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
+            // Verify the handler's data was still captured before the error.
+            // Read directly from the output stream that was provided to the ResponseStream,
+            // which avoids any timing dependency on when CapturedHttpBytes is assigned
+            // relative to the SendTask completion.
+            Assert.NotNull(client.CapturedOutputStream);
+            var output = Encoding.UTF8.GetString(client.CapturedOutputStream.ToArray());
             Assert.Contains("some data", output);
         }
 
