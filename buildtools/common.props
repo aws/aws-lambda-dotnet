@@ -1,23 +1,20 @@
 <Project>
-
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    <NoWarn>$(NoWarn);CA1822</NoWarn>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>	
-	
-
     <Authors>Amazon Web Services</Authors>
 	
+    <DefaultPackageTargets>net8.0;net10.0</DefaultPackageTargets>
+
     <OutputType>Library</OutputType>
+    <NoWarn>$(NoWarn);CA1822</NoWarn>	
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-	
+
     <PackageIconUrl>https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/aws/aws-lambda-dotnet</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
@@ -26,8 +23,5 @@
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-	
-	<DefaultPackageTargets>net8.0;net10.0</DefaultPackageTargets>
-	
   </PropertyGroup>
 </Project>
