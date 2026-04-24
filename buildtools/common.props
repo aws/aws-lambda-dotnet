@@ -8,7 +8,7 @@
 
     <OutputType>Library</OutputType>
     <NoWarn>$(NoWarn);CA1822</NoWarn>	
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
