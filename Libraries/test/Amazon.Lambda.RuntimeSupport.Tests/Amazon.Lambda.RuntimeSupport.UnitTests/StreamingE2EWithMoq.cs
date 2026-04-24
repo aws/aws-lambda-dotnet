@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -70,6 +70,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public byte[] CapturedHttpBytes { get; private set; }
             public ResponseStream LastResponseStream { get; private set; }
             public Stream LastBufferedOutputStream { get; private set; }
+            public Action OnStreamingReady { get; set; }
 
             public new Amazon.Lambda.RuntimeSupport.Helpers.IConsoleLoggerWriter ConsoleLogger { get; } = new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables());
 
@@ -108,6 +109,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 await responseStream.SetHttpOutputStreamAsync(captureStream, cancellationToken);
 
                 // Wait for the handler to finish writing (mirrors real RawStreamingHttpClient behavior)
+                OnStreamingReady?.Invoke();
                 await responseStream.WaitForCompletionAsync(cancellationToken);
                 CapturedHttpBytes = captureStream.ToArray();
                 return new NoOpDisposable();
@@ -262,42 +264,38 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task MidstreamError_SetsErrorStateWithExceptionDetails()
         {
-            var testSuccess = false;
-            for (int i = 0; i < 5 && !testSuccess; i++)
+            var client = CreateClient();
+            const string errorMessage = "something went wrong mid-stream";
+
+            // Signal so the handler waits until the streaming pipeline is fully
+            // established (WaitForCompletionAsync is actively listening) before throwing.
+            var streamingReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            client.OnStreamingReady = () => streamingReady.TrySetResult(true);
+
+            LambdaBootstrapHandler handler = async (invocation) =>
             {
-                ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
-                var client = CreateClient();
-                const string errorMessage = "something went wrong mid-stream";
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
+                // Wait until StartStreamingResponseAsync has reached WaitForCompletionAsync
+                // so the completion signal will be observed when ReportError fires.
+                await streamingReady.Task;
+                throw new InvalidOperationException(errorMessage);
+            };
 
-                LambdaBootstrapHandler handler = async (invocation) =>
-                {
-                    var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-                    await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
-                    await Task.Delay(1000);
-                    throw new InvalidOperationException(errorMessage);
-                };
+            using var bootstrap = new LambdaBootstrap(handler, null);
+            bootstrap.Client = client;
+            await bootstrap.InvokeOnceAsync();
 
-                using var bootstrap = new LambdaBootstrap(handler, null);
-                bootstrap.Client = client;
-                await bootstrap.InvokeOnceAsync();
+            Assert.True(client.StartStreamingCalled);
+            Assert.NotNull(client.LastResponseStream);
+            Assert.True(client.LastResponseStream.HasError);
+            Assert.NotNull(client.LastResponseStream.ReportedError);
+            Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
+            Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
 
-                if (!client.StartStreamingCalled)
-                    continue;
-                
-                Assert.NotNull(client.LastResponseStream);
-                Assert.True(client.LastResponseStream.HasError);
-                Assert.NotNull(client.LastResponseStream.ReportedError);
-                Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
-                Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
-
-                // Verify the handler's data was still captured before the error
-                var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
-                Assert.Contains("some data", output);
-
-                testSuccess = true;
-            }
-
-            Assert.True(testSuccess);
+            // Verify the handler's data was still captured before the error
+            var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
+            Assert.Contains("some data", output);
         }
 
         // ─── 10.4 Multi-concurrency ──────────────────────────────────────────────────
