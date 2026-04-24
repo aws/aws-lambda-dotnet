@@ -72,7 +72,8 @@ public interface IRuntimeApiDataStore
     /// notification from the Lambda function.
     /// </summary>
     /// <param name="awsRequestId"></param>
-    /// <param name="response"></param>
+    /// <param name="errorType"></param>
+    /// <param name="errorBody"></param>
     void ReportError(string awsRequestId, string errorType, string errorBody);
 }
 

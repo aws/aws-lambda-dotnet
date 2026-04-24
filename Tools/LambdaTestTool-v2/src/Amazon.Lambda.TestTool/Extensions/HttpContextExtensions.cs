@@ -124,6 +124,7 @@ public static class HttpContextExtensions
     /// </summary>
     /// <param name="context">The <see cref="HttpContext"/> to be translated.</param>
     /// <param name="apiGatewayRouteConfig">The configuration of the API Gateway route, including the HTTP method, path, and other metadata.</param>
+    /// <param name="emulatorMode"></param>
     /// <returns>An <see cref="APIGatewayProxyRequest"/> object representing the translated request.</returns>
     public static async Task<APIGatewayProxyRequest> ToApiGatewayRequest(
         this HttpContext context,
