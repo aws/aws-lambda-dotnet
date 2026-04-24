@@ -2198,12 +2198,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             return content.ToEnvironmentLineEndings().ApplyReplacements();
         }
 
-        private static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private readonly static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = \"notavalidruntime\")]";
 
-        private static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private readonly static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(Runtime = null)]";
@@ -2222,6 +2222,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             return new[]
             {
+                // These are here because the System.Text.Json source generator isn't included in test compilations, so these members aren't generated.
                 DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
                 DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
                 DiagnosticResult.CompilerError("CS7036").WithSpan(clientFile, 85, 30, 85, 60).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
@@ -2234,9 +2235,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 510, 136, 510, 143).WithArguments(runtimeApiContext, "Default"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 525, 135, 525, 142).WithArguments(runtimeApiContext, "Default"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 540, 135, 540, 142).WithArguments(runtimeApiContext, "Default"),
+
+
+                // These are here because the internalvisibleto attribute isn't included in test compilations, so these types are inaccessible.
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 13, 34, 13, 71).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyBeforeSnapshotCallbacksToRegistry"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 14, 34, 14, 69).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyAfterRestoreCallbacksToRegistry"),
-                DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}LambdaBootstrap.cs", 228, 17, 228, 60).WithArguments("Amazon.Lambda.RuntimeSupport.ResponseStreamLambdaCoreInitializerIsolated"),
+                DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}ResponseStreaming{Path.DirectorySeparatorChar}ResponseStreamLambdaCoreInitializerIsolated.cs", 37, 51, 37, 72).WithArguments("Amazon.Lambda.Core.ResponseStreaming.ILambdaResponseStream"),
             };
         }
     }

@@ -43,8 +43,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
         }
 
-        // ─── Helpers ────────────────────────────────────────────────────────────────
-
         private static Dictionary<string, IEnumerable<string>> MakeHeaders(string requestId = "test-request-id")
             => new Dictionary<string, IEnumerable<string>>
             {
@@ -150,7 +148,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: all data is transmitted correctly (content round-trip).
-        /// Requirements: 3.2, 4.3, 10.1
         /// </summary>
         [Fact]
         public async Task Streaming_AllDataTransmitted_ContentRoundTrip()
@@ -178,7 +175,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: stream is finalized (final chunk written, BytesWritten matches).
-        /// Requirements: 3.2, 4.3, 10.1
         /// </summary>
         [Fact]
         public async Task Streaming_StreamFinalized_BytesWrittenMatchesPayload()
@@ -201,12 +197,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(data.Length, client.LastResponseStream.BytesWritten);
         }
 
-        // ─── 10.2 End-to-end buffered response ──────────────────────────────────────
-
         /// <summary>
         /// End-to-end: handler does NOT call CreateStream — response goes via buffered path.
         /// Verifies SendResponseAsync is called and streaming headers are absent.
-        /// Requirements: 1.5, 4.6, 9.4
         /// </summary>
         [Fact]
         public async Task Buffered_HandlerDoesNotCallCreateStream_UsesSendResponsePath()
@@ -231,7 +224,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// End-to-end: buffered response body is transmitted correctly.
-        /// Requirements: 1.5, 4.6, 9.4
         /// </summary>
         [Fact]
         public async Task Buffered_ResponseBodyTransmittedCorrectly()
@@ -259,7 +251,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         /// <summary>
         /// End-to-end: midstream error sets error state on ResponseStream with exception details.
         /// In production, RawStreamingHttpClient reads this state and writes trailing headers.
-        /// Requirements: 5.2, 5.3
         /// </summary>
         [Fact]
         public async Task MidstreamError_SetsErrorStateWithExceptionDetails()
@@ -302,12 +293,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Contains("some data", output);
         }
 
-        // ─── 10.4 Multi-concurrency ──────────────────────────────────────────────────
-
         /// <summary>
         /// Multi-concurrency: concurrent invocations use AsyncLocal for state isolation.
         /// Each invocation independently uses streaming or buffered mode without interference.
-        /// Requirements: 2.9, 6.5, 8.9
         /// </summary>
         [Fact]
         public async Task MultiConcurrency_ConcurrentInvocations_StateIsolated()
@@ -364,7 +352,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Multi-concurrency: streaming and buffered invocations can run concurrently without interference.
-        /// Requirements: 2.9, 6.5, 8.9
         /// </summary>
         [Fact]
         public async Task MultiConcurrency_StreamingAndBufferedMixedConcurrently_NoInterference()
@@ -453,11 +440,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
         }
 
-        // ─── 10.5 Backward compatibility ────────────────────────────────────────────
-
         /// <summary>
         /// Backward compatibility: existing handler signatures (event + ILambdaContext) work without modification.
-        /// Requirements: 9.1, 9.2, 9.3
         /// </summary>
         [Fact]
         public async Task BackwardCompat_ExistingHandlerSignature_WorksUnchanged()
@@ -484,7 +468,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: no regression in buffered response behavior — response body is correct.
-        /// Requirements: 9.4, 9.5
         /// </summary>
         [Fact]
         public async Task BackwardCompat_BufferedResponse_NoRegression()
@@ -511,7 +494,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: handler that returns null OutputStream still works.
-        /// Requirements: 9.4
         /// </summary>
         [Fact]
         public async Task BackwardCompat_NullOutputStream_HandledGracefully()
@@ -535,7 +517,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// Backward compatibility: handler that throws before CreateStream uses standard error path.
-        /// Requirements: 9.5
         /// </summary>
         [Fact]
         public async Task BackwardCompat_HandlerThrows_StandardErrorReportingUsed()
