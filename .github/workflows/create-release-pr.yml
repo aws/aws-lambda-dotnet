@@ -30,19 +30,19 @@ jobs:
         with:
           role-to-assume: ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_ROLE_ARN }}
           aws-region: us-west-2
-      # Retrieve the Access Token from Secrets Manager
-      - name: Retrieve secret from AWS Secrets Manager
+      # Retrieve the per-repo deploy key + FG PAT from Secrets Manager
+      - name: Retrieve secrets from AWS Secrets Manager
         uses: aws-actions/aws-secretsmanager-get-secrets@3a411b6ec5cace3d626412dd917e7bfeac242cfa #v3.0.0
         with:
           secret-ids: |
-            AWS_SECRET, ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_NAME }}
-          parse-json-secrets: true
-      # Checkout a full clone of the repo
+            DEPLOY_KEY, prod/devops/aws-lambda-dotnet-deploy-key
+            FG_PAT, prod/devops/aws-lambda-dotnet-fg-pat
+      # Checkout a full clone of the repo using the deploy key (push runs over SSH)
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: "0"
-          token: ${{ env.AWS_SECRET_TOKEN }}
+          ssh-key: ${{ env.DEPLOY_KEY }}
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
         uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5.1.0
@@ -116,7 +116,7 @@ jobs:
       # Create the Release PR and label it
       - name: Create Pull Request
         env:
-          GITHUB_TOKEN: ${{ env.AWS_SECRET_TOKEN }}
+          GITHUB_TOKEN: ${{ env.FG_PAT }}
         run: |
           pr_url="$(gh pr create --title "${{ steps.read-release-name.outputs.VERSION }}" --body "${{ steps.read-changelog.outputs.CHANGELOG }}" --base dev --head ${{ steps.create-release-branch.outputs.BRANCH }})"
           gh label create "Release PR" --description "A Release PR that includes versioning and changelog changes" -c "#FF0000" -f
