@@ -1,0 +1,249 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.ApplicationLoadBalancerEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchLogsEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.CognitoEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.ConfigEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.ConnectEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KafkaEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisAnalyticsEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisFirehoseEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.LexEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.LexV2Events",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.MQEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.PowerShellHost",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.S3Events",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Serialization.Json",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Serialization.SystemTextJson",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SimpleEmailEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SNSEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SQSEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AppSyncEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set RepositoryUrl and RepositoryType on NuGet package."
+      ]
+    }
+  ]
+}
