@@ -1,3 +1,76 @@
+## Release 2026-04-29
+
+### Amazon.Lambda.Annotations (1.15.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.APIGatewayEvents (2.7.4)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.ApplicationLoadBalancerEvents (2.2.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.AspNetCoreServer (9.2.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.10.1)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.CloudWatchEvents (4.4.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.CloudWatchLogsEvents (2.2.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.CognitoEvents (4.0.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.ConfigEvents (2.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.ConnectEvents (1.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.Core (2.8.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.DynamoDBEvents (3.1.3)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.3)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.KafkaEvents (2.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.KinesisAnalyticsEvents (2.3.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.KinesisEvents (3.0.3)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.KinesisFirehoseEvents (2.3.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.LexEvents (3.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.LexV2Events (1.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.Logging.AspNetCore (4.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.MQEvents (2.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.PowerShellHost (3.0.4)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.RuntimeSupport (1.14.4)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.S3Events (3.1.3)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.Serialization.Json (2.2.6)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.Serialization.SystemTextJson (2.4.6)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.SimpleEmailEvents (3.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.SNSEvents (2.1.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.SQSEvents (2.2.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.TestUtilities (3.0.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.TestTool.BlazorTester (0.17.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.Templates (8.0.3)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### SnapshotRestore.Registry (1.0.2)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.TestTool (0.13.1)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+### Amazon.Lambda.AppSyncEvents (1.0.1)
+* Set RepositoryUrl and RepositoryType on NuGet package.
+
 ## Release 2026-04-22 #2
 
 ### Amazon.Lambda.Annotations (1.15.1)
