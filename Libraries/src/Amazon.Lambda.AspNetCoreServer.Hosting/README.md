@@ -50,6 +50,10 @@ app.Run();
 
 ```
 
+## Handler Configuration
+
+The Lambda function handler must be set to the assembly name (e.g., `MyLambdaProject`). The `AddAWSLambdaHosting` method sets up the Lambda runtime client and registers the callback for processing Lambda events, so the handler should not use the class library format (`<assembly-name>::<full-type-name>::<method-name>`).
+
 ## Extension Points
 
 `AddAWSLambdaHosting` accepts an optional `HostingOptions` configuration action that exposes the same customization hooks available in the traditional `AbstractAspNetCoreFunction` base class approach.
