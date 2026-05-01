@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
@@ -7,7 +7,6 @@ using Xunit;
 using Xunit.Abstractions;
 using System.IO;
 
-#if NET8_0_OR_GREATER
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class NativeAOTTests
@@ -97,4 +96,3 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
     }
 }
-#endif

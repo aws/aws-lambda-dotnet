@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Core;
+using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.Controllers
@@ -10,7 +10,7 @@ namespace CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.Controllers
         [HttpGet()]
         public long Get()
         {
-            var lambdaContext = this.HttpContext.Items["LambdaContext"] as ILambdaContext;
+            var lambdaContext = HttpContext.Items["LambdaContext"] as ILambdaContext;
 
             const int maxLogs = 10000;
             long actualLogsWritten = 0;

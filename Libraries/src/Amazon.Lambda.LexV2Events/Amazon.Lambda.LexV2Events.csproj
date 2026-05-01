@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Amazon Lex V2 package.</Description>
-    <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.LexV2Events</AssemblyTitle>
     <Version>1.1.1</Version>
     <AssemblyName>Amazon.Lambda.LexV2Events</AssemblyName>
@@ -12,7 +12,7 @@
     <PackageTags>AWS;Amazon;Lambda;Lex;LexV2</PackageTags>
   </PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+	<PropertyGroup>
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

@@ -11,9 +11,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="1.1.0" />
-  </ItemGroup>
   
 </Project>

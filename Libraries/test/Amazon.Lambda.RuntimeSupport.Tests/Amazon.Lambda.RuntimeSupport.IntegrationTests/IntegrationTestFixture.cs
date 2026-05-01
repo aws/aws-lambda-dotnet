@@ -20,22 +20,22 @@ public class IntegrationTestFixture : IAsyncLifetime
             "../../../../../../..",
             "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
         _tempPaths.AddRange([testAppPath, toolPath] );
-        await LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
-        TestAppPaths[@"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net8.0\CustomRuntimeFunctionTest.zip");
+        await LambdaToolsHelper.LambdaPackage(toolPath, "net10.0", testAppPath);
+        TestAppPaths[@"CustomRuntimeFunctionTest\bin\Release\net10.0\CustomRuntimeFunctionTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net10.0\CustomRuntimeFunctionTest.zip");
 
         testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
             "../../../../../../..",
             "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiTest");
         _tempPaths.AddRange([testAppPath, toolPath] );
-        await LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
-        TestAppPaths[@"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiTest.zip");
+        await LambdaToolsHelper.LambdaPackage(toolPath, "net10.0", testAppPath);
+        TestAppPaths[@"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiTest.zip");
 
         testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
             "../../../../../../..",
             "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest");
         _tempPaths.AddRange([testAppPath, toolPath] );
-        await LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
-        TestAppPaths[@"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip");
+        await LambdaToolsHelper.LambdaPackage(toolPath, "net10.0", testAppPath);
+        TestAppPaths[@"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip"] = Path.Combine(testAppPath, @"bin\Release\net10.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip");
 
         testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
             "../../../../../../..",

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -66,7 +66,6 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A Task representing the asynchronous operation.</returns>
         Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default);
         
-#if NET8_0_OR_GREATER
         /// <summary>
         ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
         /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
@@ -83,7 +82,6 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default);
-#endif
         
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

@@ -114,7 +114,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 return;
 
             _tests = tests;
-            _roleAlreadyExisted = await _tests.PrepareTestResources(_s3Client, _lambdaClient, _iamClient);
+            _roleAlreadyExisted = await _tests.PrepareTestResources(_s3Client, _lambdaClient, _iamClient, Runtime.Dotnet10);
 
             _resourcesCreated = true;
         }

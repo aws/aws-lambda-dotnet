@@ -359,6 +359,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.MultiValueHeaders["Content-Type"] = new List<string>() { null };
             }
 
+// Disabled in case the user's ASP.NET Core application is still using the older API that set the body on the response feature instead of the new API that sets the body on the HttpResponse object.
+#pragma warning disable CS0618
             if (responseFeatures.Body != null)
             {
                 // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
@@ -371,7 +373,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
 
             }
-
+#pragma warning restore CS0618
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");

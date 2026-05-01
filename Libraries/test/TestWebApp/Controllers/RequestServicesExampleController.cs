@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,7 +12,7 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public string Get()
         {
-            return this.HttpContext.RequestServices?.GetType().FullName;
+            return  HttpContext.RequestServices?.GetType().FullName;
         }
     }
 }

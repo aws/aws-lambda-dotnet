@@ -13,9 +13,7 @@
  * permissions and limitations under the License.
  */
 
-#if NET8_0_OR_GREATER
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
@@ -293,4 +291,3 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         public override void SetLength(long value) => throw new NotSupportedException();
     }
 }
-#endif

@@ -5,7 +5,7 @@ using Xunit;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Newtonsoft.Json.Linq;
 
-namespace EventsTests31
+namespace EventsTests.NET8
 {
     public class TestResponseCasing
     {

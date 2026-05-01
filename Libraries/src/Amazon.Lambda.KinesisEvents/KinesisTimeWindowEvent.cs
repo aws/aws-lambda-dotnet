@@ -2,11 +2,8 @@ namespace Amazon.Lambda.KinesisEvents
 {
     using System;
     using System.Collections.Generic;
-
-#if NETCOREAPP3_1_OR_GREATER
     using Amazon.Lambda.KinesisEvents.Converters;
     using System.Text.Json.Serialization;
-#endif
 
     /// <summary>
     /// Represents an Amazon Kinesis event when using time windows.
@@ -22,9 +19,7 @@ namespace Amazon.Lambda.KinesisEvents
         /// <summary>
         /// State being built up to this invoke in the time window.
         /// </summary>
-#if NETCOREAPP3_1_OR_GREATER
         [JsonConverter(typeof(DictionaryLongToStringJsonConverter))]
-#endif
         public Dictionary<string, string> State { get; set; }
 
         /// <summary>

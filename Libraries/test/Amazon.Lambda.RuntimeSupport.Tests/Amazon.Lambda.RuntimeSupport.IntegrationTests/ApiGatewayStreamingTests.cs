@@ -217,6 +217,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     /// <summary>
     /// Tests streaming through API Gateway REST API.
     /// </summary>
+    [Collection("Integration Tests")]
     public class RestApiStreamingTests : StreamingTestBase, IClassFixture<RestApiStreamingFixture>
     {
         public RestApiStreamingTests(RestApiStreamingFixture fixture, ITestOutputHelper output)
@@ -227,6 +228,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     /// Tests streaming through Lambda Function URL.
     /// Function URL uses the same payload format as HTTP API v2.
     /// </summary>
+    [Collection("Integration Tests")]
+
     public class FunctionUrlStreamingTests : StreamingTestBase, IClassFixture<FunctionUrlStreamingFixture>
     {
         public FunctionUrlStreamingTests(FunctionUrlStreamingFixture fixture, ITestOutputHelper output)

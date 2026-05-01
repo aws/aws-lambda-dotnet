@@ -57,7 +57,7 @@ namespace Amazon.Lambda.Serialization.Json
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
-                this.debug = true;
+                debug = true;
             }
         }
 

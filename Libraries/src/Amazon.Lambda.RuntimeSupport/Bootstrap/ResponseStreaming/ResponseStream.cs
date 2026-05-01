@@ -36,7 +36,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
         // The live HTTP output stream, set by RawStreamingHttpClient when sending the streaming response.
         private Stream _httpOutputStream;
-        private bool _disposedValue;
+        private int _disposedFlag;
 
         // The wait time is a sanity timeout to avoid waiting indefinitely if SetHttpOutputStreamAsync is not called or takes too long to call.
         // Reality is that SetHttpOutputStreamAsync should be called very quickly after CreateStream, so this timeout is generous to avoid false positives but still protects against hanging indefinitely.
@@ -233,18 +233,16 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposedValue)
+            if (Interlocked.Exchange(ref _disposedFlag, 1) != 0)
+                return;
+
+            if (disposing)
             {
-                if (disposing)
-                {
-                    try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
-                    _httpStreamReady.Dispose();
+                try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+                _httpStreamReady.Dispose();
 
-                    try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
-                    _completionSignal.Dispose();
-                }
-
-                _disposedValue = true;
+                try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+                _completionSignal.Dispose();
             }
         }
 

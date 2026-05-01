@@ -570,7 +570,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 var streamingBodyFeature = new StreamingResponseBodyFeature(_logger, responseFeature, OpenStream);
                 features[typeof(IHttpResponseBodyFeature)] = streamingBodyFeature;
 
-                var scope = this._hostServices.CreateScope();
+                var scope = _hostServices.CreateScope();
                 Exception pipelineException = null;
                 try
                 {

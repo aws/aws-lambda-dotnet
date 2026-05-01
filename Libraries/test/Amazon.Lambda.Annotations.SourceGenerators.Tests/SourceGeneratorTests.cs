@@ -267,7 +267,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8, dotnet10"),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: provided.al2, provided.al2023, dotnet8, dotnet10"),
                     }
                 }
             };
@@ -278,6 +278,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
+
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
 
             await test.RunAsync();
         }
@@ -375,6 +377,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
@@ -434,6 +438,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
@@ -490,6 +496,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
@@ -545,6 +553,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
+
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
 
             await test.RunAsync();
         }
@@ -649,6 +659,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
@@ -711,6 +723,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                 test.TestState.Sources.Add((file, content));
             }
+
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
 
             await test.RunAsync();
         }
@@ -947,9 +961,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV1AsyncGenerated),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs", expectedOkResponseWithCustomSerializerGenerated),
-                        // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
-                        // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
-                        DiagnosticResult.CompilerError("CS0117").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseExamples.cs", 99, 65, 99, 79).WithArguments("System.Text.Json.JsonNamingPolicy", "SnakeCaseUpper"),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
@@ -1181,7 +1192,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var expectedFunctionContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"));
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"));
 
-            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net80)
+            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net8_0)
             {
                 TestState =
                 {
@@ -1200,7 +1211,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedFunctionContent),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     }
                 }
             }.RunAsync();
@@ -1327,16 +1338,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent),
-
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs", validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs", validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs", validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();
@@ -1377,13 +1388,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
                     }
@@ -1492,13 +1503,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs", validDynamoDBEventsProcessMessagesAsyncGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();
@@ -1593,13 +1604,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSNSEvents_ProcessMessages_Generated.g.cs", validSNSEventsProcessMessagesGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidSNSEvents_ProcessMessagesAsync_Generated.g.cs", validSNSEventsProcessMessagesAsyncGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments("ValidSNSEvents_ProcessMessages_Generated.g.cs", validSNSEventsProcessMessagesGeneratedContent)
                     }
                 }
             }.RunAsync();
@@ -1697,7 +1708,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerRestExample_RestAuthorizer_Generated.g.cs", expectedRestAuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -1736,7 +1746,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated.g.cs", expectedRestAuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -1780,7 +1789,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthNameFallback_GetUserId_Generated.g.cs", expectedAuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -1819,7 +1827,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated.g.cs", expectedHttpApiV1AuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -1858,7 +1865,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated.g.cs", expectedAuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -1902,7 +1908,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs", expectedAuthorizerGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -2042,7 +2047,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_HealthCheck_Generated.g.cs", expectedHealthCheckGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestCustomAuthorizerApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -2126,7 +2130,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs", expectedRestApiGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     },
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -2189,14 +2192,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             return content.ToEnvironmentLineEndings().ApplyReplacements();
         }
 
-        private static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private readonly static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = \"notavalidruntime\")]";
 
-        private static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private readonly static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(Runtime = null)]";
+
+        /// <summary>
+        /// Returns expected compiler diagnostics for RuntimeSupport source files included in test compilations.
+        /// In .NET 10, JsonSerializerContext has new abstract members and a required constructor parameter that
+        /// the System.Text.Json source generator would normally implement. Since only the Lambda Annotations
+        /// source generator runs in tests, these produce expected compiler errors.
+        /// </summary>
+        private static DiagnosticResult[] GetExpectedRuntimeSupportDiagnostics()
+        {
+            var runtimeApiContext = "Amazon.Lambda.RuntimeSupport.InternalRuntimeApiClient.RuntimeApiSerializationContext";
+            var clientFile = $"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Client{Path.DirectorySeparatorChar}InternalClientAdapted.cs";
+            var snapFile = $"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Helpers{Path.DirectorySeparatorChar}SnapstartHelperCopySnapshotCallbacksIsolated.cs";
+
+            return new[]
+            {
+                // These are here because the System.Text.Json source generator isn't included in test compilations, so these members aren't generated.
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
+                DiagnosticResult.CompilerError("CS7036").WithSpan(clientFile, 85, 30, 85, 60).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 157, 136, 157, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 172, 135, 172, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 275, 131, 275, 138).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 371, 135, 371, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 386, 135, 386, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 401, 135, 401, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 510, 136, 510, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 525, 135, 525, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 540, 135, 540, 142).WithArguments(runtimeApiContext, "Default"),
+
+
+                // These are here because the internalvisibleto attribute isn't included in test compilations, so these types are inaccessible.
+                DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 13, 34, 13, 71).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyBeforeSnapshotCallbacksToRegistry"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 14, 34, 14, 69).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyAfterRestoreCallbacksToRegistry"),
+                DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}ResponseStreaming{Path.DirectorySeparatorChar}ResponseStreamLambdaCoreInitializerIsolated.cs", 37, 51, 37, 72).WithArguments("Amazon.Lambda.Core.ResponseStreaming.ILambdaResponseStream"),
+            };
+        }
     }
 }

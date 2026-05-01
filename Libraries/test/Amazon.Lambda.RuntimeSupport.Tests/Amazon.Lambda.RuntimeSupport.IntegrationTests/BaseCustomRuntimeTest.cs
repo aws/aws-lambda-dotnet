@@ -15,6 +15,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class BaseCustomRuntimeTest
     {
+        protected readonly Runtime _providedRuntime = Runtime.ProvidedAl2023;
+
         public const int FUNCTION_MEMORY_MB = 512;
 
         public static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
@@ -44,7 +46,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
-        private IntegrationTestFixture _fixture;
+        private readonly IntegrationTestFixture _fixture;
 
         protected BaseCustomRuntimeTest(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
         {
@@ -110,13 +112,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         public async Task<bool> PrepareTestResources(IAmazonS3 s3Client, IAmazonLambda lambdaClient,
-            AmazonIdentityManagementServiceClient iamClient)
+            AmazonIdentityManagementServiceClient iamClient, Runtime runtime)
         {
             var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
 
             var testBucketName = TestBucketRoot + Guid.NewGuid().ToString();
             await CreateBucketWithDeploymentZipAsync(s3Client, testBucketName);
-            await CreateFunctionAsync(lambdaClient, testBucketName);
+            await CreateFunctionAsync(lambdaClient, testBucketName, runtime);
 
             return roleAlreadyExisted;
         }
@@ -273,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await Task.Delay(1000);
         }
 
-        protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
+        protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName, Runtime runtime)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
 
@@ -288,7 +290,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 Handler = Handler,
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
-                Runtime = Runtime.Dotnet10,
+                Runtime = runtime,
                 Role = ExecutionRoleArn
             };
 
@@ -357,7 +359,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 foreach (var kvp in _fixture.TestAppPaths)
                 {
                     message.AppendLine($"{kvp.Key}: {kvp.Value}");
-                }
+            }
 
 
                 throw new NoDeploymentPackageFoundException(message.ToString());

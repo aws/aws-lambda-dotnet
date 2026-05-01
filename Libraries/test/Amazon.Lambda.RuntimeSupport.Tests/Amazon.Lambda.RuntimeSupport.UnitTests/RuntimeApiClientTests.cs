@@ -186,7 +186,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         // --- Argument validation ---
 
-#if NET8_0_OR_GREATER
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {
@@ -206,6 +205,5 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => client.StartStreamingResponseAsync("req-5", null, CancellationToken.None));
         }
-#endif
     }
 }

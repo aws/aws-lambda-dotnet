@@ -78,7 +78,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
                 LambdaContext = new LambdaContext(
                     new RuntimeApiHeaders(data.Headers),
                     new LambdaEnvironment(_environmentVariables),
-                    new TestDateTimeHelper(), new Helpers.SimpleLoggerWriter(_environmentVariables))
+                    new TestDateTimeHelper(), new Helpers.LogLevelLoggerWriter(_environmentVariables))
             };
         }
 

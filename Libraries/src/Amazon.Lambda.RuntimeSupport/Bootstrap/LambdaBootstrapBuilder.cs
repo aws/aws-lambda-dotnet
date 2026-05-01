@@ -36,7 +36,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private LambdaBootstrapBuilder(HandlerWrapper handlerWrapper)
         {
-            this._handlerWrapper = handlerWrapper;
+            _handlerWrapper = handlerWrapper;
         }
 
         /// <summary>

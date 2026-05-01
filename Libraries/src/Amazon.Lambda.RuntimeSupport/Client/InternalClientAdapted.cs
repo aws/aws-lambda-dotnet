@@ -34,7 +34,6 @@ namespace Amazon.Lambda.RuntimeSupport
         Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson, CancellationToken cancellationToken);
         
 
-#if NET8_0_OR_GREATER
         /// <summary>
         ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
         /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
@@ -45,7 +44,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
         Task<SwaggerResponse<StatusResponse>> RestoreErrorAsync(string lambda_Runtime_Function_Error_Type,
             string errorJson, CancellationToken cancellationToken);
-#endif
         
         /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
         /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
@@ -82,15 +80,11 @@ namespace Amazon.Lambda.RuntimeSupport
 
     internal partial class InternalRuntimeApiClient : IInternalRuntimeApiClient
     {
-#if NET6_0_OR_GREATER
-
         [JsonSerializable(typeof(StatusResponse))]
         [JsonSerializable(typeof(ErrorResponse))]
         public partial class RuntimeApiSerializationContext : JsonSerializerContext 
         { 
         }
-
-#endif
 
         private const int MAX_HEADER_SIZE_BYTES = 1024 * 1024;
 
@@ -160,11 +154,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(StatusResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_, RuntimeApiSerializationContext.Default.StatusResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_);
-#endif
                                     return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
                                 }
                                 catch (System.Exception exception_)
@@ -179,11 +169,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -227,7 +213,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return NextAsync("/runtime/invocation/next", cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// Restores the lambda context from the Runtime API as an asynchronous operation when SnapStart is enabled
         /// </summary>
@@ -247,8 +232,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return await ErrorAsync(lambda_Runtime_Function_Error_Type, errorJson, "/runtime/restore/error", cancellationToken);
 
         }
-#endif
-
 
         /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
         /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
@@ -289,11 +272,7 @@ namespace Amazon.Lambda.RuntimeSupport
                             var result_ = default(ErrorResponse);
                             try
                             {
-#if NET6_0_OR_GREATER
                                 result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                             }
                             catch (System.Exception exception_)
                             {
@@ -389,11 +368,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -408,11 +383,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -427,11 +398,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -540,11 +507,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(StatusResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_, RuntimeApiSerializationContext.Default.StatusResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_);
-#endif
                                     return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
                                 }
                                 catch (System.Exception exception_)
@@ -559,11 +522,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -578,11 +537,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-#if NET6_0_OR_GREATER
                                     result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
-#else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
-#endif
                                 }
                                 catch (System.Exception exception_)
                                 {

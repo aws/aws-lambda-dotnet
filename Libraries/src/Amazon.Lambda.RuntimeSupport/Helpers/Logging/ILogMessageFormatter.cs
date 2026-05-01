@@ -1,5 +1,3 @@
-﻿#if NET6_0_OR_GREATER
-
 namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
 {
     /// <summary>
@@ -16,4 +14,3 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         string FormatMessage(MessageState state);
     }
 }
-#endif
