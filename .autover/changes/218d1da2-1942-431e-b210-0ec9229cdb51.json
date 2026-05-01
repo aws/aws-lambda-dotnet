@@ -165,7 +165,9 @@
       "Name": "Amazon.Lambda.PowerShellHost",
       "Type": "Major",
       "ChangelogMessages": [
-        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10"
+        "Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10",
+		"Update Microsoft.PowerShell.SDK package dependency to version 7.4.14",
+		"Update System.Security.Cryptography.Xml package dependency to version 8.0.3"
       ]
     },
     {

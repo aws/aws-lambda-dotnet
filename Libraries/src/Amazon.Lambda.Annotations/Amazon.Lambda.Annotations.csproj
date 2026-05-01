@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
-    <!-- The .NET Standard 2.0 target is required for the source generator -->
+    <!-- 
+		The .NET Standard 2.0 target is required for the source generator. The other targets
+		are required because there is code included in the project used at runtime but not
+		during source generation that require newer .NET targets. For example the JSON
+		serialization of HttpResults.
+	-->
     <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>false</IsPackable>
