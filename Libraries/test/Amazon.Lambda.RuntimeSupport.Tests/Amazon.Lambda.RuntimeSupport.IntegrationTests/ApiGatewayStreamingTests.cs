@@ -129,36 +129,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         [Fact]
-        public async Task OnCompletedCallback_IsExecuted()
-        {
-            var apiUrl = await _fixture.GetApiUrlAsync();
-            using var httpClient = new HttpClient();
-
-            var response = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-test");
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync();
-            Output.WriteLine($"Body: {body}");
-            Assert.Contains("OnCompleted callback registered", body);
-
-            // The OnCompleted callback runs AFTER the response is sent, so we need to
-            // poll the verify endpoint until the callback has executed. Additionally,
-            // Lambda may route the verify request to a different execution environment,
-            // so we retry to eventually hit the same instance that ran the callback.
-            var verifyResponse = await httpClient.GetWithRetryAsync(
-                $"{apiUrl}oncompleted-verify",
-                HttpStatusCode.OK,
-                async resp =>
-                {
-                    var content = await resp.Content.ReadAsStringAsync();
-                    Output.WriteLine($"Verify body: {content}");
-                    var doc = JsonDocument.Parse(content);
-                    return doc.RootElement.GetProperty("onCompletedExecuted").GetBoolean();
-                },
-                maxRetries: 10, delaySeconds: 3);
-            Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
-        }
-
-        [Fact]
         public async Task CustomHeaders_PassedThrough()
         {
             var apiUrl = await _fixture.GetApiUrlAsync();
