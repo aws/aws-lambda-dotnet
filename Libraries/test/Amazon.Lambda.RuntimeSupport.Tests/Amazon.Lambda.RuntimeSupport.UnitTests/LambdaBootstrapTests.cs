@@ -319,7 +319,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using (var bootstrap = new LambdaBootstrap(handler, null))
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
             {
                 bootstrap.Client = streamingClient;
                 await bootstrap.InvokeOnceAsync();
@@ -346,7 +346,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(outputStream);
             };
 
-            using (var bootstrap = new LambdaBootstrap(handler, null))
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
             {
                 bootstrap.Client = streamingClient;
                 await bootstrap.InvokeOnceAsync();
@@ -374,7 +374,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 throw new InvalidOperationException("midstream failure");
             };
 
-            using (var bootstrap = new LambdaBootstrap(handler, null))
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
             {
                 bootstrap.Client = streamingClient;
                 await bootstrap.InvokeOnceAsync();
@@ -404,7 +404,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 throw new InvalidOperationException("pre-stream failure");
             };
 
-            using (var bootstrap = new LambdaBootstrap(handler, null))
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
             {
                 bootstrap.Client = streamingClient;
                 await bootstrap.InvokeOnceAsync();
@@ -430,7 +430,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using (var bootstrap = new LambdaBootstrap(handler, null))
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
             {
                 bootstrap.Client = streamingClient;
                 await bootstrap.InvokeOnceAsync();

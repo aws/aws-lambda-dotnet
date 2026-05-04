@@ -249,51 +249,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         /// <summary>
-        /// End-to-end: midstream error sets error state on ResponseStream with exception details.
-        /// In production, RawStreamingHttpClient reads this state and writes trailing headers.
-        /// </summary>
-        [Fact]
-        public async Task MidstreamError_SetsErrorStateWithExceptionDetails()
-        {
-            var client = CreateClient();
-            const string errorMessage = "something went wrong mid-stream";
-
-            // Signal so the handler waits until the streaming pipeline is fully
-            // established (WaitForCompletionAsync is actively listening) before throwing.
-            var streamingReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            client.OnStreamingReady = () => streamingReady.TrySetResult(true);
-
-            LambdaBootstrapHandler handler = async (invocation) =>
-            {
-                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-                await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
-                // Wait until StartStreamingResponseAsync has reached WaitForCompletionAsync
-                // so the completion signal will be observed when ReportError fires.
-                await streamingReady.Task;
-                throw new InvalidOperationException(errorMessage);
-            };
-
-            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
-            bootstrap.Client = client;
-            await bootstrap.InvokeOnceAsync();
-
-            Assert.True(client.StartStreamingCalled);
-            Assert.NotNull(client.LastResponseStream);
-            Assert.True(client.LastResponseStream.HasError);
-            Assert.NotNull(client.LastResponseStream.ReportedError);
-            Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
-            Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
-
-            // Verify the handler's data was still captured before the error.
-            // Read directly from the output stream that was provided to the ResponseStream,
-            // which avoids any timing dependency on when CapturedHttpBytes is assigned
-            // relative to the SendTask completion.
-            Assert.NotNull(client.CapturedOutputStream);
-            var output = Encoding.UTF8.GetString(client.CapturedOutputStream.ToArray());
-            Assert.Contains("some data", output);
-        }
-
-        /// <summary>
         /// Multi-concurrency: concurrent invocations use AsyncLocal for state isolation.
         /// Each invocation independently uses streaming or buffered mode without interference.
         /// </summary>
