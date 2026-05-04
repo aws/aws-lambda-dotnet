@@ -23,6 +23,7 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    [Collection("RuntimeSupportStateCheck")]
     public class HandlerWrapperTests
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();

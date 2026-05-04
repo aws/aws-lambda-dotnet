@@ -398,7 +398,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     // LambdaResponseStreamFactory tests
     // ─────────────────────────────────────────────────────────────────────────────
 
-    [Collection("ResponseStreamFactory")]
+    [Collection("RuntimeSupportStateCheck")]
     public class LambdaResponseStreamFactoryTests : IDisposable
     {
 

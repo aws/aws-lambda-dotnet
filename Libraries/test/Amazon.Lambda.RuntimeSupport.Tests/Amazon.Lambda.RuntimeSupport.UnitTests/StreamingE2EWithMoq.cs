@@ -26,15 +26,15 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
-    [CollectionDefinition("ResponseStreamFactory")]
-    public class ResponseStreamFactoryCollection { }
+    [CollectionDefinition("RuntimeSupportStateCheck")]
+    public class RuntimeSupportStateCheckCollection { }
 
     /// <summary>
     /// End-to-end integration tests for the true-streaming architecture.
     /// These tests exercise the full pipeline: LambdaBootstrap → ResponseStreamFactory →
     /// ResponseStream → captured HTTP output stream.
     /// </summary>
-    [Collection("ResponseStreamFactory")]
+    [Collection("RuntimeSupportStateCheck")]
     public class StreamingE2EWithMoq : IDisposable
     {
         public void Dispose()
@@ -162,7 +162,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -189,7 +189,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -213,7 +213,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(responseBody));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -237,7 +237,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(responseBody));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -273,7 +273,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 throw new InvalidOperationException(errorMessage);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -457,7 +457,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(Encoding.UTF8.GetBytes("classic response")));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -481,7 +481,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(new MemoryStream(expected));
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
@@ -506,7 +506,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new InvocationResponse(Stream.Null, false);
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
 
             // Should not throw
@@ -529,7 +529,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 throw new Exception("classic handler error");
             };
 
-            using var bootstrap = new LambdaBootstrap(handler, null);
+            using var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables());
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
