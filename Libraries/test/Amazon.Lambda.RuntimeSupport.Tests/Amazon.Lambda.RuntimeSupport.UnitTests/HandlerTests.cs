@@ -285,6 +285,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         private async Task<string> InvokeAsync(LambdaBootstrap bootstrap, string dataIn, TestRuntimeApiClient testRuntimeApiClient)
         {
             testRuntimeApiClient.FunctionInput = dataIn != null ? Encoding.UTF8.GetBytes(dataIn) : new byte[0];
+            testRuntimeApiClient.LastOutputStream = null;
 
             using (var cancellationTokenSource = new CancellationTokenSource())
             {
