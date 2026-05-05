@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - KafkaEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KafkaEvents</AssemblyTitle>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <AssemblyName>Amazon.Lambda.KafkaEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KafkaEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Kafka</PackageTags>

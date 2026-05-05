@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - CognitoEvents package.</Description>
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.CognitoEvents</AssemblyTitle>
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <AssemblyName>Amazon.Lambda.CognitoEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CognitoEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - SQSEvents package.</Description>
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SQSEvents</AssemblyTitle>
-    <Version>2.2.1</Version>
+    <Version>2.2.2</Version>
     <AssemblyName>Amazon.Lambda.SQSEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SQSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

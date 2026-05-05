@@ -5,6 +5,7 @@ using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.DynamoDBEvents;
 using Amazon.Lambda.SNSEvents;
+using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.SQSEvents;
 using Microsoft.CodeAnalysis;
@@ -75,6 +76,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DynamoDBEvent))))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SNSEvent))))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SQSEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ScheduledEvent))))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ApplicationLoadBalancerRequest))))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IServiceCollection))))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ServiceProvider))))

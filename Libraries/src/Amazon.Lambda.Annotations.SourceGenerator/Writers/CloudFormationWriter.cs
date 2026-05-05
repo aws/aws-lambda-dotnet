@@ -8,6 +8,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SNS;
+using Amazon.Lambda.Annotations.Schedule;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
@@ -15,6 +16,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using AuthorizerType = Amazon.Lambda.Annotations.SourceGenerator.Models.AuthorizerType;
@@ -44,6 +46,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private readonly IDirectoryManager _directoryManager;
         private readonly ITemplateWriter _templateWriter;
         private readonly IDiagnosticReporter _diagnosticReporter;
+        private string _projectRootDirectory;
 
         public CloudFormationWriter(IFileManager fileManager, IDirectoryManager directoryManager, ITemplateWriter templateWriter, IDiagnosticReporter diagnosticReporter)
         {
@@ -58,6 +61,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         public void ApplyReport(AnnotationReport report)
         {
+            _projectRootDirectory = report.ProjectRootDirectory;
             var originalContent = _fileManager.ReadAllText(report.CloudFormationTemplatePath);
             var templateDirectory = _directoryManager.GetDirectoryName(report.CloudFormationTemplatePath);
             var relativeProjectUri = _directoryManager.GetRelativePath(templateDirectory, report.ProjectRootDirectory);
@@ -249,6 +253,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         break;
                     case AttributeModel<SNSEventAttribute> snsAttributeModel:
                         eventName = ProcessSnsAttribute(lambdaFunction, snsAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<ScheduleEventAttribute> scheduleAttributeModel:
+                        eventName = ProcessScheduleAttribute(lambdaFunction, scheduleAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
                 }
@@ -780,6 +788,75 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="ScheduleEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessScheduleAttribute(ILambdaFunctionSerializable lambdaFunction, ScheduleEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "Schedule");
+
+            // Schedule expression
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Schedule", att.Schedule);
+
+            // Description
+            if (att.IsDescriptionSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Description", att.Description);
+            }
+
+            // Input - supports literal JSON strings or file paths (relative to project root or absolute)
+            if (att.IsInputSet)
+            {
+                var inputValue = ResolveInputValue(att.Input);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Input", inputValue);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Resolves the Input value for a schedule event. If the value is a file path (relative to the project root
+        /// or absolute) that points to an existing file, the file contents are read and returned.
+        /// Otherwise, the original value is returned as-is (treated as a literal JSON string).
+        /// </summary>
+        /// <param name="input">The Input value from the attribute, which may be a JSON string or a file path.</param>
+        /// <returns>The resolved input value — either the file contents or the original string.</returns>
+        private string ResolveInputValue(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
+            // Try as a path relative to the project root directory
+            if (!string.IsNullOrEmpty(_projectRootDirectory))
+            {
+                var relativePath = Path.Combine(_projectRootDirectory, input);
+                if (_fileManager.Exists(relativePath))
+                {
+                    return _fileManager.ReadAllText(relativePath);
+                }
+            }
+
+            // Try as an absolute path
+            if (Path.IsPathRooted(input) && _fileManager.Exists(input))
+            {
+                return _fileManager.ReadAllText(input);
+            }
+
+            // Not a file path — return as-is (literal JSON string)
+            return input;
         }
 
         /// <summary>

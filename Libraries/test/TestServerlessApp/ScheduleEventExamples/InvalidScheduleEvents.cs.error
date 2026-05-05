@@ -1,0 +1,61 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.Schedule;
+using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+using System;
+
+namespace TestServerlessApp.ScheduleEventExamples
+{
+    // This file represents invalid usage of the ScheduleEventAttribute.
+    // This file is sent as input to the source generator unit tests and we assert that compilation errors are thrown with the appropriate diagnostic message.
+
+    public class InvalidScheduleEvents
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("every 5 minutes")]
+        public void ProcessMessageWithInvalidScheduleExpression(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("rate(5 minutes)")]
+        public void ProcessMessageWithInvalidParameters(ScheduledEvent evnt, bool invalidParameter1, int invalidParameter2)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("rate(5 minutes)")]
+        public bool ProcessMessageWithInvalidReturnType(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+            return true;
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [RestApi(LambdaHttpMethod.Get, "/")]
+        [ScheduleEvent("rate(5 minutes)")]
+        public void ProcessMessageWithMultipleEventTypes(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("rate(5 minutes)", ResourceName = "invalid-name!")]
+        public void ProcessMessageWithInvalidResourceName(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("rate(5 minutes)", ResourceName = "")]
+        public void ProcessMessageWithEmptyResourceName(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+    }
+}

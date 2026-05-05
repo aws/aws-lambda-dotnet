@@ -1,0 +1,28 @@
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.Schedule;
+using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+using System;
+using System.Threading.Tasks;
+
+namespace TestServerlessApp.ScheduleEventExamples
+{
+    // This file represents valid usage of the ScheduleEventAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests.
+    // This file is only sent as input to the source generator unit tests.
+
+    public class ValidScheduleEvents
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("rate(5 minutes)", Description = "Runs every 5 minutes", Input = "{ \"key\": \"value\" }")]
+        public void ProcessScheduledEvent(ScheduledEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [ScheduleEvent("cron(0 12 * * ? *)", ResourceName = "DailyNoonSchedule")]
+        public async Task ProcessScheduledEventAsync(ScheduledEvent evnt)
+        {
+            await Console.Out.WriteLineAsync($"Event processed: {evnt}");
+        }
+    }
+}
