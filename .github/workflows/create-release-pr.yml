@@ -118,7 +118,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ env.FG_PAT }}
         run: |
-          pr_url="$(gh pr create --title "${{ steps.read-release-name.outputs.VERSION }}" --body "${{ steps.read-changelog.outputs.CHANGELOG }}" --base dev --head ${{ steps.create-release-branch.outputs.BRANCH }})"
           gh label create "Release PR" --description "A Release PR that includes versioning and changelog changes" -c "#FF0000" -f
-          gh pr edit $pr_url --add-label "Release PR"
+          pr_url="$(gh pr create --title "${{ steps.read-release-name.outputs.VERSION }}" --label "Release PR" --body "${{ steps.read-changelog.outputs.CHANGELOG }}" --base dev --head ${{ steps.create-release-branch.outputs.BRANCH }})"
 
