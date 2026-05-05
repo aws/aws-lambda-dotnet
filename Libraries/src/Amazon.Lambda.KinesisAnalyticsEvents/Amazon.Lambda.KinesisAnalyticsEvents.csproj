@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Amazon Kinesis Analytics package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisAnalyticsEvents</AssemblyTitle>
-    <Version>2.3.1</Version>
+    <Version>2.3.2</Version>
     <AssemblyName>Amazon.Lambda.KinesisAnalyticsEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisAnalyticsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;KinesisAnalytics</PackageTags>

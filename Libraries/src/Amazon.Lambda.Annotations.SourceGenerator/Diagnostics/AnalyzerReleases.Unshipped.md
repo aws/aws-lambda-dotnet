@@ -23,3 +23,4 @@ AWSLambda0135 | AWSLambdaCSharpGenerator | Error | Unmapped parameter on ALB fun
 AWSLambda0136 | AWSLambdaCSharpGenerator | Error | Invalid S3EventAttribute
 AWSLambda0137 | AWSLambdaCSharpGenerator | Error | Invalid DynamoDBEventAttribute
 AWSLambda0138 | AWSLambdaCSharpGenerator | Error | Invalid SNSEventAttribute
+AWSLambda0139 | AWSLambdaCSharpGenerator | Error | Invalid ScheduleEventAttribute
