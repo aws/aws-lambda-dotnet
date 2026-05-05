@@ -25,6 +25,7 @@
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.1" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.22" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6.3" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.14" />
     <PackageReference Include="AWSSDK.SSO" Version="4.0.2.13" />
     <PackageReference Include="AWSSDK.SSOOIDC" Version="4.0.3.14" />
