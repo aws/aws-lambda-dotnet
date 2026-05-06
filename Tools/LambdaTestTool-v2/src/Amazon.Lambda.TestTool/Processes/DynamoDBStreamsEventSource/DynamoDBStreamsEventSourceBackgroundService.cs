@@ -88,10 +88,13 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
         // If the configured value is already a stream ARN, use it directly
         if (_config.TableName.StartsWith("arn:") && _config.TableName.Contains("/stream/"))
         {
+            _logger.LogInformation("Using provided stream ARN directly: {streamArn}", _config.TableName);
             return _config.TableName;
         }
 
+        _logger.LogInformation("Looking up latest stream ARN for table {tableName}", _config.TableName);
         var response = await _ddbClient.DescribeTableAsync(_config.TableName, stoppingToken);
+        _logger.LogInformation("Resolved stream ARN: {streamArn}", response.Table.LatestStreamArn);
         return response.Table.LatestStreamArn;
     }
 
@@ -113,12 +116,16 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 tasks.Add(PollShard(index, iterator, stoppingToken));
             }
 
+            _logger.LogDebug("Polling {activeShardCount} active shard(s)", tasks.Count);
+
             if (tasks.Count == 0)
             {
                 // All iterators exhausted — re-discover shards
+                _logger.LogInformation("All shard iterators exhausted, re-discovering shards");
                 shardIterators = await GetShardIterators(streamArn, stoppingToken);
                 if (shardIterators.Count == 0)
                 {
+                    _logger.LogDebug("No shards found, sleeping 1000ms before retry");
                     await Task.Delay(1000, stoppingToken);
                 }
                 continue;
@@ -167,6 +174,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             // Re-discover shards when any iterator becomes null (shard closed/split)
             if (shardIterators.Any(s => s == null))
             {
+                _logger.LogInformation("Detected closed/split shards, re-discovering shard iterators");
                 var newShards = await GetShardIterators(streamArn, stoppingToken);
                 // Replace only null entries with new iterators, keep active ones
                 for (int i = 0; i < shardIterators.Count; i++)
@@ -187,6 +195,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
             if (!hasRecords)
             {
+                _logger.LogDebug("No records found, sleeping {pollingInterval}ms", _config.PollingIntervalMs);
                 await Task.Delay(_config.PollingIntervalMs, stoppingToken);
             }
         }
@@ -205,6 +214,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
     private async Task<List<string?>> GetShardIterators(string streamArn, CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Discovering shards for stream {streamArn}", streamArn);
         var shards = new List<Shard>();
         string? lastEvaluatedShardId = null;
 
@@ -220,6 +230,8 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             shards.AddRange(describeResponse.StreamDescription.Shards);
             lastEvaluatedShardId = describeResponse.StreamDescription.LastEvaluatedShardId;
         } while (lastEvaluatedShardId != null);
+
+        _logger.LogInformation("Discovered {shardCount} shard(s) for stream", shards.Count);
 
         var iterators = new List<string?>();
 
