@@ -101,6 +101,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
     private async Task PollStream(string streamArn, CancellationToken stoppingToken)
     {
         var shardIterators = await GetShardIterators(streamArn, stoppingToken);
+        var emptyPollCount = 0;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -116,16 +117,18 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 tasks.Add(PollShard(index, iterator, stoppingToken));
             }
 
-            _logger.LogDebug("Polling {activeShardCount} active shard(s)", tasks.Count);
+            var activeCount = tasks.Count;
+            _logger.LogInformation("Polling {activeShardCount} active shard(s) out of {totalCount} total", activeCount, shardIterators.Count);
 
-            if (tasks.Count == 0)
+            if (activeCount == 0)
             {
                 // All iterators exhausted — re-discover shards
                 _logger.LogInformation("All shard iterators exhausted, re-discovering shards");
                 shardIterators = await GetShardIterators(streamArn, stoppingToken);
+                emptyPollCount = 0;
                 if (shardIterators.Count == 0)
                 {
-                    _logger.LogDebug("No shards found, sleeping 1000ms before retry");
+                    _logger.LogInformation("No shards found, sleeping 1000ms before retry");
                     await Task.Delay(1000, stoppingToken);
                 }
                 continue;
@@ -134,10 +137,19 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             var results = await Task.WhenAll(tasks);
 
             var hasRecords = false;
+            var exhaustedInThisPoll = 0;
             foreach (var (index, response) in results)
             {
                 if (response == null)
                     continue;
+
+                // Log when a shard iterator becomes null (shard closed)
+                if (response.NextShardIterator == null)
+                {
+                    exhaustedInThisPoll++;
+                    _logger.LogInformation("Shard at index {index} has been closed (NextShardIterator is null), records in final batch: {count}",
+                        index, response.Records.Count);
+                }
 
                 shardIterators[index] = response.NextShardIterator;
 
@@ -145,6 +157,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                     continue;
 
                 hasRecords = true;
+                _logger.LogInformation("Retrieved {recordCount} record(s) from shard index {index}", response.Records.Count, index);
                 var lambdaRecords = ConvertToLambdaRecords(response.Records, streamArn);
 
                 var lambdaPayload = new DynamoDBEvent
@@ -171,18 +184,35 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 }
             }
 
-            // Remove exhausted shards (null iterators). New shards from splits will be
-            // picked up when all iterators are exhausted and full re-discovery runs.
+            // Remove exhausted shards (null iterators) and re-discover to pick up child shards
             var exhaustedCount = shardIterators.Count(s => s == null);
             if (exhaustedCount > 0)
             {
-                _logger.LogDebug("Removing {exhaustedCount} exhausted shard(s)", exhaustedCount);
-                shardIterators = shardIterators.Where(s => s != null).ToList();
+                _logger.LogInformation("Removing {exhaustedCount} exhausted shard(s), re-discovering to find child shards", exhaustedCount);
+                // Re-discover shards immediately when any shard closes, since new records
+                // will be on child shards that we don't have iterators for yet.
+                shardIterators = await GetShardIterators(streamArn, stoppingToken);
+                emptyPollCount = 0;
+                continue;
             }
 
-            if (!hasRecords)
+            if (hasRecords)
             {
-                _logger.LogDebug("No records found, sleeping {pollingInterval}ms", _config.PollingIntervalMs);
+                emptyPollCount = 0;
+            }
+            else
+            {
+                emptyPollCount++;
+                // After many empty polls, re-discover shards in case the stream topology changed
+                if (emptyPollCount >= 30)
+                {
+                    _logger.LogInformation("No records after {count} consecutive polls, re-discovering shards", emptyPollCount);
+                    shardIterators = await GetShardIterators(streamArn, stoppingToken);
+                    emptyPollCount = 0;
+                    continue;
+                }
+
+                _logger.LogInformation("No records found (empty poll #{count}), sleeping {pollingInterval}ms", emptyPollCount, _config.PollingIntervalMs);
                 await Task.Delay(_config.PollingIntervalMs, stoppingToken);
             }
         }
@@ -218,11 +248,16 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             lastEvaluatedShardId = describeResponse.StreamDescription.LastEvaluatedShardId;
         } while (lastEvaluatedShardId != null);
 
-        _logger.LogInformation("Discovered {shardCount} shard(s) for stream", shards.Count);
+        _logger.LogInformation("Discovered {shardCount} total shard(s) for stream", shards.Count);
+
+        // Only get iterators for open (leaf) shards — shards without an EndingSequenceNumber.
+        // Closed shards with LATEST iterator type will never return new records.
+        var openShards = shards.Where(s => s.SequenceNumberRange?.EndingSequenceNumber == null).ToList();
+        _logger.LogInformation("Filtered to {openCount} open (leaf) shard(s) out of {totalCount} total", openShards.Count, shards.Count);
 
         var iterators = new List<string?>();
 
-        foreach (var shard in shards)
+        foreach (var shard in openShards)
         {
             var iteratorResponse = await _streamsClient.GetShardIteratorAsync(new GetShardIteratorRequest
             {
@@ -231,6 +266,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 ShardIteratorType = new ShardIteratorType(_config.ShardIteratorType)
             }, stoppingToken);
 
+            _logger.LogInformation("Got iterator for shard {shardId}", shard.ShardId);
             iterators.Add(iteratorResponse.ShardIterator);
         }
 
