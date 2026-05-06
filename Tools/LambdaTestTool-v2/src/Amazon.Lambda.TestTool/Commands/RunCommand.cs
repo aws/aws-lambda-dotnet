@@ -8,6 +8,7 @@ using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
 using Amazon.Lambda.TestTool.Processes.SQSEventSource;
+using Amazon.Lambda.TestTool.Processes.DynamoDBStreamsEventSource;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Spectre.Console.Cli;
@@ -39,10 +40,10 @@ public sealed class RunCommand(
         {
             EvaluateEnvironmentVariables(settings);
 
-            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && !settings.ApiGatewayEmulatorHttpsPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig))
+            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && !settings.ApiGatewayEmulatorHttpsPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig) && string.IsNullOrEmpty(settings.DynamoDBStreamsEventSourceConfig))
             {
                 throw new ArgumentException("At least one of the following parameters must be set: " +
-                                            "--lambda-emulator-port, --api-gateway-emulator-port, --api-gateway-emulator-https-port or --sqs-eventsource-config");
+                                            "--lambda-emulator-port, --api-gateway-emulator-port, --api-gateway-emulator-https-port, --sqs-eventsource-config or --dynamodbstreams-eventsource-config");
             }
 
             var tasks = new List<Task>();
@@ -87,6 +88,12 @@ public sealed class RunCommand(
             {
                 var sqsEventSourceProcess = SQSEventSourceProcess.Startup(settings, cancellationTokenSource.Token);
                 tasks.Add(sqsEventSourceProcess.RunningTask);
+            }
+
+            if (!string.IsNullOrEmpty(settings.DynamoDBStreamsEventSourceConfig))
+            {
+                var dynamoDBStreamsProcess = DynamoDBStreamsEventSourceProcess.Startup(settings, cancellationTokenSource.Token);
+                tasks.Add(dynamoDBStreamsProcess.RunningTask);
             }
 
             await Task.Run(() => Task.WaitAny(tasks.ToArray(), cancellationTokenSource.Token));
@@ -184,6 +191,16 @@ public sealed class RunCommand(
                 throw new InvalidOperationException($"Environment variable {envVariable} for the SQS event source config was empty");
             }
             settings.SQSEventSourceConfig = environmentVariables[envVariable]?.ToString();
+        }
+
+        if (settings.DynamoDBStreamsEventSourceConfig != null && settings.DynamoDBStreamsEventSourceConfig.StartsWith(Constants.ArgumentEnvironmentVariablePrefix, StringComparison.CurrentCultureIgnoreCase))
+        {
+            var envVariable = settings.DynamoDBStreamsEventSourceConfig.Substring(Constants.ArgumentEnvironmentVariablePrefix.Length);
+            if (!environmentVariables.Contains(envVariable))
+            {
+                throw new InvalidOperationException($"Environment variable {envVariable} for the DynamoDB Streams event source config was empty");
+            }
+            settings.DynamoDBStreamsEventSourceConfig = environmentVariables[envVariable]?.ToString();
         }
     }
 }

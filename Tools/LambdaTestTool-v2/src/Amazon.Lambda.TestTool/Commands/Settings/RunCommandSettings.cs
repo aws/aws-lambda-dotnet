@@ -82,6 +82,14 @@ public sealed class RunCommandSettings : CommandSettings
     [Description("The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=<queue-url>,FunctionName=<function-name>,VisibilityTimeout=100\". Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout")]
     public string? SQSEventSourceConfig { get; set; }
 
+
+    /// <summary>
+    /// The configuration for the DynamoDB Streams event source. The format of the config is a comma delimited key pairs. For example "TableName=my-table,FunctionName=function-name,BatchSize=100".
+    /// Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, Profile, Region, TableName
+    /// </summary>
+    [CommandOption("--dynamodbstreams-eventsource-config <CONFIG>")]
+    [Description("The configuration for the DynamoDB Streams event source. The format of the config is a comma delimited key pairs. For example \"TableName=<table-name>,FunctionName=<function-name>,BatchSize=100\". Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, Profile, Region, TableName")]
+    public string? DynamoDBStreamsEventSourceConfig { get; set; }
     /// <summary>
     /// The absolute path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
     /// </summary>
