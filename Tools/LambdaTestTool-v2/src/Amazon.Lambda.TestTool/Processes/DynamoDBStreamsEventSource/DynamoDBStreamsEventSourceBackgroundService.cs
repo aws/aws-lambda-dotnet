@@ -171,25 +171,12 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 }
             }
 
-            // Re-discover shards when any iterator becomes null (shard closed/split)
-            if (shardIterators.Any(s => s == null))
+            // Remove exhausted shards (null iterators). New shards from splits will be
+            // picked up when all iterators are exhausted and full re-discovery runs.
+            var exhaustedCount = shardIterators.Count(s => s == null);
+            if (exhaustedCount > 0)
             {
-                _logger.LogInformation("Detected closed/split shards, re-discovering shard iterators");
-                var newShards = await GetShardIterators(streamArn, stoppingToken);
-                // Replace only null entries with new iterators, keep active ones
-                for (int i = 0; i < shardIterators.Count; i++)
-                {
-                    if (shardIterators[i] == null && i < newShards.Count)
-                    {
-                        shardIterators[i] = newShards[i];
-                    }
-                }
-                // Append any additional new shards discovered
-                for (int i = shardIterators.Count; i < newShards.Count; i++)
-                {
-                    shardIterators.Add(newShards[i]);
-                }
-                // Remove remaining null entries (fully exhausted shards with no replacement)
+                _logger.LogDebug("Removing {exhaustedCount} exhausted shard(s)", exhaustedCount);
                 shardIterators = shardIterators.Where(s => s != null).ToList();
             }
 
