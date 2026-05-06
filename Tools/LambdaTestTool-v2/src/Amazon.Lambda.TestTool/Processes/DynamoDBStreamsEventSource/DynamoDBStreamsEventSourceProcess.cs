@@ -14,6 +14,7 @@ namespace Amazon.Lambda.TestTool.Processes.DynamoDBStreamsEventSource;
 public class DynamoDBStreamsEventSourceProcess
 {
     internal const int DefaultBatchSize = 100;
+    internal const int DefaultPollingIntervalMs = 1000;
 
     /// <summary>
     /// The Parent task for all the tasks started for each DynamoDB Streams event source.
@@ -76,7 +77,9 @@ public class DynamoDBStreamsEventSourceProcess
                 BatchSize = config.BatchSize ?? DefaultBatchSize,
                 FunctionName = config.FunctionName ?? LambdaRuntimeApi.DefaultFunctionName,
                 LambdaRuntimeApi = lambdaRuntimeApi,
-                TableName = tableName
+                TableName = tableName,
+                ShardIteratorType = config.ShardIteratorType ?? "LATEST",
+                PollingIntervalMs = config.PollingIntervalMs ?? DefaultPollingIntervalMs
             };
 
             builder.Services.AddSingleton(backgroundServiceConfig);
@@ -183,6 +186,16 @@ public class DynamoDBStreamsEventSourceProcess
                         break;
                     case "tablename":
                         config.TableName = keyValuePair[1].Trim();
+                        break;
+                    case "sharditeratortype":
+                        config.ShardIteratorType = keyValuePair[1].Trim();
+                        break;
+                    case "pollingintervalms":
+                        if (!int.TryParse(keyValuePair[1].Trim(), out var pollingInterval))
+                        {
+                            throw new InvalidOperationException("Value for polling interval is not a formatted integer");
+                        }
+                        config.PollingIntervalMs = pollingInterval;
                         break;
                 }
             }
