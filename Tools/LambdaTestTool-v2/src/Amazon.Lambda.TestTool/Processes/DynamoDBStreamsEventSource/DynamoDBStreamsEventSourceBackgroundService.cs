@@ -96,30 +96,44 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var hasRecords = false;
-
+            // Poll all shards concurrently
+            var tasks = new List<Task<(int Index, GetRecordsResponse? Response)>>();
             for (int i = 0; i < shardIterators.Count; i++)
             {
-                if (stoppingToken.IsCancellationRequested)
-                    return;
-
-                var iterator = shardIterators[i];
-                if (iterator == null)
+                if (shardIterators[i] == null)
                     continue;
 
-                var getRecordsResponse = await _streamsClient.GetRecordsAsync(new GetRecordsRequest
+                var index = i;
+                var iterator = shardIterators[i]!;
+                tasks.Add(PollShard(index, iterator, stoppingToken));
+            }
+
+            if (tasks.Count == 0)
+            {
+                // All iterators exhausted — re-discover shards
+                shardIterators = await GetShardIterators(streamArn, stoppingToken);
+                if (shardIterators.Count == 0)
                 {
-                    ShardIterator = iterator,
-                    Limit = _config.BatchSize
-                }, stoppingToken);
+                    await Task.Delay(1000, stoppingToken);
+                }
+                continue;
+            }
 
-                shardIterators[i] = getRecordsResponse.NextShardIterator;
+            var results = await Task.WhenAll(tasks);
 
-                if (getRecordsResponse.Records.Count == 0)
+            var hasRecords = false;
+            foreach (var (index, response) in results)
+            {
+                if (response == null)
+                    continue;
+
+                shardIterators[index] = response.NextShardIterator;
+
+                if (response.Records.Count == 0)
                     continue;
 
                 hasRecords = true;
-                var lambdaRecords = ConvertToLambdaRecords(getRecordsResponse.Records, streamArn);
+                var lambdaRecords = ConvertToLambdaRecords(response.Records, streamArn);
 
                 var lambdaPayload = new DynamoDBEvent
                 {
@@ -145,33 +159,59 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 }
             }
 
-            // Check for new shards periodically
-            if (shardIterators.All(s => s == null))
+            // Re-discover shards when any iterator becomes null (shard closed/split)
+            if (shardIterators.Any(s => s == null))
             {
-                shardIterators = await GetShardIterators(streamArn, stoppingToken);
-                if (shardIterators.Count == 0)
+                var newShards = await GetShardIterators(streamArn, stoppingToken);
+                // Merge: keep active iterators, add any new ones
+                var activeIterators = shardIterators.Where(s => s != null).ToList();
+                foreach (var newIter in newShards)
                 {
-                    await Task.Delay(1000, stoppingToken);
+                    if (newIter != null)
+                        activeIterators.Add(newIter);
                 }
+                shardIterators = activeIterators;
             }
-            else if (!hasRecords)
+
+            if (!hasRecords)
             {
-                // No records found, wait before polling again
                 await Task.Delay(1000, stoppingToken);
             }
         }
     }
 
+    private async Task<(int Index, GetRecordsResponse? Response)> PollShard(int index, string iterator, CancellationToken stoppingToken)
+    {
+        var response = await _streamsClient.GetRecordsAsync(new GetRecordsRequest
+        {
+            ShardIterator = iterator,
+            Limit = _config.BatchSize
+        }, stoppingToken);
+
+        return (index, response);
+    }
+
     private async Task<List<string?>> GetShardIterators(string streamArn, CancellationToken stoppingToken)
     {
-        var describeResponse = await _streamsClient.DescribeStreamAsync(new DescribeStreamRequest
+        var shards = new List<Shard>();
+        string? lastEvaluatedShardId = null;
+
+        // Paginate through all shards
+        do
         {
-            StreamArn = streamArn
-        }, stoppingToken);
+            var describeResponse = await _streamsClient.DescribeStreamAsync(new DescribeStreamRequest
+            {
+                StreamArn = streamArn,
+                ExclusiveStartShardId = lastEvaluatedShardId
+            }, stoppingToken);
+
+            shards.AddRange(describeResponse.StreamDescription.Shards);
+            lastEvaluatedShardId = describeResponse.StreamDescription.LastEvaluatedShardId;
+        } while (lastEvaluatedShardId != null);
 
         var iterators = new List<string?>();
 
-        foreach (var shard in describeResponse.StreamDescription.Shards)
+        foreach (var shard in shards)
         {
             var iteratorResponse = await _streamsClient.GetShardIteratorAsync(new GetShardIteratorRequest
             {
@@ -277,15 +317,15 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             lambdaValue.BOOL = sdkValue.BOOL;
         if (sdkValue.NULL != null)
             lambdaValue.NULL = sdkValue.NULL;
-        if (sdkValue.SS?.Count > 0)
+        if (sdkValue.SS != null)
             lambdaValue.SS = sdkValue.SS;
-        if (sdkValue.NS?.Count > 0)
+        if (sdkValue.NS != null)
             lambdaValue.NS = sdkValue.NS;
-        if (sdkValue.BS?.Count > 0)
+        if (sdkValue.BS != null)
             lambdaValue.BS = sdkValue.BS;
-        if (sdkValue.L?.Count > 0)
+        if (sdkValue.L != null)
             lambdaValue.L = sdkValue.L.Select(ConvertAttributeValue).ToList();
-        if (sdkValue.M?.Count > 0)
+        if (sdkValue.M != null)
             lambdaValue.M = ConvertAttributeMap(sdkValue.M);
 
         return lambdaValue;
