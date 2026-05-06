@@ -144,6 +144,77 @@ public class ConvertDynamoDBStreamsRecordTests
     }
 
     [Fact]
+    public void ConvertRecordWithBinaryAttributes()
+    {
+        var binaryData = new byte[] { 0x01, 0x02, 0x03, 0xFF };
+        var binarySet = new List<MemoryStream>
+        {
+            new MemoryStream(new byte[] { 0xAA, 0xBB }),
+            new MemoryStream(new byte[] { 0xCC, 0xDD })
+        };
+
+        var record = new Record
+        {
+            EventID = "event-bin",
+            EventName = new Amazon.DynamoDBStreams.OperationType("INSERT"),
+            EventVersion = "1.1",
+            Dynamodb = new StreamRecord
+            {
+                Keys = new Dictionary<string, AttributeValue>
+                {
+                    ["Id"] = new AttributeValue { S = "key-1" }
+                },
+                NewImage = new Dictionary<string, AttributeValue>
+                {
+                    ["BinaryAttr"] = new AttributeValue { B = new MemoryStream(binaryData) },
+                    ["BinarySetAttr"] = new AttributeValue { BS = binarySet }
+                }
+            }
+        };
+
+        var result = DynamoDBStreamsEventSourceBackgroundService.ConvertToLambdaRecord(record, TestStreamArn);
+
+        var newImage = result.Dynamodb.NewImage;
+        Assert.NotNull(newImage["BinaryAttr"].B);
+        Assert.Equal(binaryData, newImage["BinaryAttr"].B.ToArray());
+        Assert.NotNull(newImage["BinarySetAttr"].BS);
+        Assert.Equal(2, newImage["BinarySetAttr"].BS.Count);
+        Assert.Equal(new byte[] { 0xAA, 0xBB }, newImage["BinarySetAttr"].BS[0].ToArray());
+        Assert.Equal(new byte[] { 0xCC, 0xDD }, newImage["BinarySetAttr"].BS[1].ToArray());
+    }
+
+    [Fact]
+    public void ConvertRecordWithEmptyListAndMap()
+    {
+        var record = new Record
+        {
+            EventID = "event-empty",
+            EventName = new Amazon.DynamoDBStreams.OperationType("INSERT"),
+            EventVersion = "1.1",
+            Dynamodb = new StreamRecord
+            {
+                Keys = new Dictionary<string, AttributeValue>
+                {
+                    ["Id"] = new AttributeValue { S = "key-1" }
+                },
+                NewImage = new Dictionary<string, AttributeValue>
+                {
+                    ["EmptyList"] = new AttributeValue { L = new List<AttributeValue>() },
+                    ["EmptyMap"] = new AttributeValue { M = new Dictionary<string, AttributeValue>() }
+                }
+            }
+        };
+
+        var result = DynamoDBStreamsEventSourceBackgroundService.ConvertToLambdaRecord(record, TestStreamArn);
+
+        var newImage = result.Dynamodb.NewImage;
+        Assert.NotNull(newImage["EmptyList"].L);
+        Assert.Empty(newImage["EmptyList"].L);
+        Assert.NotNull(newImage["EmptyMap"].M);
+        Assert.Empty(newImage["EmptyMap"].M);
+    }
+
+    [Fact]
     public void ConvertMultipleRecords()
     {
         var records = new List<Record>
