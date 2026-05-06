@@ -81,6 +81,12 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
     private async Task<string?> GetStreamArnForTable(CancellationToken stoppingToken)
     {
+        // If the configured value is already a stream ARN, use it directly
+        if (_config.TableName.StartsWith("arn:") && _config.TableName.Contains("/stream/"))
+        {
+            return _config.TableName;
+        }
+
         var response = await _streamsClient.ListStreamsAsync(new ListStreamsRequest
         {
             TableName = _config.TableName
