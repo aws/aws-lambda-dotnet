@@ -42,7 +42,7 @@ internal class DynamoDBStreamsEventSourceConfig
 
     /// <summary>
     /// The shard iterator type to use when reading from the stream.
-    /// Valid values: LATEST, TRIM_HORIZON. Default is LATEST.
+    /// Valid values: LATEST, TRIM_HORIZON. Default is TRIM_HORIZON.
     /// </summary>
     public string? ShardIteratorType { get; set; }
 
