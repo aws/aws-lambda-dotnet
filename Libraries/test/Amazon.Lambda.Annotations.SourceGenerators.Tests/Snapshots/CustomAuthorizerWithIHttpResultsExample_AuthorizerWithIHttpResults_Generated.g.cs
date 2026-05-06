@@ -41,7 +41,7 @@ namespace TestServerlessApp
             var userId = default(string);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("userId") == false)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogDebug("Authorizer attribute 'userId' was missing, returning unauthorized.");
 #else
                 __context__.Logger.Log("Authorizer attribute 'userId' was missing, returning unauthorized.");
@@ -68,7 +68,7 @@ namespace TestServerlessApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 __context__.Logger.LogError(e, "Failed to convert authorizer attribute 'userId', returning unauthorized.");
 #else
                 __context__.Logger.Log("Failed to convert authorizer attribute 'userId', returning unauthorized. Exception: " + e.ToString());

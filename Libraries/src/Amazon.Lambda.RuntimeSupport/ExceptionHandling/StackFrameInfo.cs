@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -27,10 +27,8 @@ namespace Amazon.Lambda.RuntimeSupport
             Label = label;
         }
 
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
             Justification = "Constructor has defensive code in place in case the method for the stack frame has been trimmed.")]
-#endif
         public StackFrameInfo(StackFrame stackFrame)
         {
             Path = stackFrame.GetFileName();

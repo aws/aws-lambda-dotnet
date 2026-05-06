@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 	
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - KafkaEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KafkaEvents</AssemblyTitle>
     <Version>2.1.2</Version>
@@ -12,7 +12,7 @@
     <PackageTags>AWS;Amazon;Lambda;Kafka</PackageTags>
   </PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+	<PropertyGroup>
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

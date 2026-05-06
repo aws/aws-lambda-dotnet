@@ -40,7 +40,7 @@ public static class DirectoryHelpers
     }
 
     /// <summary>
-    /// <see cref="https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories"/>
+    /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
     /// </summary>
     private static void CopyDirectory(DirectoryInfo dir, string destDirName)
     {

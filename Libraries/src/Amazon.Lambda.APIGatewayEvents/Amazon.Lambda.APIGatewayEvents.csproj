@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>    
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>    
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
     <Version>2.7.4</Version>
@@ -18,10 +18,6 @@
     ready to make a major version release of our libraries.
     -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <DefineConstants>NETSTANDARD_2_0</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup>

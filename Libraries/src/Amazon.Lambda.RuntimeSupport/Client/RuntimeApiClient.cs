@@ -20,6 +20,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -31,11 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
 
-#if NET6_0_OR_GREATER
         private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
-#else
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
-#endif
 
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
@@ -54,11 +51,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
-#if NET6_0_OR_GREATER
             _consoleLoggerRedirector = new LogLevelLoggerWriter(environmentVariables);
-#else
-            _consoleLoggerRedirector = new SimpleLoggerWriter(environmentVariables);
-#endif
 
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
             _httpClient = httpClient;
@@ -147,8 +140,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
-
         /// <summary>
         ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
         /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
@@ -174,8 +165,32 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return _internalClient.RestoreErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
-#endif
 
+        /// <summary>
+        /// Start sending a streaming response to the Lambda Runtime API.
+        /// Uses a raw TCP connection with chunked transfer encoding to support HTTP/1.1
+        /// trailing headers for error reporting, which .NET's HttpClient does not support.
+        /// The actual data is written by the handler via ResponseStream.WriteAsync, which flows
+        /// through a ChunkedStreamWriter to the TCP connection.
+        /// This Task completes when the stream is finalized (MarkCompleted or error).
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the in-flight HTTP POST. The returned IDisposable is the RawStreamingHttpClient that owns the TCP connection.</returns>
+        internal virtual async Task<IDisposable> StartStreamingResponseAsync(
+            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+        {
+            if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
+            if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));
+
+            var userAgent = _httpClient.DefaultRequestHeaders.UserAgent.ToString();
+            var rawClient = new RawStreamingHttpClient(LambdaEnvironment.RuntimeServerHostAndPort);
+
+            await rawClient.SendStreamingResponseAsync(awsRequestId, responseStream, userAgent, cancellationToken);
+
+            return rawClient;
+        }
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

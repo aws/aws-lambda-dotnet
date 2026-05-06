@@ -1,0 +1,38 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Integration test for ASP.NET Core response streaming through Lambda Function URL.",
+  "Resources": {
+    "AspNetCoreFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "AspNetCoreStreamingApiGatewayTest",
+        "Runtime": "dotnet10",
+        "CodeUri": "",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambda_FullAccess"
+        ],
+        "Environment": {
+          "Variables": {
+            "LAMBDA_EVENT_SOURCE": "HttpApi",
+            "LAMBDA_NET_SERIALIZER_DEBUG": "true",
+            "LAMBDA_RUNTIMESUPPORT_DEBUG": "true"
+          }
+        },
+        "FunctionUrlConfig": {
+          "AuthType": "NONE",
+          "InvokeMode": "RESPONSE_STREAM"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiURL": {
+      "Description": "Lambda Function URL endpoint",
+      "Value": { "Fn::GetAtt": ["AspNetCoreFunctionUrl", "FunctionUrl"] }
+    }
+  }
+}

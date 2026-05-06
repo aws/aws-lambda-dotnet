@@ -38,8 +38,8 @@
           "MyTopic": {
             "Type": "SNS",
             "Properties": {
-              "Topic": "arn:aws:sns:us-east-2:444455556666:MyTopic",
-              "FilterPolicy": "{ \"store\": [\"example_corp\"] }"
+              "FilterPolicy": "{ \"store\": [\"example_corp\"] }",
+              "Topic": "arn:aws:sns:us-east-2:444455556666:MyTopic"
             }
           },
           "testTopicEvent": {

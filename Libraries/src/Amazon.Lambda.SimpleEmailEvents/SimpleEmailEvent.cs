@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.SimpleEmailEvents.Actions;
+using Amazon.Lambda.SimpleEmailEvents.Actions;
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +18,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// <summary>
         /// An SES record.
         /// </summary>
-        public class SimpleEmailRecord<TReceiptAction> where TReceiptAction : IReceiptAction
+        public class SimpleEmailRecord<TChild> where TChild : IReceiptAction
         {
             /// <summary>
             /// The event version.
@@ -33,7 +33,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
             /// <summary>
             /// The SES message.
             /// </summary>
-            public SimpleEmailService<TReceiptAction> Ses { get; set; }
+            public SimpleEmailService<TChild> Ses { get; set; }
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// <summary>
         /// An SES message record.
         /// </summary>
-        public class SimpleEmailService<TReceiptAction> where TReceiptAction : IReceiptAction
+        public class SimpleEmailService<TChild> where TChild : IReceiptAction
         {
             /// <summary>
             /// The mail data for the SES message.
@@ -58,7 +58,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
             /// <summary>
             /// The receipt data for the SES message.
             /// </summary>
-            public SimpleEmailReceipt<TReceiptAction> Receipt { get; set; }
+            public SimpleEmailReceipt<TChild> Receipt { get; set; }
         }
 
         /// <summary>
@@ -105,8 +105,8 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// <summary>
         /// The receipt data for the SES message.
         /// </summary>
-        /// <typeparam name="TAction">The type of action being received in this receipt</typeparam>
-        public class SimpleEmailReceipt<TReceiptAction> where TReceiptAction : IReceiptAction
+        /// <typeparam name="TChild">The type of action being received in this receipt</typeparam>
+        public class SimpleEmailReceipt<TChild> where TChild : IReceiptAction
         {
             /// <summary>
             /// The recipients of the message.
@@ -146,7 +146,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
             /// <summary>
             /// The action of the message (i.e, which lambda was invoked, where it was stored in S3, etc)
             /// </summary>
-            public TReceiptAction Action { get; set; }
+            public TChild Action { get; set; }
 
             /// <summary>
             /// How long this incoming message took to process.

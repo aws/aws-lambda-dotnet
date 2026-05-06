@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET support - AWS AppSync package.</Description>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AppSyncEvents</AssemblyTitle>
     <Version>1.0.1</Version>
     <AssemblyName>Amazon.Lambda.AppSyncEvents</AssemblyName>

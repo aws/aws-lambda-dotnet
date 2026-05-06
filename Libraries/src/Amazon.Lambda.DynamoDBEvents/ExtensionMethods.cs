@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -88,12 +88,7 @@ namespace Amazon.Lambda.DynamoDBEvents
             }
             else if (attribute.N != null)
             {
-#if NETCOREAPP3_1  // WriteRawValue was added in .NET 6, but we need to write out Number values without quotes
-                using var document = JsonDocument.Parse(attribute.N);
-                document.WriteTo(writer);
-#else
                 writer.WriteRawValue(attribute.N);
-#endif
             }
             else if (attribute.B != null)
             {
@@ -134,12 +129,7 @@ namespace Amazon.Lambda.DynamoDBEvents
                 writer.WriteStartArray();
                 foreach (var item in attribute.NS)
                 {
-#if NETCOREAPP3_1  // WriteRawValue was added in .NET 6, but we need to write out Number values without quotes
-                    using var document = JsonDocument.Parse(item);
-                    document.WriteTo(writer);
-#else
                     writer.WriteRawValue(item);
-#endif
                 }
                 writer.WriteEndArray();
             }

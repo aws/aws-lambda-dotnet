@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.KinesisEvents
+namespace Amazon.Lambda.KinesisEvents
 {
     using System.Collections.Generic;
     using System.Runtime.Serialization;
@@ -14,9 +14,7 @@
         /// A list of records which failed processing. Returning the first record which failed would retry all remaining records from the batch.
         /// </summary>
         [DataMember(Name = "batchItemFailures", EmitDefaultValue = false)]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("batchItemFailures")]
-#endif
         public IList<BatchItemFailure> BatchItemFailures { get; set; }
 
         /// <summary>
@@ -29,9 +27,7 @@
             /// Sequence number of the record which failed processing.
             /// </summary>
             [DataMember(Name = "itemIdentifier", EmitDefaultValue = false)]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("itemIdentifier")]
-#endif
             public string ItemIdentifier { get; set; }
         }
     }

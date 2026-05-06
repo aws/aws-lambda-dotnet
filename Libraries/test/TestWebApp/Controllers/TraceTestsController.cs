@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TestWebApp.Controllers
 {
@@ -8,7 +8,7 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public string GetTraceId()
         {
-            return this.HttpContext.TraceIdentifier;
+            return HttpContext.TraceIdentifier;
         }
     }
 }

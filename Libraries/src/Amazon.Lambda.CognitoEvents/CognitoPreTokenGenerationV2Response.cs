@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CognitoEvents
 {
@@ -11,9 +11,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// A container for all elements in a V2_0 trigger event.
         /// </summary>
         [DataMember(Name = "claimsAndScopeOverrideDetails")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsAndScopeOverrideDetails")]
-# endif
         public ClaimsAndScopeOverrideDetails ClaimsAndScopeOverrideDetails { get; set; } = new ClaimsAndScopeOverrideDetails();
     }
 }

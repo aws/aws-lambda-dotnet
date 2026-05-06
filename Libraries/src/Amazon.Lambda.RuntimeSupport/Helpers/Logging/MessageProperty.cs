@@ -1,4 +1,3 @@
-﻿#if NET6_0_OR_GREATER
 using System;
 using System.Collections;
 using System.Globalization;
@@ -25,29 +24,29 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             // messageToken format is:
             // <optional-directive><name>:<optional-format-argument>
 
-            this.MessageToken = "{" + messageToken.ToString() + "}";
+            MessageToken = "{" + messageToken.ToString() + "}";
 
-            this.FormatDirective = Directive.Default;
+            FormatDirective = Directive.Default;
 
             if (messageToken[0] == '@')
             {
-                this.FormatDirective = Directive.JsonSerialization;
+                FormatDirective = Directive.JsonSerialization;
                 messageToken = messageToken.Slice(1);
             }
 
             var idxOfDelimeter = messageToken.IndexOfAny(PARAM_FORMAT_DELIMITERS);
             if (idxOfDelimeter < 0)
             {
-                this.Name = messageToken.ToString().Trim();
-                this.FormatArgument = null;
+                Name = messageToken.ToString().Trim();
+                FormatArgument = null;
             }
             else
             {
-                this.Name = messageToken.Slice(0, idxOfDelimeter).ToString().Trim();
-                this.FormatArgument = messageToken.Slice(idxOfDelimeter + 1).ToString().Trim();
-                if(this.FormatArgument == string.Empty)
+                Name = messageToken.Slice(0, idxOfDelimeter).ToString().Trim();
+                FormatArgument = messageToken.Slice(idxOfDelimeter + 1).ToString().Trim();
+                if(FormatArgument == string.Empty)
                 {
-                    this.FormatArgument = null;
+                    FormatArgument = null;
                 }
             }
         }
@@ -108,11 +107,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             }
             if (value == null || value is IList || value is IDictionary)
             {
-                return this.MessageToken;
+                return MessageToken;
             }
-            if(!string.IsNullOrEmpty(this.FormatArgument))
+            if(!string.IsNullOrEmpty(FormatArgument))
             {
-                return ApplyFormatArgument(value, this.FormatArgument);
+                return ApplyFormatArgument(value, FormatArgument);
             }
             if(value is DateTime dt)
             {
@@ -188,4 +187,3 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         }
     }
 }
-#endif

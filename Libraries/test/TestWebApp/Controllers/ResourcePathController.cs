@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,7 +27,7 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public string GetString(string value)
         {
-            var path = this.HttpContext.Request.Path;
+            var path = HttpContext.Request.Path;
             return "value=" + value;
         }
 

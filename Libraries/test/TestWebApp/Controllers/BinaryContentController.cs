@@ -21,7 +21,7 @@ namespace TestWebApp.Controllers
         [HttpPut]
         public string Put()
         {
-            using (var reader = new StreamReader(this.HttpContext.Request.Body))
+            using (var reader = new StreamReader(HttpContext.Request.Body))
             {
                 return reader.ReadToEnd();
             }

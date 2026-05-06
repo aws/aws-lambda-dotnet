@@ -23,6 +23,7 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    [Collection("RuntimeSupportStateCheck")]
     public class HandlerWrapperTests
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
@@ -652,7 +653,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     var invocation1 = new InvocationRequest
                     {
                         InputStream = new MemoryStream(UTF8Encoding.UTF8.GetBytes("\"Hello\"")),
-                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
+                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()))
                     };
 
                     var invocationResponse1 = await handlerWrapper.Handler(invocation1);
@@ -660,7 +661,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     var invocation2 = new InvocationRequest
                     {
                         InputStream = new MemoryStream(UTF8Encoding.UTF8.GetBytes("\"World\"")),
-                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
+                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()))
                     };
 
                     var invocationResponse2 = await handlerWrapper.Handler(invocation2);
@@ -684,7 +685,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var invocation = new InvocationRequest
                 {
                     InputStream = new MemoryStream(input ?? new byte[0]),
-                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
+                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()))
                 };
 
                 var invocationResponse = await handlerWrapper.Handler(invocation);

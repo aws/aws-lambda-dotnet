@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <!-- This is turning off the warning for unused parameters in method signatures. There are tests that we need to have parameters in the signature for testing purposes. -->
     <NoWarn>IDE0060</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,8 +21,8 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NUnit" Version="3.13.3" />
-		<PackageReference Include="NUnit.Console" Version="3.15.0" />
-		<PackageReference Include="NUnitLite" Version="3.13.3" />
+		<PackageReference Include="NUnit" Version="4.5.1" />
+		<PackageReference Include="NUnit.Console" Version="3.22.0" />
+		<PackageReference Include="NUnitLite" Version="4.5.1" />
 	</ItemGroup>
 </Project>

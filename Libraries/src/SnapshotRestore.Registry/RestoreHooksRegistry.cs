@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -10,10 +10,10 @@ namespace SnapshotRestore.Registry;
 /// </summary>
 public class RestoreHooksRegistry
 {
-    private ConcurrentStack<Func<ValueTask>> _beforeSnapshotRegistry = new();
-    private ConcurrentQueue<Func<ValueTask>> _afterRestoreRegistry = new();
+    private readonly ConcurrentStack<Func<ValueTask>> _beforeSnapshotRegistry = new();
+    private readonly ConcurrentQueue<Func<ValueTask>> _afterRestoreRegistry = new();
 
-    private Action<string> _logger;
+    private readonly Action<string> _logger;
 
     /// <summary>
     /// Creates an instance of RestoreHooksRegistry.

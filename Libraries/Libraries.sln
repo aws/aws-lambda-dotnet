@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31717.71
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11709.299 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
@@ -95,8 +95,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Serialization
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EventsTests.Shared", "test\EventsTests.Shared\EventsTests.Shared.shproj", "{A2CB78BB-E54F-48CA-BBFB-9553D27EF23D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NETCore31", "test\EventsTests.NETCore31\EventsTests.NETCore31.csproj", "{44E9D925-B61D-4234-97B7-61424C963BA6}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTest", "test\HandlerTest\HandlerTest.csproj", "{E88231E0-B249-49AE-B764-DB6C9615F6CA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTestNoSerializer", "test\HandlerTestNoSerializer\HandlerTestNoSerializer.csproj", "{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}"
@@ -114,8 +112,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AspNetCoreServer.Hosting", "src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj", "{02908C6F-FBDF-4949-B039-0F4632265B90}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeAspNetCoreMinimalApiTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiTest\CustomRuntimeAspNetCoreMinimalApiTest.csproj", "{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NET6", "test\EventsTests.NET6\EventsTests.NET6.csproj", "{C1BB30D2-3237-4CFC-BA93-627471148EC2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.KafkaEvents", "src\Amazon.Lambda.KafkaEvents\Amazon.Lambda.KafkaEvents.csproj", "{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}"
 EndProject
@@ -154,6 +150,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServerlessApp.ALB", "test\TestServerlessApp.ALB\TestServerlessApp.ALB.csproj", "{8F7C617D-C611-4DC6-A07C-033F13C1835D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServerlessApp.ALB.IntegrationTests", "test\TestServerlessApp.ALB.IntegrationTests\TestServerlessApp.ALB.IntegrationTests.csproj", "{80594C21-C6EB-469E-83CC-68F9F661CA5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResponseStreamingFunctionHandlers", "test\Amazon.Lambda.RuntimeSupport.Tests\ResponseStreamingFunctionHandlers\ResponseStreamingFunctionHandlers.csproj", "{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetCoreStreamingApiGatewayTest", "test\Amazon.Lambda.RuntimeSupport.Tests\AspNetCoreStreamingApiGatewayTest\AspNetCoreStreamingApiGatewayTest.csproj", "{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -609,18 +609,6 @@ Global
 		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Release|x64.Build.0 = Release|Any CPU
 		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Release|x86.ActiveCfg = Release|Any CPU
 		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Release|x86.Build.0 = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|x64.Build.0 = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|x86.Build.0 = Debug|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|x64.ActiveCfg = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|x64.Build.0 = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|x86.ActiveCfg = Release|Any CPU
-		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|x86.Build.0 = Release|Any CPU
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -729,18 +717,6 @@ Global
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|x64.Build.0 = Release|Any CPU
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|x86.ActiveCfg = Release|Any CPU
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|x86.Build.0 = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|x64.Build.0 = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|x86.Build.0 = Debug|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|x64.ActiveCfg = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|x64.Build.0 = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|x86.ActiveCfg = Release|Any CPU
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|x86.Build.0 = Release|Any CPU
 		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -969,6 +945,30 @@ Global
 		{80594C21-C6EB-469E-83CC-68F9F661CA5E}.Release|x64.Build.0 = Release|Any CPU
 		{80594C21-C6EB-469E-83CC-68F9F661CA5E}.Release|x86.ActiveCfg = Release|Any CPU
 		{80594C21-C6EB-469E-83CC-68F9F661CA5E}.Release|x86.Build.0 = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|x64.Build.0 = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Debug|x86.Build.0 = Debug|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|x64.ActiveCfg = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|x64.Build.0 = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|x86.ActiveCfg = Release|Any CPU
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9}.Release|x86.Build.0 = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|x64.Build.0 = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Debug|x86.Build.0 = Debug|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|x64.ActiveCfg = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|x64.Build.0 = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|x86.ActiveCfg = Release|Any CPU
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1015,7 +1015,6 @@ Global
 		{10E47FE4-8620-4933-A14D-E33F25CA557A} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{A2CB78BB-E54F-48CA-BBFB-9553D27EF23D} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
-		{44E9D925-B61D-4234-97B7-61424C963BA6} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
@@ -1025,7 +1024,6 @@ Global
 		{2D956162-04BE-402E-9487-AE785AA14DE4} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{02908C6F-FBDF-4949-B039-0F4632265B90} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB} = {B5BD0336-7D08-492C-8489-42C987E29B39}
-		{C1BB30D2-3237-4CFC-BA93-627471148EC2} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{8AB1CBD7-2D08-492F-9C09-3E754364046C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
@@ -1045,14 +1043,14 @@ Global
 		{3BFA4B73-BA61-4578-833B-C5B3A16EDA9E} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{8F7C617D-C611-4DC6-A07C-033F13C1835D} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{80594C21-C6EB-469E-83CC-68F9F661CA5E} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{E404A7AC-812B-BC03-CA76-02C0BC2BA7F9} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{0768FA72-CF49-2B59-BC4C-E4CE579E5D93} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{1fb22337-5d88-4ce7-adff-ffd89204f0e9}*SharedItemsImports = 5
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

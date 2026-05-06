@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,18 +17,14 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The HTTP status code for the request
         /// </summary>
         [DataMember(Name = "statusCode")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
         public int StatusCode { get; set; }
 
         /// <summary>
         /// The Http headers returned in the response. Multiple header values set for the the same header should be separate by a comma.
         /// </summary>
         [DataMember(Name = "headers")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("headers")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
@@ -50,16 +46,16 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// <param name="append">If true it will append the values to the existing value in the Headers collection.</param>
         public void SetHeaderValues(string headerName, IEnumerable<string> values, bool append)
         {
-            if (this.Headers == null)
-                this.Headers = new Dictionary<string, string>();
+            if (Headers == null)
+                Headers = new Dictionary<string, string>();
 
-            if(this.Headers.ContainsKey(headerName) && append)
+            if(Headers.ContainsKey(headerName) && append)
             {
-                this.Headers[headerName] = this.Headers[headerName] + "," + string.Join(",", values);
+                Headers[headerName] = Headers[headerName] + "," + string.Join(",", values);
             }
             else
             {
-                this.Headers[headerName] = string.Join(",", values);
+                Headers[headerName] = string.Join(",", values);
             }
         }
 
@@ -67,27 +63,21 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The cookies returned in the response.
         /// </summary>
         [DataMember(Name = "cookies")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("cookies")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("cookies")]
         public string[] Cookies { get; set; }
 
         /// <summary>
         /// The response body
         /// </summary>
         [DataMember(Name = "body")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("body")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("body")]
         public string Body { get; set; }
 
         /// <summary>
         /// Flag indicating whether the body should be treated as a base64-encoded string
         /// </summary>
         [DataMember(Name = "isBase64Encoded")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
         public bool IsBase64Encoded { get; set; }
     }
 }

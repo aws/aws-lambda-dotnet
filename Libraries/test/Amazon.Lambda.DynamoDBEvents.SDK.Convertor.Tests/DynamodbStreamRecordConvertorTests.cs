@@ -6,7 +6,7 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests
         public void ConvertToSdkStreamRecord_NullLambdaStreamRecord_ReturnsNull()
         {
             // Arrange
-            DynamoDBEvent.StreamRecord lambdaStreamRecord = null;
+            DynamoDBEvent.StreamRecord? lambdaStreamRecord = null;
 
             // Act
             var result = lambdaStreamRecord.ConvertToSdkStreamRecord();
