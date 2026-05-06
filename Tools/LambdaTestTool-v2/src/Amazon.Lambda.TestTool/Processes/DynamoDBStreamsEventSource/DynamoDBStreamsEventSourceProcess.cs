@@ -92,7 +92,7 @@ public class DynamoDBStreamsEventSourceProcess
                 FunctionName = config.FunctionName ?? LambdaRuntimeApi.DefaultFunctionName,
                 LambdaRuntimeApi = lambdaRuntimeApi,
                 TableName = tableName,
-                ShardIteratorType = config.ShardIteratorType ?? "LATEST",
+                ShardIteratorType = config.ShardIteratorType ?? "TRIM_HORIZON",
                 PollingIntervalMs = config.PollingIntervalMs ?? DefaultPollingIntervalMs
             };
 
