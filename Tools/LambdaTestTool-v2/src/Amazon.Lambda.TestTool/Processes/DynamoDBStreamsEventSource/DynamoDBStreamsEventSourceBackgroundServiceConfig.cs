@@ -27,4 +27,14 @@ public class DynamoDBStreamsEventSourceBackgroundServiceConfig
     /// The DynamoDB table name to read streams from.
     /// </summary>
     public required string TableName { get; init; }
+
+    /// <summary>
+    /// The shard iterator type to use when reading from the stream.
+    /// </summary>
+    public required string ShardIteratorType { get; init; } = "LATEST";
+
+    /// <summary>
+    /// The polling interval in milliseconds between stream reads when no records are found.
+    /// </summary>
+    public required int PollingIntervalMs { get; init; } = DynamoDBStreamsEventSourceProcess.DefaultPollingIntervalMs;
 }

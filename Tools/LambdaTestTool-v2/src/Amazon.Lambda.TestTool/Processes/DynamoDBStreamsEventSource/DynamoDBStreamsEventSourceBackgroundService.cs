@@ -169,19 +169,26 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             if (shardIterators.Any(s => s == null))
             {
                 var newShards = await GetShardIterators(streamArn, stoppingToken);
-                // Merge: keep active iterators, add any new ones
-                var activeIterators = shardIterators.Where(s => s != null).ToList();
-                foreach (var newIter in newShards)
+                // Replace only null entries with new iterators, keep active ones
+                for (int i = 0; i < shardIterators.Count; i++)
                 {
-                    if (newIter != null)
-                        activeIterators.Add(newIter);
+                    if (shardIterators[i] == null && i < newShards.Count)
+                    {
+                        shardIterators[i] = newShards[i];
+                    }
                 }
-                shardIterators = activeIterators;
+                // Append any additional new shards discovered
+                for (int i = shardIterators.Count; i < newShards.Count; i++)
+                {
+                    shardIterators.Add(newShards[i]);
+                }
+                // Remove remaining null entries (fully exhausted shards with no replacement)
+                shardIterators = shardIterators.Where(s => s != null).ToList();
             }
 
             if (!hasRecords)
             {
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(_config.PollingIntervalMs, stoppingToken);
             }
         }
     }
@@ -223,7 +230,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             {
                 StreamArn = streamArn,
                 ShardId = shard.ShardId,
-                ShardIteratorType = ShardIteratorType.LATEST
+                ShardIteratorType = new ShardIteratorType(_config.ShardIteratorType)
             }, stoppingToken);
 
             iterators.Add(iteratorResponse.ShardIterator);
