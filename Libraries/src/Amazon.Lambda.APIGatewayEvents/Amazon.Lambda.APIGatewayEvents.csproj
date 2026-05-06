@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>    
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
-    <Version>2.7.4</Version>
+    <Version>3.0.0</Version>
     <AssemblyName>Amazon.Lambda.APIGatewayEvents</AssemblyName>
     <PackageId>Amazon.Lambda.APIGatewayEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

@@ -9,7 +9,7 @@
     <AssemblyName>Amazon.Lambda.Serialization.Json</AssemblyName>
     <PackageId>Amazon.Lambda.Serialization.Json</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <Version>2.2.6</Version>
+    <Version>3.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

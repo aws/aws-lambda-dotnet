@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - CloudWatchEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.CloudWatchEvents</AssemblyTitle>
-    <Version>4.4.2</Version>
+    <Version>5.0.0</Version>
     <AssemblyName>Amazon.Lambda.CloudWatchEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

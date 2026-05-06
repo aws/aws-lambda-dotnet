@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Amazon Lex package.</Description>
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.LexEvents</AssemblyTitle>
-    <Version>3.1.2</Version>
+    <Version>4.0.0</Version>
     <AssemblyName>Amazon.Lambda.LexEvents</AssemblyName>
     <PackageId>Amazon.Lambda.LexEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Lex</PackageTags>
