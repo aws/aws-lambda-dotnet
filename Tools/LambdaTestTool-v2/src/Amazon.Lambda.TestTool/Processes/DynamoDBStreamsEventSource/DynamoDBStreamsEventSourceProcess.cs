@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.DynamoDBv2;
 using Amazon.DynamoDBStreams;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Services;
@@ -52,6 +53,19 @@ public class DynamoDBStreamsEventSourceProcess
 
             var streamsClient = new AmazonDynamoDBStreamsClient(ddbConfig);
             builder.Services.AddSingleton<IAmazonDynamoDBStreams>(streamsClient);
+
+            var ddbClientConfig = new AmazonDynamoDBConfig();
+            if (!string.IsNullOrEmpty(config.Profile))
+            {
+                ddbClientConfig.Profile = new Profile(config.Profile);
+            }
+            if (!string.IsNullOrEmpty(config.Region))
+            {
+                ddbClientConfig.RegionEndpoint = RegionEndpoint.GetBySystemName(config.Region);
+            }
+            var ddbClient = new AmazonDynamoDBClient(ddbClientConfig);
+            builder.Services.AddSingleton<IAmazonDynamoDB>(ddbClient);
+
             builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
             var tableName = config.TableName;

@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.DynamoDBv2;
 using Amazon.DynamoDBStreams;
 using Amazon.DynamoDBStreams.Model;
 using Amazon.Lambda.DynamoDBEvents;
@@ -23,6 +24,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
     };
 
     private readonly ILogger<DynamoDBStreamsEventSourceProcess> _logger;
+    private readonly IAmazonDynamoDB _ddbClient;
     private readonly IAmazonDynamoDBStreams _streamsClient;
     private readonly ILambdaClient _lambdaClient;
     private readonly DynamoDBStreamsEventSourceBackgroundServiceConfig _config;
@@ -32,11 +34,13 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
     /// </summary>
     public DynamoDBStreamsEventSourceBackgroundService(
         ILogger<DynamoDBStreamsEventSourceProcess> logger,
+        IAmazonDynamoDB ddbClient,
         IAmazonDynamoDBStreams streamsClient,
         DynamoDBStreamsEventSourceBackgroundServiceConfig config,
         ILambdaClient lambdaClient)
     {
         _logger = logger;
+        _ddbClient = ddbClient;
         _streamsClient = streamsClient;
         _config = config;
         _lambdaClient = lambdaClient;
@@ -87,13 +91,8 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             return _config.TableName;
         }
 
-        var response = await _streamsClient.ListStreamsAsync(new ListStreamsRequest
-        {
-            TableName = _config.TableName
-        }, stoppingToken);
-
-        // Use the first active stream for the table
-        return response.Streams.FirstOrDefault()?.StreamArn;
+        var response = await _ddbClient.DescribeTableAsync(_config.TableName, stoppingToken);
+        return response.Table.LatestStreamArn;
     }
 
     private async Task PollStream(string streamArn, CancellationToken stoppingToken)
