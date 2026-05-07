@@ -100,7 +100,20 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
     private async Task PollStream(string streamArn, CancellationToken stoppingToken)
     {
-        // Discover initial shards — use LATEST for open shards, track closed shards to skip later
+        // Shard polling strategy:
+        //
+        // Goal: Only deliver records to Lambda that were written AFTER the test tool started.
+        //
+        // 1. At startup, discover all shards. Open shards get a LATEST iterator (future records only).
+        //    Closed shards are recorded in a "closed at startup" set and never polled — they contain
+        //    only historical data from before the tool started.
+        //
+        // 2. Every 30 seconds (or immediately when a shard is exhausted), re-discover shards:
+        //    - Shards already being polled: leave their iterator alone (preserves position).
+        //    - Shards in the "closed at startup" set: skip (pre-existing historical data).
+        //    - Any other shard (new since startup): poll with TRIM_HORIZON to read all its records,
+        //      since the shard was created after the tool started and all its data is relevant.
+
         var closedAtStartup = new HashSet<string>();
         var shardIterators = await DiscoverInitialShards(streamArn, closedAtStartup, stoppingToken);
 
