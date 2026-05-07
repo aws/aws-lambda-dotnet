@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Amazon Connect package.</Description>
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.ConnectEvents</AssemblyTitle>
-    <Version>1.1.2</Version>
+    <Version>2.0.0</Version>
     <AssemblyName>Amazon.Lambda.ConnectEvents</AssemblyName>
     <PackageId>Amazon.Lambda.ConnectEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Connect</PackageTags>

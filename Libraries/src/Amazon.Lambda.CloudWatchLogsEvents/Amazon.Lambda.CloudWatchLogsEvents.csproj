@@ -4,7 +4,7 @@
     <Description>Amazon Lambda .NET Core support - CloudWatchLogsEvents package.</Description>
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.CloudWatchLogsEvents</AssemblyTitle>
-    <Version>2.2.2</Version>
+    <Version>3.0.0</Version>
     <AssemblyName>Amazon.Lambda.CloudWatchLogsEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchLogsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
