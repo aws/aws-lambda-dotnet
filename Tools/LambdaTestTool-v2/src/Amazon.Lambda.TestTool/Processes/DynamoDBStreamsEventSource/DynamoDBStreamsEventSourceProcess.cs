@@ -92,7 +92,6 @@ public class DynamoDBStreamsEventSourceProcess
                 FunctionName = config.FunctionName ?? LambdaRuntimeApi.DefaultFunctionName,
                 LambdaRuntimeApi = lambdaRuntimeApi,
                 TableName = tableName,
-                ShardIteratorType = config.ShardIteratorType ?? "TRIM_HORIZON",
                 PollingIntervalMs = config.PollingIntervalMs ?? DefaultPollingIntervalMs
             };
 
@@ -200,9 +199,6 @@ public class DynamoDBStreamsEventSourceProcess
                         break;
                     case "tablename":
                         config.TableName = keyValuePair[1].Trim();
-                        break;
-                    case "sharditeratortype":
-                        config.ShardIteratorType = keyValuePair[1].Trim();
                         break;
                     case "pollingintervalms":
                         if (!int.TryParse(keyValuePair[1].Trim(), out var pollingInterval))
