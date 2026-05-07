@@ -14,7 +14,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet10",
         "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
@@ -67,7 +67,6 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def",
         "Priority": 1,
         "Conditions": [
           {
@@ -86,7 +85,8 @@
               "Ref": "ALBHelloWorldALBTargetGroup"
             }
           }
-        ]
+        ],
+        "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def"
       }
     },
     "ALBWithOptions": {
@@ -100,7 +100,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet10",
         "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
@@ -159,9 +159,6 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "ListenerArn": {
-          "Ref": "MyALBListener"
-        },
         "Priority": 5,
         "Conditions": [
           {
@@ -196,7 +193,10 @@
               "Ref": "ALBWithOptionsALBTargetGroup"
             }
           }
-        ]
+        ],
+        "ListenerArn": {
+          "Ref": "MyALBListener"
+        }
       }
     }
   }

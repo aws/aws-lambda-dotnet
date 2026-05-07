@@ -36,7 +36,7 @@ namespace Amazon.Lambda.Core
             _loggingAction(message);
         }
 
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
 
         // The name of this field must not change or be readonly because Amazon.Lambda.RuntimeSupport will use reflection to replace the
         // value with an Action that directs the logging into its logging system.

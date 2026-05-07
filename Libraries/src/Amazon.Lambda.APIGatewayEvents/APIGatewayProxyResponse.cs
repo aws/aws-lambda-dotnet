@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System.Collections.Generic;
     using System.Runtime.Serialization;
@@ -14,9 +14,7 @@
         /// The HTTP status code for the request
         /// </summary>
         [DataMember(Name = "statusCode")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
         public int StatusCode { get; set; }
 
         /// <summary>
@@ -25,9 +23,7 @@
         /// before returning back the headers to the caller.
         /// </summary>
         [DataMember(Name = "headers")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("headers")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
@@ -36,27 +32,21 @@
         /// before returning back the headers to the caller.
         /// </summary>
         [DataMember(Name = "multiValueHeaders")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("multiValueHeaders")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("multiValueHeaders")]
         public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
         /// <summary>
         /// The response body
         /// </summary>
         [DataMember(Name = "body")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("body")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("body")]
         public string Body { get; set; }
 
         /// <summary>
         /// Flag indicating whether the body should be treated as a base64-encoded string
         /// </summary>
         [DataMember(Name = "isBase64Encoded")]
-#if NETCOREAPP3_1_OR_GREATER
-            [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
-#endif
+        [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
         public bool IsBase64Encoded { get; set; }
     }
 }

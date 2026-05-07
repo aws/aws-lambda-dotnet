@@ -29,7 +29,7 @@ public sealed class RunCommand(
     /// <summary>
     /// Task for the Lambda Runtime API.
     /// </summary>
-    public Task LambdRuntimeApiTask { get; private set; }
+    public Task? LambdRuntimeApiTask { get; private set; }
 
     /// <summary>
     /// The method responsible for executing the <see cref="RunCommand"/>.

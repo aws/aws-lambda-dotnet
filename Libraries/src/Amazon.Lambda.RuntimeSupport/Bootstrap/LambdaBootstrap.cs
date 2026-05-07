@@ -20,6 +20,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -194,16 +195,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>A Task that represents the operation.</returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
             Justification = "Unreferenced code paths are excluded when RuntimeFeature.IsDynamicCodeSupported is false.")]
-#endif
-
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-#if NET8_0_OR_GREATER
             AdjustMemorySettings();
-#endif
 
             if (_configuration.IsCallPreJit)
             {
@@ -224,7 +220,20 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 return;
             }
-#if NET8_0_OR_GREATER
+
+
+            try
+            {
+                // Initalize in Amazon.Lambda.Core the factory for creating the response stream and related logic for supporting response streaming.
+                ResponseStreamLambdaCoreInitializerIsolated.InitializeCore();
+            }
+            catch (TypeLoadException)
+            {
+                _logger.LogDebug("Failed to configure Amazon.Lambda.Core with factory to create response stream. This happens when the version of Amazon.Lambda.Core referenced by the Lambda function is out of date.");
+            }
+
+
+
             // Check if Initialization type is SnapStart, and invoke the snapshot restore logic.
             if (_configuration.IsInitTypeSnapstart)
             {
@@ -262,7 +271,6 @@ namespace Amazon.Lambda.RuntimeSupport
                     return;
                 };
             }
-#endif
 
             var processingTasksCount = Utils.DetermineProcessingTaskCount(_environmentVariables, Environment.ProcessorCount);
             _logger.LogInformation($"Using {processingTasksCount} tasks for invoke processing loops");
@@ -334,12 +342,12 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 WriteUnhandledExceptionToLog(exception);
                 await Client.ReportInitializationErrorAsync(exception);
-#if NET8_0_OR_GREATER
+
                 if (_configuration.IsInitTypeSnapstart)
                 {
                     System.Environment.Exit(1); // This needs to be non-zero for Lambda Sandbox to know that Runtime client encountered an exception
                 }
-#endif
+
                 throw;
             }
         }
@@ -349,6 +357,7 @@ namespace Amazon.Lambda.RuntimeSupport
             _logger.LogInformation("Starting InvokeOnceAsync");
 
             var invocation = await Client.GetNextInvocationAsync(cancellationToken);
+            var isMultiConcurrency = Utils.IsUsingMultiConcurrency(_environmentVariables);
 
             Func<Task> processingFunc = async () =>
             {
@@ -356,6 +365,17 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
+                }
+
+                // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
+                var runtimeApiClient = Client as RuntimeApiClient;
+                if (runtimeApiClient != null)
+                {
+                    ResponseStreamFactory.InitializeInvocation(
+                        invocation.LambdaContext.AwsRequestId,
+                        isMultiConcurrency,
+                        runtimeApiClient,
+                        cancellationToken);
                 }
 
                 try
@@ -372,15 +392,41 @@ namespace Amazon.Lambda.RuntimeSupport
                     catch (Exception exception)
                     {
                         WriteUnhandledExceptionToLog(exception);
+
+                        var responseStream = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        if (responseStream != null)
+                        {
+                            responseStream.ReportError(exception);
+                        }
+                        else
+                        {
                         await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+                    }
                     }
                     finally
                     {
                         _logger.LogInformation("Finished invoking handler");
                     }
 
-                    if (invokeSucceeded)
+                    var streamIfCreated = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                    if (streamIfCreated != null)
                     {
+                        streamIfCreated.MarkCompleted();
+
+                        // If streaming was started, await the HTTP send task to ensure it completes
+                        var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency);
+                        if (sendTask != null)
+                        {
+                            // Wait for the streaming response to finish sending before allowing the next invocation to be processed. This ensures that responses are sent in the order the invocations were received.
+                            await sendTask;
+                            sendTask.Result.Dispose();
+                        }
+
+                        streamIfCreated.Dispose();
+                    }
+                    else if (invokeSucceeded)
+                    {
+                        // No streaming — send buffered response
                         _logger.LogInformation("Starting sending response");
                         try
                         {
@@ -415,6 +461,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
+                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
                     invocation.Dispose();
                 }
             };
@@ -487,7 +534,6 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
 
-#if NET6_0_OR_GREATER
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
             var handler = new SocketsHttpHandler
             {
@@ -500,24 +546,15 @@ namespace Amazon.Lambda.RuntimeSupport
                 : $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
 
             var client = new HttpClient(handler);
-#else
-            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
-            var client = new HttpClient();
-#endif
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
             return client;
         }
 
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
-#if NET6_0_OR_GREATER
             Client.ConsoleLogger.FormattedWriteLine(Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(), exception, null);
-#else
-            Console.Error.WriteLine(exception);
-#endif
         }
 
-#if NET8_0_OR_GREATER
         /// <summary>
         /// The .NET runtime does not recognize the memory limits placed by Lambda via Lambda's cgroups. This method is run during startup to inform the
         /// .NET runtime the max memory configured for Lambda function. The max memory can be determined using the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable
@@ -561,7 +598,6 @@ namespace Amazon.Lambda.RuntimeSupport
                 _logger.LogError(ex, "Failed to communicate to the .NET runtime the amount of memory configured for the Lambda function via the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable.");
             }
         }
-#endif
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

@@ -145,6 +145,7 @@ public static class HttpRequestUtility
     /// <returns>A string representing a random request ID in the format used by API Gateway for HTTP APIs.</returns>
     /// <remarks>
     /// The generated ID is a 145character string consisting of lowercase letters and numbers, followed by an equals sign.
+    /// </remarks>
     public static string GenerateRequestId()
     {
         return $"{Guid.NewGuid().ToString("N").Substring(0, 8)}{Guid.NewGuid().ToString("N").Substring(0, 7)}=";

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var context = new TestLambdaContext();
 
-            var response = await this.InvokeApplicationLoadBalancerRequest(context, "values-get-all-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest(context, "values-get-all-alb-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
@@ -38,7 +38,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetQueryStringValue()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-request.json");
 
             Assert.Equal("Lewis, Meriwether", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
@@ -48,7 +48,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetNoQueryStringAlb()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-request.json");
 
             Assert.Equal(string.Empty, response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
@@ -58,14 +58,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetNoQueryStringAlbMv()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-mv-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-mv-request.json");
             Assert.Equal(string.Empty, response.Body);
         }
 
         [Fact]
         public async Task TestGetEncodingQueryStringAlb()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-encoding-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-encoding-request.json");
             var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
             Assert.Equal("http://www.gooogle.com", results.Url);
             Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
@@ -77,7 +77,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetEncodingQueryStringAlbMv()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-encoding-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-encoding-request.json");
             var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
             Assert.Equal("http://www.gooogle.com", results.Url);
             Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
@@ -89,7 +89,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetQueryStringValueMV()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-request.json");
 
             Assert.Equal("value1,value2", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
@@ -99,7 +99,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestPutWithBody()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-put-withbody-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-put-withbody-alb-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
@@ -110,7 +110,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestPutWithBodyMV()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-put-withbody-alb-mv-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-put-withbody-alb-mv-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
@@ -121,7 +121,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetSingleValue()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-single-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-single-alb-request.json");
 
             Assert.Equal("value=5", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
@@ -131,7 +131,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetBinaryContent()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-binary-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-get-binary-alb-request.json");
 
             Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
 
@@ -154,7 +154,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestPutBinaryContent()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("values-put-binary-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest("values-put-binary-alb-request.json");
 
             Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
 
@@ -167,7 +167,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestHealthCheck()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("alb-healthcheck.json");
+            var response = await InvokeApplicationLoadBalancerRequest("alb-healthcheck.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
@@ -178,14 +178,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestContentLengthWithContent()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("check-content-length-withcontent-alb.json");
+            var response = await InvokeApplicationLoadBalancerRequest("check-content-length-withcontent-alb.json");
             Assert.Equal("Request content length: 17", response.Body.Trim());
         }
 
         [Fact]
         public async Task TestContentLengthNoContent()
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest("check-content-length-nocontent-alb.json");
+            var response = await InvokeApplicationLoadBalancerRequest("check-content-length-nocontent-alb.json");
             Assert.Equal("Request content length: 0", response.Body.Trim());
         }
 
@@ -194,7 +194,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var context = new TestLambdaContext();
 
-            var response = await this.InvokeApplicationLoadBalancerRequest(context, "compressresponse-get-alb-request.json");
+            var response = await InvokeApplicationLoadBalancerRequest(context, "compressresponse-get-alb-request.json");
 
             Assert.Equal(200, response.StatusCode);
 
@@ -227,7 +227,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [InlineData("rawtarget-escaped-slash-in-path-alb.json", "/foo%2Fbar")]
         public async Task TestRawTarget(string requestFileName, string expectedRawTarget)
         {
-            var response = await this.InvokeApplicationLoadBalancerRequest(requestFileName);
+            var response = await InvokeApplicationLoadBalancerRequest(requestFileName);
 
             Assert.Equal(200, response.StatusCode);
 
@@ -243,7 +243,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(TestLambdaContext context, string fileName)
         {
             var lambdaFunction = new ALBLambdaFunction();
-            var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
+            var filePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<ApplicationLoadBalancerRequest>(requestStr);
             return await lambdaFunction.FunctionHandlerAsync(request, context);

@@ -29,16 +29,12 @@ namespace Amazon.Lambda.RuntimeSupport
         // the Main exists in the Lambda class library mode which will never be used for Native AOT.
 #pragma warning disable IL2123
 #if ExecutableOutputType
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(
             "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " +
             "The class library mode does not support Native AOT and trimming.")]
-#endif
         private static async Task Main(string[] args)
         {
-#if NET8_0_OR_GREATER
             AssemblyLoadContext.Default.Resolving += ResolveSnapshotRestoreAssembly;
-#endif
             if (args.Length == 0)
             {
                 throw new ArgumentException("The function handler was not provided via command line arguments.", nameof(args));
@@ -53,7 +49,6 @@ namespace Amazon.Lambda.RuntimeSupport
 #endif
 #pragma warning restore IL2123
 
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This code is only exercised in the class library programming model. Native AOT will not use this code path.")]
         private static System.Reflection.Assembly ResolveSnapshotRestoreAssembly(AssemblyLoadContext assemblyContext, System.Reflection.AssemblyName assemblyName)
         {
@@ -66,7 +61,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return null;
         }
-#endif
 
         /// <summary>
         /// Parse the command line args to create a <see cref="LambdaBootstrapOptions"/> object

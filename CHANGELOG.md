@@ -1,3 +1,77 @@
+## Release 2026-05-06
+
+### Amazon.Lambda.RuntimeSupport (2.0.0)
+* Remove .NET Standard 2.0, .NET Core 3.1 and .NET 6 build targets
+* (Preview) Add response streaming support
+### Amazon.Lambda.Annotations (2.0.0)
+* Update Build targets from .NET Standard 2.0, .NET 6 and .NET 8 to .NET Standard 2.0, .NET 8 and .NET 10
+### Amazon.Lambda.APIGatewayEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.ApplicationLoadBalancerEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.AppSyncEvents (2.0.0)
+* Update Build targets from .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.AspNetCoreServer.Hosting (2.0.0)
+* Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10
+* [Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10
+* [Preview] Add support for Lambda Response Streaming enabled by setting the EnableResponseStreaming property on the HostingOptions object passed into the AddAWSLambdaHosting method
+### Amazon.Lambda.AspNetCoreServer (10.0.0)
+* Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10
+* [Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10
+* [Preview] Add support for Lambda Response Streaming enabled by setting the EnableResponseStreaming property from the base class AbstractAspNetCoreFunction
+### Amazon.Lambda.CloudWatchEvents (5.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.CloudWatchLogsEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.CognitoEvents (5.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.ConfigEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.ConnectEvents (2.0.0)
+* Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.Core (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET 6 and .NET 8 to .NET Standard 2.0, .NET 8 and .NET 10
+* (Preview) Add response streaming support
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (3.0.0)
+* Update Build targets from .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.DynamoDBEvents (4.0.0)
+* Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.KafkaEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0 and .NET 8 to .NET Standard 2.0, .NET 8 and .NET 10
+### Amazon.Lambda.KinesisAnalyticsEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.KinesisEvents (4.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.KinesisFirehoseEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.LexEvents (4.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.LexV2Events (2.0.0)
+* Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.Logging.AspNetCore (5.0.0)
+* Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10
+* [Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10
+### Amazon.Lambda.MQEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.PowerShellHost (4.0.0)
+* Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10
+* Update Microsoft.PowerShell.SDK package dependency to version 7.4.14
+* Update System.Security.Cryptography.Xml package dependency to version 8.0.3
+### Amazon.Lambda.S3Events (4.0.0)
+* Update Build targets from .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.Serialization.Json (3.0.0)
+* Update Build targets from .NET Standard 2.0 to .NET 8 and .NET 10
+### Amazon.Lambda.Serialization.SystemTextJson (3.0.0)
+* Update Build targets from .NET Core 3.1, .NET 6 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.SimpleEmailEvents (4.0.0)
+* Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.SNSEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.SQSEvents (3.0.0)
+* Update Build targets from .NET Standard 2.0, .NET Core 3.1 and .NET 8 to .NET 8 and .NET 10
+### Amazon.Lambda.TestUtilities (4.0.0)
+* Update Build targets from .NET 6 and .NET 8 to .NET 8 and .NET 10
+
 ## Release 2026-04-29
 
 ### Amazon.Lambda.Annotations (1.15.2)

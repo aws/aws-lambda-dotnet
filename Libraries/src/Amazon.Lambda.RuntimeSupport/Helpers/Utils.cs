@@ -24,12 +24,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         public static bool IsRunningNativeAot()
         {
             // If dynamic code is not supported we are most likely running in an AOT environment. 
-#if NET6_0_OR_GREATER
             return !RuntimeFeature.IsDynamicCodeSupported;
-#else
-            return false;
-#endif
-
         }
 
         /// <summary>
@@ -73,10 +68,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// If the AWS .NET SDK is not found then null is returned.
         /// </summary>
         /// <returns></returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026",
             Justification = "Loading the type is okay to fail if the user is not using the AWS SDK for .NET or it is an old version. If they are using an SDK with the SDKTaskContext the SDK has the attributes to avoid the Set method being trimmed.")]
-#endif
         internal static Action<string> FindAWSSDKTraceIdSetter(IEnvironmentVariables environmentVariables)
         {
             if (!Utils.IsUsingMultiConcurrency(environmentVariables))

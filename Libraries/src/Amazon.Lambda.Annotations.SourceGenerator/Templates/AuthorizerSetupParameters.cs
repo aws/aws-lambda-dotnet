@@ -157,7 +157,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "eption)\r\n                {\r\n");
             
             #line 79 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
             #line hidden
@@ -244,7 +244,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "eption)\r\n                {\r\n");
             
             #line 101 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
             #line hidden
@@ -353,7 +353,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "eption)\r\n                {\r\n");
             
             #line 128 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
             #line hidden
@@ -455,7 +455,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "eption)\r\n                {\r\n");
             
             #line 152 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
             #line hidden

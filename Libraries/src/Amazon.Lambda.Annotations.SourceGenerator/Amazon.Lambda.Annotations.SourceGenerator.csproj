@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <!-- The .NET Standard 2.0 target is required for the source generator -->
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     
     <Authors>Amazon Web Services</Authors>
     <PackageTags>AWS Amazon Lambda</PackageTags>
@@ -20,7 +21,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
-    <Version>1.15.2</Version>
+    <Version>2.0.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
@@ -34,11 +35,11 @@
   <ItemGroup>
     <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
     <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
     <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
-    
+    <None Include="$(OutputPath)\net10.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net10.0" Visible="false" />
+    <None Include="$(OutputPath)\net10.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net10.0" Visible="false" />
+
     <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />

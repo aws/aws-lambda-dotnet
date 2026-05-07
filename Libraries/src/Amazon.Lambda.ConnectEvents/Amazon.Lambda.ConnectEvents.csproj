@@ -4,15 +4,15 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Amazon Connect package.</Description>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.ConnectEvents</AssemblyTitle>
-    <Version>1.1.2</Version>
+    <Version>2.0.0</Version>
     <AssemblyName>Amazon.Lambda.ConnectEvents</AssemblyName>
     <PackageId>Amazon.Lambda.ConnectEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Connect</PackageTags>
   </PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+	<PropertyGroup>
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

@@ -1,14 +1,10 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-#if NETSTANDARD_2_0
-    using Newtonsoft.Json.Linq;
-#else
     using System.Text.Json;
-#endif
 
 
     /// <summary>
@@ -26,7 +22,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("principalId", out value))
+                if (TryGetValue("principalId", out value))
                     return value.ToString();
                 return null;
             }
@@ -45,7 +41,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("stringKey", out value))
+                if (TryGetValue("stringKey", out value))
                     return value.ToString();
                 return null;
             }
@@ -64,7 +60,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("numKey", out value))
+                if (TryGetValue("numKey", out value))
                 {
                     int i;
                     if (int.TryParse(value?.ToString(), out i))
@@ -90,7 +86,7 @@
             get
             {
                 object value;
-                if (this.TryGetValue("boolKey", out value))
+                if (TryGetValue("boolKey", out value))
                 {
                     bool b;
                     if(bool.TryParse(value?.ToString(), out b))
@@ -120,19 +116,8 @@
                     _claims = new Dictionary<string, string>();
 
                     object value;
-                    if(this.TryGetValue("claims", out value))
+                    if(TryGetValue("claims", out value))
                     {
-#if NETSTANDARD_2_0
-                        JObject jsonClaims = value as JObject;
-                        if (jsonClaims != null)
-                        {
-                            foreach (JProperty property in jsonClaims.Properties())
-                            {
-                                _claims[property.Name] = property.Value?.ToString();
-
-                            }
-                        }
-#else
                         if(value is JsonElement jsonClaims)
                         {
                             foreach(JsonProperty property in jsonClaims.EnumerateObject())
@@ -143,7 +128,6 @@
                                 }
                             }
                         }
-#endif
                     }
                 }
 
@@ -151,7 +135,7 @@
             }
             set
             {
-                this._claims = value;
+                _claims = value;
             }
         }
     }

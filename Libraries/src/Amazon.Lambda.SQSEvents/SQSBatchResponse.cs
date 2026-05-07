@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.SQSEvents
@@ -30,9 +30,7 @@ namespace Amazon.Lambda.SQSEvents
         /// Gets or sets the message failures within the batch failures
         /// </summary>
         [DataMember(Name = "batchItemFailures")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("batchItemFailures")]
-#endif
         public List<BatchItemFailure> BatchItemFailures { get; set; }
 
         /// <summary>
@@ -45,9 +43,7 @@ namespace Amazon.Lambda.SQSEvents
             /// MessageId that failed processing
             /// </summary>
             [DataMember(Name = "itemIdentifier")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("itemIdentifier")]
-#endif
             public string ItemIdentifier { get; set; }
         }
     }

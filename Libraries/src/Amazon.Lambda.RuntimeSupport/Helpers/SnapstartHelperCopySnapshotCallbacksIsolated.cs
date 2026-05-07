@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
-#if NET8_0_OR_GREATER
     internal static class SnapstartHelperCopySnapshotCallbacksIsolated
     {
         internal static object CopySnapshotCallbacks()
@@ -17,5 +16,4 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             return restoreHooksRegistry;
         }
     }
-#endif
 }

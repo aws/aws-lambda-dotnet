@@ -1,14 +1,16 @@
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static async Task Run(string command, string arguments, string workingDirectory, CancellationToken cancellationToken = default)
+    public static async Task Run(string command, string arguments, string workingDirectory, ITestOutputHelper outputHelper, CancellationToken cancellationToken = default)
     {
         var processStartInfo = new ProcessStartInfo
         {
@@ -31,6 +33,7 @@ public static class CommandLineWrapper
                 tcs.TrySetResult(true);
             };
 
+            var output = new StringBuilder();
             try
             {
                 // Attach event handlers
@@ -39,6 +42,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
+                        output.AppendLine(args.Data);
                     }
                 };
 
@@ -47,6 +51,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
+                        output.AppendLine(args.Data);
                     }
                 };
 
@@ -78,12 +83,19 @@ public static class CommandLineWrapper
             catch (Exception ex)
             {
                 Console.WriteLine("Exception: " + ex);
+                Console.WriteLine(output.ToString());
                 if (!process.HasExited)
                 {
                     process.Kill();
                 }
             }
-            
+
+            if (process.ExitCode != 0 && outputHelper != null)
+            {
+                outputHelper.WriteLine($"Command '{command} {arguments}' failed.");
+                outputHelper.WriteLine(output.ToString());
+            }
+
             Assert.True(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
     }
