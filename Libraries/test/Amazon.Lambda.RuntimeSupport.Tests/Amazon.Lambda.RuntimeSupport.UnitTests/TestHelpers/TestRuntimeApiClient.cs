@@ -50,7 +50,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public string LastTraceId { get; private set; }
         public byte[] FunctionInput { get; set; }
-        public Stream LastOutputStream { get; private set; }
+        public Stream LastOutputStream { get; internal set; }
         public Exception LastRecordedException { get; private set; }
 
         public void VerifyOutput(string expectedOutput)
@@ -99,7 +99,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 LambdaContext = new LambdaContext(
                     new RuntimeApiHeaders(_headers),
                     new LambdaEnvironment(_environmentVariables),
-                    new TestDateTimeHelper(), new Helpers.SimpleLoggerWriter(_environmentVariables))
+                    new TestDateTimeHelper(), ConsoleLogger)
             });
         }
         

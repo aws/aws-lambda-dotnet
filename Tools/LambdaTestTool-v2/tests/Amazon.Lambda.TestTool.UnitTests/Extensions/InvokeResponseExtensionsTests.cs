@@ -124,6 +124,8 @@ public class InvokeResponseExtensionsTests
     /// This test ensures that our ToApiGatewayHttpApiV2ProxyResponse method
     /// correctly replicates this observed behavior, rather than the documented behavior.
     /// </remarks>
+    /// <param name="inputPayload"></param>
+    /// <param name="testName"></param>
     [Theory]
     [InlineData("Invalid_JSON_Partial_Object", "{\"name\": \"John Doe\", \"age\":", "{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
     [InlineData("Valid_JSON_Object", "{\"name\": \"John Doe\", \"age\": 30}", "{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode

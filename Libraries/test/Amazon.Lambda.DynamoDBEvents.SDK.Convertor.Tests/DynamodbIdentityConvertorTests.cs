@@ -6,7 +6,7 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests
         public void ConvertToSdkIdentity_NullLambdaIdentity_ReturnsNull()
         {
             // Arrange
-            DynamoDBEvent.Identity lambdaIdentity = null;
+            DynamoDBEvent.Identity? lambdaIdentity = null;
 
             // Act
             var result = lambdaIdentity.ConvertToSdkIdentity();

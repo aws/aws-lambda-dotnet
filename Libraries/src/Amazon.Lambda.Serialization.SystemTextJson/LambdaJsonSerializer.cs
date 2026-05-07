@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -23,10 +23,8 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// </para>
     /// </summary>    
     [Obsolete("This serializer is obsolete because it uses inconsistent name casing when serializing to JSON. Lambda functions should use the DefaultLambdaJsonSerializer type.")]
-#if NET8_0_OR_GREATER
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("LambdaJsonSerializer does not support trimming. " +
             "For trimmed Lambda functions SourceGeneratorLambdaJsonSerializer passing in JsonSerializerContext should be used instead.")]
-#endif    
     public class LambdaJsonSerializer : ILambdaSerializer
     {
         private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
@@ -58,7 +56,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
-                this._debug = true;
+                _debug = true;
             }            
         }
 
@@ -70,7 +68,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
             : this()
         {
-            customizer?.Invoke(this._options);
+            customizer?.Invoke(_options);
         }
 
         /// <summary>
@@ -82,7 +80,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
             : this(customizer)
         {
-            jsonWriterCustomizer?.Invoke(this.WriterOptions);
+            jsonWriterCustomizer?.Invoke(WriterOptions);
         }
 
         /// <summary>

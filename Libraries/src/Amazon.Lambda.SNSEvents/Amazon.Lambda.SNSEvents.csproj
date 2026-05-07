@@ -4,9 +4,9 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - SNSEvents package.</Description>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SNSEvents</AssemblyTitle>
-    <Version>2.1.2</Version>
+    <Version>3.0.0</Version>
     <AssemblyName>Amazon.Lambda.SNSEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SNSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

@@ -2,7 +2,13 @@
 
   <PropertyGroup>
     <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <!-- 
+		The .NET Standard 2.0 target is required for the source generator. The other targets
+		are required because there is code included in the project used at runtime but not
+		during source generation that require newer .NET targets. For example the JSON
+		serialization of HttpResults.
+	-->
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>false</IsPackable>
     
@@ -11,11 +17,11 @@
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     
-    <Version>1.15.2</Version>
+    <Version>2.0.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

@@ -14,6 +14,7 @@
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool-9.0</PackageId>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>    
 	<AssemblyName>Amazon.Lambda.TestTool.BlazorTester</AssemblyName>
 	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>	
 	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>

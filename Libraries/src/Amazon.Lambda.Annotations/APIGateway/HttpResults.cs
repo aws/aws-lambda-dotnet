@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using Amazon.Lambda.Core;
 
-#if NET6_0_OR_GREATER
+#if !NETSTANDARD2_0
 using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;

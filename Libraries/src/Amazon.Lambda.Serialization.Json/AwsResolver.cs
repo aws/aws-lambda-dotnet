@@ -78,11 +78,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("Data", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamDataConverter;
+                        property.Converter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("ApproximateArrivalTimestamp", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = DateTimeConverter;
+                        property.Converter = DateTimeConverter;
                     }
                 }
             }
@@ -95,7 +95,7 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("ApproximateCreationDateTime", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = DateTimeConverter;
+                        property.Converter = DateTimeConverter;
                     }
                 }
             }
@@ -108,11 +108,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("B", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamDataConverter;
+                        property.Converter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("BS", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamListDataConverter;
+                        property.Converter = StreamListDataConverter;
                     }
                 }
             }
@@ -122,11 +122,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("BinaryValue", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamDataConverter;
+                        property.Converter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("BinaryListValues", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamListDataConverter;
+                        property.Converter = StreamListDataConverter;
                     }
                 }
             }
@@ -149,7 +149,7 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("Value", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = StreamDataConverter;
+                        property.Converter = StreamDataConverter;
                     }
                 }
             }

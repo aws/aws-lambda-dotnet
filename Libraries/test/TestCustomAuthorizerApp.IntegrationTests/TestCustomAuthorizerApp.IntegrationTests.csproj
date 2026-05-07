@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <OutputType>Library</OutputType>
@@ -9,11 +9,11 @@
 
     <ItemGroup>
         <!-- AWSSDK.SecurityToken is needed at runtime for environments which uses assume-role operation for credentials -->
-        <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.99" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="xunit" Version="2.4.1" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+        <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>

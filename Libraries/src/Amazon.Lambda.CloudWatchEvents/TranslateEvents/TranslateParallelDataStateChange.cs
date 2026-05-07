@@ -4,7 +4,7 @@ namespace Amazon.Lambda.CloudWatchEvents.TranslateEvents
 {
     /// <summary>
     /// This class represents the details of a Translate Parallel Data State Change 
-    //  for CreateParallelData and UpdateParallelData events sent via EventBridge.
+    ///  for CreateParallelData and UpdateParallelData events sent via EventBridge.
     /// For more see - https://docs.aws.amazon.com/translate/latest/dg/monitoring-with-eventbridge.html
     /// </summary>
     public class TranslateParallelDataStateChange

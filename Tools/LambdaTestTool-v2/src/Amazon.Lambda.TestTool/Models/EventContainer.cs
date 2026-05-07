@@ -68,7 +68,7 @@ public class EventContainer : IDisposable
         _dataStore.RaiseStateChanged();
     }
 
-    public void ReportErrorResponse(string errorType, string errorBody)
+    public void ReportErrorResponse(string errorType, string? errorBody)
     {
         LastUpdated = DateTime.Now;
         ErrorType = errorType;

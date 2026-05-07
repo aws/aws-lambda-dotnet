@@ -47,7 +47,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var formatter = new JsonLogMessageFormatter();
 
             var properties = formatter.ParseProperties("{hello} before { after");
-            Assert.Equal(1, properties.Count);
+            Assert.Single(properties);
 
             Assert.Equal("hello", properties[0].Name);
             Assert.Equal(MessageProperty.Directive.Default, properties[0].FormatDirective);

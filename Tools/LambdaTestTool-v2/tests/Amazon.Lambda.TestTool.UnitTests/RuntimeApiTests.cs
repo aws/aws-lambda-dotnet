@@ -19,7 +19,7 @@ using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
-public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
+public class RuntimeApiTests
 {
 #if DEBUG
     [Fact]

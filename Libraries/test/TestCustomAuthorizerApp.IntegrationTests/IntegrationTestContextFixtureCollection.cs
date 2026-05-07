@@ -2,7 +2,7 @@ using Xunit;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
-[CollectionDefinition("Integration Tests")]
+[CollectionDefinition("Integration Tests", DisableParallelization = true)]
 public class IntegrationTestContextFixtureCollection : ICollectionFixture<IntegrationTestContextFixture>
 {
     // This class has no code, and is never created. Its purpose is simply
