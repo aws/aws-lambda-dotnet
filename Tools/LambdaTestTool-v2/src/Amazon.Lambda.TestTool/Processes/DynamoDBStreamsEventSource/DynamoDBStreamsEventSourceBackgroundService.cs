@@ -135,7 +135,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             }
 
             var activeCount = tasks.Count;
-            _logger.LogInformation("Polling {activeShardCount} active shard(s)", activeCount);
+            _logger.LogDebug("Polling {activeShardCount} active shard(s)", activeCount);
 
             if (activeCount == 0)
             {
@@ -161,7 +161,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                 if (response.NextShardIterator == null)
                 {
                     _logger.LogInformation("Shard {shardId} exhausted (closed), records in final batch: {count}",
-                        shardId, response.Records.Count);
+                        shardId, response.Records?.Count);
                     shardIterators.Remove(shardId);
                     shardExhausted = true;
                 }
@@ -170,7 +170,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
                     shardIterators[shardId] = response.NextShardIterator;
                 }
 
-                if (response.Records.Count == 0)
+                if (response.Records == null || response.Records.Count == 0)
                     continue;
 
                 hasRecords = true;
@@ -254,6 +254,8 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             _logger.LogInformation("Got LATEST iterator for startup shard {shardId}", shard.ShardId);
             iterators[shard.ShardId] = iteratorResponse.ShardIterator;
         }
+        _logger.LogInformation("Initial shard discovery complete: {openCount} open shard(s), {closedCount} closed shard(s) at startup",
+            iterators.Count, closedAtStartup.Count);
 
         return iterators;
     }
@@ -294,7 +296,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
     private async Task<List<Shard>> GetAllShards(string streamArn, CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Discovering shards for stream {streamArn}", streamArn);
+        _logger.LogDebug("Discovering shards for stream {streamArn}", streamArn);
         var shards = new List<Shard>();
         string? lastEvaluatedShardId = null;
 
@@ -310,7 +312,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
             lastEvaluatedShardId = describeResponse.StreamDescription.LastEvaluatedShardId;
         } while (lastEvaluatedShardId != null);
 
-        _logger.LogInformation("Discovered {shardCount} shard(s)", shards.Count);
+        _logger.LogDebug("There were {shardCount} shard(s) returned from DescribeStream", shards.Count);
         return shards;
     }
 
