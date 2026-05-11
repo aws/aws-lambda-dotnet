@@ -158,7 +158,7 @@ public class Function
     {
         // Step 1: Validate the order (checkpointed automatically)
         var validation = await context.StepAsync(
-            async () => await ValidateOrder(input.OrderId),
+            async (step) => await ValidateOrder(input.OrderId),
             name: "validate_order");
 
         if (!validation.IsValid)
@@ -169,7 +169,7 @@ public class Function
 
         // Step 3: Process the order
         var result = await context.StepAsync(
-            async () => await ProcessOrder(input.OrderId),
+            async (step) => await ProcessOrder(input.OrderId),
             name: "process_order");
 
         return new OrderResult { Status = "approved", OrderId = result.OrderId };
@@ -182,6 +182,7 @@ public class Function
 
 Things to notice:
 - `[LambdaFunction]` + `[DurableExecution]` triggers source generation, so you don't wire up the handler yourself
+- Each step function receives an `IStepContext` with a step-scoped logger, attempt number, and operation ID
 - Each `StepAsync` call checkpoints its result automatically
 - `WaitAsync` suspends the function -- Lambda is not running (or billing you) during the wait
 - On replay, completed steps return their cached result without re-executing
@@ -208,7 +209,7 @@ public class Function
     private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
         var validation = await context.StepAsync(
-            async () => await ValidateOrder(input.OrderId),
+            async (step) => await ValidateOrder(input.OrderId),
             name: "validate_order");
 
         if (!validation.IsValid)
@@ -217,7 +218,7 @@ public class Function
         await context.WaitAsync(TimeSpan.FromSeconds(30), name: "processing_delay");
 
         var result = await context.StepAsync(
-            async () => await ProcessOrder(input.OrderId),
+            async (step) => await ProcessOrder(input.OrderId),
             name: "process_order");
 
         return new OrderResult { Status = "approved", OrderId = result.OrderId };
@@ -244,9 +245,46 @@ public Task<DurableExecutionInvocationOutput> FunctionHandler(
 
 private async Task MyWorkflow(OrderEvent input, IDurableContext context)
 {
-    await context.StepAsync(async () => await SendNotification(input.UserId), name: "notify");
+    await context.StepAsync(async (step) => await SendNotification(input.UserId), name: "notify");
     await context.WaitAsync(TimeSpan.FromHours(1), name: "cooldown");
-    await context.StepAsync(async () => await Cleanup(input.UserId), name: "cleanup");
+    await context.StepAsync(async (step) => await Cleanup(input.UserId), name: "cleanup");
+}
+```
+
+For **NativeAOT** deployments, pass a `JsonSerializerContext` so the SDK can serialize/deserialize your input and output types without reflection:
+
+```csharp
+[JsonSerializable(typeof(OrderEvent))]
+[JsonSerializable(typeof(OrderResult))]
+internal partial class MyJsonContext : JsonSerializerContext { }
+
+public class Function
+{
+    public Task<DurableExecutionInvocationOutput> FunctionHandler(
+        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
+        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow, invocationInput, context, MyJsonContext.Default);
+
+    private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
+    {
+        // ...
+    }
+}
+```
+
+To inject a custom `IAmazonLambda` client (e.g., for VPC endpoints or unit testing), use the overload that accepts one:
+
+```csharp
+public class Function
+{
+    private readonly IAmazonLambda _lambdaClient;
+
+    public Function(IAmazonLambda lambdaClient) => _lambdaClient = lambdaClient;
+
+    public Task<DurableExecutionInvocationOutput> FunctionHandler(
+        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
+        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow, invocationInput, context, _lambdaClient);
 }
 ```
 
@@ -422,7 +460,7 @@ var approval = await context.WaitForCallbackAsync<ApprovalResult>(
 
 if (approval.Approved)
 {
-    await context.StepAsync(async () => await ExecutePlan(), name: "execute");
+    await context.StepAsync(async (step) => await ExecutePlan(), name: "execute");
 }
 ```
 
@@ -486,9 +524,9 @@ Run independent operations concurrently. The JS SDK uses a `DurablePromise` patt
 var results = await context.ParallelAsync(
     new Func<IDurableContext, Task<object>>[]
     {
-        async (ctx) => await ctx.StepAsync(async () => await FetchUserData(userId), name: "fetch_user"),
-        async (ctx) => await ctx.StepAsync(async () => await FetchOrderHistory(userId), name: "fetch_orders"),
-        async (ctx) => await ctx.StepAsync(async () => await FetchPreferences(userId), name: "fetch_prefs"),
+        async (ctx) => await ctx.StepAsync(async (step) => await FetchUserData(userId), name: "fetch_user"),
+        async (ctx) => await ctx.StepAsync(async (step) => await FetchOrderHistory(userId), name: "fetch_orders"),
+        async (ctx) => await ctx.StepAsync(async (step) => await FetchPreferences(userId), name: "fetch_prefs"),
     },
     name: "parallel_fetch",
     config: new ParallelConfig
@@ -512,9 +550,9 @@ For better observability, you can name individual branches (matching the JS SDK 
 var results = await context.ParallelAsync(
     new NamedBranch<object>[]
     {
-        new("fetch_user", async (ctx) => await ctx.StepAsync(async () => await FetchUserData(userId))),
-        new("fetch_orders", async (ctx) => await ctx.StepAsync(async () => await FetchOrderHistory(userId))),
-        new("fetch_prefs", async (ctx) => await ctx.StepAsync(async () => await FetchPreferences(userId))),
+        new("fetch_user", async (ctx) => await ctx.StepAsync(async (step) => await FetchUserData(userId))),
+        new("fetch_orders", async (ctx) => await ctx.StepAsync(async (step) => await FetchOrderHistory(userId))),
+        new("fetch_prefs", async (ctx) => await ctx.StepAsync(async (step) => await FetchPreferences(userId))),
     },
     name: "parallel_fetch");
 
@@ -884,7 +922,7 @@ When user code hits a pending wait or callback:
 2. Calls `terminationManager.Terminate(WaitScheduled)`
 3. Awaits a new never-completing `TaskCompletionSource` (blocks itself permanently)
 4. `Task.WhenAny` sees the termination task resolved and picks it as the winner
-5. `RunAsync` returns PENDING; Lambda terminates; the abandoned user task is GC'd
+5. `RunAsync` returns PENDING; the abandoned user task is left to be GC'd; Lambda terminates
 
 ### Lifecycle and cleanup
 
@@ -906,21 +944,95 @@ Static helper for the non-Annotations handler path. Wraps a workflow function, h
 /// </summary>
 public static class DurableFunction
 {
+    // ── Reflection-based overloads (JIT only) ──────────────────────────
+
     /// <summary>
     /// Wrap a workflow that takes typed input and returns typed output.
+    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
+    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext);
 
     /// <summary>
-    /// Wrap a workflow that takes typed input and returns no value.
+    /// Wrap a workflow (typed input + output) with explicit Lambda client.
+    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
+    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient);
+
+    /// <summary>
+    /// Wrap a void workflow (typed input, no output).
+    /// Reflection-based JSON — not AOT-safe.
+    /// </summary>
+    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
         Func<TInput, IDurableContext, Task> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext);
+
+    /// <summary>
+    /// Wrap a void workflow with explicit Lambda client.
+    /// Reflection-based JSON — not AOT-safe.
+    /// </summary>
+    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient);
+
+    // ── AOT-safe overloads (caller supplies JsonSerializerContext) ──────
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output). AOT-safe — requires
+    /// [JsonSerializable(typeof(TInput))] and [JsonSerializable(typeof(TOutput))]
+    /// on the supplied jsonContext.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        JsonSerializerContext jsonContext);
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output) with explicit Lambda client. AOT-safe.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient,
+        JsonSerializerContext jsonContext);
+
+    /// <summary>
+    /// Wrap a void workflow (typed input, no output). AOT-safe.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        JsonSerializerContext jsonContext);
+
+    /// <summary>
+    /// Wrap a void workflow with explicit Lambda client. AOT-safe.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient,
+        JsonSerializerContext jsonContext);
 }
 ```
 
@@ -948,11 +1060,18 @@ public interface IDurableContext
     /// </summary>
     ILambdaContext LambdaContext { get; }
 
+    // ── StepAsync overloads ────────────────────────────────────────────
+    //  The user's function always receives IStepContext, matching the
+    //  Python and JS SDKs (Java has no-context overloads but deprecated
+    //  them — see https://github.com/aws/aws-durable-execution-sdk-java).
+
     /// <summary>
-    /// Execute a step with automatic checkpointing.
+    /// Execute a step with automatic checkpointing using reflection-based JSON.
     /// The IStepContext provides a step-scoped logger with operation metadata
     /// (step name, attempt number, operation ID) and the current attempt number.
     /// </summary>
+    [RequiresUnreferencedCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
+    [RequiresDynamicCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
     Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
         string? name = null,
@@ -960,10 +1079,21 @@ public interface IDurableContext
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute a step that returns no value.
+    /// Execute a step that returns no value. AOT-safe (no payload to serialize).
     /// </summary>
     Task StepAsync(
         Func<IStepContext, Task> func,
+        string? name = null,
+        StepConfig? config = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Execute a step with AOT-safe checkpoint serialization. The supplied
+    /// serializer is used in place of reflection-based JSON.
+    /// </summary>
+    Task<T> StepAsync<T>(
+        Func<IStepContext, Task<T>> func,
+        ICheckpointSerializer<T> serializer,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -1087,7 +1217,9 @@ public record DurableBranch<T>(string Name, Func<IDurableContext, Task<T>> Func)
 
 #### CancellationToken behavior
 
-All methods accept a `CancellationToken` that follows standard .NET semantics: cancellation throws `OperationCanceledException` and the execution fails. Cancellation does **not** trigger suspension — those are separate concepts. The durable execution service handles timeout scenarios automatically: if Lambda terminates mid-execution, the next invocation simply replays from the last checkpoint. For advanced users who want to suspend gracefully before timeout, check `context.LambdaContext.RemainingTime` and return early.
+All methods accept a per-call `CancellationToken` that follows standard .NET semantics: cancellation throws `OperationCanceledException` and the execution fails. Cancellation does **not** trigger suspension — those are separate concepts.
+
+The durable execution service handles timeout scenarios automatically: if Lambda terminates mid-execution, the next invocation simply replays from the last checkpoint. For advanced users who want to suspend gracefully before timeout, check `context.LambdaContext.RemainingTime` and return early.
 
 ### Configuration Types
 
@@ -1112,10 +1244,11 @@ public class StepConfig
     /// </summary>
     public StepSemantics Semantics { get; set; } = StepSemantics.AtLeastOncePerRetry;
 
-    /// <summary>
-    /// Custom serializer for the step result. Default is System.Text.Json.
-    /// </summary>
-    public ICheckpointSerializer? Serializer { get; set; }
+    // Note: there is no Serializer property here. Custom serializers are
+    // supplied via the AOT-safe StepAsync(..., ICheckpointSerializer<T>, ...)
+    // overload, which is type-safe (ICheckpointSerializer<T> instead of the
+    // non-generic marker) and gives one obvious way to opt into custom or
+    // AOT-friendly serialization.
 }
 
 public enum StepSemantics
@@ -1543,16 +1676,17 @@ public interface ICheckpointSerializer<T>
 public record SerializationContext(string OperationId, string DurableExecutionArn);
 ```
 
-Usage:
+Usage — pass the serializer to the AOT-safe `StepAsync` overload directly.
+This is the only way to override the default reflection-based JSON path; it's
+intentional that there's no `StepConfig.Serializer` knob, so you have one
+obvious place to opt in (and the type is `ICheckpointSerializer<T>`, not the
+non-generic marker, so the compiler catches a mismatched `T`):
 
 ```csharp
 var result = await context.StepAsync(
     async () => await GetLargeData(),
-    name: "get_data",
-    config: new StepConfig
-    {
-        Serializer = new CompressedJsonSerializer<LargeData>()
-    });
+    new CompressedJsonSerializer<LargeData>(),
+    name: "get_data");
 ```
 
 ### Class library vs. executable output
@@ -1579,16 +1713,34 @@ Both approaches produce a self-contained executable that the Lambda custom runti
 
 ### NativeAOT compatibility
 
-The SDK is AOT-friendly but does not require AOT. The default JSON serialization uses reflection (standard `System.Text.Json` behavior), which works in JIT mode. For NativeAOT deployments, provide a `JsonSerializerContext` via the `ICheckpointSerializer<T>` interface — this avoids all runtime reflection and is fully trim-safe. The SDK itself avoids `Activator.CreateInstance`, `Type.GetType()`, and other reflection patterns, and uses `[DynamicallyAccessedMembers]` trimming annotations where needed.
+The SDK is AOT-friendly but does not require AOT. The default JSON serialization uses reflection (standard `System.Text.Json` behavior), which works in JIT mode. For NativeAOT deployments, AOT safety is addressed at two levels — **at each level there are two overload families: a reflection-based one annotated with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` and an AOT-safe one that requires a serializer parameter**. The trimmer warns at the call site when reflection overloads are used in AOT/trimmed builds.
+
+1. **Entry point (`DurableFunction.WrapAsync`)** — the AOT-safe overload takes a `JsonSerializerContext` parameter that includes type info for your `TInput` and `TOutput` types.
+
+2. **Step checkpoints (`IDurableContext.StepAsync`)** — the AOT-safe overload takes an `ICheckpointSerializer<T>` directly as a parameter. Internally, the reflection overload constructs `ReflectionJsonCheckpointSerializer<T>` (whose constructor carries `[RequiresUnreferencedCode]`); the AOT-safe overload uses the user-supplied serializer and never touches reflection. The void `StepAsync` overloads are AOT-safe by default — they use a built-in null-only serializer since they have no payload.
+
+The SDK itself avoids `Activator.CreateInstance`, `Type.GetType()`, and other reflection patterns, and uses `[DynamicallyAccessedMembers]` trimming annotations where needed.
 
 ```csharp
-// Default: works with reflection (JIT mode)
-var result = await context.StepAsync<Order>(async () => await GetOrder());
+// Default: works with reflection (JIT mode); flagged for AOT.
+var result = await context.StepAsync<Order>(async (step) => await GetOrder());
 
-// AOT mode: user provides serialization context
+// AOT mode — entry point: pass JsonSerializerContext to WrapAsync.
+[JsonSerializable(typeof(OrderEvent))]
+[JsonSerializable(typeof(OrderResult))]
+[JsonSerializable(typeof(Order))]
+internal partial class MyJsonContext : JsonSerializerContext { }
+
+public Task<DurableExecutionInvocationOutput> FunctionHandler(
+    DurableExecutionInvocationInput invocationInput, ILambdaContext context)
+    => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+        MyWorkflow, invocationInput, context, MyJsonContext.Default);
+
+// AOT mode — step checkpoint: pass ICheckpointSerializer<T> to StepAsync directly.
 var result = await context.StepAsync(
     async () => await GetOrder(),
-    config: new StepConfig { Serializer = new JsonCheckpointSerializer<Order>(MyJsonContext.Default.Order) });
+    new JsonCheckpointSerializer<Order>(MyJsonContext.Default.Order),
+    name: "get_order");
 ```
 
 ### Large payload and checkpoint overflow
@@ -1701,7 +1853,7 @@ public class Functions
 }
 ```
 
-When no `LambdaClientFactory` is specified, the generated code creates a default `AmazonLambdaClient`. For the manual handler path, pass the client directly to `DurableExecutionHandler.RunAsync`.
+When no `LambdaClientFactory` is specified, the generated code creates a default `AmazonLambdaClient`. For the manual handler path (`DurableFunction.WrapAsync`), pass the client directly via the `IAmazonLambda lambdaClient` overload.
 
 > **Dependency boundaries:** `Amazon.Lambda.Annotations` has **no dependency** on the AWS SDK or on `Amazon.Lambda.DurableExecution`. The Annotations source generator references durable execution types by fully-qualified name strings only — it never takes a compile-time dependency on the durable package. The `[DurableExecution]` attribute is defined in `Amazon.Lambda.DurableExecution`, and the generated code resolves against the user's project references. There is only one source generator (Annotations) — no coordination between multiple generators is needed.
 
@@ -1909,11 +2061,11 @@ These analyzers run at compile time in the IDE (IntelliSense squiggles) and duri
 
 ## Cross-SDK API comparison
 
-All three SDKs expose the same core operations. The differences are naming conventions, parameter ordering, and concurrency model.
+All four SDKs expose the same core operations. The differences are naming conventions, parameter ordering, and concurrency model.
 
-| Operation | .NET | Python | JavaScript |
-|-----------|------|--------|------------|
-| Step | `context.StepAsync(func, name?, config?)` | `context.step(func, name?, config?)` | `context.step(name?, fn, config?)` → `DurablePromise<T>` |
+| Operation | .NET | Python | JavaScript | Java |
+|-----------|------|--------|------------|------|
+| Step | `context.StepAsync(func, name?, config?)` | `context.step(func, name?, config?)` | `context.step(name?, fn, config?)` → `DurablePromise<T>` | `context.step(name, type, func, config?)` (blocking) / `context.stepAsync(...)` → `DurableFuture<T>` |
 | Wait | `context.WaitAsync(duration, name?)` | `context.wait(duration, name?)` | `context.wait(name?, duration)` → `DurablePromise<void>` |
 | Create callback | `context.CreateCallbackAsync<T>(name?, config?)` | `context.create_callback(name?, config?)` | `context.createCallback(name?, config?)` |
 | Wait for callback | `context.WaitForCallbackAsync<T>(submitter, name?, config?)` | `context.wait_for_callback(submitter, name?, config?)` | `context.waitForCallback(name?, submitter, config?)` |
@@ -1943,11 +2095,13 @@ All three SDKs expose the same core operations. The differences are naming conve
 
 **Key differences:**
 
-- **Concurrency model:** JS returns `DurablePromise<T>` (lazy, deferred until awaited). Python is synchronous (blocks the thread). .NET returns `Task<T>` (standard async/await). Note: `Task.WhenAll` works with durable operations but `ParallelAsync`/`MapAsync` are preferred for completion policies and observability.
-- **Name parameter position:** JS puts `name` first; Python and .NET put it after the function/duration.
-- **Parallel semantics in JS:** JS uses `context.promise.all/any/race/allSettled` to combine DurablePromises. .NET and Python use `CompletionConfig` on the `Parallel`/`Map` operations instead.
+- **Concurrency model:** JS returns `DurablePromise<T>` (lazy, deferred until awaited). Python is synchronous (blocks the thread). Java exposes both `step` (blocking) and `stepAsync` (returns `DurableFuture<T>`). .NET returns `Task<T>` (standard async/await). Note: `Task.WhenAll` works with durable operations but `ParallelAsync`/`MapAsync` are preferred for completion policies and observability.
+- **Why .NET ships only the async form:** Java's two-API split exists because Java has no language-level `await` — `step` is the simple blocking ergonomic, `stepAsync` is the composable form. In .NET, `Task<T>` is *already* both: `await context.StepAsync(...)` reads as sequential code, and `Task.WhenAll(...)` composes concurrently. A `Step` (blocking, returns `T`) overload would do nothing except call `.GetAwaiter().GetResult()` on the async version, which is also a Lambda-thread anti-pattern (deadlock-prone, blocks a thread the runtime needs). So .NET intentionally has one shape — `*Async` — matching the rest of `IAmazonLambda` and the broader .NET async convention. Python is single-shape for the same reason in reverse: no async runtime in scope, so blocking is the only ergonomic shape.
+- **Step function signature:** Python and JS only expose `Func<IStepContext, ...>` — the user always receives a step context. Java has both `Function<StepContext, T>` and `Supplier<T>` overloads, but the `Supplier<T>` ones are deprecated (*"use the variants accepting StepContext instead"*). .NET follows Python/JS: `IStepContext` is always passed.
+- **Name parameter position:** JS puts `name` first; Python, Java, and .NET put it after the function/duration.
+- **Parallel semantics in JS:** JS uses `context.promise.all/any/race/allSettled` to combine DurablePromises. .NET, Python, and Java use `CompletionConfig` on the `Parallel`/`Map` operations instead.
 - **.NET-only:** `CancellationToken` on every method (standard .NET pattern).
-- **Jitter default:** All three SDKs default to full jitter on retry strategies.
+- **Jitter default:** All four SDKs default to full jitter on retry strategies.
 
 ---
 

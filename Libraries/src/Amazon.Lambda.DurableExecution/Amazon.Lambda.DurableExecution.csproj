@@ -14,6 +14,8 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

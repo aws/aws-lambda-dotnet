@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);NU1903;CS1591</NoWarn>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="TestFunction\**" />
+    <None Remove="TestFunction\**" />
+    <Compile Remove="TestFunctions\**" />
+    <None Remove="TestFunctions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.22" />
+    <PackageReference Include="AWSSDK.ECR" Version="4.0.7" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+  </ItemGroup>
+
+</Project>

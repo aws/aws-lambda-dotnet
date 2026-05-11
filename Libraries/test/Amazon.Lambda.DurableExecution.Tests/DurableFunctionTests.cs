@@ -1,0 +1,583 @@
+using System.Net;
+using System.Text.Json;
+using Amazon.Lambda;
+using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Internal;
+using Amazon.Lambda.TestUtilities;
+using Amazon.Runtime;
+using Xunit;
+using Operation = Amazon.Lambda.DurableExecution.Internal.Operation;
+using StepDetails = Amazon.Lambda.DurableExecution.Internal.StepDetails;
+using WaitDetails = Amazon.Lambda.DurableExecution.Internal.WaitDetails;
+using ExecutionDetails = Amazon.Lambda.DurableExecution.Internal.ExecutionDetails;
+
+namespace Amazon.Lambda.DurableExecution.Tests;
+
+public class DurableFunctionTests
+{
+    /// <summary>Reproduces the Id that <see cref="OperationIdGenerator"/> emits for the n-th root-level operation.</summary>
+    private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
+
+    private readonly IAmazonLambda _mockClient = new MockLambdaClient();
+
+    [Fact]
+    public async Task WrapAsync_FreshExecution_StepThenWait_ReturnsPending()
+    {
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:order-123",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-123\"}" }
+                    }
+                }
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+    }
+
+    [Fact]
+    public async Task WrapAsync_ReplayWithElapsedWait_ReturnsSucceeded()
+    {
+        var pastExpirationMs = DateTimeOffset.UtcNow.AddSeconds(-5).ToUnixTimeMilliseconds();
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:order-123",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-123\"}" }
+                    },
+                    new()
+                    {
+                        Id = IdAt(1),
+                        Type = OperationTypes.Step,
+                        Status = OperationStatuses.Succeeded,
+                        StepDetails = new StepDetails { Result = "{\"IsValid\":true}" }
+                    },
+                    new()
+                    {
+                        Id = IdAt(2),
+                        Type = OperationTypes.Wait,
+                        Status = OperationStatuses.Pending,
+                        WaitDetails = new WaitDetails { ScheduledEndTimestamp = pastExpirationMs }
+                    }
+                }
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.NotNull(output.Result);
+        var result = JsonSerializer.Deserialize<OrderResult>(output.Result!);
+        Assert.Equal("approved", result!.Status);
+    }
+
+    [Fact]
+    public async Task WrapAsync_WorkflowThrows_ReturnsFailed()
+    {
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:fail-test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"bad-order\"}" }
+                    }
+                }
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (evt, ctx) => throw new InvalidOperationException("workflow error"),
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Failed, output.Status);
+        Assert.NotNull(output.Error);
+        Assert.Equal("workflow error", output.Error!.ErrorMessage);
+        Assert.Contains("InvalidOperationException", output.Error.ErrorType!);
+    }
+
+    [Fact]
+    public async Task WrapAsync_VoidWorkflow_ReturnSucceeded()
+    {
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:void-test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-1\"}" }
+                    }
+                }
+            }
+        };
+
+        var executed = false;
+        var output = await DurableFunction.WrapAsync<OrderEvent>(
+            async (evt, ctx) =>
+            {
+                await ctx.StepAsync(async (_) => { await Task.CompletedTask; executed = true; }, name: "do_work");
+            },
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.True(executed);
+    }
+
+    [Fact]
+    public async Task WrapAsync_CheckpointsAreSentToService()
+    {
+        var mockClient = new MockLambdaClient();
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:checkpoint-test",
+            CheckpointToken = "initial-token",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-1\"}" }
+                    }
+                }
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            new TestLambdaContext(),
+            mockClient);
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Equal(2, mockClient.CheckpointCalls.Count);
+
+        // First flush: step SUCCEED (the user awaits StepAsync, which awaits
+        // its SUCCEED enqueue, which blocks until the batcher flushes it).
+        var firstCall = mockClient.CheckpointCalls[0];
+        Assert.Equal("arn:aws:lambda:us-east-1:123:durable-execution:checkpoint-test", firstCall.DurableExecutionArn);
+        Assert.Equal("initial-token", firstCall.CheckpointToken);
+        Assert.Single(firstCall.Updates);
+        var stepUpdate = firstCall.Updates[0];
+        Assert.Equal("STEP", stepUpdate.Type);
+        Assert.Equal("SUCCEED", stepUpdate.Action);
+        Assert.Equal("validate", stepUpdate.Name);
+        Assert.NotNull(stepUpdate.Payload);
+
+        // Second flush: wait START (blocks until the service has the timer
+        // recorded before WaitAsync suspends).
+        var secondCall = mockClient.CheckpointCalls[1];
+        Assert.Single(secondCall.Updates);
+        var waitUpdate = secondCall.Updates[0];
+        Assert.Equal("WAIT", waitUpdate.Type);
+        Assert.Equal("START", waitUpdate.Action);
+        Assert.Equal("delay", waitUpdate.Name);
+        Assert.NotNull(waitUpdate.WaitOptions);
+        Assert.Equal(30, waitUpdate.WaitOptions.WaitSeconds);
+    }
+
+    [Fact]
+    public async Task WrapAsync_UserPayload_BindsCamelCaseToPascalCaseProperty()
+    {
+        // The wire payload uses camelCase ("orderId"), the user POCO uses PascalCase (OrderId).
+        // ExtractUserPayload must do case-insensitive binding so workflows can read input.OrderId.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:case-test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"abc-123\"}" }
+                    }
+                }
+            }
+        };
+
+        string? observedOrderId = null;
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (evt, ctx) =>
+            {
+                observedOrderId = evt.OrderId;
+                await Task.CompletedTask;
+                return new OrderResult { Status = "ok", OrderId = evt.OrderId };
+            },
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.Equal("abc-123", observedOrderId);
+    }
+
+    [Fact]
+    public async Task WrapAsync_NoExecutionOp_ReceivesDefaultPayload()
+    {
+        // No EXECUTION operation in the envelope — ExtractUserPayload returns default(TInput).
+        // Exercises the "loop falls through without finding EXECUTION" branch in DurableFunction.ExtractUserPayload.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:no-exec",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>()
+            }
+        };
+
+        OrderEvent? observed = null;
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (evt, ctx) =>
+            {
+                observed = evt;
+                await Task.CompletedTask;
+                return new OrderResult { Status = "ok" };
+            },
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.Null(observed);  // default(OrderEvent) for a reference type is null
+    }
+
+    [Fact]
+    public async Task WrapAsync_PaginatedInitialState_HydratesAllPages()
+    {
+        // The service can return execution state across multiple pages — the first
+        // page comes inline on the invocation envelope (InitialExecutionState) and
+        // subsequent pages must be fetched via GetDurableExecutionState. Verify the
+        // pagination loop in WrapAsyncCore (DurableFunction.cs:160-167) walks every
+        // page so the workflow sees the full operation history on replay.
+        var arn = "arn:aws:lambda:us-east-1:123:durable-execution:paginated";
+
+        // Page 0 (in InitialExecutionState): EXECUTION op + step1 SUCCEEDED.
+        // Page 1 (fetched with marker "marker-1"): step2 SUCCEEDED, points to marker-2.
+        // Page 2 (fetched with marker "marker-2"): step3 SUCCEEDED, no NextMarker — loop exits.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = arn,
+            CheckpointToken = "ckpt-0",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-1\"}" }
+                    },
+                    new()
+                    {
+                        Id = IdAt(1),
+                        Type = OperationTypes.Step,
+                        Status = OperationStatuses.Succeeded,
+                        StepDetails = new StepDetails { Result = "\"page-0-result\"" }
+                    }
+                },
+                NextMarker = "marker-1"
+            }
+        };
+
+        var mockClient = new MockLambdaClient
+        {
+            GetExecutionStateHandler = req => req.Marker switch
+            {
+                "marker-1" => new Amazon.Lambda.Model.GetDurableExecutionStateResponse
+                {
+                    Operations = new List<Amazon.Lambda.Model.Operation>
+                    {
+                        new()
+                        {
+                            Id = IdAt(2),
+                            Type = OperationTypes.Step,
+                            Status = OperationStatuses.Succeeded,
+                            StepDetails = new Amazon.Lambda.Model.StepDetails { Result = "\"page-1-result\"" }
+                        }
+                    },
+                    NextMarker = "marker-2"
+                },
+                "marker-2" => new Amazon.Lambda.Model.GetDurableExecutionStateResponse
+                {
+                    Operations = new List<Amazon.Lambda.Model.Operation>
+                    {
+                        new()
+                        {
+                            Id = IdAt(3),
+                            Type = OperationTypes.Step,
+                            Status = OperationStatuses.Succeeded,
+                            StepDetails = new Amazon.Lambda.Model.StepDetails { Result = "\"page-2-result\"" }
+                        }
+                    }
+                    // NextMarker omitted -> loop terminates.
+                },
+                _ => throw new InvalidOperationException($"Unexpected marker: {req.Marker}")
+            }
+        };
+
+        var observed = new List<string>();
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (evt, ctx) =>
+            {
+                // All three steps must replay the cached results from the paginated state
+                // without re-executing — if the loop missed a page, the corresponding step
+                // would run fresh and append a different value to `observed`.
+                observed.Add(await ctx.StepAsync(
+                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step1"));
+                observed.Add(await ctx.StepAsync(
+                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step2"));
+                observed.Add(await ctx.StepAsync(
+                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step3"));
+                return new OrderResult { Status = "ok", OrderId = evt.OrderId };
+            },
+            input,
+            new TestLambdaContext(),
+            mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+
+        // Two GetDurableExecutionState calls — one per fetched page (page 0 was inline).
+        Assert.Equal(2, mockClient.GetExecutionStateCalls.Count);
+        Assert.Equal("marker-1", mockClient.GetExecutionStateCalls[0].Marker);
+        Assert.Equal(arn, mockClient.GetExecutionStateCalls[0].DurableExecutionArn);
+        Assert.Equal("ckpt-0", mockClient.GetExecutionStateCalls[0].CheckpointToken);
+        Assert.Equal("marker-2", mockClient.GetExecutionStateCalls[1].Marker);
+
+        // The workflow saw replayed results from ALL three pages — none re-executed.
+        Assert.Equal(new[] { "page-0-result", "page-1-result", "page-2-result" }, observed);
+
+        // No checkpoints were written: every step replayed from cache.
+        Assert.Empty(mockClient.CheckpointCalls);
+    }
+
+    [Fact]
+    public async Task WrapAsync_NullInitialExecutionState_ReceivesDefaultPayload()
+    {
+        // No initial execution state at all. Same default-return branch in ExtractUserPayload.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:null-state"
+        };
+
+        OrderEvent? observed = null;
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (evt, ctx) =>
+            {
+                observed = evt;
+                await Task.CompletedTask;
+                return new OrderResult { Status = "ok" };
+            },
+            input,
+            new TestLambdaContext(),
+            _mockClient);
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.Null(observed);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // IsTerminalCheckpointError classification (mirrors CheckpointError in
+    // aws-durable-execution-sdk-python):
+    //   4xx (except 429) → terminal (Failed envelope)
+    //   429 / 5xx / no status → transient (escapes to host for Lambda retry)
+    //   Carve-out: InvalidParameterValueException "Invalid Checkpoint Token" → transient
+    //
+    // Driven through CheckpointDurableExecution: a workflow that succeeds a single Step
+    // forces the batcher to flush, which is wrapped by the try/catch in WrapAsyncCore.
+    // ──────────────────────────────────────────────────────────────────────
+
+    public static IEnumerable<object[]> TerminalCheckpointErrorCases() => new[]
+    {
+        new object[] { MakeServiceException("ResourceNotFoundException", HttpStatusCode.NotFound, "ARN not found") },
+        new object[] { MakeServiceException("AccessDeniedException", HttpStatusCode.Forbidden, "denied") },
+        new object[] { MakeServiceException("KMSAccessDeniedException", HttpStatusCode.BadRequest, "kms denied") },
+        new object[] { MakeServiceException("ValidationException", HttpStatusCode.BadRequest, "bad input") },
+        new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Some other parameter") },
+    };
+
+    [Theory]
+    [MemberData(nameof(TerminalCheckpointErrorCases))]
+    public async Task WrapAsync_CheckpointThrowsTerminal_ReturnsFailed(AmazonServiceException ex)
+    {
+        var input = MakeCheckpointInput();
+        var mockClient = new MockLambdaClient { CheckpointThrows = ex };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            SingleStepWorkflow, input, new TestLambdaContext(), mockClient);
+
+        Assert.Equal(InvocationStatus.Failed, output.Status);
+        Assert.NotNull(output.Error);
+        Assert.Equal(ex.Message, output.Error!.ErrorMessage);
+    }
+
+    public static IEnumerable<object[]> TransientCheckpointErrorCases() => new[]
+    {
+        // 5xx
+        new object[] { MakeServiceException("InternalServerError", HttpStatusCode.InternalServerError, "boom") },
+        new object[] { MakeServiceException("ServiceUnavailable", HttpStatusCode.ServiceUnavailable, "down") },
+        // 429
+        new object[] { MakeServiceException("TooManyRequestsException", (HttpStatusCode)429, "throttled") },
+        // No status (network / SDK-internal). HttpStatusCode default (0) → classifier treats < 400 as transient.
+        new object[] { MakeServiceException("RequestTimeout", 0, "timeout") },
+        // Carve-out: stale checkpoint token is transient.
+        new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Invalid Checkpoint Token: stale") },
+    };
+
+    [Theory]
+    [MemberData(nameof(TransientCheckpointErrorCases))]
+    public async Task WrapAsync_CheckpointThrowsTransient_PropagatesToHost(AmazonServiceException ex)
+    {
+        var input = MakeCheckpointInput();
+        var mockClient = new MockLambdaClient { CheckpointThrows = ex };
+
+        var thrown = await Assert.ThrowsAsync(ex.GetType(), () =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                SingleStepWorkflow, input, new TestLambdaContext(), mockClient));
+
+        Assert.Same(ex, thrown);
+    }
+
+    [Fact]
+    public async Task WrapAsync_HydrationThrows_AlwaysPropagatesToHost()
+    {
+        // State hydration is OUTSIDE the IsTerminalCheckpointError try/catch — every
+        // GetExecutionStateAsync failure escapes for Lambda retry, matching Python's
+        // GetExecutionStateError (an InvocationError). Use a 4xx that *would* be terminal
+        // if it came from a checkpoint flush to prove the path isn't classified.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:hydrate-fail",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-1\"}" }
+                    }
+                },
+                NextMarker = "page-1"  // force the hydration loop to run
+            }
+        };
+        var ex = MakeServiceException("ResourceNotFoundException", HttpStatusCode.NotFound, "ARN gone");
+        var mockClient = new MockLambdaClient { GetExecutionStateThrows = ex };
+
+        var thrown = await Assert.ThrowsAsync<AmazonServiceException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                MyWorkflow, input, new TestLambdaContext(), mockClient));
+
+        Assert.Same(ex, thrown);
+    }
+
+    private static AmazonServiceException MakeServiceException(string code, HttpStatusCode status, string message)
+    {
+        return new AmazonServiceException(message, innerException: null, ErrorType.Unknown, code, requestId: "req-1", statusCode: status);
+    }
+
+    private static DurableExecutionInvocationInput MakeCheckpointInput() => new()
+    {
+        DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:checkpoint-fail",
+        InitialExecutionState = new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = "exec-0",
+                    Type = OperationTypes.Execution,
+                    Status = OperationStatuses.Started,
+                    ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"order-1\"}" }
+                }
+            }
+        }
+    };
+
+    private static async Task<OrderResult> SingleStepWorkflow(OrderEvent input, IDurableContext context)
+    {
+        // One step succeed → forces a checkpoint flush, which the mock fails.
+        await context.StepAsync(async (_) => { await Task.CompletedTask; return "ok"; }, name: "s1");
+        return new OrderResult { Status = "done" };
+    }
+
+    private static async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
+    {
+        var validation = await context.StepAsync(
+            async (_) => { await Task.CompletedTask; return new ValidationResult { IsValid = true }; },
+            name: "validate");
+
+        await context.WaitAsync(TimeSpan.FromSeconds(30), name: "delay");
+
+        return new OrderResult { Status = "approved", OrderId = input.OrderId };
+    }
+
+    private class OrderEvent
+    {
+        public string? OrderId { get; set; }
+    }
+
+    private class OrderResult
+    {
+        public string? Status { get; set; }
+        public string? OrderId { get; set; }
+    }
+
+    private class ValidationResult
+    {
+        public bool IsValid { get; set; }
+    }
+}
