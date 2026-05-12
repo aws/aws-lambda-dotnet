@@ -15,6 +15,9 @@
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.14.2" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.15.2" />
+    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.4.17" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.1.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
