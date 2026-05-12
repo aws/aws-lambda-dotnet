@@ -217,13 +217,25 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
 
     private async Task<(string ShardId, GetRecordsResponse? Response)> PollShard(string shardId, string iterator, CancellationToken stoppingToken)
     {
-        var response = await _streamsClient.GetRecordsAsync(new GetRecordsRequest
+        try
         {
-            ShardIterator = iterator,
-            Limit = _config.BatchSize
-        }, stoppingToken);
+            var response = await _streamsClient.GetRecordsAsync(new GetRecordsRequest
+            {
+                ShardIterator = iterator,
+                Limit = _config.BatchSize
+            }, stoppingToken);
 
-        return (shardId, response);
+            return (shardId, response);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to poll records for shard {shardId}", shardId);
+            return (shardId, null);
+        }
     }
 
     /// <summary>
