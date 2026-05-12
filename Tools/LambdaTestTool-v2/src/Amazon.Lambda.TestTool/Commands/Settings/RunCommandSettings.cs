@@ -84,11 +84,11 @@ public sealed class RunCommandSettings : CommandSettings
 
 
     /// <summary>
-    /// The configuration for the DynamoDB Streams event source. The format of the config is a comma delimited key pairs. For example "TableName=my-table,FunctionName=function-name,BatchSize=100".
-    /// Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, Profile, Region, TableName
+    /// The configuration for the DynamoDB Streams event source. The config can be provided as comma delimited key pairs, a JSON object, a JSON array, or a file path to a JSON configuration file. For example "TableName=my-table,FunctionName=function-name,BatchSize=100".
+    /// Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, PollingIntervalMs, Profile, Region, TableName
     /// </summary>
     [CommandOption("--dynamodbstreams-eventsource-config <CONFIG>")]
-    [Description("The configuration for the DynamoDB Streams event source. The format of the config is a comma delimited key pairs. For example \"TableName=<table-name>,FunctionName=<function-name>,BatchSize=100\". Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, Profile, Region, TableName")]
+    [Description("The configuration for the DynamoDB Streams event source. The config can be provided as comma delimited key pairs, a JSON object, a JSON array, or a file path to a JSON configuration file. For example \"TableName=<table-name>,FunctionName=<function-name>,BatchSize=100\". Possible keys are: BatchSize, FunctionName, LambdaRuntimeApi, PollingIntervalMs, Profile, Region, TableName")]
     public string? DynamoDBStreamsEventSourceConfig { get; set; }
     /// <summary>
     /// The absolute path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
