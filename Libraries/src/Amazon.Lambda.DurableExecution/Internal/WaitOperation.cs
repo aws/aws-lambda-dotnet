@@ -49,7 +49,7 @@ internal sealed class WaitOperation : DurableOperation<object?>
             Id = OperationId,
             Type = OperationTypes.Wait,
             Action = OperationAction.START,
-            SubType = "Wait",
+            SubType = OperationSubTypes.Wait,
             Name = Name,
             WaitOptions = new SdkWaitOptions { WaitSeconds = _waitSeconds }
         }, cancellationToken);

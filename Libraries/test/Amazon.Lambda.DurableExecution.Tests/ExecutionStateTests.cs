@@ -49,8 +49,7 @@ public class ExecutionStateTests
     {
         // The service sends one EXECUTION-type op carrying the input payload
         // even on the first invocation. That op is bookkeeping, not user
-        // history — it must not put us into replay mode. (Matches Python
-        // execution.py:258, Java ExecutionManager:81, JS execution-context.ts:62.)
+        // history — it must not put us into replay mode.
         var state = new ExecutionState();
         state.LoadFromCheckpoint(new InitialExecutionState
         {
@@ -105,8 +104,8 @@ public class ExecutionStateTests
     {
         // A PENDING op (e.g. retry timer waiting) is not "completed" in the
         // checkpoint sense — once the workflow has visited every terminally-
-        // completed op the SDK treats subsequent code as fresh. Matches Python's
-        // {SUCCEEDED, FAILED, CANCELLED, STOPPED, TIMED_OUT} terminal set.
+        // completed op the SDK treats subsequent code as fresh. Terminal set
+        // is {SUCCEEDED, FAILED, CANCELLED, STOPPED}.
         var state = new ExecutionState();
         state.LoadFromCheckpoint(new InitialExecutionState
         {
@@ -199,8 +198,8 @@ public class ExecutionStateTests
     public void GetOperation_ReturnsLatestRecord_WhenIdAppearsMultipleTimes()
     {
         // Wire format: when the service replays an envelope it includes the
-        // most recent record per ID. Java/Python/JS reference SDKs all key by
-        // ID alone and rely on the service to provide the authoritative record.
+        // most recent record per ID. We key by ID alone and rely on the service
+        // to provide the authoritative record.
         var state = new ExecutionState();
         state.LoadFromCheckpoint(new InitialExecutionState
         {

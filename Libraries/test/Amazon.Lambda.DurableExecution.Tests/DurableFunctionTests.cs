@@ -198,30 +198,37 @@ public class DurableFunctionTests
             mockClient);
 
         Assert.Equal(InvocationStatus.Pending, output.Status);
-        Assert.Equal(2, mockClient.CheckpointCalls.Count);
 
-        // First flush: step SUCCEED (the user awaits StepAsync, which awaits
-        // its SUCCEED enqueue, which blocks until the batcher flushes it).
-        var firstCall = mockClient.CheckpointCalls[0];
-        Assert.Equal("arn:aws:lambda:us-east-1:123:durable-execution:checkpoint-test", firstCall.DurableExecutionArn);
-        Assert.Equal("initial-token", firstCall.CheckpointToken);
-        Assert.Single(firstCall.Updates);
-        var stepUpdate = firstCall.Updates[0];
-        Assert.Equal("STEP", stepUpdate.Type);
-        Assert.Equal("SUCCEED", stepUpdate.Action);
-        Assert.Equal("validate", stepUpdate.Name);
-        Assert.NotNull(stepUpdate.Payload);
+        // Each StepAsync emits a fire-and-forget START before user code runs
+        // (telemetry under AtLeastOncePerRetry). With FlushInterval = 0 the
+        // worker may flush the START on its own before SUCCEED arrives, so the
+        // exact batching of START vs SUCCEED is timing-dependent. Assert on
+        // the flat sequence of updates instead.
+        var allUpdates = mockClient.CheckpointCalls
+            .SelectMany(c => c.Updates)
+            .ToList();
 
-        // Second flush: wait START (blocks until the service has the timer
-        // recorded before WaitAsync suspends).
-        var secondCall = mockClient.CheckpointCalls[1];
-        Assert.Single(secondCall.Updates);
-        var waitUpdate = secondCall.Updates[0];
-        Assert.Equal("WAIT", waitUpdate.Type);
-        Assert.Equal("START", waitUpdate.Action);
-        Assert.Equal("delay", waitUpdate.Name);
-        Assert.NotNull(waitUpdate.WaitOptions);
-        Assert.Equal(30, waitUpdate.WaitOptions.WaitSeconds);
+        // Expect: step START, step SUCCEED, wait START (in that order).
+        Assert.Equal(3, allUpdates.Count);
+
+        Assert.Equal("STEP", allUpdates[0].Type);
+        Assert.Equal("START", allUpdates[0].Action);
+        Assert.Equal("validate", allUpdates[0].Name);
+
+        Assert.Equal("STEP", allUpdates[1].Type);
+        Assert.Equal("SUCCEED", allUpdates[1].Action);
+        Assert.Equal("validate", allUpdates[1].Name);
+        Assert.NotNull(allUpdates[1].Payload);
+
+        Assert.Equal("WAIT", allUpdates[2].Type);
+        Assert.Equal("START", allUpdates[2].Action);
+        Assert.Equal("delay", allUpdates[2].Name);
+        Assert.NotNull(allUpdates[2].WaitOptions);
+        Assert.Equal(30, allUpdates[2].WaitOptions.WaitSeconds);
+
+        // The first call sends the initial checkpoint token.
+        Assert.Equal("arn:aws:lambda:us-east-1:123:durable-execution:checkpoint-test", mockClient.CheckpointCalls[0].DurableExecutionArn);
+        Assert.Equal("initial-token", mockClient.CheckpointCalls[0].CheckpointToken);
     }
 
     [Fact]
@@ -502,9 +509,9 @@ public class DurableFunctionTests
     public async Task WrapAsync_HydrationThrows_AlwaysPropagatesToHost()
     {
         // State hydration is OUTSIDE the IsTerminalCheckpointError try/catch — every
-        // GetExecutionStateAsync failure escapes for Lambda retry, matching Python's
-        // GetExecutionStateError (an InvocationError). Use a 4xx that *would* be terminal
-        // if it came from a checkpoint flush to prove the path isn't classified.
+        // GetExecutionStateAsync failure escapes for Lambda retry. Use a 4xx that
+        // *would* be terminal if it came from a checkpoint flush to prove the path
+        // isn't classified.
         var input = new DurableExecutionInvocationInput
         {
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:hydrate-fail",

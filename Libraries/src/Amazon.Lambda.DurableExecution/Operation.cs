@@ -168,6 +168,30 @@ public static class OperationTypes
 }
 
 /// <summary>
+/// Wire-format <see cref="Operation.SubType"/> string constants. SubType is a
+/// finer-grained classifier sent alongside <see cref="Operation.Type"/> for
+/// observability — the values are PascalCase ("Step", "Wait") and distinct
+/// from the uppercase <see cref="OperationTypes"/> values.
+/// </summary>
+public static class OperationSubTypes
+{
+    /// <summary>Step sub-type.</summary>
+    public const string Step = "Step";
+
+    /// <summary>Wait sub-type.</summary>
+    public const string Wait = "Wait";
+
+    /// <summary>Callback sub-type.</summary>
+    public const string Callback = "Callback";
+
+    /// <summary>Chained-invoke sub-type.</summary>
+    public const string ChainedInvoke = "ChainedInvoke";
+
+    /// <summary>Child-context sub-type.</summary>
+    public const string Context = "Context";
+}
+
+/// <summary>
 /// Wire-format <see cref="Operation.Status"/> string constants.
 /// Plural name avoids collision with <c>Amazon.Lambda.OperationStatus</c>.
 /// </summary>

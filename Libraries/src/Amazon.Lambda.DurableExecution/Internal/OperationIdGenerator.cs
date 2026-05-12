@@ -8,11 +8,10 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <summary>
 /// Generates deterministic operation IDs for durable operations. Each call
 /// increments an internal counter and SHA-256 hashes <c>"&lt;parentId&gt;-&lt;counter&gt;"</c>
-/// (or just <c>"&lt;counter&gt;"</c> at the root). Hashing matches the wire format
-/// used by the Java/JS/Python SDKs so the same workflow position produces a
-/// stable, opaque ID across replays — and the human-readable step name is
-/// carried separately on <c>OperationUpdate.Name</c>, so renaming a step does
-/// not break replay correlation.
+/// (or just <c>"&lt;counter&gt;"</c> at the root). The same workflow position
+/// produces a stable, opaque ID across replays — and the human-readable step
+/// name is carried separately on <c>OperationUpdate.Name</c>, so renaming a
+/// step does not break replay correlation.
 /// </summary>
 internal sealed class OperationIdGenerator
 {
@@ -46,7 +45,7 @@ internal sealed class OperationIdGenerator
 
     /// <summary>
     /// Generates the next operation ID. The counter is pre-incremented so the
-    /// first ID is <c>hash("1")</c>, matching the reference SDKs.
+    /// first ID is <c>hash("1")</c>.
     /// </summary>
     /// <remarks>
     /// Uses <see cref="Interlocked.Increment(ref int)"/> so concurrent callers
@@ -55,7 +54,7 @@ internal sealed class OperationIdGenerator
     /// <c>MapAsync</c> branches that fan out before awaiting) cannot collide
     /// on the same ID. Determinism still requires that calls happen in a
     /// deterministic order — atomicity prevents duplicate IDs but not
-    /// reordering between replays. Matches Java's <c>AtomicInteger.incrementAndGet</c>.
+    /// reordering between replays.
     /// </remarks>
     public string NextId()
     {

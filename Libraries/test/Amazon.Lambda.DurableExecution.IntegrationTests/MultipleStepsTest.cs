@@ -32,9 +32,12 @@ public class MultipleStepsTest
         // all events are indexed. Wait until we see all 5 step-succeeded events.
         var history = await deployment.WaitForHistoryAsync(
             arn!,
-            h => (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 5,
+            h => (h.Events?.Count(e => e.EventType == EventType.StepStarted) ?? 0) >= 5
+              && (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 5,
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
+
+        Assert.Equal(5, events.Count(e => e.EventType == EventType.StepStarted));
 
         // Each step ran exactly once (no replay-induced duplicates) in declaration order,
         // and each step's output chained from the previous one.

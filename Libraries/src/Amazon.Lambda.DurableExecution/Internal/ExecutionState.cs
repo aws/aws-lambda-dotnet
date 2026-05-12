@@ -6,7 +6,6 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <see cref="CheckpointBatcher"/>; this type is the inbound side only.
 /// </summary>
 /// <remarks>
-/// Replay tracking mirrors the Python / Java / JavaScript reference SDKs:
 /// <list type="bullet">
 ///   <item>At construction the workflow is "replaying" if and only if any user-replayable
 ///       op is present. The service always sends one <c>EXECUTION</c>-type op
@@ -41,11 +40,15 @@ internal sealed class ExecutionState
             AddOperations(initialState.Operations);
         }
 
-        // Only user-replayable ops put us into replay mode. The service-side
-        // EXECUTION op (input payload bookkeeping) is always present and must
-        // not count — see Python execution.py:258 / Java ExecutionManager:81 /
-        // JS execution-context.ts:62 for the same rule.
-        (_isReplaying, _remainingReplayOps) = ScanReplayable();
+        // We're "replaying" when there are completed ops (SUCCEEDED, FAILED,
+        // CANCELLED, STOPPED) we need to re-derive before resuming live work.
+        // The service-side EXECUTION op (input payload bookkeeping) is always
+        // present and doesn't count. If the only ops are in-progress
+        // (READY/PENDING/STARTED), there's nothing to re-derive — the next
+        // user call IS the next thing to run — so IsReplaying starts false.
+        var (_, terminalCount) = ScanReplayable();
+        _remainingReplayOps = terminalCount;
+        _isReplaying = terminalCount > 0;
     }
 
     public void AddOperations(IEnumerable<Operation> operations)
@@ -91,8 +94,11 @@ internal sealed class ExecutionState
 
     public void ValidateReplayConsistency(string operationId, string expectedType, string? expectedName)
     {
-        if (!_isReplaying) return;
-
+        // Independent of IsReplaying: as long as a checkpoint record exists
+        // for this id, its type/name must match what user code is asking for.
+        // If the only checkpointed ops are in-progress (PENDING/READY/STARTED),
+        // IsReplaying is false but the records still exist and code drift can
+        // still produce a mismatch.
         if (!_operations.TryGetValue(operationId, out var op)) return;
 
         if (op.Type != null && op.Type != expectedType)

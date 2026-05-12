@@ -11,13 +11,12 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// call awaits the flush of its containing batch (sync semantics).
 /// </summary>
 /// <remarks>
-/// TODO: when Map / Parallel / ChildContext / WaitForCondition land — or when
-/// AtLeastOncePerRetry step START gets a non-blocking variant — they will need
-/// a fire-and-forget overload like
-/// <c>Task EnqueueAsync(SdkOperationUpdate update, bool sync)</c> where
-/// <c>sync=false</c> returns as soon as the item is queued. Java's
-/// <c>sendOperationUpdate</c> vs <c>sendOperationUpdateAsync</c> is the model.
-/// Today every call site is sync, so the API stays minimal.
+/// Fire-and-forget semantics are achieved by simply not awaiting the returned
+/// Task. Errors still surface deterministically via <c>_terminalError</c>: the
+/// next sync <see cref="EnqueueAsync"/> or <see cref="DrainAsync"/> rethrows.
+/// Callers using fire-and-forget should observe the discarded Task's exception
+/// (see <c>StepOperation.FireAndForget</c>) so it doesn't trip the runtime's
+/// <c>UnobservedTaskException</c> event.
 /// </remarks>
 internal sealed class CheckpointBatcher : IAsyncDisposable
 {
