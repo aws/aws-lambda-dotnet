@@ -23,7 +23,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private readonly ILogger<DynamoDBStreamsEventSourceProcess> _logger;
+    private readonly ILogger<DynamoDBStreamsEventSourceBackgroundService> _logger;
     private readonly IAmazonDynamoDB _ddbClient;
     private readonly IAmazonDynamoDBStreams _streamsClient;
     private readonly ILambdaClient _lambdaClient;
@@ -33,7 +33,7 @@ public class DynamoDBStreamsEventSourceBackgroundService : BackgroundService
     /// Constructs instance of <see cref="DynamoDBStreamsEventSourceBackgroundService"/>.
     /// </summary>
     public DynamoDBStreamsEventSourceBackgroundService(
-        ILogger<DynamoDBStreamsEventSourceProcess> logger,
+        ILogger<DynamoDBStreamsEventSourceBackgroundService> logger,
         IAmazonDynamoDB ddbClient,
         IAmazonDynamoDBStreams streamsClient,
         DynamoDBStreamsEventSourceBackgroundServiceConfig config,
