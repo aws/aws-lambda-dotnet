@@ -24,12 +24,10 @@ internal sealed class CheckpointBatcherConfig
     /// <remarks>
     /// TODO: not enforced today. The worker only checks <see cref="MaxBatchOperations"/>;
     /// a single oversized item (or a batch whose serialized size exceeds 750 KB)
-    /// will be sent to the service and rejected there. Java/JS/Python all
-    /// pre-flight this on the in-flight batch and split before the next add.
-    /// Wire this in alongside the async-flush operations (Map / Parallel /
-    /// child-context) since those are the scenarios that can actually fill a
-    /// batch — today every batch is 1 item with <see cref="FlushInterval"/>
-    /// = Zero, so the gap is latent.
+    /// will be sent to the service and rejected there. Wire this in alongside
+    /// the async-flush operations (Map / Parallel / child-context) since those
+    /// are the scenarios that can actually fill a batch — today every batch is
+    /// 1 item with <see cref="FlushInterval"/> = Zero, so the gap is latent.
     /// </remarks>
     internal int MaxBatchBytes { get; init; } = 750 * 1024;
 }

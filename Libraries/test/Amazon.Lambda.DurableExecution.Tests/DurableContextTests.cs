@@ -620,4 +620,306 @@ public class DurableContextTests
         public string? Name { get; set; }
         public int Age { get; set; }
     }
+
+    #region StepAsync Retry Tests
+
+    [Fact]
+    public async Task StepAsync_FailsWithRetryStrategy_CheckpointsRetryAndSuspends()
+    {
+        var tm = new TerminationManager();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        var stepTask = context.StepAsync<string>(
+            async (_) => { await Task.CompletedTask; throw new InvalidOperationException("transient"); },
+            name: "flaky_step",
+            config: new StepConfig
+            {
+                RetryStrategy = RetryStrategy.Exponential(
+                    maxAttempts: 3,
+                    initialDelay: TimeSpan.FromSeconds(5),
+                    jitter: JitterStrategy.None)
+            });
+
+        await Task.Delay(50);
+
+        Assert.True(tm.IsTerminated);
+        Assert.False(stepTask.IsCompleted);
+
+        // Fresh attempt 1 emits a fire-and-forget START (telemetry under
+        // AtLeastOncePerRetry), then a RETRY when the user code throws and
+        // the retry strategy decides to retry.
+        var checkpoints = recorder.Flushed;
+        Assert.Equal(2, checkpoints.Count);
+        Assert.Equal("START", checkpoints[0].Action);
+        Assert.Equal("RETRY", checkpoints[1].Action);
+        Assert.Equal(IdAt(1), checkpoints[1].Id);
+        Assert.Equal(5, checkpoints[1].StepOptions.NextAttemptDelaySeconds);
+    }
+
+    [Fact]
+    public async Task StepAsync_FailsNoRetryStrategy_CheckpointsFail()
+    {
+        var context = CreateContext();
+
+        var ex = await Assert.ThrowsAsync<StepException>(() =>
+            context.StepAsync<string>(
+                async (_) => { await Task.CompletedTask; throw new InvalidOperationException("permanent"); },
+                name: "fail_step"));
+
+        Assert.Equal("permanent", ex.Message);
+    }
+
+    [Fact]
+    public async Task StepAsync_RetryExhausted_CheckpointsFail()
+    {
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Pending,
+                    StepDetails = new StepDetails
+                    {
+                        Attempt = 2,
+                        NextAttemptTimestamp = DateTimeOffset.UtcNow.AddSeconds(-10).ToUnixTimeMilliseconds()
+                    }
+                }
+            }
+        });
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        // Attempt 3 (last one) — should fail after this
+        var ex = await Assert.ThrowsAsync<StepException>(() =>
+            context.StepAsync<string>(
+                async (_) => { await Task.CompletedTask; throw new InvalidOperationException("still failing"); },
+                name: "exhaust_step",
+                config: new StepConfig
+                {
+                    RetryStrategy = RetryStrategy.Exponential(maxAttempts: 3, jitter: JitterStrategy.None)
+                }));
+
+        Assert.Equal("still failing", ex.Message);
+
+        // Fresh attempt 3 emits a fire-and-forget START (telemetry under
+        // AtLeastOncePerRetry), then a FAIL after the retry strategy gives up.
+        var checkpoints = recorder.Flushed;
+        Assert.Equal(2, checkpoints.Count);
+        Assert.Equal("START", checkpoints[0].Action);
+        Assert.Equal("FAIL", checkpoints[1].Action);
+    }
+
+    [Fact]
+    public async Task StepAsync_PendingWithFutureTimestamp_Suspends()
+    {
+        var futureMs = DateTimeOffset.UtcNow.AddSeconds(300).ToUnixTimeMilliseconds();
+        var tm = new TerminationManager();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Pending,
+                    StepDetails = new StepDetails
+                    {
+                        Attempt = 1,
+                        NextAttemptTimestamp = futureMs
+                    }
+                }
+            }
+        });
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        var stepTask = context.StepAsync<string>(
+            async (_) => { await Task.CompletedTask; return "should not run"; },
+            name: "pending_step",
+            config: new StepConfig { RetryStrategy = RetryStrategy.Default });
+
+        await Task.Delay(50);
+
+        Assert.True(tm.IsTerminated);
+        Assert.False(stepTask.IsCompleted);
+        Assert.Empty(recorder.Flushed);
+    }
+
+    [Fact]
+    public async Task StepAsync_PendingWithPastTimestamp_ReExecutes()
+    {
+        var pastMs = DateTimeOffset.UtcNow.AddSeconds(-10).ToUnixTimeMilliseconds();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Pending,
+                    StepDetails = new StepDetails
+                    {
+                        Attempt = 1,
+                        NextAttemptTimestamp = pastMs
+                    }
+                }
+            }
+        });
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+
+        var result = await context.StepAsync<string>(
+            async (ctx) =>
+            {
+                await Task.CompletedTask;
+                Assert.Equal(2, ctx.AttemptNumber);
+                return "retry success";
+            },
+            name: "retry_step",
+            config: new StepConfig { RetryStrategy = RetryStrategy.Default });
+
+        Assert.Equal("retry success", result);
+    }
+
+    [Fact]
+    public async Task StepAsync_ReadyReplay_AdvancesAttemptAndExecutes()
+    {
+        // READY = service has post-PENDING re-invoked us; the retry timer
+        // already fired so no timestamp check is needed. Just advance the
+        // attempt counter and run.
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Ready,
+                    StepDetails = new StepDetails { Attempt = 2 }
+                }
+            }
+        });
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+
+        var executed = false;
+        var result = await context.StepAsync<string>(
+            async (ctx) =>
+            {
+                executed = true;
+                Assert.Equal(3, ctx.AttemptNumber);
+                await Task.CompletedTask;
+                return "ok";
+            },
+            name: "ready_step",
+            config: new StepConfig { RetryStrategy = RetryStrategy.Default });
+
+        Assert.True(executed);
+        Assert.Equal("ok", result);
+        Assert.False(tm.IsTerminated);
+        Assert.False(state.IsReplaying);
+    }
+
+    [Fact]
+    public async Task StepAsync_AtMostOnce_FlushesStartBeforeExecution()
+    {
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        IReadOnlyList<string>? flushedAtFuncEntry = null;
+
+        var result = await context.StepAsync<string>(
+            async (_) =>
+            {
+                flushedAtFuncEntry = recorder.Flushed.Select(o => o.Action.ToString()).ToArray();
+                await Task.CompletedTask;
+                return "done";
+            },
+            name: "amo_step",
+            config: new StepConfig { Semantics = StepSemantics.AtMostOncePerRetry });
+
+        Assert.Equal("done", result);
+
+        // START must be flushed before user func runs (AtMostOnce invariant).
+        Assert.NotNull(flushedAtFuncEntry);
+        Assert.Equal(new[] { "START" }, flushedAtFuncEntry);
+
+        // After step returns, SUCCEED has also been flushed.
+        var actions = recorder.Flushed.Select(o => o.Action.ToString()).ToArray();
+        Assert.Equal(new[] { "START", "SUCCEED" }, actions);
+    }
+
+    [Fact]
+    public async Task StepAsync_AtMostOnce_StartedReplay_TriggersRetryHandler()
+    {
+        var tm = new TerminationManager();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Started
+                }
+            }
+        });
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        var executed = false;
+        var stepTask = context.StepAsync<string>(
+            async (_) => { executed = true; await Task.CompletedTask; return "should not run"; },
+            name: "amo_replay",
+            config: new StepConfig
+            {
+                Semantics = StepSemantics.AtMostOncePerRetry,
+                RetryStrategy = RetryStrategy.Exponential(maxAttempts: 3, jitter: JitterStrategy.None)
+            });
+
+        await Task.Delay(50);
+
+        Assert.False(executed);
+        Assert.True(tm.IsTerminated);
+        Assert.False(stepTask.IsCompleted);
+
+        var checkpoints = recorder.Flushed;
+        Assert.Single(checkpoints);
+        Assert.Equal("RETRY", checkpoints[0].Action);
+    }
+
+    #endregion
 }

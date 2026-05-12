@@ -6,6 +6,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 internal enum TerminationReason
 {
     WaitScheduled,
+    RetryScheduled,
     CallbackPending,
     InvokePending,
     CheckpointFailed

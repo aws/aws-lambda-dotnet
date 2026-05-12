@@ -36,9 +36,12 @@ public class StepFailsTest
 
         var history = await deployment.WaitForHistoryAsync(
             arn!,
-            h => h.Events?.Any(e => e.StepFailedDetails != null) ?? false,
+            h => (h.Events?.Any(e => e.EventType == EventType.StepStarted) ?? false)
+              && (h.Events?.Any(e => e.StepFailedDetails != null) ?? false),
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
+
+        Assert.Equal(1, events.Count(e => e.EventType == EventType.StepStarted));
 
         // The failing step recorded a StepFailed event with the exception message.
         var stepFailed = events.FirstOrDefault(e => e.StepFailedDetails != null && e.Name == "fail_step");

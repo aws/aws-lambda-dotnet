@@ -47,3 +47,23 @@ public class StepException : DurableExecutionException
     /// <summary>Creates a <see cref="StepException"/> wrapping an inner exception.</summary>
     public StepException(string message, Exception innerException) : base(message, innerException) { }
 }
+
+/// <summary>
+/// Thrown when a step under <see cref="StepSemantics.AtMostOncePerRetry"/> is
+/// detected to have been interrupted mid-execution on a prior invocation
+/// (replay sees a <c>STARTED</c> checkpoint with no terminal record).
+/// </summary>
+/// <remarks>
+/// Surfaces in <see cref="IRetryStrategy.ShouldRetry"/> so user-supplied
+/// strategies can distinguish "my code threw" from "a previous attempt
+/// crashed before it could record a result".
+/// </remarks>
+public class StepInterruptedException : StepException
+{
+    /// <summary>Creates an empty <see cref="StepInterruptedException"/>.</summary>
+    public StepInterruptedException() { }
+    /// <summary>Creates a <see cref="StepInterruptedException"/> with the given message.</summary>
+    public StepInterruptedException(string message) : base(message) { }
+    /// <summary>Creates a <see cref="StepInterruptedException"/> wrapping an inner exception.</summary>
+    public StepInterruptedException(string message, Exception innerException) : base(message, innerException) { }
+}

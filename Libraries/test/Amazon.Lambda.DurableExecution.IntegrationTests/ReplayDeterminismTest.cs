@@ -31,9 +31,12 @@ public class ReplayDeterminismTest
         // History is eventually consistent — wait until both step-succeeded events are visible.
         var history = await deployment.WaitForHistoryAsync(
             arn!,
-            h => (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2,
+            h => (h.Events?.Count(e => e.EventType == EventType.StepStarted) ?? 0) >= 2
+              && (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2,
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
+
+        Assert.Equal(2, events.Count(e => e.EventType == EventType.StepStarted));
 
         // Each step succeeded exactly once — generate_id was NOT re-executed on replay
         // (a duplicate would show up as two succeeded events for the same name).

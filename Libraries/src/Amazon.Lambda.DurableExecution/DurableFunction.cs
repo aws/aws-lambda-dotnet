@@ -155,8 +155,7 @@ public static class DurableFunction
     ///
     /// State-hydration errors (<c>GetExecutionStateAsync</c>) propagate as
     /// <see cref="DurableExecutionException"/> too, but they are NOT caught here — they
-    /// flow up to the host so Lambda retries, matching Python's <c>GetExecutionStateError</c>
-    /// (which extends <c>InvocationError</c>).
+    /// flow up to the host so Lambda retries.
     ///
     /// User-code SDK errors (e.g. an SDK call inside a Step body) are caught by
     /// <c>StepRunner</c> and surfaced as <c>StepException</c> for the workflow's normal
