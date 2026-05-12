@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix InvokeFeatures.Set<TFeature> to bump the feature collection revision so middleware that wraps the response body (e.g. OutputCache, ResponseCompression) is properly visible to ASP.NET Core's FeatureReferences cache. Resolves https://github.com/aws/aws-lambda-dotnet/issues/1702 where IOutputCache stored empty response bodies."
+      ]
+    }
+  ]
+}
