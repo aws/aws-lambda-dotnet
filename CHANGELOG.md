@@ -1,3 +1,8 @@
+## Release 2026-05-12
+
+### Amazon.Lambda.TestTool (0.14.0)
+* Add support emulating Lambda DynamoDB Stream event source
+
 ## Release 2026-05-06
 
 ### Amazon.Lambda.RuntimeSupport (2.0.0)
