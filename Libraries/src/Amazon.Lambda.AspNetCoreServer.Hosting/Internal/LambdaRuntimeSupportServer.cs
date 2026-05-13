@@ -466,7 +466,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     }
 
     /// <summary>
-    /// IServer for handlying Lambda events from an API Gateway Websocket API.
+    /// IServer for handling Lambda events from an API Gateway Websocket API.
     /// </summary>
     public class APIGatewayWebsocketApiLambdaRuntimeSupportServer : LambdaRuntimeSupportServer
     {
