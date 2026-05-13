@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
         ApplicationLoadBalancer,
 
         /// <summary>
-        /// API Gateway HTTP API
+        /// API Gateway WebSocket API
         /// </summary>
         WebsocketApi
     }

@@ -63,7 +63,10 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected override IHeaderDictionary AddMissingRequestHeaders(APIGatewayProxyRequest apiGatewayRequest, IHeaderDictionary headers)
         {
             headers = base.AddMissingRequestHeaders(apiGatewayRequest, headers);
-            headers["Content-Type"] = "application/json";
+            if (!headers.ContainsKey("Content-Type"))
+            {
+                headers["Content-Type"] = "application/json";
+            }
             return headers;
         }
     }

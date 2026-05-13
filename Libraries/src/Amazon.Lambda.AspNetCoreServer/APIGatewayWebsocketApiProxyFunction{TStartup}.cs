@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Amazon.Lambda.AspNetCoreServer
 {
     /// <summary>
-    /// APIGatewayWebsocketApiV2ProxyFunction is the base class that is implemented in a ASP.NET Core Web API. The derived class implements
+    /// APIGatewayWebsocketApiProxyFunction is the base class that is implemented in an ASP.NET Core Web API. The derived class implements
     /// the Init method similar to Main function in the ASP.NET Core and provides typed Startup. The function handler for
     /// the Lambda function will point to this base class FunctionHandlerAsync method.
     /// </summary>
