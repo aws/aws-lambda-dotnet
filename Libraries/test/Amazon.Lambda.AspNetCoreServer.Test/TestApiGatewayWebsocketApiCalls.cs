@@ -19,7 +19,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestPostWithBody()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-post-withbody-websocketapi-request.json");
+            var response = await InvokeAPIGatewayRequest("values-post-withbody-websocketapi-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
@@ -50,7 +50,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private string GetRequestContent(string fileName)
         {
-            var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
+            var filePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             return requestStr;
         }
