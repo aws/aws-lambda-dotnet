@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations
     /// can be injected into Lambda functions.
     /// </summary>
     /// <remarks>
-    /// The class should implement a ConfigureServices method that 
+    /// The class should implement a ConfigureHostBuilder method (recommended) or ConfigureServices (legacy) that 
     /// adds one or more services to an IServiceCollection.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class)]

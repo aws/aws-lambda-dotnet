@@ -1,0 +1,11 @@
+{
+  "invocationId": "invocationIdExample",
+  "applicationArn": "arn:{partition}:kinesisanalytics:exampleApplication",
+  "streamArn": "arn:{partition}:kinesis:exampleStream",
+  "records": [
+    {
+      "recordId": "123456",
+      "data": "VGhpcyBpcyBhIHRlc3QgZnJvbSBraW5lc2lzIGFuYWx5dGljcw=="
+    }
+  ]
+}

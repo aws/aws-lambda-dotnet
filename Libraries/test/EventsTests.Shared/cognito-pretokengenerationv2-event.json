@@ -37,8 +37,11 @@
     "claimsAndScopeOverrideDetails": {
       "idTokenGeneration": {
         "claimsToAddOrOverride": {
-          "claim_1": "claim_1_value_1",
-          "claim_2": "claim_1_value_2"
+          "id_claim_1": "id_claim_1_value",
+          "id_claim_2": "id_claim_2_value",
+          "id_claim_3": 1234,
+          "id_claim_4": true,
+          "id_claim_5": [ "id_claim_5_value", 5678, false ]
         },
         "claimsToSuppress": [
           "suppress1",
@@ -47,8 +50,11 @@
       },
       "accessTokenGeneration": {
         "claimsToAddOrOverride": {
-          "claim_1": "claim_1_value_1",
-          "claim_2": "claim_1_value_2"
+          "access_claim_1": "access_claim_1_value",
+          "access_claim_2": "access_claim_2_value",
+          "access_claim_3": 1234,
+          "access_claim_4": true,
+          "access_claim_5": [ "access_claim_5_value", 5678, false ]
         },
         "claimsToSuppress": [
           "suppress1",

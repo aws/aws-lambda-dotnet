@@ -19,7 +19,7 @@ namespace TestServerlessApp
         /// </summary>
         public SimpleCalculator(ISimpleCalculatorService simpleCalculatorService)
         {
-            this._simpleCalculatorService = simpleCalculatorService;
+            _simpleCalculatorService = simpleCalculatorService;
         }
 
         [LambdaFunction(ResourceName = "SimpleCalculatorAdd", PackageType = LambdaPackageType.Image)]

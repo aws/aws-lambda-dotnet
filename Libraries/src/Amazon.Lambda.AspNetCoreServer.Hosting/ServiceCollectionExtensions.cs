@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Hosting;
+using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.Core;
@@ -87,8 +87,66 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if(TryLambdaSetup(services, eventSource, configure, out var hostingOptions))
             {
-                services.TryAddSingleton<ILambdaSerializer>(serializer ?? hostingOptions!.Serializer);
+                var localSerializer = serializer ?? hostingOptions!.Serializer;
+                if (localSerializer == null)
+                    throw new ArgumentNullException(nameof(serializer));
+
+                services.TryAddSingleton<ILambdaSerializer>(localSerializer);
             }
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds a <see cref="HttpRequestMessage"/>> that will be used to invoke
+        /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
+        /// during <see cref="Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot"/>.  This improves the performance gains
+        /// offered by SnapStart.
+        /// <para />
+        /// <paramref name="beforeSnapStartRequest"/> must have a relative
+        /// <see cref="HttpRequestMessage.RequestUri"/> and the <see cref="HttpRequestMessage.Content"/> only supports
+        /// text based payload.
+        /// <para />.
+        /// Be aware that this will invoke your applications function handler code
+        /// multiple times so that .NET runtime sees this code is a hot path and should be optimized.
+        /// <para />
+        /// When the function handler is called as part of SnapStart warm up, the instance will use a
+        /// mock <see cref="ILambdaContext"/>, which will not be fully populated.
+        /// <para />
+        /// This method automatically registers with <see cref="Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot"/>.
+        /// <para />
+        /// This method can be called multiple times to register additional urls.
+        /// <para />
+        /// Example:
+        /// <para />
+        /// <code>
+        /// <![CDATA[
+        /// // Example Minimal Api
+        /// var builder = WebApplication.CreateSlimBuilder(args);
+        ///
+        /// builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+        /// 
+        /// // Initialize asp.net pipeline before Snapshot
+        /// builder.Services.AddAWSLambdaBeforeSnapshotRequest(
+        ///     new HttpRequestMessage(HttpMethod.Get, "/test")
+        /// );
+        /// 
+        /// var app = builder.Build();
+        /// 
+        /// app.MapGet("/test", () => "Success");
+        /// 
+        /// app.Run(); 
+        /// ]]>
+        /// </code>
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="beforeSnapStartRequest"></param>
+        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, HttpRequestMessage beforeSnapStartRequest)
+        {
+            services.AddSingleton(new GetBeforeSnapshotRequestsCollector
+            {
+                Request = beforeSnapStartRequest
+            });
 
             return services;
         }
@@ -105,6 +163,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (configure != null)
                 configure.Invoke(hostingOptions);
+
+            // Register HostingOptions as singleton in service provider
+            services.TryAddSingleton(hostingOptions);
 
             var serverType = eventSource switch
             {

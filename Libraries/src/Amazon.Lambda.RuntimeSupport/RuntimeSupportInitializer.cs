@@ -23,19 +23,23 @@ namespace Amazon.Lambda.RuntimeSupport
     /// <summary>
     /// RuntimeSupportInitializer class responsible for initializing the UserCodeLoader and LambdaBootstrap given a function handler.
     /// </summary>
-#if NET8_0_OR_GREATER
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("RuntimeSupportInitializer does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("RuntimeSupportInitializer does not support trimming and is meant to be used in class library based Lambda functions.")]
     public class RuntimeSupportInitializer
     {
         private readonly string _handler;
+        private readonly LambdaBootstrapOptions _lambdaBootstrapOptions;
         private readonly InternalLogger _logger;
         private readonly RuntimeSupportDebugAttacher _debugAttacher;
 
         /// <summary>
         /// Class constructor that takes a Function Handler and initializes the class.
         /// </summary>
-        public RuntimeSupportInitializer(string handler)
+        public RuntimeSupportInitializer(string handler) : this(handler, new LambdaBootstrapOptions()) { }
+
+        /// <summary>
+        /// Class constructor that takes a Function Handler and Lambda Bootstrap Options and initializes the class.
+        /// </summary>
+        public RuntimeSupportInitializer(string handler, LambdaBootstrapOptions lambdaBootstrapOptions)
         {
             if (string.IsNullOrWhiteSpace(handler))
             {
@@ -46,6 +50,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
             _handler = handler;
             _debugAttacher = new RuntimeSupportDebugAttacher();
+            _lambdaBootstrapOptions = lambdaBootstrapOptions;
         }
 
         /// <summary>
@@ -55,10 +60,17 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             await _debugAttacher.TryAttachDebugger();
 
-            var userCodeLoader = new UserCodeLoader(_handler, _logger);
+            var environmentVariables = new SystemEnvironmentVariables();
+            var userCodeLoader = new UserCodeLoader(environmentVariables, _handler, _logger);
             var initializer = new UserCodeInitializer(userCodeLoader, _logger);
             using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke))
-            using (var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync))
+            using (var bootstrap = new LambdaBootstrap(
+                        httpClient: null,
+                        handler: handlerWrapper.Handler,
+                        initializer: initializer.InitializeAsync,
+                        ownsHttpClient: true,
+                        lambdaBootstrapOptions: _lambdaBootstrapOptions,
+                        environmentVariables: environmentVariables))
             {
                 await bootstrap.RunAsync();
             }

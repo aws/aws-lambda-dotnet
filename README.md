@@ -2,7 +2,7 @@
 
 Repository for the AWS NuGet packages and Blueprints to support writing AWS Lambda functions using .NET Core.
 
-For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
+For a history of releases view the [release change log](CHANGELOG.md)
 
 ## Table of Contents
 - [AWS Lambda for .NET Core ![Gitter](https://gitter.im/aws/aws-lambda-dotnet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](#aws-lambda-for-net-core-img-srchttpsbadgesgitterimjoin20chatsvg-altgitter)
@@ -46,6 +46,7 @@ These are the packages and their README.md files:
 * [Amazon.Lambda.SNSEvents](Libraries/src/Amazon.Lambda.SNSEvents) - [README.md](Libraries/src/Amazon.Lambda.SNSEvents/README.md)
 * [Amazon.Lambda.SQSEvents](Libraries/src/Amazon.Lambda.SQSEvents) - [README.md](Libraries/src/Amazon.Lambda.SQSEvents/README.md)
 * [Amazon.Lambda.KafkaEvents](Libraries/src/Amazon.Lambda.KafkaEvents) - [README.md](Libraries/src/Amazon.Lambda.KafkaEvents/README.md)
+* [Amazon.Lambda.AppSyncEvents](Libraries/src/Amazon.Lambda.AppSyncEvents) - [README.md](Libraries/src/Amazon.Lambda.AppSyncEvents/README.md)
 
 ### Amazon.Lambda.Tools
 

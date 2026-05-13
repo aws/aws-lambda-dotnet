@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -32,9 +31,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
         /// The transformed records from the KinesisFirehoseEvent.
         /// </summary>        
         [DataMember(Name = "records")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("records")]
-#endif
         public IList<FirehoseRecord> Records { get; set; }
 
         /// <summary>
@@ -49,9 +46,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             ///transformed record is treated as a data transformation failure.
             /// </summary>
             [DataMember(Name = "recordId")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("recordId")]
-#endif
             public string RecordId { get; set; }
 
             /// <summary>
@@ -78,27 +73,21 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// </list>
             /// </summary>
             [DataMember(Name = "result")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("result")]
-#endif
             public string Result { get; set; }
 
             /// <summary>
             /// The transformed data payload, after base64-encoding.
             /// </summary>
             [DataMember(Name = "data")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
-#endif
             public string Base64EncodedData { get; set; }
 
             /// <summary>
             /// The response record metadata.
             /// </summary>
             [DataMember(Name = "metadata")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("metadata")]
-#endif
             public FirehoseResponseRecordMetadata Metadata { get; set; }
 
 
@@ -108,7 +97,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// <param name="data">The data to be base64 encoded.</param>
             public void EncodeData(string data)
             {
-                this.Base64EncodedData = Convert.ToBase64String(Encoding.UTF8.GetBytes(data));
+                Base64EncodedData = Convert.ToBase64String(Encoding.UTF8.GetBytes(data));
             }
         }
 
@@ -123,9 +112,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// https://docs.aws.amazon.com/firehose/latest/dev/dynamic-partitioning.html
             /// </summary>
             [DataMember(Name = "partitionKeys")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("partitionKeys")]
-#endif
             public Dictionary<string, string> PartitionKeys { get; set; }
         }
     }

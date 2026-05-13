@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -34,10 +34,20 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         public bool DisposeOutputStream { get; private set; } = true;
 
+        /// <summary>
+        /// Construct a InvocationResponse with an output stream that will be disposed by the Lambda Runtime Client. 
+        /// </summary>
+        /// <param name="outputStream"></param>
         public InvocationResponse(Stream outputStream)
             : this(outputStream, true)
         { }
 
+        /// <summary>
+        /// Construct a InvocationResponse
+        /// </summary>
+        /// <param name="outputStream"></param>
+        /// <param name="disposeOutputStream"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public InvocationResponse(Stream outputStream, bool disposeOutputStream)
         {
             OutputStream = outputStream ?? throw new ArgumentNullException(nameof(outputStream));

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <Version>1.0.2</Version>
+    <Description>Provides a Restore Hooks library to help you register before snapshot and after restore hooks.</Description>
+    <AssemblyTitle>SnapshotRestore.Registry</AssemblyTitle>
+    <PackageId>SnapshotRestore.Registry</PackageId>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <LangVersion>latest</LangVersion>
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <Authors>Amazon Web Services</Authors>
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\snapshotrestore.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>NU5048;NU1903</NoWarn>
+    <!--
+      Disabling the EOL check because when we remove support in our libraries is a different and slower cycle then the framework's cycle.
+      We need to be confident there is no longer a critical mass of customers still using the framework version and we need to be
+      ready to make a major version release of our libraries.
+      -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

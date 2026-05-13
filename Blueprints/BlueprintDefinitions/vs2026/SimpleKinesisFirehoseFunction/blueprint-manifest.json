@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple Kinesis Firehose Function",
+  "system-name": "SimpleKinesisFirehoseFunction",
+  "description": "A skeleton Lambda function to get started responding to Amazon Kinesis Firehose events",
+  "sort-order": 125,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "KinesisFirehose",
+    "Simple"
+  ]
+}

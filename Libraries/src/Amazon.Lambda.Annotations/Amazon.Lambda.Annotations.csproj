@@ -1,17 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>1.5.0</AssemblyVersion>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
+    <!-- 
+		The .NET Standard 2.0 target is required for the source generator. The other targets
+		are required because there is code included in the project used at runtime but not
+		during source generation that require newer .NET targets. For example the JSON
+		serialization of HttpResults.
+	-->
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
+    <IsPackable>false</IsPackable>
+    
     <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    
+    <Version>2.0.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Core;
+using Amazon.Lambda.Core;
 using System;
 using System.IO;
 using System.Linq;
@@ -61,27 +61,27 @@ namespace Amazon.Lambda.PowerShellHost
             {
                 var state = InitialSessionState.CreateDefault();
                 state.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Unrestricted;
-                this._ps = PowerShell.Create(state);                
+                _ps = PowerShell.Create(state);                
             }
             else
             {
-                this._ps = PowerShell.Create();                                
+                _ps = PowerShell.Create();                                
             }
 
-            this.SetupStreamHandlers();
-            this.LoadModules();
+            SetupStreamHandlers();
+            LoadModules();
 
             // Can be true if there was an exception importing modules packaged with the function.
-            if(this._lastException != null)
+            if(_lastException != null)
             {
-                Console.WriteLine(this._constructorLoggingBuffer.ToString());
-                throw this._lastException;
+                Console.WriteLine(_constructorLoggingBuffer.ToString());
+                throw _lastException;
             }
 
-            this.PowerShellFunctionName = Environment.GetEnvironmentVariable(POWERSHELL_FUNCTION_ENV);
-            if(!string.IsNullOrEmpty(this.PowerShellFunctionName))
+            PowerShellFunctionName = Environment.GetEnvironmentVariable(POWERSHELL_FUNCTION_ENV);
+            if(!string.IsNullOrEmpty(PowerShellFunctionName))
             {
-                this._constructorLoggingBuffer.AppendLine($"Configured to call function {this.PowerShellFunctionName} from the PowerShell script.");
+                _constructorLoggingBuffer.AppendLine($"Configured to call function {PowerShellFunctionName} from the PowerShell script.");
             }
         }
 
@@ -93,7 +93,7 @@ namespace Amazon.Lambda.PowerShellHost
         protected PowerShellFunctionHost(string powerShellScriptFileName)
             : this()
         {
-            this._powerShellScriptFileName = powerShellScriptFileName;
+            _powerShellScriptFileName = powerShellScriptFileName;
         }
 
         /// <summary>
@@ -104,19 +104,19 @@ namespace Amazon.Lambda.PowerShellHost
         /// <returns></returns>
         public Stream ExecuteFunction(Stream inputStream, ILambdaContext context)
         {
-            this._lastException = null;
+            _lastException = null;
 
-            if (this._runFirstTimeInitialization)
+            if (_runFirstTimeInitialization)
             {
-                this._logger = context.Logger;
+                _logger = context.Logger;
 
-                if (this._constructorLoggingBuffer?.Length > 0)
+                if (_constructorLoggingBuffer?.Length > 0)
                 {
-                    context.Logger.Log(this._constructorLoggingBuffer.ToString());
-                    this._constructorLoggingBuffer = null;
+                    context.Logger.Log(_constructorLoggingBuffer.ToString());
+                    _constructorLoggingBuffer = null;
                 }
 
-                this._runFirstTimeInitialization = false;
+                _runFirstTimeInitialization = false;
             }
 
             string inputString;
@@ -125,16 +125,16 @@ namespace Amazon.Lambda.PowerShellHost
                 inputString = reader.ReadToEnd();
             }
 
-            var result = this.BeginInvoke(inputString, context);
-            this.WaitPowerShellExecution(result);
+            var result = BeginInvoke(inputString, context);
+            WaitPowerShellExecution(result);
 
-            if (this._lastException != null || this._ps.InvocationStateInfo.State == PSInvocationState.Failed)
+            if (_lastException != null || _ps.InvocationStateInfo.State == PSInvocationState.Failed)
             {
-                var exception = this._exceptionManager.DetermineExceptionToThrow(this._lastException ?? this._ps.InvocationStateInfo.Reason);
+                var exception = _exceptionManager.DetermineExceptionToThrow(_lastException ?? _ps.InvocationStateInfo.Reason);
                 throw exception;
             }
 
-            return new MemoryStream(Encoding.UTF8.GetBytes(this.GetExecutionOutput()));
+            return new MemoryStream(Encoding.UTF8.GetBytes(GetExecutionOutput()));
         }
 
         /// <summary>
@@ -146,11 +146,14 @@ namespace Amazon.Lambda.PowerShellHost
         private IAsyncResult BeginInvoke(string input, ILambdaContext context)
         {
             // Clear all previous PowerShell executions, variables and outputs
-            this._ps.Commands?.Clear();
-            this._ps.Streams.Verbose?.Clear();
-            this._ps.Streams.Error?.Clear();
-            this._ps.Runspace?.ResetRunspaceState();
-            this._output.Clear();
+            _ps.Commands?.Clear();
+            _ps.Streams.Verbose?.Clear();
+            _ps.Streams.Debug?.Clear();
+            _ps.Streams.Information?.Clear();
+            _ps.Streams.Warning?.Clear();
+            _ps.Streams.Error?.Clear();
+            _ps.Runspace?.ResetRunspaceState();
+            _output.Clear();
 
             var providedScript = LoadScript(input, context);
 
@@ -184,18 +187,18 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
 
             executingScript += providedScript;
 
-            if (!string.IsNullOrEmpty(this.PowerShellFunctionName))
+            if (!string.IsNullOrEmpty(PowerShellFunctionName))
             {
-                executingScript += $"{Environment.NewLine}{this.PowerShellFunctionName} $LambdaInput $LambdaContext{Environment.NewLine}";
+                executingScript += $"{Environment.NewLine}{PowerShellFunctionName} $LambdaInput $LambdaContext{Environment.NewLine}";
             }
 
 
-            this._ps.AddScript(executingScript);
-            this._ps.AddParameter("LambdaInputString", input);
-            this._ps.AddParameter("LambdaContext", context);
+            _ps.AddScript(executingScript);
+            _ps.AddParameter("LambdaInputString", input);
+            _ps.AddParameter("LambdaContext", context);
 
 
-            return this._ps.BeginInvoke<PSObject, PSObject>(null, this._output);
+            return _ps.BeginInvoke<PSObject, PSObject>(null, _output);
         }
 
         /// <summary>
@@ -207,23 +210,23 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
         protected virtual string LoadScript(string input, ILambdaContext context)
         {
             // Check to see if the file contents have already been read.
-            if(this._powerShellScriptFileContent != null)
+            if(_powerShellScriptFileContent != null)
             {
-                return this._powerShellScriptFileContent;
+                return _powerShellScriptFileContent;
             }
 
-            if(string.IsNullOrEmpty(this._powerShellScriptFileName))
+            if(string.IsNullOrEmpty(_powerShellScriptFileName))
             {
                 throw new LambdaPowerShellException("No PowerShell script specified to be executed. Either specify a script in the constructor or override the LoadScript method.");
             }
-            if(!File.Exists(this._powerShellScriptFileName))
+            if(!File.Exists(_powerShellScriptFileName))
             {
-                throw new LambdaPowerShellException($"Failed to find PowerShell script {this._powerShellScriptFileName}. Make sure the script is included with the package bundle.");
+                throw new LambdaPowerShellException($"Failed to find PowerShell script {_powerShellScriptFileName}. Make sure the script is included with the package bundle.");
             }
 
-            this._powerShellScriptFileContent = File.ReadAllText(this._powerShellScriptFileName);
+            _powerShellScriptFileContent = File.ReadAllText(_powerShellScriptFileName);
 
-            return this._powerShellScriptFileContent;
+            return _powerShellScriptFileContent;
         }
 
         /// <summary>
@@ -242,7 +245,7 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
         /// </summary>
         private string GetExecutionOutput()
         {
-            var responseObject = this._output?.LastOrDefault();
+            var responseObject = _output?.LastOrDefault();
             if (responseObject == null)
             {
                 return string.Empty;
@@ -252,8 +255,8 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
                 return baseObj;
             }
 
-            this._ps.Commands?.Clear();
-            this._ps.Runspace?.ResetRunspaceState();
+            _ps.Commands?.Clear();
+            _ps.Runspace?.ResetRunspaceState();
 
             string executingScript = @"
 Param(
@@ -263,16 +266,16 @@ Param(
 ConvertTo-Json $Response
 
 ";
-            this._ps.AddScript(executingScript);
-            this._ps.AddParameter("Response", responseObject);
-            var marshalled = this._ps.Invoke();
+            _ps.AddScript(executingScript);
+            _ps.AddParameter("Response", responseObject);
+            var marshalled = _ps.Invoke();
 
             return marshalled.FirstOrDefault()?.BaseObject as string;
         }
 
         private void SetupStreamHandlers()
         {
-            this._output = new PSDataCollection<PSObject>();
+            _output = new PSDataCollection<PSObject>();
 
             Func<string, EventHandler<DataAddingEventArgs>> _loggerFactory = (prefix) =>
             {
@@ -285,16 +288,17 @@ ConvertTo-Json $Response
                     var errorRecord = e?.ItemAdded as ErrorRecord;
                     if (errorRecord?.Exception != null)
                     {
-                        this._lastException = errorRecord.Exception;
+                        _lastException = errorRecord.Exception;
                     }
                 };
                 return handler;
             };
 
-            this._ps.Streams.Verbose.DataAdding += _loggerFactory("Verbose");
-            this._ps.Streams.Information.DataAdding += _loggerFactory("Information");
-            this._ps.Streams.Warning.DataAdding += _loggerFactory("Warning");
-            this._ps.Streams.Error.DataAdding += _loggerFactory("Error");
+            _ps.Streams.Verbose.DataAdding += _loggerFactory("Verbose");
+            _ps.Streams.Debug.DataAdding += _loggerFactory("Debug");
+            _ps.Streams.Information.DataAdding += _loggerFactory("Information");
+            _ps.Streams.Warning.DataAdding += _loggerFactory("Warning");
+            _ps.Streams.Error.DataAdding += _loggerFactory("Error");
         }
 
         private void LogMessage(string prefix, string message)
@@ -309,13 +313,13 @@ ConvertTo-Json $Response
                 message = $"[{prefix}] - {message}";
             }
 
-            if (this._logger != null)
+            if (_logger != null)
             {
-                this._logger.LogLine(message);
+                _logger.LogLine(message);
             }
             else
             {
-                this._constructorLoggingBuffer.AppendLine(message);
+                _constructorLoggingBuffer.AppendLine(message);
             }
         }
 
@@ -353,7 +357,7 @@ ConvertTo-Json $Response
                 }
 
                 _constructorLoggingBuffer.AppendLine($"Importing module {psd1Path}");
-                var result = this._ps.AddScript($"Import-Module \"{psd1Path}\"").BeginInvoke();
+                var result = _ps.AddScript($"Import-Module \"{psd1Path}\"").BeginInvoke();
                 WaitPowerShellExecution(result);
             }
         }

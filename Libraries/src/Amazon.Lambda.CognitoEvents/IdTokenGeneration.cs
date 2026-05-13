@@ -13,18 +13,14 @@ namespace Amazon.Lambda.CognitoEvents
         /// A map of one or more key-value pairs of claims to add or override. For group related claims, use groupOverrideDetails instead.
         /// </summary>
         [DataMember(Name = "claimsToAddOrOverride")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsToAddOrOverride")]
-# endif
-        public Dictionary<string, string> ClaimsToAddOrOverride { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, object> ClaimsToAddOrOverride { get; set; } = new Dictionary<string, object>();
         
         /// <summary>
         /// A list that contains claims to be suppressed from the identity token.
         /// </summary>
         [DataMember(Name = "claimsToSuppress")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsToSuppress")]
-# endif
         public List<string> ClaimsToSuppress { get; set; } = new List<string>();
     }
 }

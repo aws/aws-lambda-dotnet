@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -80,10 +80,10 @@ namespace Amazon.Lambda.TestTool.Tests
 
         public static string GetTargetFramework()
         {
-#if NET6_0
-            return "net6.0";
-#elif NET8_0
+#if NET8_0
             return "net8.0";
+#elif NET10_0
+            return "net10.0";
 #else
             Compile error you need to add a new target framework
 #endif

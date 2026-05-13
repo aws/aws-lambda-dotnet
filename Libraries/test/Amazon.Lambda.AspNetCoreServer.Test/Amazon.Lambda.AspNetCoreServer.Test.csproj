@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Test</AssemblyName>
     <OutputType>Library</OutputType>
     <PackageId>Amazon.Lambda.AspNetCoreServer.Test</PackageId>
@@ -9,7 +11,7 @@
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <NoWarn>1701;1702;1705;CS0618</NoWarn>
+    <NoWarn>1701;1702;1705;CS0618;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,18 +43,23 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
     <ProjectReference Include="..\TestWebApp\TestWebApp.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
+
   
 </Project>

@@ -1,0 +1,29 @@
+{
+  "StatusCode": 201,
+  "Content": "{\u0022message\u0022:\u0022Created\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:20 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "x-amzn-RequestId": [
+      "a5e7a2f4-03ad-41a0-838a-ce70db8c1e6f"
+    ],
+    "x-amz-apigw-id": [
+      "JCIn_HvOvHcEdIQ="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd87cc-469a8eac2157be907b932892;Parent=73bab1a764c16624;Sampled=0;Lineage=1:6e5eb7d9:0"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "21"
+    ]
+  }
+}
+
+

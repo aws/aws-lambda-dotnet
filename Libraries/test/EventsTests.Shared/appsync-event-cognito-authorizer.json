@@ -1,0 +1,68 @@
+{
+  "arguments": {
+    "input": {
+      "title": "Support Ticket Test",
+      "description": "Support Ticket Test"
+    }
+  },
+  "identity": {
+    "claims": {
+      "sub": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12",
+      "cognito:groups": [
+        "admin"
+      ],
+      "iss": "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_xxxxxx",
+      "version": 2,
+      "client_id": "458vq6091kg88r4qurfnxxxxx",
+      "origin_jti": "6102131f-89b2-4909-80bc-200ccf675892",
+      "event_id": "373cdbc2-5460-4dff-bebb-3cba1de69777",
+      "token_use": "access",
+      "scope": "aws.cognito.signin.user.admin openid profile email",
+      "auth_time": 1737358577,
+      "exp": 1737362177,
+      "iat": 1737358577,
+      "jti": "821f10f1-9a6c-46bd-b1d6-62e266d6639b",
+      "username": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12"
+    },
+    "defaultAuthStrategy": "ALLOW",
+    "groups": [
+      "admin"
+    ],
+    "issuer": "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_xxxxxx",
+    "sourceIp": [
+      "192.168.234.157"
+    ],
+    "sub": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12",
+    "username": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12"
+  },
+  "source": null,
+  "request": {
+    "headers": {
+      "key1": "value1",
+      "key2": "value2"
+    },
+    "domainName": null
+  },
+  "prev": null,
+  "info": {
+    "fieldName": "openSupportTicket",
+    "selectionSetList": [
+      "ticketId",
+      "status",
+      "title",
+      "description",
+      "createdAt",
+      "updatedAt",
+      "__typename"
+    ],
+    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n  __typename\n}",
+    "variables": {
+      "input": {
+        "title": "Support Ticket Test",
+        "description": "Support Ticket Test"
+      }
+    },
+    "parentTypeName": "Mutation"
+  },
+  "stash": {}
+}

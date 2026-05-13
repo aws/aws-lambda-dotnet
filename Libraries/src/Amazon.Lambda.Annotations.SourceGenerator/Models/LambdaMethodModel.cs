@@ -54,11 +54,61 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     return true;
                 }
-                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult) 
+                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult)
                 {
                     return true;
                 }
 
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the Lambda function returns either IAuthorizerResult or Task&lt;IAuthorizerResult&gt;
+        /// </summary>
+        public bool ReturnsIAuthorizerResult
+        {
+            get
+            {
+                if (ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if (ReturnType.FullName == TypeFullNames.IAuthorizerResult)
+                {
+                    return true;
+                }
+                if (ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IAuthorizerResult)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the Lambda function returns either ApplicationLoadBalancerResponse or Task&lt;ApplicationLoadBalancerResponse&gt;
+        /// </summary>
+        public bool ReturnsApplicationLoadBalancerResponse
+        {
+            get
+            {
+                if (ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if (ReturnType.FullName == TypeFullNames.ApplicationLoadBalancerResponse)
+                {
+                    return true;
+                }
+                if (ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.ApplicationLoadBalancerResponse)
+                {
+                    return true;
+                }
 
                 return false;
             }
@@ -99,6 +149,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Returns true if original method uses dependency injection.
         /// </summary>
         public bool UsingDependencyInjection { get; set; }
+
+        public bool UsingHostBuilderForDependencyInjection { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace for the nearest enclosing namespace. Returns null if the

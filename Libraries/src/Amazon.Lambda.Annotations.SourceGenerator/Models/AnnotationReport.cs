@@ -10,6 +10,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public IList<ILambdaFunctionSerializable> LambdaFunctions { get; } = new List<ILambdaFunctionSerializable>();
 
         /// <summary>
+        /// Collection of Lambda authorizers detected in the project
+        /// </summary>
+        public IList<AuthorizerModel> Authorizers { get; } = new List<AuthorizerModel>();
+
+        /// <summary>
         /// Path to the CloudFormation template for the Lambda project
         /// </summary>
         public string CloudFormationTemplatePath{ get; set; }

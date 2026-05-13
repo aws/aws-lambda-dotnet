@@ -1,0 +1,23 @@
+{
+  "author": "AWS",
+  "classifications": [
+    "AWS",
+    "Lambda",
+    "Function"
+  ],
+  "name": "Lambda File-Based",
+  "identity": "AWS.Lambda.File-Based.CSharp",
+  "groupIdentity": "AWS.Lambda.File-Based",
+  "shortName": "lambda.FileBased",
+  "tags": {
+    "language": "C#"
+  },
+  "sourceName": "BlueprintBaseName.1",
+  "preferNameDirectory": false,
+  "symbols": {},
+  "primaryOutputs": [
+    {
+      "path": "./BlueprintBaseName.1.cs"
+    }
+  ]
+}

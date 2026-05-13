@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple DynamoDB Function",
+  "system-name": "SimpleDynamoDBFunction",
+  "description": "A skeleton Lambda function to get started responding to Amazon DynamoDB stream events",
+  "sort-order": 125,
+  "hidden-tags": [
+    "F#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "DynamoDB",
+    "Simple"
+  ]
+}

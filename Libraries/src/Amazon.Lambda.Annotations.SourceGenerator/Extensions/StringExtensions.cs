@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
 {
@@ -11,6 +12,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
                 return char.ToLowerInvariant(str[0]) + str.Substring(1);
             }
             return str;
+        }
+        
+        public static string ApplyReplacements(this string str)
+        {
+            var generatorType = typeof(Generator);
+            var generatorAssembly = generatorType.Assembly;
+            var assemblyName = generatorAssembly.GetName();
+            var assemblyVersion = assemblyName.Version;
+            return str.Replace("{ANNOTATIONS_ASSEMBLY_VERSION}", assemblyVersion?.ToString());
         }
     }
 

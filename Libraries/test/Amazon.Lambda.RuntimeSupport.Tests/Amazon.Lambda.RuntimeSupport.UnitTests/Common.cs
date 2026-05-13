@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -55,7 +55,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         {
             if (!FindMatchingExceptionMessage(e, expectedPartialMessage))
             {
-                Assert.True(false, $"Unable to match up expected message '{expectedPartialMessage}' in exception: {GetAllMessages(e)}");
+                Assert.Fail($"Unable to match up expected message '{expectedPartialMessage}' in exception: {GetAllMessages(e)}");
             }
         }
 

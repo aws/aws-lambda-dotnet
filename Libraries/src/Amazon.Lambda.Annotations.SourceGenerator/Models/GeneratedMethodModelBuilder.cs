@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return model;
         }
 
-        private static IList<string> BuildUsings(LambdaMethodModel lambdaMethodModel, 
+        private static IList<string> BuildUsings(LambdaMethodModel lambdaMethodModel,
             IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,
             GeneratorExecutionContext context)
@@ -45,11 +48,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             if (configureMethodSymbol != null)
             {
                 namespaces.Add("Microsoft.Extensions.DependencyInjection");
+
+                if (lambdaMethodModel.UsingHostBuilderForDependencyInjection)
+                {
+                    namespaces.Add("Microsoft.Extensions.Hosting");
+                }
+
             }
 
             namespaces.Add("Amazon.Lambda.Core");
 
-            if(lambdaMethodModel.ReturnsIHttpResults)
+            if(lambdaMethodModel.ReturnsIHttpResults || lambdaMethodModel.ReturnsIAuthorizerResult)
             {
                 namespaces.Add("Amazon.Lambda.Annotations.APIGateway");
             }
@@ -73,7 +82,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 return TypeModelBuilder.Build(typeStream, context);
             }
 
-            
+            // For authorizer functions returning IAuthorizerResult, the generated handler returns Stream
+            // (the IAuthorizerResult.Serialize method produces the JSON stream)
+            if (lambdaMethodModel.ReturnsIAuthorizerResult)
+            {
+                var typeStream = context.Compilation.GetTypeByMetadataName(TypeFullNames.Stream);
+                if (lambdaMethodModel.ReturnsGenericTask)
+                {
+                    var genericTask = task.Construct(typeStream);
+                    return TypeModelBuilder.Build(genericTask, context);
+                }
+                return TypeModelBuilder.Build(typeStream, context);
+            }
+
+            // For authorizer functions that return raw API Gateway types (backwards compatibility),
+            // pass through the return type as-is
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute) ||
+                lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAuthorizerAttribute))
+            {
+                return lambdaMethodModel.ReturnType;
+            }
+
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
                 var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
@@ -103,6 +132,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                // ALB functions return ApplicationLoadBalancerResponse
+                // If the user already returns ApplicationLoadBalancerResponse, pass through the return type.
+                // Otherwise, wrap in ApplicationLoadBalancerResponse.
+                if (lambdaMethodModel.ReturnsApplicationLoadBalancerResponse)
+                {
+                    return lambdaMethodModel.ReturnType;
+                }
+                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
+                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse)):
+                    context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse);
+                return TypeModelBuilder.Build(symbol, context);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute))
+            {
+                // Function URLs use the same payload format as HTTP API v2
+                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
+                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse)):
+                    context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
+                return TypeModelBuilder.Build(symbol, context);
             }
             else
             {
@@ -137,6 +188,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return (HttpApiVersion)versionArgument.Value;
         }
 
+        private static AuthorizerPayloadFormatVersion GetAuthorizerPayloadFormatVersion(AttributeData authorizerAttribute)
+        {
+            var versionArg = authorizerAttribute.NamedArguments
+                .FirstOrDefault(arg => arg.Key == "AuthorizerPayloadFormatVersion").Value;
+
+            if (versionArg.Type == null || versionArg.Value == null)
+            {
+                // Default is V2
+                return AuthorizerPayloadFormatVersion.V2;
+            }
+
+            return (AuthorizerPayloadFormatVersion)(int)versionArg.Value;
+        }
+
         private static IList<ParameterModel> BuildParameters(IMethodSymbol lambdaMethodSymbol,
             LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
@@ -152,7 +217,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 Documentation = "The ILambdaContext that provides methods for logging and describing the Lambda environment."
             };
 
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute))
+            {
+                // For HTTP API authorizer functions, the generated handler accepts the authorizer request type
+                var authorizerAttribute = lambdaMethodSymbol.GetAttributeData(context, TypeFullNames.HttpApiAuthorizerAttribute);
+                var payloadVersion = GetAuthorizerPayloadFormatVersion(authorizerAttribute);
+
+                string requestTypeName;
+                if (payloadVersion == AuthorizerPayloadFormatVersion.V2)
+                {
+                    requestTypeName = TypeFullNames.APIGatewayCustomAuthorizerV2Request;
+                }
+                else
+                {
+                    requestTypeName = TypeFullNames.APIGatewayCustomAuthorizerRequest;
+                }
+
+                var symbol = context.Compilation.GetTypeByMetadataName(requestTypeName);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The API Gateway authorizer request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAuthorizerAttribute))
+            {
+                // For REST API authorizer functions, always use APIGatewayCustomAuthorizerRequest
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayCustomAuthorizerRequest);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The API Gateway authorizer request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
                 var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyRequest);
                 var type = TypeModelBuilder.Build(symbol, context);
@@ -196,6 +302,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 parameters.Add(requestParameter);
                 parameters.Add(contextParameter);
             }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerRequest);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The ALB request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute))
+            {
+                // Function URLs use the same payload format as HTTP API v2
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyRequest);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The Function URL request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
             else
             {
                 // Lambda method with no event attribute are plain lambda functions, therefore, generated method will have
@@ -215,6 +348,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     }
                     else
                     {
+                        // Somehow, Roslyn doesn't include @ character when using with reserved keyword. Add a check just in case Roslyn fix is implemented in later versions.
+                        if (!param.Name.StartsWith("@"))
+                        {
+                            param.Name = "__" + param.Name + "__";
+                        }
                         param.Documentation = "The request object that will be processed by the Lambda function handler.";
                     }
 

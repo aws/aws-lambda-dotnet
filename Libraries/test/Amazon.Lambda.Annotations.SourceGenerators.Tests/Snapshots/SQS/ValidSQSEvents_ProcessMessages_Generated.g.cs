@@ -30,11 +30,11 @@ namespace TestServerlessApp.SQSEventExamples
         /// <summary>
         /// The generated Lambda function handler for <see cref="ProcessMessages(Amazon.Lambda.SQSEvents.SQSEvent)"/>
         /// </summary>
-        /// <param name="evnt">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__evnt__">The request object that will be processed by the Lambda function handler.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public void ProcessMessages(Amazon.Lambda.SQSEvents.SQSEvent evnt)
+        public void ProcessMessages(Amazon.Lambda.SQSEvents.SQSEvent __evnt__)
         {
-            validSQSEvents.ProcessMessages(evnt);
+            validSQSEvents.ProcessMessages(__evnt__);
         }
 
         private static void SetExecutionEnvironment()
@@ -49,7 +49,7 @@ namespace TestServerlessApp.SQSEventExamples
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.5.0.0");
+            envValue.Append("lib/amazon-lambda-annotations#{ANNOTATIONS_ASSEMBLY_VERSION}");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

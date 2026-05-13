@@ -1,8 +1,12 @@
-﻿using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
+using Amazon.Lambda.DynamoDBEvents;
+using Amazon.Lambda.SNSEvents;
+using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.SQSEvents;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -11,6 +15,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Immutable;
 using System.IO;
@@ -23,44 +28,69 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
     public static class CSharpSourceGeneratorVerifier<TSourceGenerator>
         where TSourceGenerator : ISourceGenerator, new()
     {
-        public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
+        public class Test : CSharpSourceGeneratorTest<TSourceGenerator, DefaultVerifier>
         {
             public enum ReferencesMode {All, NoApiGatewayEvents}
 
-            public enum TargetFramework { Net60, Net80 }
+            public enum TargetFramework { Net8_0, Net10_0 }
 
-            public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net60)
+            private ImmutableArray<string> PreprocessorSymbols { get; set; } = ImmutableArray<string>.Empty;
+
+            public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net10_0)
             {
-                if(referencesMode == ReferencesMode.NoApiGatewayEvents)
+                PreprocessorSymbols = ImmutableArray.Create<string>("ANALYZER_UNIT_TESTS");
+
+                var assemblyResolver = (Type t) =>
                 {
-                    this.SolutionTransforms.Add((solution, projectId) =>
+                    var path = t.Assembly.Location;
+                    if (targetFramework == TargetFramework.Net8_0 && path.Contains("net10.0"))
+                        path = path.Replace("net10.0", "net8.0");
+
+                    return path;
+                };
+
+                if (referencesMode == ReferencesMode.NoApiGatewayEvents)
+                {
+                    SolutionTransforms.Add((solution, projectId) =>
                     {
-                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
+                        return solution
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ILambdaContext))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IServiceCollection))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ServiceProvider))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(RestApiAttribute))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DefaultLambdaJsonSerializer))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(HostApplicationBuilder))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IHost))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SnapshotRestore.Registry.RestoreHooksRegistry))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(LambdaBootstrapBuilder))));
                     });
 
                 }
                 else
                 {
-                    this.SolutionTransforms.Add((solution, projectId) =>
+                    SolutionTransforms.Add((solution, projectId) =>
                     {
-                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SQSEvent).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
+                        return solution
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ILambdaContext))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(APIGatewayProxyRequest))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DynamoDBEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SNSEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SQSEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ScheduledEvent))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ApplicationLoadBalancerRequest))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IServiceCollection))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(ServiceProvider))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(RestApiAttribute))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(DefaultLambdaJsonSerializer))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(HostApplicationBuilder))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(IHost))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(SnapshotRestore.Registry.RestoreHooksRegistry))))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(assemblyResolver(typeof(LambdaBootstrapBuilder))));
                     });
                 }
 
                 // Set up the target framework moniker and reference assemblies 
-                if (targetFramework == TargetFramework.Net60)
+                if (targetFramework == TargetFramework.Net10_0)
                 {
                     SolutionTransforms.Add((solution, projectId) => 
                     {
@@ -69,13 +99,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             "TargetFrameworkConfig.editorconfig", 
                             SourceText.From("""
                                                 is_global = true
-                                                build_property.TargetFramework = net6.0
+                                                build_property.TargetFramework = net10.0
                                             """),
                             filePath: "/TargetFrameworkConfig.editorconfig");
                     });
-                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60;
+                    ReferenceAssemblies = new ReferenceAssemblies("net10.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"), Path.Combine("ref", "net10.0"));
                 }
-                else if (targetFramework == TargetFramework.Net80) 
+                else if (targetFramework == TargetFramework.Net8_0) 
                 {
                     SolutionTransforms.Add((solution, projectId) =>
                     {
@@ -124,7 +154,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             protected override ParseOptions CreateParseOptions()
             {
-                return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+                return ((CSharpParseOptions)base.CreateParseOptions())
+                    .WithLanguageVersion(LanguageVersion)
+                    .WithPreprocessorSymbols(PreprocessorSymbols);
             }
         }
     }

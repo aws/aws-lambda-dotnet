@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace TestWebApp.Controllers
 {
@@ -48,6 +49,17 @@ namespace TestWebApp.Controllers
                 sb.AppendLine($"Request content length: {Request.ContentLength}");
                 return Content(sb.ToString());
             }
+        }
+
+        [HttpPut("no-body")]
+        public IActionResult Test([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] Body request = default)
+        {
+            return Accepted();
+        }
+
+        public class Body
+        {
+            public string Prop { get; set; }
         }
     }
 }

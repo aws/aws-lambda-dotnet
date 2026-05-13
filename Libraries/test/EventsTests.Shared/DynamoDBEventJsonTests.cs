@@ -1,4 +1,4 @@
-﻿using Amazon.DynamoDBv2.DocumentModel;
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.Lambda.DynamoDBEvents;
 using System.Collections.Generic;
 using System.IO;
@@ -223,7 +223,7 @@ namespace Amazon.Lambda.Tests
             Assert.NotNull(document["Map"].AsDocument());
             Assert.Equal("string", document["Map"].AsDocument()["string"].AsString());
             Assert.Equal(123.45, document["Map"].AsDocument()["number"].AsDouble());
-            Assert.Equal(false, document["Map"].AsDocument()["boolean"].AsBoolean());
+            Assert.False(document["Map"].AsDocument()["boolean"].AsBoolean());
         }
 
         [Fact]
@@ -357,9 +357,9 @@ namespace Amazon.Lambda.Tests
             var hashSet = document["StringSet"].AsHashSetOfString();
             Assert.NotNull(hashSet);
             Assert.Equal(3, hashSet.Count);
-            Assert.True(hashSet.Contains("Black"));
-            Assert.True(hashSet.Contains("Green"));
-            Assert.True(hashSet.Contains("Red"));
+            Assert.Contains("Black", hashSet);
+            Assert.Contains("Green", hashSet);
+            Assert.Contains("Red", hashSet);
         }
 
         [Fact]
@@ -492,7 +492,7 @@ namespace Amazon.Lambda.Tests
             var json = evnt.Records[0].Dynamodb.NewImage.ToJson();
             var document = Document.FromJson(json);
 
-            Assert.Equal(0, document.Count);
+            Assert.Empty(document);
         }
     }
 }

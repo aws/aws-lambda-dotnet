@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,11 +17,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 {
     public class TestMinimalAPI : IClassFixture<TestMinimalAPI.TestMinimalAPIAppFixture>
     {
-        TestMinimalAPIAppFixture _fixture;
+        readonly TestMinimalAPIAppFixture _fixture;
 
         public TestMinimalAPI(TestMinimalAPI.TestMinimalAPIAppFixture fixture)
         {
-            this._fixture = fixture;
+            _fixture = fixture;
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         public class TestMinimalAPIAppFixture : IDisposable
         {
-            object lock_process = new object();
+            readonly object lock_process = new object();
             public TestMinimalAPIAppFixture()
             {
             }
@@ -46,7 +46,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             public T ExecuteRequest<T>(string eventFilePath)
             {
-                var requestFilePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), eventFilePath);
+                var requestFilePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), eventFilePath);
                 var responseFilePath = Path.GetTempFileName();
 
                 var comamndArgument = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? $"/c" : $"-c";
@@ -60,6 +60,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 {
                     using var process = Process.Start(processStartInfo);
                     process.WaitForExit(15000);
+
+                    if (process.ExitCode != 0)
+                    {
+                        throw new Exception("Process failed with exit code: " + process.ExitCode);
+                    }
 
                     if(!File.Exists(responseFilePath))
                     {
@@ -77,7 +82,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             private string GetTestAppDirectory()
             {
-                var path = this.GetType().GetTypeInfo().Assembly.Location;
+                var path = GetType().GetTypeInfo().Assembly.Location;
                 while(!string.Equals(new DirectoryInfo(path).Name, "test"))
                 {
                     path = Directory.GetParent(path).FullName;
@@ -102,7 +107,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/sh";
             }
 
-            private bool TryGetEnvironmentVariable(string variable, out string? value)
+            private bool TryGetEnvironmentVariable(string variable, out string value)
             {
                 value = Environment.GetEnvironmentVariable(variable);
                 return !string.IsNullOrEmpty(value);

@@ -138,5 +138,169 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MaximumHandlerLengthExceeded = new DiagnosticDescriptor(id: "AWSLambda0118",
+            title: "Maximum Handler Length Exceeded",
+            messageFormat: "The handler string '{0}' exceeds the maximum length of 127 characters. Please trim down your project namespace, class name or method name to stay within the character limit.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MultipleConfigureMethodsNotAllowed = new DiagnosticDescriptor(
+            id: "AWSLambda0119",
+            title: "Conflicting Service Configuration Methods Detected",
+            messageFormat: "Both '{0}' and '{1}' methods are present. Only {1} will be used. Please consolidate your service configuration into {1}.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        // Authorizer diagnostics (ALA0019-ALA0027 per design document)
+        public static readonly DiagnosticDescriptor AuthorizerMissingName = new DiagnosticDescriptor(
+            id: "AWSLambda0120",
+            title: "Authorizer Name Required",
+            messageFormat: "The Name property is required on [{0}] attribute",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor HttpApiAuthorizerNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0121",
+            title: "HTTP API Authorizer Not Found",
+            messageFormat: "Authorizer '{0}' referenced in [HttpApi] attribute does not exist. Ensure a Lambda function with [HttpApiAuthorizer] exists with method name '{0}' or ResourceName = \"{0}\".",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor RestApiAuthorizerNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0122",
+            title: "REST API Authorizer Not Found",
+            messageFormat: "Authorizer '{0}' referenced in [RestApi] attribute does not exist. Ensure a Lambda function with [RestApiAuthorizer] exists with method name '{0}' or ResourceName = \"{0}\".",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor HttpApiAuthorizerTypeMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0123",
+            title: "Authorizer Type Mismatch",
+            messageFormat: "Cannot use REST API authorizer '{0}' with [HttpApi] attribute. Use an [HttpApiAuthorizer] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor RestApiAuthorizerTypeMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0124",
+            title: "Authorizer Type Mismatch",
+            messageFormat: "Cannot use HTTP API authorizer '{0}' with [RestApi] attribute. Use a [RestApiAuthorizer] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DuplicateAuthorizerName = new DiagnosticDescriptor(
+            id: "AWSLambda0125",
+            title: "Duplicate Authorizer Name",
+            messageFormat: "Duplicate authorizer name '{0}'. Authorizer names must be unique within the same API type.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAuthorizerResultTtl = new DiagnosticDescriptor(
+            id: "AWSLambda0127",
+            title: "Invalid Result TTL",
+            messageFormat: "Invalid ResultTtlInSeconds '{0}'. Must be between 0 and 3600.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AuthorizerPayloadVersionMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0128",
+            title: "Authorizer Payload Version Mismatch",
+            messageFormat: "The authorizer '{0}' uses AuthorizerPayloadFormatVersion {1} but the endpoint uses HttpApiVersion {2}. This may cause unexpected behavior.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MissingLambdaFunctionAttribute = new DiagnosticDescriptor(
+            id: "AWSLambda0129",
+            title: "Missing LambdaFunction Attribute",
+            messageFormat: "Method has [{0}] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AuthorizerResultOnNonAuthorizerFunction = new DiagnosticDescriptor(
+            id: "AWSLambda0130",
+            title: $"Invalid return type IAuthorizerResult",
+            messageFormat: "IAuthorizerResult is not a valid return type for LambdaFunctions without HttpApiAuthorizer or RestApiAuthorizer attributes",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromBodyNotSupportedOnAuthorizer = new DiagnosticDescriptor(
+            id: "AWSLambda0131",
+            title: "FromBody not supported on Authorizer functions",
+            messageFormat: "[FromBody] is not supported on authorizer functions. Authorizer functions only support [FromHeader], [FromQuery], and [FromRoute] parameter attributes.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAlbApiAttribute = new DiagnosticDescriptor(
+            id: "AWSLambda0132",
+            title: "Invalid ALBApiAttribute",
+            messageFormat: "Invalid ALBApiAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbListenerReferenceNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0133",
+            title: "ALB Listener Reference Not Found",
+            messageFormat: "The ALBApi ListenerArn references '@{0}', but no resource or parameter named '{0}' was found in the CloudFormation template. Add the listener resource to the template or correct the reference name.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromRouteNotSupportedOnAlb = new DiagnosticDescriptor(
+            id: "AWSLambda0134",
+            title: "FromRoute not supported on ALB functions",
+            messageFormat: "[FromRoute] is not supported on ALB functions. ALB does not support route path template parameters. Use [FromHeader], [FromQuery], or [FromBody] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbUnmappedParameter = new DiagnosticDescriptor(
+            id: "AWSLambda0135",
+            title: "Unmapped parameter on ALB function",
+            messageFormat: "Parameter '{0}' on ALB function has no binding attribute. Use [FromHeader], [FromQuery], [FromBody], or [FromServices], or use the ApplicationLoadBalancerRequest or ILambdaContext types.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidS3EventAttribute = new DiagnosticDescriptor(id: "AWSLambda0136",
+            title: "Invalid S3EventAttribute",
+            messageFormat: "Invalid S3EventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidDynamoDBEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0137",
+            title: "Invalid DynamoDBEventAttribute",
+            messageFormat: "Invalid DynamoDBEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidSnsEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0138",
+            title: "Invalid SNSEventAttribute",
+            messageFormat: "Invalid SNSEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidScheduleEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0139",
+            title: "Invalid ScheduleEventAttribute",
+            messageFormat: "Invalid ScheduleEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

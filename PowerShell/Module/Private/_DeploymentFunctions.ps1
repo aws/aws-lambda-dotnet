@@ -262,8 +262,7 @@ function _packageProject
     }
     try
     {
-        $arguments = $Name
-        $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
+        $arguments = " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         if (($OutputPackage))
         {

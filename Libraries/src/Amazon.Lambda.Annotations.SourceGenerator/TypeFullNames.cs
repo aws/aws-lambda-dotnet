@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Collections.Generic;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
@@ -20,6 +23,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string APIGatewayHttpApiV2ProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse";
 
         public const string IHttpResult = "Amazon.Lambda.Annotations.APIGateway.IHttpResult";
+        public const string IAuthorizerResult = "Amazon.Lambda.Annotations.APIGateway.IAuthorizerResult";
 
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
@@ -31,27 +35,75 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromHeaderAttribute = "Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute";
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.APIGateway.FromBodyAttribute";
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute";
+        public const string FromCustomAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute";
+
+        public const string FunctionUrlAttribute = "Amazon.Lambda.Annotations.APIGateway.FunctionUrlAttribute";
+        public const string FunctionUrlAuthType = "Amazon.Lambda.Annotations.APIGateway.FunctionUrlAuthType";
+
+        public const string HttpApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute";
+        public const string RestApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute";
+
+        public const string APIGatewayCustomAuthorizerV2Request = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request";
+        public const string APIGatewayCustomAuthorizerRequest = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest";
+        public const string APIGatewayCustomAuthorizerV2SimpleResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse";
+        public const string APIGatewayCustomAuthorizerResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse";
 
         public const string SQSEvent = "Amazon.Lambda.SQSEvents.SQSEvent";
         public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";
         public const string SQSEventAttribute = "Amazon.Lambda.Annotations.SQS.SQSEventAttribute";
+
+        public const string ApplicationLoadBalancerRequest = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest";
+        public const string ApplicationLoadBalancerResponse = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse";
+        public const string ALBApiAttribute = "Amazon.Lambda.Annotations.ALB.ALBApiAttribute";
+        public const string ALBFromQueryAttribute = "Amazon.Lambda.Annotations.ALB.FromQueryAttribute";
+        public const string ALBFromHeaderAttribute = "Amazon.Lambda.Annotations.ALB.FromHeaderAttribute";
+        public const string ALBFromBodyAttribute = "Amazon.Lambda.Annotations.ALB.FromBodyAttribute";
+
+        public const string S3Event = "Amazon.Lambda.S3Events.S3Event";
+        public const string S3EventAttribute = "Amazon.Lambda.Annotations.S3.S3EventAttribute";
+
+        public const string DynamoDBEvent = "Amazon.Lambda.DynamoDBEvents.DynamoDBEvent";
+        public const string DynamoDBEventAttribute = "Amazon.Lambda.Annotations.DynamoDB.DynamoDBEventAttribute";
+
+        public const string SNSEvent = "Amazon.Lambda.SNSEvents.SNSEvent";
+        public const string SNSEventAttribute = "Amazon.Lambda.Annotations.SNS.SNSEventAttribute";
+
+        public const string ScheduledEvent = "Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent";
+        public const string ScheduleEventAttribute = "Amazon.Lambda.Annotations.Schedule.ScheduleEventAttribute";
 
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
         public const string LambdaSerializerAttributeWithoutNamespace = "LambdaSerializerAttribute";
 
-        public static HashSet<string> Requests = new HashSet<string>
+        public static HashSet<string> ApiGatewayRequests = new HashSet<string>
         {
             APIGatewayProxyRequest,
             APIGatewayHttpApiV2ProxyRequest
+        };
+
+        public static HashSet<string> AuthorizerRequests = new HashSet<string>
+        {
+            APIGatewayCustomAuthorizerV2Request,
+            APIGatewayCustomAuthorizerRequest
+        };
+
+        public static HashSet<string> ALBRequests = new HashSet<string>
+        {
+            ApplicationLoadBalancerRequest
         };
 
         public static HashSet<string> Events = new HashSet<string>
         {
             RestApiAttribute,
             HttpApiAttribute,
-            SQSEventAttribute
+            FunctionUrlAttribute,
+            SQSEventAttribute,
+            ALBApiAttribute,
+            S3EventAttribute,
+            DynamoDBEventAttribute,
+            SNSEventAttribute,
+            ScheduleEventAttribute
         };
     }
 }

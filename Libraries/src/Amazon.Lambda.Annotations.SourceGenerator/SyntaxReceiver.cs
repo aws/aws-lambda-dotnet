@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -11,11 +14,36 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
     internal class SyntaxReceiver : ISyntaxContextReceiver
     {
+        /// <summary>
+        /// Secondary attribute names that require the [LambdaFunction] attribute to also be present.
+        /// The key is the attribute class name, the value is the user-friendly name for diagnostics.
+        /// </summary>
+        private static readonly Dictionary<string, string> _secondaryAttributeNames = new Dictionary<string, string>
+        {
+            { "HttpApiAuthorizerAttribute", "HttpApiAuthorizer" },
+            { "RestApiAuthorizerAttribute", "RestApiAuthorizer" },
+            { "HttpApiAttribute", "HttpApi" },
+            { "RestApiAttribute", "RestApi" },
+            { "FunctionUrlAttribute", "FunctionUrl" },
+            { "SQSEventAttribute", "SQSEvent" },
+            { "ALBApiAttribute", "ALBApi" },
+            { "S3EventAttribute", "S3Event" },
+            { "DynamoDBEventAttribute", "DynamoDBEvent" },
+            { "SNSEventAttribute", "SNSEvent" },
+            { "ScheduleEventAttribute", "ScheduleEvent" }
+        };
+
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
         
         public List<MethodDeclarationSyntax> MethodDeclarations { get; } = new List<MethodDeclarationSyntax>();
+
+        /// <summary>
+        /// Methods that have a secondary Lambda annotation attribute but are missing [LambdaFunction].
+        /// Each entry is a tuple of the method syntax, its location, and the friendly name of the secondary attribute found.
+        /// </summary>
+        public List<(MethodDeclarationSyntax Method, string AttributeName)> MethodsWithMissingLambdaFunction { get; } = new List<(MethodDeclarationSyntax, string)>();
 
         /// <summary>
         /// Path to the directory containing the .csproj file
@@ -57,9 +85,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var methodSymbol = ModelExtensions.GetDeclaredSymbol(
                     context.SemanticModel,
                     methodDeclarationSyntax);
-                if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
+                var attributes = methodSymbol.GetAttributes();
+                if (attributes.Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
                 {
                     LambdaMethods.Add(methodDeclarationSyntax);
+                }
+                else
+                {
+                    // Check if the method has a secondary attribute without [LambdaFunction]
+                    foreach (var attr in attributes)
+                    {
+                        var attrName = attr.AttributeClass?.Name;
+                        if (attrName != null && _secondaryAttributeNames.TryGetValue(attrName, out var friendlyName))
+                        {
+                            MethodsWithMissingLambdaFunction.Add((methodDeclarationSyntax, friendlyName));
+                            break; // Only report once per method
+                        }
+                    }
                 }
             }
 

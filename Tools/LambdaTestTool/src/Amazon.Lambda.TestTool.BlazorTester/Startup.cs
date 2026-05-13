@@ -2,15 +2,16 @@ using Amazon.Lambda.TestTool.BlazorTester.Services;
 using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace Amazon.Lambda.TestTool.BlazorTester
 {
@@ -22,6 +23,89 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             host.WaitForShutdown();
         }
 
+#if NET10_0_OR_GREATER
+        public static async Task<WebApplication> StartWebTesterAsync(LocalLambdaOptions lambdaOptions, bool openWindow, CancellationToken token = default(CancellationToken))
+        {
+            var host = string.IsNullOrEmpty(lambdaOptions.Host)
+                ? Constants.DEFAULT_HOST
+                : lambdaOptions.Host;
+            var port = lambdaOptions.Port ?? Constants.DEFAULT_PORT;
+            var url = $"http://{host}:{port}";
+
+
+            var contentPath = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+            if (!Directory.Exists(contentPath))
+            {
+                contentPath = Path.GetFullPath(Directory.GetCurrentDirectory());
+            }
+
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                ContentRootPath = contentPath,
+            });
+
+            // When running as an end user, we want the console to show only logs from Console.Write calls
+            // and not be cluttered with framework logs.
+#if !DEBUG
+            builder.Logging.ClearProviders();
+#endif
+
+            builder.Services.AddRazorComponents()
+                .AddInteractiveServerComponents();
+
+            builder.Services.AddControllers()
+                            .AddApplicationPart(typeof(Startup).Assembly);
+
+            builder.Services.AddSingleton(lambdaOptions);
+
+            builder.Services.AddSingleton<IRuntimeApiDataStore, RuntimeApiDataStore>();
+            builder.Services.AddHttpContextAccessor();
+
+            builder.Services.AddBlazoredModal();
+
+            builder.WebHost
+                    .SuppressStatusMessages(true)
+                    .UseUrls(url);
+
+            builder.Services.AddSignalR(options =>
+            {
+                options.MaximumReceiveMessageSize = 1024 * 1024 * 6;
+            });
+
+            var app = builder.Build();
+
+            app.UseAntiforgery();
+            app.UseDeveloperExceptionPage();
+
+            app.MapControllers();
+            app.UseStaticFiles();
+            app.MapRazorComponents<App>()
+                .AddInteractiveServerRenderMode();
+
+            await app.StartAsync(token);
+            Console.WriteLine($"Environment running at {url}");
+
+            if (openWindow)
+            {
+                try
+                {
+                    string launchUrl = Utils.DetermineLaunchUrl(host, port, Constants.DEFAULT_HOST);
+                    var info = new ProcessStartInfo
+                    {
+                        UseShellExecute = true,
+                        FileName = launchUrl
+                    };
+                    Process.Start(info);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"Error launching browser: {e.Message}");
+                }
+            }
+
+            return app;
+        }
+#else
         public static async Task<IWebHost> StartWebTesterAsync(LocalLambdaOptions lambdaOptions, bool openWindow, CancellationToken token = default(CancellationToken))
         {
             var host = string.IsNullOrEmpty(lambdaOptions.Host)
@@ -30,7 +114,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             var port = lambdaOptions.Port ?? Constants.DEFAULT_PORT;
             var url = $"http://{host}:{port}";
 
-            var contentPath = Path.GetFullPath(Directory.GetCurrentDirectory());
+            var contentPath = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+            if (!Directory.Exists(contentPath))
+            {
+                contentPath = Path.GetFullPath(Directory.GetCurrentDirectory());
+            }
+
             var builder = new WebHostBuilder()
                 .UseKestrel()
                 .SuppressStatusMessages(true)
@@ -84,26 +173,6 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             services.AddHttpContextAccessor();
 
             services.AddBlazoredModal();
-
-#if NET8_0_OR_GREATER
-            // Starting with .NET 8 how the IFileProvider is configured for Blazor
-            // to serve the Blazor embedded content was changed. The previous version
-            // of using the PostConfigure no longer works because the "o.FileProvider" is null.
-            // Using this IPostConfigureOptions<StaticFileOptions> service approach does not
-            // work in .NET versions before .NET 8.
-            // For further context checkout this GitHub issue.
-            // https://github.com/dotnet/aspnetcore/issues/51794
-            services.AddTransient<IPostConfigureOptions<StaticFileOptions>, ConfigureStaticFilesOptions>();
-#else
-            services.AddOptions<StaticFileOptions>()
-                .PostConfigure(o =>
-                {
-                    var fileProvider = new ManifestEmbeddedFileProvider(typeof(Startup).Assembly, "wwwroot");
-
-                    // Make sure we don't remove the existing file providers (blazor needs this)
-                    o.FileProvider = new CompositeFileProvider(o.FileProvider, fileProvider);
-                });
-#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -125,31 +194,6 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 });
                 endpoints.MapFallbackToPage("/_Host");
             });
-        }
-
-#if NET8_0_OR_GREATER
-        internal class ConfigureStaticFilesOptions : IPostConfigureOptions<StaticFileOptions>
-        {
-            public ConfigureStaticFilesOptions(IWebHostEnvironment environment)
-            {
-                Environment = environment;
-            }
-
-            public IWebHostEnvironment Environment { get; }
-
-            public void PostConfigure(string name, StaticFileOptions options)
-            {
-                name = name ?? throw new ArgumentNullException(nameof(name));
-                options = options ?? throw new ArgumentNullException(nameof(options));
-
-                if (name != Options.DefaultName)
-                {
-                    return;
-                }
-
-                var fileProvider = new ManifestEmbeddedFileProvider(typeof(Startup).Assembly, "wwwroot");
-                Environment.WebRootFileProvider = fileProvider;
-            }
         }
 #endif
     }

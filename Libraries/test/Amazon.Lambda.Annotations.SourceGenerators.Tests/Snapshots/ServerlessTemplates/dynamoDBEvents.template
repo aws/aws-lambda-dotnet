@@ -1,0 +1,129 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "TestServerlessAppDynamoDBEventExamplesValidDynamoDBEventsProcessMessagesGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "MyTable",
+          "MyTable2",
+          "testTableEvent"
+        ],
+        "SyncedEventProperties": {
+          "MyTable": [
+            "Stream",
+            "StartingPosition",
+            "BatchSize",
+            "MaximumBatchingWindowInSeconds",
+            "FilterCriteria.Filters"
+          ],
+          "MyTable2": [
+            "Stream",
+            "StartingPosition",
+            "Enabled"
+          ],
+          "testTableEvent": [
+            "Stream.Fn::GetAtt",
+            "StartingPosition"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.DynamoDBEventExamples.ValidDynamoDBEvents_ProcessMessages_Generated::ProcessMessages"
+          ]
+        },
+        "Events": {
+          "MyTable": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "StartingPosition": "LATEST",
+              "BatchSize": 50,
+              "MaximumBatchingWindowInSeconds": 2,
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "My-Filter-1"
+                  },
+                  {
+                    "Pattern": "My-Filter-2"
+                  }
+                ]
+              },
+              "Stream": "arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00"
+            }
+          },
+          "MyTable2": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "StartingPosition": "TRIM_HORIZON",
+              "Enabled": false,
+              "Stream": "arn:aws:dynamodb:us-east-2:444455556666:table/MyTable2/stream/2024-01-01T00:00:00"
+            }
+          },
+          "testTableEvent": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "StartingPosition": "LATEST",
+              "Stream": {
+                "Fn::GetAtt": [
+                  "testTable",
+                  "StreamArn"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppDynamoDBEventExamplesValidDynamoDBEventsProcessMessagesAsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "MyTable"
+        ],
+        "SyncedEventProperties": {
+          "MyTable": [
+            "Stream",
+            "StartingPosition"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.DynamoDBEventExamples.ValidDynamoDBEvents_ProcessMessagesAsync_Generated::ProcessMessagesAsync"
+          ]
+        },
+        "Events": {
+          "MyTable": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "StartingPosition": "LATEST",
+              "Stream": "arn:aws:dynamodb:us-east-2:444455556666:table/MyTable/stream/2024-01-01T00:00:00"
+            }
+          }
+        }
+      }
+    }
+  }
+}

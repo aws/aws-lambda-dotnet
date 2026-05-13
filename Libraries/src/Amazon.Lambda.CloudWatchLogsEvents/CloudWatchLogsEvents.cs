@@ -30,9 +30,7 @@ namespace Amazon.Lambda.CloudWatchLogsEvents
             /// The data that are base64 encoded and gziped messages in LogStreams.
             /// </summary>
             [DataMember(Name = "data", IsRequired = false)]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
-#endif
             public string EncodedData { get; set; }
 
             /// <summary>
@@ -40,10 +38,10 @@ namespace Amazon.Lambda.CloudWatchLogsEvents
             /// </summary>
             public string DecodeData()
             {
-                if (string.IsNullOrEmpty(this.EncodedData))
-                    return this.EncodedData;
+                if (string.IsNullOrEmpty(EncodedData))
+                    return EncodedData;
 
-                var bytes = Convert.FromBase64String(this.EncodedData);
+                var bytes = Convert.FromBase64String(EncodedData);
                 var uncompressedStream = new MemoryStream();
 
                 using (var stream = new GZipStream(new MemoryStream(bytes), CompressionMode.Decompress))

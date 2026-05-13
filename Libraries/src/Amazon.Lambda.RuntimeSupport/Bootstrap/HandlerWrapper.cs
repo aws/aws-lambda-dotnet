@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -29,16 +29,30 @@ namespace Amazon.Lambda.RuntimeSupport
         private static readonly InvocationResponse EmptyInvocationResponse =
             new InvocationResponse(new MemoryStream(0), false);
 
-        private MemoryStream OutputStream = new MemoryStream();
+        private readonly IOutputStreamFactory _outputStreamFactory;
 
+        /// <summary>
+        /// The handler that will be called for each event.
+        /// </summary>
         public LambdaBootstrapHandler Handler { get; private set; }
 
         private HandlerWrapper(LambdaBootstrapHandler handler)
         {
             Handler = handler;
+
+            if (Helpers.Utils.IsUsingMultiConcurrency(new SystemEnvironmentVariables()))
+                _outputStreamFactory = new MultiConcurrencyOutputStreamFactory();
+            else
+                _outputStreamFactory = new OnDemandOutputStreamFactory();
         }
 
-        private HandlerWrapper() { }
+        private HandlerWrapper()
+        {
+            if (Helpers.Utils.IsUsingMultiConcurrency(new SystemEnvironmentVariables()))
+                _outputStreamFactory = new MultiConcurrencyOutputStreamFactory();
+            else
+                _outputStreamFactory = new OnDemandOutputStreamFactory();
+        }
 
         /// <summary>
         /// Get a HandlerWrapper that will call the given delegate on function invocation.
@@ -51,10 +65,10 @@ namespace Amazon.Lambda.RuntimeSupport
             var handlerWrapper = new HandlerWrapper();
             handlerWrapper.Handler = invocation =>
             {
-                handlerWrapper.OutputStream.SetLength(0);
-                invokeDelegate(invocation.InputStream, invocation.LambdaContext, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                var response = new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                invokeDelegate(invocation.InputStream, invocation.LambdaContext, outputStream);
+                outputStream.Position = 0;
+                var response = new InvocationResponse(outputStream, false);
                 return Task.FromResult(response);
             };
             return handlerWrapper;
@@ -163,7 +177,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler()
+        /// Example handler signature: Task&lt;Stream&gt; Handler()
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <returns>A HandlerWrapper</returns>
@@ -178,7 +192,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler(Stream)
+        /// Example handler signature: Task&lt;Stream&gt; Handler(Stream)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <returns>A HandlerWrapper</returns>
@@ -193,7 +207,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler(PocoIn)
+        /// Example handler signature: Task&lt;Stream&gt; Handler(PocoIn)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -210,7 +224,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler(ILambdaContext)
+        /// Example handler signature: Task&lt;Stream&gt; Handler(ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <returns>A HandlerWrapper</returns>
@@ -225,7 +239,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler(Stream, ILambdaContext)
+        /// Example handler signature: Task&lt;Stream&gt; Handler(Stream, ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <returns>A HandlerWrapper</returns>
@@ -240,7 +254,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltStream&gt Handler(PocoIn, ILambdaContext)
+        /// Example handler signature: Task&lt;Stream&gt; Handler(PocoIn, ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -257,7 +271,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler()
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler()
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -268,10 +282,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler();
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -279,7 +293,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler(Stream)
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler(Stream)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -290,10 +304,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -301,7 +315,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler(PocoIn)
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler(PocoIn)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -313,10 +327,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = await handler(input);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -324,7 +338,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler(ILambdaContext)
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler(ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -335,10 +349,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0; ;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0; ;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -346,7 +360,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler(Stream, ILambdaContext)
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler(Stream, ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -357,10 +371,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -368,7 +382,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
-        /// Example handler signature: Task&ltPocoOut&gt Handler(PocoIn, ILambdaContext)
+        /// Example handler signature: Task&lt;PocoOut&gt; Handler(PocoIn, ILambdaContext)
         /// </summary>
         /// <param name="handler">Func called for each invocation of the Lambda function.</param>
         /// <param name="serializer">ILambdaSerializer to use when calling the handler</param>
@@ -380,10 +394,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = await handler(input, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -596,10 +610,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler();
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -618,10 +632,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -641,10 +655,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = handler(input);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -663,10 +677,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0; ;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0; ;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -685,10 +699,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -708,10 +722,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = handler(input, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -719,23 +733,89 @@ namespace Amazon.Lambda.RuntimeSupport
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Dispose the HandlerWrapper
+        /// </summary>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    OutputStream.Dispose();
+                    _outputStreamFactory.Dispose();
                 }
 
                 disposedValue = true;
             }
         }
 
+        /// <summary>
+        /// Dispose the HandlerWrapper
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
         }
         #endregion
+
+        interface IOutputStreamFactory : IDisposable
+        {
+            MemoryStream CreateOutputStream();
+        }
+
+        /// <summary>
+        /// In on demand mode there is never a more then one invocation happening at a time within the process
+        /// so the same memory stream can be reused.
+        /// </summary>
+        class OnDemandOutputStreamFactory : IOutputStreamFactory
+        {
+            private readonly MemoryStream OutputStream = new MemoryStream();
+            private bool _disposedValue;
+
+            public MemoryStream CreateOutputStream()
+            {
+                OutputStream.SetLength(0);
+                return OutputStream;
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_disposedValue)
+                {
+                    if (disposing)
+                    {
+                        OutputStream.Dispose();
+                    }
+
+                    _disposedValue = true;
+                }
+            }
+
+            public void Dispose()
+            {
+                // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        /// <summary>
+        /// In multi concurrency mode multiple invocations can happen at the same time within the process
+        /// so we need to make sure each invocation gets its own output stream.
+        /// </summary>
+        class MultiConcurrencyOutputStreamFactory : IOutputStreamFactory
+        {
+            public MemoryStream CreateOutputStream()
+            {
+                return new MemoryStream();
+            }
+
+            public void Dispose()
+            {
+                // Technically we are creating MemoryStreams that have a Dispose method but that is inherited from the base
+                // class. A MemoryStream is fully managed and doesn't have anything to dispose so it is okay to not worry
+                // about disposing any of the MemoryStreams created from the CreateOutputStream call.
+            }
+        }
     }
 }

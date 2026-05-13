@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.IO;
 using System.Text;
@@ -16,9 +19,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task Greeter()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"))).ToEnvironmentLineEndings();
-            var expectedSayHelloGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSayHelloAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"));
+            var expectedSayHelloGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"));
+            var expectedSayHelloAsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -87,9 +90,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task GeneratorDoesNotRunDueToCompileError()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"))).ToEnvironmentLineEndings();
-            var expectedSayHelloGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSayHelloAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"));
+            var expectedSayHelloGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"));
+            var expectedSayHelloAsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -119,14 +122,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task SimpleCalculator()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"))).ToEnvironmentLineEndings();
-            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedMultiplyGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedDivideAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedPiGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedRandomGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedRandomsGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"));
+            var expectedAddGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs"));
+            var expectedSubtractGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs"));
+            var expectedMultiplyGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs"));
+            var expectedDivideAsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs"));
+            var expectedPiGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs"));
+            var expectedRandomGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs"));
+            var expectedRandomsGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -204,10 +207,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task ComplexCalculator()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"))).ToEnvironmentLineEndings();
-            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings();
-
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"));
+            var expectedAddGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs"));
+            var expectedSubtractGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs"));
+            
             await new VerifyCS.Test
             {
                 TestState =
@@ -264,7 +267,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8"),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: provided.al2, provided.al2023, dotnet8, dotnet10"),
                     }
                 }
             };
@@ -276,14 +279,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifyFunctionInSubNamespace()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -319,9 +324,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithZipAndHandler()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executable.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToLower_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgram = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramZipOutput.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executable.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_AsyncStartupToLower_Generated.g.cs"));
+            var expectedProgram = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramZipOutput.g.cs"));
 
             var test = new VerifyCS.Test
             {
@@ -372,15 +377,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifyExecutableAssembly()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executableimage.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Program.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executableimage.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Program.g.cs"));
             
             var test = new VerifyCS.Test
             {
@@ -431,15 +438,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifyExecutableAssemblyWithParameterlessConstructor()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterless.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethods_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterless.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "parameterless.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ParameterlessMethods_ToUpper_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramParameterless.g.cs"));
 
             var test = new VerifyCS.Test
             {
@@ -487,15 +496,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifyExecutableAssemblyWithParameterlessConstructorAndResponse()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterlesswithresponse.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethodWithResponse_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterlessWithResponse.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "parameterlesswithresponse.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ParameterlessMethodWithResponse_ToUpper_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramParameterlessWithResponse.g.cs"));
 
             var test = new VerifyCS.Test
             {
@@ -543,14 +554,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifyExecutableAssembly_WithNullAttributeValues_ShouldComplete()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -586,10 +599,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithMultipleHandler()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter_executable.template"))).ToEnvironmentLineEndings();
-            var expectedSayHello = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSayHelloAsync = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramMultiHandler.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "greeter_executable.template"));
+            var expectedSayHello = await ReadSnapshotContent(Path.Combine("Snapshots", "GreeterExecutable_SayHello_Generated.g.cs"));
+            var expectedSayHelloAsync = await ReadSnapshotContent(Path.Combine("Snapshots", "GreeterExecutable_SayHelloAsync_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramMultiHandler.g.cs"));
             
             var test = new VerifyCS.Test
             {
@@ -646,15 +659,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
             await test.RunAsync();
         }
 
         [Fact]
         public async Task VerifySourceGeneratorSerializerWithHttpResultsBody()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sourcegeneratorserializationexample.template"))).ToEnvironmentLineEndings();
-            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SourceGenerationSerializationExample_GetPerson_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramSourceGeneratorSerializationExample.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "sourcegeneratorserializationexample.template"));
+            var expectedFunctionContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SourceGenerationSerializationExample_GetPerson_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramSourceGeneratorSerializationExample.g.cs"));
 
             var test = new VerifyCS.Test
             {
@@ -706,8 +721,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
                     continue;
 
-                test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
+                test.TestState.Sources.Add((file, content));
             }
+
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
 
             await test.RunAsync();
         }
@@ -715,8 +732,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionReturnVoid()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "voidexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "VoidExample_VoidReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "voidexample.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "VoidExample_VoidReturn_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -752,8 +769,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyNoErrorWithIntrinsicInTemplate()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "intrinsicexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "IntrinsicExample_HasIntrinsic_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "intrinsicexample.template"), false);
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "IntrinsicExample_HasIntrinsic_Generated.g.cs"));
             await File.WriteAllTextAsync(Path.Combine("TestServerlessApp", "serverless.template"), expectedTemplateContent);
 
             await new VerifyCS.Test
@@ -790,8 +807,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionReturnTask()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "taskexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "TaskExample_TaskReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "taskexample.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "TaskExample_TaskReturn_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -827,9 +844,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionDynamic()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "dynamicexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated_DynamicReturn = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated_DynamicInput = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicInput_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "dynamicexample.template"));
+            var expectedSubNamespaceGenerated_DynamicReturn = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamicExample_DynamicReturn_Generated.g.cs"));
+            var expectedSubNamespaceGenerated_DynamicInput = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamicExample_DynamicInput_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -871,15 +888,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task CustomizeResponses()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "customizeResponse.template"))).ToEnvironmentLineEndings();
-            var expectedOkResponseWithHeaderGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV2Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV1Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "customizeResponse.template"));
+            var expectedOkResponseWithHeaderGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs"));
+            var expectedNotFoundResponseWithHeaderV2Generated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs"));
+            var expectedNotFoundResponseWithHeaderV1Generated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs"));
 
-            var expectedOkResponseWithHeaderAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV2AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV1AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedOkResponseWithCustomSerializerGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedOkResponseWithHeaderAsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs"));
+            var expectedNotFoundResponseWithHeaderV2AsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs"));
+            var expectedNotFoundResponseWithHeaderV1AsyncGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs"));
+            var expectedOkResponseWithCustomSerializerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -944,9 +961,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV1AsyncGenerated),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs", expectedOkResponseWithCustomSerializerGenerated),
-                        // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
-                        // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
-                        DiagnosticResult.CompilerError("CS0117").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseExamples.cs", 99, 65, 99, 79).WithArguments("System.Text.Json.JsonNamingPolicy", "SnakeCaseUpper"),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
@@ -1014,8 +1028,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyApiFunctionUsingNullableParameters()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "nullreferenceexample.template"))).ToEnvironmentLineEndings();
-            var expectedCSharpContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "nullreferenceexample.template"));
+            var expectedCSharpContent = await ReadSnapshotContent(Path.Combine("Snapshots", "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs"));
 
             var test = new VerifyCS.Test
             {
@@ -1175,10 +1189,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task ToUpper_Net8()
         {
-            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"))).ToEnvironmentLineEndings();
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"))).ToEnvironmentLineEndings();
+            var expectedFunctionContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"));
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"));
 
-            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net80)
+            await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net8_0)
             {
                 TestState =
                 {
@@ -1197,7 +1211,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedFunctionContent),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     }
                 }
             }.RunAsync();
@@ -1224,59 +1238,59 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("BatchSize = 0. It must be between 1 and 10000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds = 302. It must be between 0 and 300"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
                             .WithArguments("MaximumConcurrency = 1. It must be between 2 and 1000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 22, 9, 27, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 25, 9, 30, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can accept at most 2 parameters. " +
                             "The first parameter is required and must be of type Amazon.Lambda.SQSEvents.SQSEvent. " +
                             "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 29, 9, 35, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 32, 9, 38, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can return either " +
                             "void, System.Threading.Tasks.Task, Amazon.Lambda.SQSEvents.SQSBatchResponse or Task<Amazon.Lambda.SQSEvents.SQSBatchResponse>"),
 
                         DiagnosticResult
                             .CompilerError("AWSLambda0102")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 37, 9, 43, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 40, 9, 46, 10)
                             .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 45, 9, 50, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 48, 9, 53, 10)
                             .WithArguments("Queue = test-queue. The SQS queue ARN is invalid. The ARN format is 'arn:<partition>:sqs:<region>:<account-id>:<queue-name>'"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 52, 9, 57, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 55, 9, 60, 10)
                             .WithArguments("ResourceName = sqs-event-source. It must only contain alphanumeric characters and must not be an empty string"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 59, 9, 64, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 62, 9, 67, 10)
                             .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 66, 9, 71, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 69, 9, 74, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 73, 9, 78, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 76, 9, 81, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 83, 9, 88, 10)
                             .WithArguments("BatchSize = 100. It must be less than or equal to 10 when the event source mapping is for a FIFO queue"),
             
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                        .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                        .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 83, 9, 88, 10)
                         .WithArguments("MaximumBatchingWindowInSeconds must not be set when the event source mapping is for a FIFO queue")
                     }
                 }
@@ -1286,9 +1300,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyValidSQSEvents()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sqsEvents.template"))).ToEnvironmentLineEndings();
-            var validSqsEventsProcessMessagesGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessages_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "sqsEvents.template"));
+            var validSqsEventsProcessMessagesGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessages_Generated.g.cs"));
+            var validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs"));
+            var validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs"));
 
             await new VerifyCS.Test
             {
@@ -1311,6 +1326,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         ),
                         (
                             typeof(SourceGenerator.Generator),
+                            "ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs",
+                            SourceText.From(validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
                             "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs",
                             SourceText.From(validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
@@ -1318,10 +1338,323 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent),
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments("ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs", validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs", validSqsEventsProcessMessagesWithReservedParameterNameGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidALBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "albEvents.template"));
+            var validALBEventsHelloGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_Hello_Generated.g.cs"));
+            var validALBEventsHandleRequestGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_HandleRequest_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_Hello_Generated.g.cs",
+                            SourceText.From(validALBEventsHelloGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_HandleRequest_Generated.g.cs",
+                            SourceText.From(validALBEventsHandleRequestGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidDynamoDBEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "InvalidDynamoDBEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidDynamoDBEventAttributes: BatchSize = 10001
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("BatchSize = 10001. It must be between 1 and 10000"),
+
+                        // ProcessMessageWithInvalidDynamoDBEventAttributes: MaximumBatchingWindowInSeconds = 301
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("MaximumBatchingWindowInSeconds = 301. It must be between 0 and 300"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the DynamoDBEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.DynamoDBEvents.DynamoDBEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the DynamoDBEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidStreamArn: invalid ARN
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("Stream = not-a-valid-arn. The DynamoDB stream ARN is invalid"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = dynamo-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0137")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}DynamoDBEventExamples{Path.DirectorySeparatorChar}InvalidDynamoDBEvents.cs", 61, 9, 66, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidDynamoDBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "dynamoDBEvents.template"));
+            var validDynamoDBEventsProcessMessagesGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs"));
+            var validDynamoDBEventsProcessMessagesAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "StartingPosition.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs", validDynamoDBEventsProcessMessagesAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidSNSEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "SNSEventExamples", "InvalidSNSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SNSEventExamples", "InvalidSNSEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidTopicArn: invalid ARN
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("Topic = not-a-valid-arn. The SNS topic ARN is invalid. The ARN format is 'arn:<partition>:sns:<region>:<account-id>:<topic-name>'"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the SNSEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.SNSEvents.SNSEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the SNSEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("ResourceName = sns-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0138")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SNSEventExamples{Path.DirectorySeparatorChar}InvalidSNSEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidSNSEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "snsEvents.template"));
+            var validSNSEventsProcessMessagesGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SNS", "ValidSNSEvents_ProcessMessages_Generated.g.cs"));
+            var validSNSEventsProcessMessagesAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "SNS", "ValidSNSEvents_ProcessMessagesAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "SNSEventExamples", "ValidSNSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SNSEventExamples", "ValidSNSEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SNS", "SNSEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidSNSEvents_ProcessMessages_Generated.g.cs",
+                            SourceText.From(validSNSEventsProcessMessagesGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidSNSEvents_ProcessMessagesAsync_Generated.g.cs",
+                            SourceText.From(validSNSEventsProcessMessagesAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSNSEvents_ProcessMessagesAsync_Generated.g.cs", validSNSEventsProcessMessagesAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSNSEvents_ProcessMessages_Generated.g.cs", validSNSEventsProcessMessagesGeneratedContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidScheduleEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "scheduleEvents.template"));
+            var validScheduleEventsProcessScheduledEventGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs"));
+            var validScheduleEventsProcessScheduledEventAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs", validScheduleEventsProcessScheduledEventGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs", validScheduleEventsProcessScheduledEventAsyncGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
                         .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
@@ -1330,19 +1663,680 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task VerifyInvalidScheduleEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidScheduleExpression: invalid schedule expression
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("Schedule = every 5 minutes. It must start with 'rate(' or 'cron('"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("ResourceName = invalid-name!. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task ExceededMaximumHandlerLength()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                         DiagnosticResult
+                            .CompilerError("AWSLambda0118")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ExceededMaximumHandlerLength.cs", 9, 9, 13, 10)
+                            .WithArguments("TestProject::TestServerlessApp.ExceededMaximumHandlerLength_SayHelloXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX_Generated::SayHelloXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    },
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task HostBuilder()
+        {
+            var expectedAddGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "HostBuilderFunctions_Add_Generated.g.cs"));
+            var expectedTemplate = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "hostbuild.serverless.template"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestHostBuilderApp", "HostBuilderFunctions.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "HostBuilderFunctions.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "Startup.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "CalculatorService", "ICalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "CalculatorService", "ICalculatorService.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "CalculatorService", "CalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "CalculatorService", "CalculatorService.cs"))),
+
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "HostBuilderFunctions_Add_Generated.g.cs",
+                            SourceText.From(expectedAddGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("HostBuilderFunctions_Add_Generated.g.cs", expectedAddGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestHostBuilderApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplate),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CustomAuthorizerRestTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerRest.template"));
+            var expectedRestAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerRestExample_RestAuthorizer_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerRestExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerRestExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerRestExample_RestAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedRestAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerRestExample_RestAuthorizer_Generated.g.cs", expectedRestAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task CustomAuthorizerHttpApiTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerHttpApi.template"));
+            var expectedRestAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerHttpApiExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerHttpApiExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedRestAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated.g.cs", expectedRestAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        /// <summary>
+        /// Tests that [FromCustomAuthorizer] without Name property uses the parameter name as the key.
+        /// This exercises the fallback behavior: authKey = Name ?? parameter.Name
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerAttributeParameterNameFallbackTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerParameterNameFallback.template"));
+            var expectedAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthNameFallback_GetUserId_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "AuthNameFallback.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AuthNameFallback.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthNameFallback_GetUserId_Generated.g.cs",
+                            SourceText.From(expectedAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthNameFallback_GetUserId_Generated.g.cs", expectedAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task CustomAuthorizerHttpApiV1Test()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerHttpApiV1.template"));
+            var expectedHttpApiV1AuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerHttpApiV1Example.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerHttpApiV1Example.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated.g.cs",
+                            SourceText.From(expectedHttpApiV1AuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated.g.cs", expectedHttpApiV1AuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task CustomAuthorizerWithIHttpResultsTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerWithIHttpResults.template"));
+            var expectedAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerWithIHttpResultsExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerWithIHttpResultsExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated.g.cs",
+                            SourceText.From(expectedAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated.g.cs", expectedAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        /// <summary>
+        /// Tests that [FromCustomAuthorizer] works with non-string types (int, bool, double).
+        /// The generated code should use Convert.ChangeType to handle these types.
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerNonStringTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerNonString.template"));
+            var expectedAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerNonStringExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerNonStringExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs",
+                            SourceText.From(expectedAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs", expectedAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        /// <summary>
+        /// Tests the full authorizer annotation template generation using TestCustomAuthorizerApp's AuthorizerFunction.cs.
+        /// This validates that [HttpApiAuthorizer] and [RestApiAuthorizer] attributes produce correct CloudFormation
+        /// template output including AnnotationsHttpApi/AnnotationsRestApi resources with Auth.Authorizers sections.
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerAppAuthorizerDefinitionsTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "customAuthorizerApp.template"));
+            var expectedHttpApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs"));
+            var expectedHttpApiAuthorizeV1Generated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs"));
+            var expectedRestApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_RestApiAuthorize_Generated.g.cs"));
+            var expectedSimpleHttpApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs"));
+            var expectedSimpleRestApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs"));
+            var expectedGetProtectedDataGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetProtectedData_Generated.g.cs"));
+            var expectedGetUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetUserInfo_Generated.g.cs"));
+            var expectedHealthCheckGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_HealthCheck_Generated.g.cs"));
+            var expectedGetRestUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetRestUserInfo_Generated.g.cs"));
+            var expectedGetHttpApiV1UserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs"));
+            var expectedGetIHttpResultGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetIHttpResult_Generated.g.cs"));
+            var expectedGetSimpleHttpApiUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs"));
+            var expectedGetSimpleRestApiUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs"));
+            var expectedGetNonStringUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetNonStringUserInfo_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestCustomAuthorizerApp", "AuthorizerFunction.cs"), File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "AuthorizerFunction.cs"))),
+                        (Path.Combine("TestCustomAuthorizerApp", "ProtectedFunction.cs"), File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "ProtectedFunction.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedHttpApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs",
+                            SourceText.From(expectedHttpApiAuthorizeV1Generated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_RestApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedRestApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedSimpleHttpApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs",
+                            SourceText.From(expectedSimpleRestApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetProtectedData_Generated.g.cs",
+                            SourceText.From(expectedGetProtectedDataGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_HealthCheck_Generated.g.cs",
+                            SourceText.From(expectedHealthCheckGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetRestUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetRestUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetHttpApiV1UserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetIHttpResult_Generated.g.cs",
+                            SourceText.From(expectedGetIHttpResultGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetSimpleHttpApiUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetSimpleRestApiUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ProtectedFunction_GetNonStringUserInfo_Generated.g.cs",
+                            SourceText.From(expectedGetNonStringUserInfoGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs", expectedHttpApiAuthorizeV1Generated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorize_Generated.g.cs", expectedHttpApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_RestApiAuthorize_Generated.g.cs", expectedRestApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_SimpleHttpApiAuthorize_Generated.g.cs", expectedSimpleHttpApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_SimpleRestApiAuthorize_Generated.g.cs", expectedSimpleRestApiAuthorizeGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetHttpApiV1UserInfo_Generated.g.cs", expectedGetHttpApiV1UserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetIHttpResult_Generated.g.cs", expectedGetIHttpResultGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetNonStringUserInfo_Generated.g.cs", expectedGetNonStringUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetProtectedData_Generated.g.cs", expectedGetProtectedDataGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetRestUserInfo_Generated.g.cs", expectedGetRestUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetSimpleHttpApiUserInfo_Generated.g.cs", expectedGetSimpleHttpApiUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetSimpleRestApiUserInfo_Generated.g.cs", expectedGetSimpleRestApiUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetUserInfo_Generated.g.cs", expectedGetUserInfoGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_HealthCheck_Generated.g.cs", expectedHealthCheckGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestCustomAuthorizerApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestCustomAuthorizerApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task VerifyMissingLambdaFunctionWithAuthorizerAttribute()
+        {
+            var test = new VerifyCS.Test()
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0129", DiagnosticSeverity.Error)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}MissingLambdaFunctionWithAuthorizer.cs", 10, 9, 20, 10)
+                            .WithMessage("Method has [HttpApiAuthorizer] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method."),
+                    },
+                },
+            };
+
+            await test.RunAsync();
+        }
+
+        /// <summary>
+        /// Tests the IAuthorizerResult pattern for authorizer functions.
+        /// This validates that [HttpApiAuthorizer] + IAuthorizerResult return type + [FromHeader] generates
+        /// correct handler code that extracts headers from the authorizer request and serializes IAuthorizerResult.
+        /// </summary>
+        [Fact]
+        public async Task IAuthorizerResultHttpApiTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerIAuthorizerResult.template"));
+            var expectedHttpApiGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs"));
+            var expectedRestApiGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "IAuthorizerResultExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "IAuthorizerResultExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromHeaderAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromHeaderAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedHttpApiGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs",
+                            SourceText.From(expectedRestApiGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated.g.cs", expectedHttpApiGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated.g.cs", expectedRestApiGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task FunctionUrlExample()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "functionUrlExample.template"));
+            var expectedGetItemsGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "FunctionUrlExample_GetItems_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "FunctionUrlExample_GetItems_Generated.g.cs",
+                            SourceText.From(expectedGetItemsGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("FunctionUrlExample_GetItems_Generated.g.cs", expectedGetItemsGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));
+            File.Delete(Path.Combine("TestCustomAuthorizerApp", "serverless.template"));
         }
 
-        private static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private async static Task<string> ReadSnapshotContent(string snapshotPath, bool trimContent = true)
+        {
+            var content = (await File.ReadAllTextAsync(snapshotPath));
+
+            // YAML serverless.template, when generated, has extra line at the end.
+            if (trimContent)
+                content = content.Trim(); // Some Visual Studio update has a default setting, which is causing extra line to be added at the end when modified manually.
+
+            return content.ToEnvironmentLineEndings().ApplyReplacements();
+        }
+
+        private readonly static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = \"notavalidruntime\")]";
 
-        private static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+        private readonly static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
                                                                "using Amazon.Lambda.Core;" +
                                                                "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
                                                                "[assembly: LambdaGlobalProperties(Runtime = null)]";
+
+        /// <summary>
+        /// Returns expected compiler diagnostics for RuntimeSupport source files included in test compilations.
+        /// In .NET 10, JsonSerializerContext has new abstract members and a required constructor parameter that
+        /// the System.Text.Json source generator would normally implement. Since only the Lambda Annotations
+        /// source generator runs in tests, these produce expected compiler errors.
+        /// </summary>
+        private static DiagnosticResult[] GetExpectedRuntimeSupportDiagnostics()
+        {
+            var runtimeApiContext = "Amazon.Lambda.RuntimeSupport.InternalRuntimeApiClient.RuntimeApiSerializationContext";
+            var clientFile = $"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Client{Path.DirectorySeparatorChar}InternalClientAdapted.cs";
+            var snapFile = $"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Helpers{Path.DirectorySeparatorChar}SnapstartHelperCopySnapshotCallbacksIsolated.cs";
+
+            return new[]
+            {
+                // These are here because the System.Text.Json source generator isn't included in test compilations, so these members aren't generated.
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
+                DiagnosticResult.CompilerError("CS7036").WithSpan(clientFile, 85, 30, 85, 60).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 157, 136, 157, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 172, 135, 172, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 275, 131, 275, 138).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 371, 135, 371, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 386, 135, 386, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 401, 135, 401, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 510, 136, 510, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 525, 135, 525, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 540, 135, 540, 142).WithArguments(runtimeApiContext, "Default"),
+
+
+                // These are here because the internalvisibleto attribute isn't included in test compilations, so these types are inaccessible.
+                DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 13, 34, 13, 71).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyBeforeSnapshotCallbacksToRegistry"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 14, 34, 14, 69).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyAfterRestoreCallbacksToRegistry"),
+                DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}ResponseStreaming{Path.DirectorySeparatorChar}ResponseStreamLambdaCoreInitializerIsolated.cs", 37, 51, 37, 72).WithArguments("Amazon.Lambda.Core.ResponseStreaming.ILambdaResponseStream"),
+            };
+        }
     }
 }

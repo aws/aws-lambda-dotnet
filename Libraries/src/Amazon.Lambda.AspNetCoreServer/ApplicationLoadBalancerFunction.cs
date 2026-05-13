@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +14,7 @@ using System.Net;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
 using System.Globalization;
+using Amazon.Lambda.Core.ResponseStreaming;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -76,7 +77,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             // marshalling the response to know whether to fill in the the Headers or MultiValueHeaders collection.
             // Since a Lambda function compute environment is only one processing one event at a time it is safe to store
             // this as a member variable.
-            this._multiHeaderValuesEnabled = lambdaRequest.MultiValueHeaders != null;
+            _multiHeaderValuesEnabled = lambdaRequest.MultiValueHeaders != null;
 
             {
                 var requestFeatures = (IHttpRequestFeature)features;
@@ -159,14 +160,14 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if (responseFeatures.Headers != null)
             {
-                if (this._multiHeaderValuesEnabled)
+                if (_multiHeaderValuesEnabled)
                     response.MultiValueHeaders = new Dictionary<string, IList<string>>();
                 else
                     response.Headers = new Dictionary<string, string>();
 
                 foreach (var kvp in responseFeatures.Headers)
                 {
-                    if (this._multiHeaderValuesEnabled)
+                    if (_multiHeaderValuesEnabled)
                     {
                         response.MultiValueHeaders[kvp.Key] = kvp.Value.ToList();
                     }
@@ -187,6 +188,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
             }
 
+// Disabled in case the user's ASP.NET Core application is still using the older API that set the body on the response feature instead of the new API that sets the body on the HttpResponse object.
+#pragma warning disable CS0618
             if (responseFeatures.Body != null)
             {
                 // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
@@ -198,6 +201,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
             }
+#pragma warning restore CS0618
 
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 
@@ -210,7 +214,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var errorName = ex.GetType().Name;
 
-            if (this._multiHeaderValuesEnabled)
+            if (_multiHeaderValuesEnabled)
             {
                 lambdaResponse.MultiValueHeaders.Add(new KeyValuePair<string, IList<string>>("ErrorType", new List<string> { errorName }));
             }
@@ -220,9 +224,13 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
         }
 
+        /// <inheritdoc/>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected override HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature) => throw new NotImplementedException();
+
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)
         {
-            if (this._multiHeaderValuesEnabled)
+            if (_multiHeaderValuesEnabled)
             {
                 var kvp = request.MultiValueHeaders.FirstOrDefault(x => string.Equals(x.Key, headerName, StringComparison.OrdinalIgnoreCase));
                 if (!kvp.Equals(default(KeyValuePair<string, IList<string>>)))

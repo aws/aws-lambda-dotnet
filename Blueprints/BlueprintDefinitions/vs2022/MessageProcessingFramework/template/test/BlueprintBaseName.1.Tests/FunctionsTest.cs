@@ -11,7 +11,7 @@ public class FunctionsTest
     /// successfully when handling a valid message
     /// </summary>
     [Fact]
-    public async void Handler_ValidMessage_Success()
+    public async Task Handler_ValidMessage_Success()
     {
         var handler = new GreetingMessageHandler(new TestLambdaContext());
 
@@ -34,7 +34,7 @@ public class FunctionsTest
     /// a failure status when handling an invalid envelope
     /// </summary>
     [Fact]
-    public async void Hander_InvalidMesssage_Failed()
+    public async Task Hander_InvalidMesssage_Failed()
     {
         var handler = new GreetingMessageHandler(new TestLambdaContext());
 

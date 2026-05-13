@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -52,6 +52,44 @@ namespace Amazon.Lambda.AspNetCoreServer
         private protected override void InternalCustomResponseExceptionHandling(APIGatewayHttpApiV2ProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
         {
             apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);
+        }
+
+        /// <summary>
+        /// Override for HTTP API v2 to use single-value <c>headers</c> in the streaming prelude
+        /// instead of <c>multiValueHeaders</c>. API Gateway HTTP API v2 expects the <c>headers</c>
+        /// format; using <c>multiValueHeaders</c> causes a 500 Internal Server Error.
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected override Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
+        {
+            var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+            {
+                StatusCode = (System.Net.HttpStatusCode)(responseFeature.StatusCode != 0 ? responseFeature.StatusCode : 200)
+            };
+
+            foreach (var kvp in responseFeature.Headers)
+            {
+                if (string.Equals(kvp.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(kvp.Key, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var value in kvp.Value)
+                    {
+                        prelude.Cookies.Add(value);
+                    }
+                }
+                else
+                {
+                    // HTTP API v2 uses single-value headers. Join multiple values with ", ".
+                    prelude.Headers[kvp.Key] = string.Join(", ", kvp.Value);
+                }
+            }
+
+            return prelude;
         }
 
         /// <summary>
@@ -247,6 +285,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.Headers["Content-Type"] = null;
             }
 
+// Disabled in case the user's ASP.NET Core application is still using the older API that set the body on the response feature instead of the new API that sets the body on the HttpResponse object.
+#pragma warning disable CS0618
             if (responseFeatures.Body != null)
             {
                 // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
@@ -259,6 +299,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
 
             }
+#pragma warning restore CS0618
 
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 

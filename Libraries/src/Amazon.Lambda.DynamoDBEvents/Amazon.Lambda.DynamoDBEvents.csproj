@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - DynamoDBEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.DynamoDBEvents</AssemblyTitle>
-    <VersionPrefix>3.1.1</VersionPrefix>
+    <Version>4.0.0</Version>
     <AssemblyName>Amazon.Lambda.DynamoDBEvents</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -20,7 +20,7 @@
     <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <PropertyGroup>
     <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

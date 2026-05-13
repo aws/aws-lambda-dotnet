@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -29,19 +29,17 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 {
     internal class UserCodeInit
     {
-        public static bool IsCallPreJit()
+        public static bool IsCallPreJit(IEnvironmentVariables environmentVariables)
         {
-#if NET6_0_OR_GREATER
             // If we are running in an AOT environment, there is no point in doing any prejit optmization
             // and will most likely cause errors using APIs that are not supported in AOT.
-            if(NativeAotHelper.IsRunningNativeAot())
+            if(Utils.IsRunningNativeAot())
             {
                 return false;
             }    
-#endif
 
-            string awsLambdaDotNetPreJitStr = Environment.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT);
-            string awsLambdaInitTypeStr = Environment.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE);
+            string awsLambdaDotNetPreJitStr = environmentVariables.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT);
+            string awsLambdaInitTypeStr = environmentVariables.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE);
             AwsLambdaDotNetPreJit awsLambdaDotNetPreJit;
             bool isParsed = Enum.TryParse(awsLambdaDotNetPreJitStr, true, out awsLambdaDotNetPreJit);
             if (!isParsed)
@@ -110,11 +108,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             }
         }
 
-        public static void LoadStringCultureInfo()
+        public static void LoadStringCultureInfo(IEnvironmentVariables environmentVariables)
         {
             try
             {
-                string locale = Environment.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_LANG);
+                string locale = environmentVariables.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_LANG);
 
                 if (!string.IsNullOrEmpty(locale))
                 {
@@ -140,9 +138,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             }
         }
 
-#if NET8_0_OR_GREATER
-    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("PreJitAssembly is not used for Native AOT")]
-#endif
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("PreJitAssembly is not used for Native AOT")]
         public static void PreJitAssembly(Assembly a)
         {
             // Storage to ensure not loading the same assembly twice and optimize calls to GetAssemblies()

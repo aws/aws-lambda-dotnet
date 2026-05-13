@@ -1,51 +1,77 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
-  "Parameters": {
-    "ArchitectureTypeParameter": {
-      "Type": "String",
-      "Default": "x86_64",
-      "AllowedValues": [
-        "x86_64",
-        "arm64"
-      ]
-    }
-  },
-  "Globals": {
-    "Function": {
-      "Architectures": [
-        {
-          "Ref": "ArchitectureTypeParameter"
-        }
-      ]
-    }
-  },
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v2.0.0.0).",
   "Resources": {
-    "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
-      "Type": "AWS::Serverless::Function",
+    "AnnotationsHttpApi": {
+      "Type": "AWS::Serverless::HttpApi",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
-          ]
+        "Auth": {
+          "Authorizers": {
+            "SimpleHttpApiAuth": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleHttpApiAuth",
+                  "Arn"
+                ]
+              },
+              "AuthorizerPayloadFormatVersion": "2.0",
+              "EnableSimpleResponses": true,
+              "Identity": {
+                "Headers": [
+                  "Authorization"
+                ]
+              },
+              "EnableFunctionDefaultPermissions": true,
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
         }
       }
     },
-    "TestServerlessAppDynamicExampleDynamicInputGenerated": {
-      "Type": "AWS::Serverless::Function",
+    "AnnotationsRestApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "StageName": "Prod",
+        "Auth": {
+          "Authorizers": {
+            "SimpleRestApiAuth": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleRestApiAuth",
+                  "Arn"
+                ]
+              },
+              "Identity": {
+                "Header": "Authorization"
+              },
+              "FunctionPayloadType": "TOKEN",
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
+        }
+      },
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
+      }
+    },
+    "TestServerlessAppCustomAuthorizerWithIHttpResultsExampleAuthorizerWithIHttpResultsGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -57,15 +83,28 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated::AuthorizerWithIHttpResults"
           ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/authorizerihttpresults",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
         }
       }
     },
-    "ToUpper": {
+    "TestServerlessAppFunctionUrlExampleGetItemsGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedFunctionUrlConfig": true
       },
       "Properties": {
         "MemorySize": 512,
@@ -77,8 +116,114 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+            "TestServerlessApp::TestServerlessApp.FunctionUrlExample_GetItems_Generated::GetItems"
           ]
+        },
+        "FunctionUrlConfig": {
+          "AuthType": "NONE"
+        }
+      }
+    },
+    "HttpApiAuthorizerTest": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated::HttpApiAuthorizer"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/api/authorizer",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SQSMessageHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestQueueEvent"
+        ],
+        "SyncedEventProperties": {
+          "TestQueueEvent": [
+            "Queue.Fn::GetAtt",
+            "BatchSize",
+            "FilterCriteria.Filters",
+            "FunctionResponseTypes",
+            "MaximumBatchingWindowInSeconds",
+            "ScalingConfig.MaximumConcurrency"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaSQSQueueExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SqsMessageProcessing_HandleMessage_Generated::HandleMessage"
+          ]
+        },
+        "Events": {
+          "TestQueueEvent": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 50,
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }"
+                  }
+                ]
+              },
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ],
+              "MaximumBatchingWindowInSeconds": 5,
+              "ScalingConfig": {
+                "MaximumConcurrency": 5
+              },
+              "Queue": {
+                "Fn::GetAtt": [
+                  "TestQueue",
+                  "Arn"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -102,159 +247,7 @@
         }
       }
     },
-    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/okresponsewithheader/{x}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderAsyncGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/okresponsewithheaderasync/{x}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2Generated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/notfoundwithheaderv2/{x}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2AsyncGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/notfoundwithheaderv2async/{x}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1Generated": {
+    "HttpApiV1AuthorizerTest": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -265,7 +258,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -279,33 +273,35 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated::HttpApiV1Authorizer"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
             "Properties": {
-              "Path": "/notfoundwithheaderv1/{x}",
+              "Path": "/api/authorizer-v1",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
       }
     },
-    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1AsyncGenerated": {
+    "SNSMessageHandler": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "RootGet"
+          "TestTopicEvent"
         ],
         "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method",
-            "PayloadFormatVersion"
+          "TestTopicEvent": [
+            "Topic.Ref",
+            "FilterPolicy"
           ]
         }
       },
@@ -319,16 +315,17 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
+            "TestServerlessApp::TestServerlessApp.SnsMessageProcessing_HandleMessage_Generated::HandleMessage"
           ]
         },
         "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
+          "TestTopicEvent": {
+            "Type": "SNS",
             "Properties": {
-              "Path": "/notfoundwithheaderv1async/{x}",
-              "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "FilterPolicy": "{ \"store\": [\"example_corp\"] }",
+              "Topic": {
+                "Ref": "TestTopic"
+              }
             }
           }
         }
@@ -354,7 +351,7 @@
         }
       }
     },
-    "GreeterSayHello": {
+    "RestAuthorizerTest": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -365,12 +362,12 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "RestApiId.Ref"
           ]
         }
       },
       "Properties": {
-        "MemorySize": 1024,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -379,22 +376,24 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerRestExample_RestAuthorizer_Generated::RestAuthorizer"
           ]
         },
         "Events": {
           "RootGet": {
-            "Type": "HttpApi",
+            "Type": "Api",
             "Properties": {
-              "Path": "/Greeter/SayHello",
+              "Path": "/rest/authorizer",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
       }
     },
-    "GreeterSayHelloAsync": {
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -405,13 +404,13 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "RestApiId.Ref"
           ]
         }
       },
       "Properties": {
         "MemorySize": 512,
-        "Timeout": 50,
+        "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
@@ -419,98 +418,24 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
           ]
         },
         "Events": {
           "RootGet": {
-            "Type": "HttpApi",
+            "Type": "Api",
             "Properties": {
-              "Path": "/Greeter/SayHelloAsync",
+              "Path": "/okresponsewithheader/{x}",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
       }
     },
-    "TestServerlessAppComplexCalculatorAddGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootPost"
-        ],
-        "SyncedEventProperties": {
-          "RootPost": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
-          ]
-        },
-        "Events": {
-          "RootPost": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/ComplexCalculator/Add",
-              "Method": "POST"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppComplexCalculatorSubtractGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootPost"
-        ],
-        "SyncedEventProperties": {
-          "RootPost": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
-          ]
-        },
-        "Events": {
-          "RootPost": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/ComplexCalculator/Subtract",
-              "Method": "POST"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppNullableReferenceTypeExampleNullableHeaderHttpApiGenerated": {
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderAsyncGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -520,7 +445,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -534,15 +460,234 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/okresponsewithheaderasync/{x}",
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2Generated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
             "Properties": {
-              "Path": "/nullableheaderhttpapi",
-              "Method": "GET"
+              "Path": "/notfoundwithheaderv2/{x}",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2AsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/notfoundwithheaderv2async/{x}",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1Generated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/notfoundwithheaderv1/{x}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1AsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/notfoundwithheaderv1async/{x}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithCustomSerializerGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated::OkResponseWithCustomSerializer"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/okresponsewithcustomserializerasync/{firstName}/{lastName}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -558,7 +703,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -580,7 +726,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Add",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -596,7 +745,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -618,7 +768,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Subtract",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -634,7 +787,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -656,7 +810,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Multiply/{x}/{y}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -672,7 +829,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -694,7 +852,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -780,7 +941,146 @@
         }
       }
     },
-    "TestServerlessAppFromScratchNoApiGatewayEventsReferenceToUpperGenerated": {
+    "SimpleHttpApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated::SimpleHttpApiAuthorizer"
+          ]
+        }
+      }
+    },
+    "SimpleRestApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated::SimpleRestApiAuthorizer"
+          ]
+        }
+      }
+    },
+    "DynamoDBStreamHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestTableStream"
+        ],
+        "SyncedEventProperties": {
+          "TestTableStream": [
+            "Stream.Fn::GetAtt",
+            "StartingPosition",
+            "BatchSize"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaDynamoDBExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamoDbStreamProcessing_HandleStream_Generated::HandleStream"
+          ]
+        },
+        "Events": {
+          "TestTableStream": {
+            "Type": "DynamoDB",
+            "Properties": {
+              "StartingPosition": "TRIM_HORIZON",
+              "BatchSize": 100,
+              "Stream": {
+                "Fn::GetAtt": [
+                  "TestTable",
+                  "StreamArn"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "S3EventHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestS3Bucket"
+        ],
+        "SyncedEventProperties": {
+          "TestS3Bucket": [
+            "Bucket.Ref",
+            "Events",
+            "Filter.S3Key.Rules"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          "AmazonS3ReadOnlyAccess"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.S3EventExamples.S3EventProcessing_ProcessS3Event_Generated::ProcessS3Event"
+          ]
+        },
+        "Events": {
+          "TestS3Bucket": {
+            "Type": "S3",
+            "Properties": {
+              "Events": [
+                "s3:ObjectCreated:*"
+              ],
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "suffix",
+                      "Value": ".json"
+                    }
+                  ]
+                }
+              },
+              "Bucket": {
+                "Ref": "TestS3Bucket"
+              }
+            }
+          }
+        }
+      }
+    },
+    "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -790,7 +1090,96 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "PayloadFormatVersion",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/Greeter/SayHello",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "GreeterSayHelloAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 50,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/Greeter/SayHelloAsync",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "HttpApiNonString": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -804,15 +1193,18 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.FromScratch.NoApiGatewayEventsReference_ToUpper_Generated::ToUpper"
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated::HttpApiWithNonString"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
             "Properties": {
-              "Path": "/{text}",
-              "Method": "GET"
+              "Path": "/api/authorizer-non-string",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -838,7 +1230,7 @@
         }
       }
     },
-    "TestServerlessAppCustomizeResponseExamplesOkResponseWithCustomSerializerGenerated": {
+    "AuthNameFallbackTest": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -849,7 +1241,7 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "ApiId.Ref"
           ]
         }
       },
@@ -863,36 +1255,94 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated::OkResponseWithCustomSerializer"
+            "TestServerlessApp::TestServerlessApp.AuthNameFallback_GetUserId_Generated::GetUserId"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
             "Properties": {
-              "Path": "/okresponsewithcustomserializerasync/{firstName}/{lastName}",
+              "Path": "/api/authorizer-fallback",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
       }
     },
-    "SQSMessageHandler": {
+    "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+          ]
+        }
+      }
+    },
+    "TestServerlessAppDynamicExampleDynamicInputGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
+          ]
+        }
+      }
+    },
+    "ToUpper": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+          ]
+        }
+      }
+    },
+    "ScheduledHandler": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestQueueEvent"
+          "FiveMinuteSchedule"
         ],
         "SyncedEventProperties": {
-          "TestQueueEvent": [
-            "Queue.Fn::GetAtt",
-            "BatchSize",
-            "FilterCriteria.Filters",
-            "FunctionResponseTypes",
-            "MaximumBatchingWindowInSeconds",
-            "ScalingConfig.MaximumConcurrency"
+          "FiveMinuteSchedule": [
+            "Schedule",
+            "Description"
           ]
         }
       },
@@ -900,39 +1350,188 @@
         "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
-          "AWSLambdaSQSQueueExecutionRole"
+          "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Image",
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SqsMessageProcessing_HandleMessage_Generated::HandleMessage"
+            "TestServerlessApp::TestServerlessApp.ScheduledProcessing_HandleSchedule_Generated::HandleSchedule"
           ]
         },
         "Events": {
-          "TestQueueEvent": {
-            "Type": "SQS",
+          "FiveMinuteSchedule": {
+            "Type": "Schedule",
             "Properties": {
-              "Queue": {
-                "Fn::GetAtt": [
-                  "TestQueue",
-                  "Arn"
-                ]
-              },
-              "BatchSize": 50,
-              "FilterCriteria": {
-                "Filters": [
-                  {
-                    "Pattern": "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }"
-                  }
-                ]
-              },
-              "FunctionResponseTypes": [
-                "ReportBatchItemFailures"
-              ],
-              "MaximumBatchingWindowInSeconds": 5,
-              "ScalingConfig": {
-                "MaximumConcurrency": 5
+              "Schedule": "rate(5 minutes)",
+              "Description": "Runs every 5 minutes"
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppNullableReferenceTypeExampleNullableHeaderHttpApiGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/nullableheaderhttpapi",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppComplexCalculatorAddGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
+          ]
+        },
+        "Events": {
+          "RootPost": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/ComplexCalculator/Add",
+              "Method": "POST",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppComplexCalculatorSubtractGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
+          ]
+        },
+        "Events": {
+          "RootPost": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/ComplexCalculator/Subtract",
+              "Method": "POST",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppFromScratchNoApiGatewayEventsReferenceToUpperGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "ApiId.Ref"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.FromScratch.NoApiGatewayEventsReference_ToUpper_Generated::ToUpper"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/{text}",
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
               }
             }
           }
@@ -941,29 +1540,33 @@
     },
     "TestQueue": {
       "Type": "AWS::SQS::Queue"
-    }
-  },
-  "Outputs": {
-    "RestApiURL": {
-      "Description": "Rest API endpoint URL for Prod environment",
-      "Value": {
-        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
-      }
     },
-    "HttpApiURL": {
-      "Description": "HTTP API endpoint URL for Prod environment",
-      "Value": {
-        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
-      }
+    "TestS3Bucket": {
+      "Type": "AWS::S3::Bucket"
     },
-    "TestQueueARN": {
-      "Description": "ARN of the TestQueue resource",
-      "Value": {
-        "Fn::GetAtt": [
-          "TestQueue",
-          "Arn"
+    "TestTopic": {
+      "Type": "AWS::SNS::Topic"
+    },
+    "TestTable": {
+      "Properties": {
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Id",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "Id",
+            "KeyType": "HASH"
+          }
         ]
-      }
+      },
+      "Type": "AWS::DynamoDB::Table"
     }
   }
 }

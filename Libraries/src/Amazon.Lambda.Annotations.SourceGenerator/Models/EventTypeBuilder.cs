@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,13 +21,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             foreach (var attribute in lambdaMethodSymbol.GetAttributes())
             {
                 if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAttribute
-                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute)
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.FunctionUrlAttribute)
                 {
                     events.Add(EventType.API);
                 }
                 else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.SQSEventAttribute)
                 {
                     events.Add(EventType.SQS);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.S3EventAttribute)
+                {
+                    events.Add(EventType.S3);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.DynamoDBEventAttribute)
+                {
+                    events.Add(EventType.DynamoDB);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.SNSEventAttribute)
+                {
+                    events.Add(EventType.SNS);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.ScheduleEventAttribute)
+                {
+                    events.Add(EventType.Schedule);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAuthorizerAttribute
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAuthorizerAttribute)
+                {
+                    events.Add(EventType.Authorizer);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.ALBApiAttribute)
+                {
+                    events.Add(EventType.ALB);
                 }
             }
 

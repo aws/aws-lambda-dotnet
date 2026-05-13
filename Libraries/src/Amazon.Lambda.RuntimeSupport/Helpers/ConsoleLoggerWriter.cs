@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -21,6 +21,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+
+using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
+
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     /// <summary>
@@ -29,73 +32,34 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     public interface IConsoleLoggerWriter
     {
         /// <summary>
-        /// The current aws request id
+        /// The runtime headers for the current event to be added to log messages.
         /// </summary>
-        /// <param name="awsRequestId"></param>
-        void SetCurrentAwsRequestId(string awsRequestId);
+        /// <param name="runtimeApiHeaders">The headers containing invocation specific information that can be during log formatting.</param>
+        void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders);
 
         /// <summary>
         /// Format message with default log level
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Message to log.</param>
         void FormattedWriteLine(string message);
 
         /// <summary>
         /// Format message with given log level
         /// </summary>
-        /// <param name="level"></param>
-        /// <param name="message"></param>
-        void FormattedWriteLine(string level, string message);
+        /// <param name="level">The level of the log message.</param>
+        /// <param name="message">Message to log.</param>
+        /// <param name="args">Arguments to be applied to the log message.</param>
+        void FormattedWriteLine(string level, string message, params object[] args);
+
+        /// <summary>
+        /// Format message with given log level
+        /// </summary>
+        /// <param name="level">The level of the log message.</param>
+        /// <param name="exception">Exception to log.</param>
+        /// <param name="message">Message to log.</param>
+        /// <param name="args">Arguments to be applied to the log message.</param>
+        void FormattedWriteLine(string level, Exception exception, string message, params object[] args);
     }
-
-    /// <summary>
-    /// Simple logger to maintain compatibility with versions of .NET before .NET 6
-    /// </summary>
-    public class SimpleLoggerWriter : IConsoleLoggerWriter
-    {
-        TextWriter _writer;
-
-        public SimpleLoggerWriter()
-        {
-            // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
-            // This will make sure multiline log messages use a single CloudWatch Logs record.
-            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
-            if (fileDescriptorLogId != null)
-            {
-                try
-                {
-                    _writer = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
-                    InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging");
-                }
-                catch (Exception ex)
-                {
-                    _writer = Console.Out;
-                    InternalLogger.GetDefaultLogger().LogError(ex, "Error creating file descriptor log stream writer. Fallback to stdout.");
-                }
-            }
-            else
-            {
-                _writer = Console.Out;
-                InternalLogger.GetDefaultLogger().LogInformation("Using stdout for logging");
-            }
-        }
-
-        public void SetCurrentAwsRequestId(string awsRequestId)
-        {
-        }
-
-        public void FormattedWriteLine(string message)
-        {
-            _writer.WriteLine(message);
-        }
-
-        public void FormattedWriteLine(string level, string message)
-        {
-            _writer.WriteLine(message);
-        }
-    }
-
-#if NET6_0_OR_GREATER
 
     /// <summary>
     /// Formats log messages with time, request id, log level and message
@@ -107,7 +71,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Amazon.Lambda.Core can not be relied on because the Lambda Function could be using
         /// an older version of Amazon.Lambda.Core before LogLevel existed in Amazon.Lambda.Core.
         /// </summary>
-        enum LogLevel
+        public enum LogLevel
         {
             /// <summary>
             /// Trace level logging
@@ -139,6 +103,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             Critical = 5
         }
 
+        readonly IEnvironmentVariables _environmentVariables;
         WrapperTextWriter _wrappedStdOutWriter;
         WrapperTextWriter _wrappedStdErrorWriter;
 
@@ -149,17 +114,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Stdout will default log messages to be Information
         /// Stderror will default log messages to be Error
         /// </summary>
-        public LogLevelLoggerWriter()
+        /// <param name="environmentVariables">Environment variables interface.</param>
+        public LogLevelLoggerWriter(IEnvironmentVariables environmentVariables)
         {
+            _environmentVariables = environmentVariables;
             // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
             // This will make sure multiline log messages use a single CloudWatch Logs record.
-            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
+            var fileDescriptorLogId = environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
             if (fileDescriptorLogId != null)
             {
                 try
                 {
-                    var stdOutWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
-                    var stdErrorWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    var stdOutWriter = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
+                    var stdErrorWriter = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
                     Initialize(stdOutWriter, stdErrorWriter);
                     InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging.");
                 }
@@ -186,15 +153,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             ConfigureLoggingActionField();
         }
 
+        /// <summary>
+        /// Construct an instance wrapping std out and std error.
+        /// </summary>
+        /// <param name="stdOutWriter"></param>
+        /// <param name="stdErrorWriter"></param>
         public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
+            _environmentVariables = new SystemEnvironmentVariables();
             Initialize(stdOutWriter, stdErrorWriter);
         }
 
         private void Initialize(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
-            _wrappedStdOutWriter = new WrapperTextWriter(stdOutWriter, LogLevel.Information.ToString());
-            _wrappedStdErrorWriter = new WrapperTextWriter(stdErrorWriter, LogLevel.Error.ToString());
+            _wrappedStdOutWriter = new WrapperTextWriter(_environmentVariables, stdOutWriter, LogLevel.Information.ToString());
+            _wrappedStdErrorWriter = new WrapperTextWriter(_environmentVariables, stdErrorWriter, LogLevel.Error.ToString());
         }
 
         /// <summary>
@@ -204,32 +177,56 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         private void ConfigureLoggingActionField()
         {
-            var lambdaILoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
-            if (lambdaILoggerType == null)
+            var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            if (lambdaLoggerType == null)
                 return;
 
-            var loggingActionField = lambdaILoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
-            if (loggingActionField == null)
-                return;
+            var loggingActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingActionField != null)
+            {
+                Action<string> loggingAction = message => FormattedWriteLine(null, message);
+                loggingActionField.SetValue(null, loggingAction);
+            }
 
-            Action<string> callback = (message => FormattedWriteLine(null, message));
-            loggingActionField.SetValue(null, callback);
+
+            var loggingWithLevelActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingWithLevelAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingWithLevelActionField != null)
+            {
+                Action<string, string, object[]> loggingWithLevelAction = (level, message, args) => FormattedWriteLine(level, message, args);
+                loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
+            }
+
+            var loggingWithLevelAndExceptionActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingWithLevelAndExceptionActionField != null)
+            {
+                Action<string, Exception, string, object[]> loggingWithLevelAndExceptionAction = (level, exception, message, args) => FormattedWriteLine(level, exception, message, args);
+                loggingWithLevelAndExceptionActionField.SetValue(null, loggingWithLevelAndExceptionAction);
+            }
         }
 
-        public void SetCurrentAwsRequestId(string awsRequestId)
+        /// <inheritdoc/>
+        public void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders)
         {
-            _wrappedStdOutWriter.CurrentAwsRequestId = awsRequestId;
-            _wrappedStdErrorWriter.CurrentAwsRequestId = awsRequestId;
+            _wrappedStdOutWriter.CurrentRuntimeApiHeaders = runtimeApiHeaders;
+            _wrappedStdErrorWriter.CurrentRuntimeApiHeaders = runtimeApiHeaders;
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string message)
         {
             _wrappedStdOutWriter.FormattedWriteLine(message);
         }
 
-        public void FormattedWriteLine(string level, string message)
+        /// <inheritdoc/>
+        public void FormattedWriteLine(string level, string message, params object[] args)
         {
-            _wrappedStdOutWriter.FormattedWriteLine(level, message);
+            _wrappedStdOutWriter.FormattedWriteLine(level, (Exception)null, message, args);
+        }
+
+        /// <inheritdoc/>
+        public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
+        {
+            _wrappedStdOutWriter.FormattedWriteLine(level, exception, message, args);
         }
 
 
@@ -240,19 +237,46 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         class WrapperTextWriter : TextWriter
         {
+            private readonly IEnvironmentVariables _environmentVariables;
             private readonly TextWriter _innerWriter;
-            private string _defaultLogLevel;
+            private readonly string _defaultLogLevel;
 
-            const string LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
-            const string LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+            private readonly LogLevel _minmumLogLevel = LogLevel.Information;
 
-            private LogLevel _minmumLogLevel = LogLevel.Information;
+            enum LogFormatType { Default, Unformatted, Json }
 
-            enum LogFormatType { Default, Unformatted }
+            private readonly LogFormatType _logFormatType = LogFormatType.Default;
 
-            private LogFormatType _logFormatType = LogFormatType.Default;
+            private readonly ILogMessageFormatter _logMessageFormatter;
 
-            public string CurrentAwsRequestId { get; set; } = string.Empty;
+            // If running in multi concurrency mode we need to store the current aws request id in Task
+            // local storage to avoid the wrong request id being logged for a log statement. If not using
+            // multi concurrency mode we use the quicker to access string member variable.
+            private readonly AsyncLocal<IRuntimeApiHeaders> _currentRuntimeApiHeadersStorage;
+            private IRuntimeApiHeaders _currentRuntimeApiHeaders;
+
+            public IRuntimeApiHeaders CurrentRuntimeApiHeaders
+            {
+                get
+                {
+                    if (_currentRuntimeApiHeadersStorage != null && Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    {
+                        return _currentRuntimeApiHeadersStorage.Value;
+                    }
+                    return _currentRuntimeApiHeaders;
+                }
+                set
+                {
+                    if (_currentRuntimeApiHeadersStorage != null && Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    {
+                        _currentRuntimeApiHeadersStorage.Value = value;
+                    }
+                    else
+                    {
+                        _currentRuntimeApiHeaders = value;
+                    }
+                }
+            }
 
             /// <summary>
             /// This is typically set to either Console.Out or Console.Error to make sure we acquiring a lock
@@ -262,21 +286,46 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// </summary>
             internal object LockObject { get; set; } = new object();
 
-            public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel)
+            /// <summary>
+            /// Create an instance
+            /// </summary>
+            /// <param name="environmentVariables"></param>
+            /// <param name="innerWriter"></param>
+            /// <param name="defaultLogLevel"></param>
+            public WrapperTextWriter(IEnvironmentVariables environmentVariables, TextWriter innerWriter, string defaultLogLevel)
             {
+                _environmentVariables = environmentVariables;
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARIABLE);
+                if(Utils.IsUsingMultiConcurrency(environmentVariables))
+                {
+                    _currentRuntimeApiHeadersStorage = new AsyncLocal<IRuntimeApiHeaders>();
+                }
+
+                var envLogLevel = GetEnvironmentVariable(Constants.NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE, Constants.LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
                 {
-                    if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
+                    // Map Lambda's fatal logging level to the .NET RIC critical
+                    if(string.Equals(envLogLevel, "fatal", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _minmumLogLevel = LogLevel.Critical;
+                    }
+                    else if (string.Equals(envLogLevel, "warn", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _minmumLogLevel = LogLevel.Warning;
+                    }
+                    else if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
                     }
+                    else
+                    {
+                        InternalLogger.GetDefaultLogger().LogInformation($"Failed to parse log level enum value: {envLogLevel}");
+                    }
                 }
 
-                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARIABLE);
+                var envLogFormat = GetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogFormat))
                 {
                     if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
@@ -284,14 +333,34 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                         _logFormatType = result;
                     }
                 }
+
+                if(_logFormatType == LogFormatType.Json)
+                {
+                    _logMessageFormatter = new JsonLogMessageFormatter();
+                }
+                else
+                {
+                    _logMessageFormatter = new DefaultLogMessageFormatter(_logFormatType != LogFormatType.Unformatted);
+                }
+            }
+
+            private string GetEnvironmentVariable(string envName, string fallbackEnvName)
+            {
+                var value = _environmentVariables.GetEnvironmentVariable(envName);
+                if(string.IsNullOrEmpty(value) && fallbackEnvName != null)
+                {
+                    value = _environmentVariables.GetEnvironmentVariable(fallbackEnvName);
+                }
+
+                return value;
             }
 
             internal void FormattedWriteLine(string message)
             {
-                FormattedWriteLine(_defaultLogLevel, message);
+                FormattedWriteLine(_defaultLogLevel, (Exception)null, message);
             }
 
-            internal void FormattedWriteLine(string level, string message)
+            internal void FormattedWriteLine(string level, Exception exception, string messageTemplate, params object[] args)
             {
                 lock(LockObject)
                 {
@@ -300,28 +369,28 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     {
                         if (levelEnum < _minmumLogLevel)
                             return;
-
-                        displayLevel = ConvertLogLevelToLabel(levelEnum);
                     }
 
-                    if (_logFormatType == LogFormatType.Unformatted)
+                    var messageState = new MessageState();
+
+                    messageState.MessageTemplate = messageTemplate ?? string.Empty;
+                    messageState.MessageArguments = args;
+                    messageState.TimeStamp = DateTime.UtcNow;
+                    messageState.Level = levelEnum;
+                    messageState.Exception = exception;
+
+                    // Capture the IRuntimeApiHeaders into a local variable to avoid repeatedly accessing the backing AsyncLocal
+                    // or having AsyncLocal change in between accessing.
+                    var runtimeApiHeaders = CurrentRuntimeApiHeaders;
+                    if (runtimeApiHeaders != null)
                     {
-                        _innerWriter.WriteLine(message);
+                        messageState.AwsRequestId = runtimeApiHeaders.AwsRequestId;
+                        messageState.TenantId = runtimeApiHeaders.TenantId;
+                        messageState.TraceId = runtimeApiHeaders.TraceId;
                     }
-                    else
-                    {
-                        string line;
-                        if (!string.IsNullOrEmpty(displayLevel))
-                        {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
-                        }
-                        else
-                        {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
-                        }
 
-                        _innerWriter.WriteLine(line);
-                    }
+                    var message = _logMessageFormatter.FormatMessage(messageState);
+                    _innerWriter.WriteLine(message);
                 }
             }
 
@@ -331,37 +400,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 return Task.CompletedTask;
             }
 
-            /// <summary>
-            /// Convert LogLevel enums to the the same string label that console provider for Microsoft.Extensions.Logging.ILogger uses.
-            /// </summary>
-            /// <param name="level"></param>
-            /// <returns></returns>
-            private string ConvertLogLevelToLabel(LogLevel level)
-            {
-                switch (level)
-                {
-                    case LogLevel.Trace:
-                        return "trce";
-                    case LogLevel.Debug:
-                        return "dbug";
-                    case LogLevel.Information:
-                        return "info";
-                    case LogLevel.Warning:
-                        return "warn";
-                    case LogLevel.Error:
-                        return "fail";
-                    case LogLevel.Critical:
-                        return "crit";
-                }
-
-                return level.ToString();
-            }
-
             #region WriteLine redirects to formatting
-            [CLSCompliant(false)]
             public override void WriteLine(ulong value) => FormattedWriteLine(value.ToString(FormatProvider));
 
-            [CLSCompliant(false)]
             public override void WriteLine(uint value) => FormattedWriteLine(value.ToString(FormatProvider));
 
 
@@ -400,8 +441,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task WriteLineAsync(char value) => FormattedWriteLineAsync(value.ToString());
 
-            public Task WriteLineAsync(char[] buffer) => FormattedWriteLineAsync(buffer == null ? String.Empty : new string(buffer));
-
             public override Task WriteLineAsync(char[] buffer, int index, int count) => FormattedWriteLineAsync(new string(buffer, index, count));
 
 
@@ -409,10 +448,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             public override Task WriteLineAsync() => FormattedWriteLineAsync(string.Empty);
 
 
-            public override void WriteLine(StringBuilder? value) => FormattedWriteLine(value?.ToString());
+            public override void WriteLine(StringBuilder value) => FormattedWriteLine(value?.ToString());
             public override void WriteLine(ReadOnlySpan<char> buffer) => FormattedWriteLine(new string(buffer));
             public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(new string(buffer.Span));
-            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(value?.ToString());
+            public override Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(value?.ToString());
 
             #endregion
 
@@ -435,10 +474,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task FlushAsync() => _innerWriter.FlushAsync();
 
-            [CLSCompliant(false)]
             public override void Write(ulong value) => _innerWriter.Write(value);
 
-            [CLSCompliant(false)]
             public override void Write(uint value) => _innerWriter.Write(value);
 
 
@@ -477,18 +514,16 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task WriteAsync(char[] buffer, int index, int count) => _innerWriter.WriteAsync(buffer, index, count);
 
-            public Task WriteAsync(char[] buffer) => _innerWriter.WriteAsync(buffer);
-
             public override Task WriteAsync(char value) => _innerWriter.WriteAsync(value);
 
 
             protected override void Dispose(bool disposing) => _innerWriter.Dispose();
 
-            public override void Write(StringBuilder? value) => _innerWriter.Write(value);
+            public override void Write(StringBuilder value) => _innerWriter.Write(value);
 
             public override void Write(ReadOnlySpan<char> buffer) => _innerWriter.Write(buffer);
 
-            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(value, cancellationToken);
+            public override Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(value, cancellationToken);
 
             public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(buffer, cancellationToken);
 
@@ -496,5 +531,4 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             #endregion
         }
     }
-#endif
 }

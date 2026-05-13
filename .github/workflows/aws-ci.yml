@@ -1,13 +1,12 @@
-
 name: AWS CI
 
 on:
   workflow_dispatch:
   pull_request:
     branches:
-      - main
+      - master
       - dev
-      - 'feature/**'
+      - "feature/**"
 
 permissions:
   id-token: write
@@ -16,8 +15,8 @@ jobs:
   run-ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+      - name: Configure Load Balancer Credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
         with:
           role-to-assume: ${{ secrets.CI_MAIN_TESTING_ACCOUNT_ROLE_ARN }}
           role-duration-seconds: 7200
@@ -30,7 +29,7 @@ jobs:
           $roleArn=$(cat ./response.json)
           "roleArn=$($roleArn -replace '"', '')" >> $env:GITHUB_OUTPUT
       - name: Configure Test Runner Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
         with:
           role-to-assume: ${{ steps.lambda.outputs.roleArn }}
           role-duration-seconds: 7200
@@ -40,6 +39,18 @@ jobs:
         uses: aws-actions/aws-codebuild-run-build@v1
         with:
           project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
+      - name: Configure Test Sweeper Lambda Credentials
+        if: always()
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
+        with:
+          role-to-assume: ${{ steps.lambda.outputs.roleArn }}
+          role-duration-seconds: 7200
+          aws-region: us-west-2
+      - name: Invoke Test Sweeper Lambda
+        if: always()
+        shell: pwsh
+        run: |
+          aws lambda invoke response.json --function-name "${{ secrets.CI_TESTING_TEST_SWEEPER_LAMBDA_NAME }}" --cli-binary-format raw-in-base64-out --payload '{"Tags": "aws-repo=${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}"}'
       - name: CodeBuild Link
         shell: pwsh
         run: |

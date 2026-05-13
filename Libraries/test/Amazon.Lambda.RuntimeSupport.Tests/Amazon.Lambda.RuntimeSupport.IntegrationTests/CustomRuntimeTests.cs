@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -22,6 +22,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,37 +31,16 @@ using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
-    public class CustomRuntimeNET6Tests : CustomRuntimeTests
+    [Collection("Integration Tests")]
+    public class CustomRuntimeNET10Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET6Tests()
-            : base("CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET6)
+        public CustomRuntimeNET10Tests(IntegrationTestFixture fixture)
+            : base(fixture, "CustomRuntimeNET10FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net10.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET10)
         {
         }
 
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
         [Fact]
-#endif
-        public async Task TestAllNET6HandlersAsync()
-        {
-            await base.TestAllHandlersAsync();
-        }
-    }
-
-    public class CustomRuntimeNET8Tests : CustomRuntimeTests
-    {
-        public CustomRuntimeNET8Tests()
-            : base("CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
-        {
-        }
-
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
-        [Fact]
-#endif
-        public async Task TestAllNET8HandlersAsync()
+        public async Task TestAllNET10HandlersAsync()
         {
             await base.TestAllHandlersAsync();
         }
@@ -68,12 +48,12 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
-        public enum TargetFramework { NET6, NET8}
+        public enum TargetFramework { NET8, NET10}
 
-        private TargetFramework _targetFramework;
+        private readonly TargetFramework _targetFramework;
 
-        public CustomRuntimeTests(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
-            : base(functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
+        public CustomRuntimeTests(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
+            : base(fixture, functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
         {
             _targetFramework = targetFramework;
         }
@@ -89,28 +69,39 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 try
                 {
-                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient, _providedRuntime);
 
-                    // .NET API to address setting memory constraint was added for .NET 8
-                    if(_targetFramework == TargetFramework.NET8)
-                    {
-                        await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
-                        await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
-                        await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
-                    }
+                    await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                    await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                    await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
 
                     await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
-                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
-                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
+
+                    await RunGlobalLoggingWithExceptionTestAsync(lambdaClient, "GlobalLoggingWithExceptionTest");
+                    await RunGlobalLoggingTestAsync(lambdaClient, "GlobalLoggingTest");
+                    await RunJsonLoggingWithUnhandledExceptionAsync(lambdaClient);
+
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Debug, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Information, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Warning, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Error, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Critical, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Debug, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Information, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Warning, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Error, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Critical, LogConfigSource.DotnetEnvironment);
+
                     await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
                     await RunTestSuccessAsync(lambdaClient, "HttpsWorksAsync", "", "HttpsWorksAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "CertificateCallbackWorksAsync", "", "CertificateCallbackWorksAsync-SUCCESS");
-                    await RunTestSuccessAsync(lambdaClient, "NetworkingProtocolsAsync", "", "NetworkingProtocolsAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "HandlerEnvVarAsync", "", "HandlerEnvVarAsync-CustomRuntimeFunctionTest");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrappedAsync", "", "Exception", "Exception thrown from an async handler.");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrapped", "", "Exception", "Exception thrown from a synchronous handler.");
@@ -134,6 +125,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await CleanUpTestResources(s3Client, lambdaClient, iamClient, roleAlreadyExisted);
                 }
             }
+        }
+
+        private async Task RunJsonLoggingWithUnhandledExceptionAsync(AmazonLambdaClient lambdaClient)
+        {
+            await UpdateHandlerAsync(lambdaClient, "ThrowUnhandledApplicationException", null, RuntimeLogLevel.Information);
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+            var exceptionLog = log.Split('\n').FirstOrDefault(x => x.Contains("System.ApplicationException"));
+
+            Assert.NotNull(exceptionLog);
+            Assert.Contains("\"level\":\"Error\"", exceptionLog);
         }
 
         private async Task RunMaxHeapMemoryCheck(AmazonLambdaClient lambdaClient, string handler)
@@ -207,14 +210,17 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, string logLevel)
+        // The .NET Lambda runtime has a legacy environment variable for configuring the log level. This enum is used in the test to choose
+        // whether the legacy environment variable should be set or use the new properties in the update configuration api for setting log level.
+        enum LogConfigSource { LambdaAPI, DotnetEnvironment}
+        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, RuntimeLogLevel? runtimeLogLevel, LogConfigSource configSource)
         {
             var environmentVariables = new Dictionary<string, string>();
-            if(!string.IsNullOrEmpty(logLevel))
+            if(runtimeLogLevel.HasValue && configSource == LogConfigSource.DotnetEnvironment)
             {
-                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = logLevel;
+                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = runtimeLogLevel.Value.ToString().ToLowerInvariant();
             }
-            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables, configSource == LogConfigSource.LambdaAPI ? runtimeLogLevel : null); 
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
             Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
@@ -222,23 +228,94 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
 
-            Assert.Contains("info\tA information log", log);
-            Assert.Contains("warn\tA warning log", log);
-            Assert.Contains("fail\tA error log", log);
-            Assert.Contains("crit\tA critical log", log);
+            if (!runtimeLogLevel.HasValue)
+                runtimeLogLevel = RuntimeLogLevel.Information;
 
-            Assert.Contains("info\tA stdout info message", log);
-
-            Assert.Contains("fail\tA stderror error message", log);
-
-            if (string.IsNullOrEmpty(logLevel))
+            if (runtimeLogLevel <= RuntimeLogLevel.Trace)
             {
-                Assert.DoesNotContain($"a {logLevel} log".ToLower(), log.ToLower());
+                Assert.Contains("A trace log", log);
             }
             else
             {
-                Assert.Contains($"a {logLevel} log".ToLower(), log.ToLower());
+                Assert.DoesNotContain("A trace log", log);
             }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Debug)
+            {
+                Assert.Contains("A debug log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A debug log", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Information)
+            {
+                Assert.Contains("A information log", log);
+                Assert.Contains("A stdout info message", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A information log", log);
+                Assert.DoesNotContain("A stdout info message", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Warning)
+            {
+                Assert.Contains("A warning log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A warning log", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Error)
+            {
+                Assert.Contains("A error log", log);
+                Assert.Contains("A stderror error message", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A error log", log);
+                Assert.DoesNotContain("A stderror error message", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Critical)
+            {
+                Assert.Contains("A critical log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A critical log", log);
+            }
+        }
+
+        private async Task RunGlobalLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("This is a global log message with foobar as an argument", log);
+        }
+
+        private async Task RunGlobalLoggingWithExceptionTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("This is a global log message with foobar as an argument", log);
+            Assert.Contains("ArgumentException", log);
+            Assert.Contains("This is the wrong argument", log);
         }
 
         private async Task RunUnformattedLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)

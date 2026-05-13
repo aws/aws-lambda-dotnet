@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
@@ -62,6 +63,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 await DoHandlerCommonTasksAsync(invocation.InputStream, outputStream);
                 return new InvocationResponse(outputStream);
             }
+        }
+
+        public async Task<InvocationResponse> BaseHandlerConfirmContextAsync(InvocationRequest invocation)
+        {
+            Assert.Equal("request_id", invocation.LambdaContext.AwsRequestId);
+            Assert.Equal("tenant_id", invocation.LambdaContext.TenantId);
+
+            var outputStream = new MemoryStream();
+            await DoHandlerCommonTasksAsync(invocation.InputStream, outputStream);
+            return new InvocationResponse(outputStream);
         }
 
         public async Task<InvocationResponse> BaseHandlerReturnsNullAsync(InvocationRequest invocation)

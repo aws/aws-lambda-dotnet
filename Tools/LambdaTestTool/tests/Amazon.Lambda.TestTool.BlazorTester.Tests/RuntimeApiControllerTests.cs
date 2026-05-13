@@ -1,4 +1,5 @@
-﻿using Amazon.Lambda.TestTool.BlazorTester.Services;
+using Amazon.Lambda.TestTool.BlazorTester.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -125,7 +126,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
 
             private int Port { get; set; }
 
+#if NET10_0_OR_GREATER
+            private WebApplication WebHost { get; set; }
+
+#else
             private IWebHost WebHost { get; set; }
+#endif
 
             public HttpClient Client { get; private set; }
 

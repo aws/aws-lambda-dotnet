@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -31,10 +32,11 @@ namespace Amazon.Lambda.RuntimeSupport
         private HandlerWrapper _handlerWrapper;
         private HttpClient _httpClient;
         private LambdaBootstrapInitializer _lambdaBootstrapInitializer;
+        private LambdaBootstrapOptions _lambdaBootstrapOptions = new LambdaBootstrapOptions();
 
         private LambdaBootstrapBuilder(HandlerWrapper handlerWrapper)
         {
-            this._handlerWrapper = handlerWrapper;
+            _handlerWrapper = handlerWrapper;
         }
 
         /// <summary>
@@ -449,14 +451,32 @@ namespace Amazon.Lambda.RuntimeSupport
             return this;
         }
 
+        /// <summary>
+        /// Configure Lambda Bootstrap options
+        /// This is for testing purposes and should not be used in production.
+        /// </summary>
+        /// <param name="options">Action to configure options.</param>
+        /// <returns><see cref="LambdaBootstrapBuilder"/></returns>
+        public LambdaBootstrapBuilder ConfigureOptions(Action<LambdaBootstrapOptions> options = null)
+        {
+            if (options != null)
+                options.Invoke(_lambdaBootstrapOptions);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Build the LambdaBootstrap from the builder configuration.
+        /// </summary>
+        /// <returns>The LambdaBootstrap instance that can be run to start the Lambda runtime client.</returns>
         public LambdaBootstrap Build()
         {
             if(_httpClient == null)
             {
-                return new LambdaBootstrap(_handlerWrapper, _lambdaBootstrapInitializer);
+                return new LambdaBootstrap(_handlerWrapper, _lambdaBootstrapOptions, _lambdaBootstrapInitializer);
             }
 
-            return new LambdaBootstrap(_httpClient, _handlerWrapper, _lambdaBootstrapInitializer);
+            return new LambdaBootstrap(_httpClient, _handlerWrapper, _lambdaBootstrapOptions, _lambdaBootstrapInitializer);
         }
     }
 }

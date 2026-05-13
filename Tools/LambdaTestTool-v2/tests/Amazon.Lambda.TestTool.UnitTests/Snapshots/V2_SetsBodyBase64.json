@@ -1,0 +1,23 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022Hello, API Gateway v2!\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:16 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCInTjApPHcEJhw="
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Content-Length": [
+      "36"
+    ]
+  }
+}
+
+

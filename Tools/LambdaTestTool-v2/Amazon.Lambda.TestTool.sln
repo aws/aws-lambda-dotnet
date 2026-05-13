@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool", "src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj", "{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.IntegrationTests", "tests\Amazon.Lambda.TestTool.IntegrationTests\Amazon.Lambda.TestTool.IntegrationTests.csproj", "{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Tests.Common", "tests\Amazon.Lambda.TestTool.Tests.Common\Amazon.Lambda.TestTool.Tests.Common.csproj", "{E4D6D10C-C65F-E5E7-F865-FA931477FBCC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.UnitTests", "tests\Amazon.Lambda.TestTool.UnitTests\Amazon.Lambda.TestTool.UnitTests.csproj", "{80A4F809-28B7-61EC-6539-DF3C7A0733FD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4D6D10C-C65F-E5E7-F865-FA931477FBCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4D6D10C-C65F-E5E7-F865-FA931477FBCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4D6D10C-C65F-E5E7-F865-FA931477FBCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4D6D10C-C65F-E5E7-F865-FA931477FBCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80A4F809-28B7-61EC-6539-DF3C7A0733FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80A4F809-28B7-61EC-6539-DF3C7A0733FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80A4F809-28B7-61EC-6539-DF3C7A0733FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80A4F809-28B7-61EC-6539-DF3C7A0733FD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{97EE2E8A-D1F4-CB11-B664-B99B036E9F7B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{F7B6DF0E-EEB2-4B3F-47B7-49B188A2A216} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E4D6D10C-C65F-E5E7-F865-FA931477FBCC} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{80A4F809-28B7-61EC-6539-DF3C7A0733FD} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+	EndGlobalSection
+EndGlobal

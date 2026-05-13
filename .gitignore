@@ -4,6 +4,8 @@
 *.suo
 *.user
 
+**/.kiro/
+
 ####################
 # Build/Test folders
 ####################
@@ -18,6 +20,7 @@
 **/packages
 **/launchSettings.json
 **/Debug/
+**/build/
 
 **/project.lock.json
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
@@ -33,9 +33,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
         /// The records.
         /// </value>
         [DataMember(Name = "records")]
-#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("records")]
-#endif
         public IList<Record> Records { get; set; }
 
         /// <summary>
@@ -51,9 +49,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The record identifier.
             /// </value>
             [DataMember(Name = "recordId")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("recordId")]
-#endif
             public string RecordId { get; set; }
 
             /// <summary>
@@ -63,9 +59,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The result.
             /// </value>
             [DataMember(Name = "result")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("result")]
-#endif
             public string Result { get; set; }
 
             /// <summary>
@@ -75,9 +69,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The base64 encoded data.
             /// </value>
             [DataMember(Name = "data")]
-#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
-#endif
             public string Base64EncodedData { get; set; }
             
             /// <summary>
@@ -86,7 +78,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// <param name="data">The data.</param>
             public void EncodeData(string data)
             {
-                this.Base64EncodedData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(data));
+                Base64EncodedData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(data));
             }
         }
     }

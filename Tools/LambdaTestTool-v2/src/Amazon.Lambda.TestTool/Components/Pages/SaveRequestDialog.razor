@@ -1,0 +1,54 @@
+<div class="modal fade" id="@modalId" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-floppy-fill"></i>
+                    <h5 class="modal-title">Save Request</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="request-name" class="col-form-label">Enter a request name:</label>
+                    <input type="text" class="form-control" id="request-name" @bind="_requestName" @bind:event="oninput">
+                </div>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="invalid-feedback d-block">
+                        @_errorMessage
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-4 fw-bold d-flex align-items-center gap-2" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn @(!string.IsNullOrEmpty(_requestName) && !string.IsNullOrEmpty(_requestBody) ? "btn-primary": "btn-disabled") btn-sm rounded-pill px-4 fw-bold d-flex align-items-center gap-2" disabled="@(string.IsNullOrEmpty(_requestName) || string.IsNullOrEmpty(_requestBody))" @onclick="OnSaveClick">
+                    <i class="bi bi-floppy-fill"></i>
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    window.bootstrapModal = {
+        show: (modalId) => {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            }
+        },
+        hide: (modalId) => {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+        }
+    };
+</script>

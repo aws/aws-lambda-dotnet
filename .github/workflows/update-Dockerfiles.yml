@@ -1,49 +1,67 @@
 name: Update Lambda Dockerfiles
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   # Allows to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
-      NET_6_AMD64:
-        description: ".NET 6 AMD64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_6_ARM64:
-        description: ".NET 6 ARM64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_6_NEXT_VERSION:
-        description: ".NET 6 Next Version"
-        type: string
-        required: true
-      NET_7_AMD64:
-        description: ".NET 7 AMD64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_7_ARM64:
-        description: ".NET 7 ARM64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_7_NEXT_VERSION:
-        description: ".NET 7 Next Version"
-        type: string
-        required: true
       NET_8_AMD64:
         description: ".NET 8 AMD64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_8_ARM64:
         description: ".NET 8 ARM64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_8_NEXT_VERSION:
         description: ".NET 8 Next Version"
+        type: string
+        required: true
+      NET_9_AMD64:
+        description: ".NET 9 AMD64"
+        type: boolean
+        required: true
+        default: true
+      NET_9_ARM64:
+        description: ".NET 9 ARM64"
+        type: boolean
+        required: true
+        default: true
+      NET_9_NEXT_VERSION:
+        description: ".NET 9 Next Version"
+        type: string
+        required: true
+      NET_10_AMD64:
+        description: ".NET 10 AMD64"
+        type: boolean
+        required: true
+        default: true
+      NET_10_ARM64:
+        description: ".NET 10 ARM64"
+        type: boolean
+        required: true
+        default: true
+      NET_10_NEXT_VERSION:
+        description: ".NET 10 Next Version"
+        type: string
+        required: true
+      NET_11_AMD64:
+        description: ".NET 11 AMD64"
+        type: boolean
+        required: true
+        default: true
+      NET_11_ARM64:
+        description: ".NET 11 ARM64"
+        type: boolean
+        required: true
+        default: true
+      NET_11_NEXT_VERSION:
+        description: ".NET 11 Next Version"
         type: string
         required: true
 
@@ -51,61 +69,101 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NET_6_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/amd64/Dockerfile"
-      NET_6_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/arm64/Dockerfile"
-      NET_7_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net7/amd64/Dockerfile"
-      NET_7_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net7/arm64/Dockerfile"
       NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
       NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
+      NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
+      NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
+      NET_10_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile"
+      NET_10_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile"
+      NET_11_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net11/amd64/Dockerfile"
+      NET_11_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net11/arm64/Dockerfile"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: 'dev'
-
-      - name: Update .NET 6 AMD64
-        id: update-net6-amd64
-        shell: pwsh
-        run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
-        if: ${{ github.event.inputs.NET_6_AMD64 == 'true' }}
-
-      - name: Update .NET 6 ARM64
-        id: update-net6-arm64
-        shell: pwsh
-        run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
-        if: ${{ github.event.inputs.NET_6_ARM64 == 'true' }}
-
-      - name: Update .NET 7 AMD64
-        id: update-net7-amd64
-        shell: pwsh
-        run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_7_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_7_NEXT_VERSION }}
-        if: ${{ github.event.inputs.NET_7_AMD64 == 'true' }}
-
-      - name: Update .NET 7 ARM64
-        id: update-net7-arm64
-        shell: pwsh
-        run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_7_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_7_NEXT_VERSION }}
-        if: ${{ github.event.inputs.NET_7_ARM64 == 'true' }}
 
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_8_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
         if: ${{ github.event.inputs.NET_8_AMD64 == 'true' }}
 
       - name: Update .NET 8 ARM64
         id: update-net8-arm64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_8_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
         if: ${{ github.event.inputs.NET_8_ARM64 == 'true' }}
+
+      - name: Update .NET 9 AMD64
+        id: update-net9-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_9_AMD64 == 'true' }}
+
+      - name: Update .NET 9 ARM64
+        id: update-net9-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
+
+      - name: Update .NET 10 AMD64
+        id: update-net10-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_10_AMD64 == 'true' }}
+
+      - name: Update .NET 10 ARM64
+        id: update-net10-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_10_ARM64 == 'true' }}
+
+      - name: Update .NET 11 AMD64
+        id: update-net11-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_11_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_11_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_11_AMD64 == 'true' }}
+
+      - name: Update .NET 11 ARM64
+        id: update-net11-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_11_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_11_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_11_ARM64 == 'true' }}
 
       # Update Dockerfiles if newer version of ASP.NET Core is available
       - name: Commit and Push
@@ -136,15 +194,30 @@ jobs:
             \n\nAll .NET versions https://dotnet.microsoft.com/en-us/download/dotnet
             \n\n*Description of changes:*
             \n${{ format
-                (
-                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
-                  join(steps.update-net6-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net6-arm64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net7-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net7-arm64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net8-arm64.outputs.MESSAGE, '\n')
-                )
+            (
+            '{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}',
+            join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net10-arm64.outputs.MESSAGE, '\n'),
+            join(steps.update-net11-amd64.outputs.MESSAGE, '\n'),
+            join(steps.update-net11-arm64.outputs.MESSAGE, '\n')
+            )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_label: "auto-pr"
+
+      # Add "Release Not Needed" label to the PR
+      - name: Add Release Not Needed label
+        if: ${{ steps.pull-request.outputs.pr_number }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pull-request.outputs.pr_number }},
+              labels: ['Release Not Needed']
+            })

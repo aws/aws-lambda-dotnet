@@ -1,0 +1,23 @@
+{
+  "StatusCode": 200,
+  "Content": "Hello, World!",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:17:19 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCJpggYbvHcEQ_Q="
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "13"
+    ]
+  }
+}
+
+

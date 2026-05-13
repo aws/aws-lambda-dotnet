@@ -1,0 +1,13 @@
+{
+  "display-name": "ASP.NET Core Web API",
+  "system-name": "AspNetCoreWebAPI",
+  "description": "Serverless ASP.NET Core Web API",
+  "sort-order": 120,
+  "hidden-tags": [
+    "F#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "AspNetCore"
+  ]
+}

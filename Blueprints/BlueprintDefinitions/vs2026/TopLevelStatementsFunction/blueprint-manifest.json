@@ -1,0 +1,14 @@
+{
+  "display-name": "Empty Top-level Function",
+  "system-name": "EmptyTopLevelStatements",
+  "description": "Lambda function using C# Top-level statements",
+  "sort-order": 105,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Custom",
+    "TopLevelStatements"
+  ]
+}

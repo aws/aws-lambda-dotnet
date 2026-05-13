@@ -1,2 +1,26 @@
 ; Unshipped analyzer release
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0120 | AWSLambdaCSharpGenerator | Error | Authorizer Name Required
+AWSLambda0121 | AWSLambdaCSharpGenerator | Error | HTTP API Authorizer Not Found
+AWSLambda0122 | AWSLambdaCSharpGenerator | Error | REST API Authorizer Not Found
+AWSLambda0123 | AWSLambdaCSharpGenerator | Error | Authorizer Type Mismatch
+AWSLambda0124 | AWSLambdaCSharpGenerator | Error | Authorizer Type Mismatch
+AWSLambda0125 | AWSLambdaCSharpGenerator | Error | Duplicate Authorizer Name
+AWSLambda0127 | AWSLambdaCSharpGenerator | Error | Invalid Result TTL
+AWSLambda0128 | AWSLambdaCSharpGenerator | Error | Authorizer Payload Version Mismatch
+AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attribute
+AWSLambda0130 | AWSLambdaCSharpGenerator | Error | Invalid return type IAuthorizerResult
+AWSLambda0131 | AWSLambdaCSharpGenerator | Error | FromBody not supported on Authorizer functions
+AWSLambda0132 | AWSLambdaCSharpGenerator | Error | Invalid ALBApiAttribute
+AWSLambda0133 | AWSLambdaCSharpGenerator | Error | ALB Listener Reference Not Found
+AWSLambda0134 | AWSLambdaCSharpGenerator | Error | FromRoute not supported on ALB functions
+AWSLambda0135 | AWSLambdaCSharpGenerator | Error | Unmapped parameter on ALB function
+AWSLambda0136 | AWSLambdaCSharpGenerator | Error | Invalid S3EventAttribute
+AWSLambda0137 | AWSLambdaCSharpGenerator | Error | Invalid DynamoDBEventAttribute
+AWSLambda0138 | AWSLambdaCSharpGenerator | Error | Invalid SNSEventAttribute
+AWSLambda0139 | AWSLambdaCSharpGenerator | Error | Invalid ScheduleEventAttribute

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <LangVersion>latest</LangVersion>
 
@@ -15,19 +15,19 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
         <PackageReference Include="Moq" Version="4.18.4" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-        <PackageReference Include="System.Memory" Version="4.5.5" />
-        <PackageReference Include="System.Text.Json" Version="8.0.4" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="AWSSDK.Core" Version="3.7.103.24" />
         <PackageReference Include="xunit" Version="2.4.2" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.1" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.1" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.1" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.1" />
+        <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.2" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
 		<PackageReference Include="YamlDotNet" Version="12.3.1" />
 	</ItemGroup>
 
@@ -40,6 +40,15 @@
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
 
+        <Content Include="..\TestHostBuilderApp\**">
+          <Link>TestHostBuilderApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+
+        <Content Remove="..\TestHostBuilderApp\obj\**" />
+        <Content Remove="..\TestHostBuilderApp\bin\**" />
+        <Content Remove="..\TestHostBuilderApp\serverless.template" />
+
         <Content Include="..\TestServerlessApp.NET8\**">
             <Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -47,6 +56,14 @@
         <Content Remove="..\TestServerlessApp.NET8\obj\**" />
         <Content Remove="..\TestServerlessApp.NET8\bin\**" />
         <Content Remove="..\TestServerlessApp.NET8\serverless.template" />
+
+        <Content Include="..\TestCustomAuthorizerApp\**">
+            <Link>TestCustomAuthorizerApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestCustomAuthorizerApp\obj\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\bin\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\serverless.template" />
 
         <Content Include="..\TestExecutableServerlessApp\**">
             <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
@@ -113,6 +130,14 @@
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 
+    <Content Update="Snapshots\HostBuilderFunctions_Add_Generated.g.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
+      <Content Update="Snapshots\ServerlessTemplates\hostbuild.serverless.template">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+
 		<Content Update="Snapshots\ProgramParameterlessWithResponse.g.cs">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
@@ -149,6 +174,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Snapshots\ServerlessTemplates\authorizerHttpApi.template" />
+      <None Remove="Snapshots\ServerlessTemplates\authorizerHttpApiV1.template" />
+      <None Remove="Snapshots\ServerlessTemplates\authorizerRest.template" />
       <None Remove="Snapshots\ServerlessTemplates\customizeResponse.template" />
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />
@@ -178,16 +206,24 @@
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.csproj" />
       <!-- 
 	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
 		about using newer versions of System.Runtime then it can handle. This is not an issue in a end user scenario.
 	  -->
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="Snapshots\SQS\ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="Snapshots\VoidExample_VoidReturn_Generated.g.cs">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>

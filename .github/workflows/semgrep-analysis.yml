@@ -5,7 +5,7 @@ on:
   pull_request:
 
   push:
-    branches: ["dev", "main"]
+    branches: ["dev", "master"]
 
   schedule:
     - cron: '23 20 * * 1'
@@ -25,7 +25,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       # Fetch project source
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - run: semgrep ci --sarif > semgrep.sarif
         env:
@@ -35,7 +35,7 @@ jobs:
             p/owasp-top-ten
 
       - name: Upload SARIF file for GitHub Advanced Security Dashboard
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98  # v4.32.6
         with:
           sarif_file: semgrep.sarif
         if: always()

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -19,6 +19,8 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -30,14 +32,13 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
 
-#if NET6_0_OR_GREATER
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new LogLevelLoggerWriter();
-#else
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new SimpleLoggerWriter();
-#endif
+        private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
 
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
+
+        /// <inheritdoc/>
+        public IConsoleLoggerWriter ConsoleLogger => _consoleLoggerRedirector;
 
         /// <summary>
         /// Create a new RuntimeApiClient
@@ -48,19 +49,21 @@ namespace Amazon.Lambda.RuntimeSupport
         {
         }
 
-        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient)
+        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
+            _consoleLoggerRedirector = new LogLevelLoggerWriter(environmentVariables);
+
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
             _httpClient = httpClient;
-            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables, lambdaBootstrapOptions);
             var internalClient = new InternalRuntimeApiClient(httpClient);
             internalClient.BaseUrl = "http://" + LambdaEnvironment.RuntimeServerHostAndPort + internalClient.BaseUrl;
             _internalClient = internalClient;
         }
 
-        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, IInternalRuntimeApiClient internalClient)
+        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, IInternalRuntimeApiClient internalClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
-            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables, lambdaBootstrapOptions);
             _internalClient = internalClient;
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
         }
@@ -69,21 +72,22 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Report an initialization error as an asynchronous operation.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
+        public Task ReportInitializationErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
         {
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            return _internalClient.ErrorAsync(null, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
+            return _internalClient.ErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
 
         /// <summary>
         /// Send an initialization error with a type string but no other information as an asynchronous operation.
         /// This can be used to directly control flow in Step Functions without creating an Exception class and throwing it.
         /// </summary>
-        /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="errorType">The type of the error to report to Lambda. This does not need to be a .NET type name.</param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         public Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
@@ -105,13 +109,11 @@ namespace Amazon.Lambda.RuntimeSupport
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
             var headers = new RuntimeApiHeaders(response.Headers);
-            _consoleLoggerRedirector.SetCurrentAwsRequestId(headers.AwsRequestId);
-
             var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector);
             return new InvocationRequest
             {
                 InputStream = response.Result,
-                LambdaContext = lambdaContext,
+                LambdaContext = lambdaContext
             };
         }
 
@@ -138,6 +140,57 @@ namespace Amazon.Lambda.RuntimeSupport
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
+        /// <summary>
+        ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
+        /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public async Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default)
+        {
+            await _internalClient.RestoreNextAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Report a restore error as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
+        {
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
+            return _internalClient.RestoreErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
+        }
+
+        /// <summary>
+        /// Start sending a streaming response to the Lambda Runtime API.
+        /// Uses a raw TCP connection with chunked transfer encoding to support HTTP/1.1
+        /// trailing headers for error reporting, which .NET's HttpClient does not support.
+        /// The actual data is written by the handler via ResponseStream.WriteAsync, which flows
+        /// through a ChunkedStreamWriter to the TCP connection.
+        /// This Task completes when the stream is finalized (MarkCompleted or error).
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the in-flight HTTP POST. The returned IDisposable is the RawStreamingHttpClient that owns the TCP connection.</returns>
+        internal virtual async Task<IDisposable> StartStreamingResponseAsync(
+            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+        {
+            if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
+            if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));
+
+            var userAgent = _httpClient.DefaultRequestHeaders.UserAgent.ToString();
+            var rawClient = new RawStreamingHttpClient(LambdaEnvironment.RuntimeServerHostAndPort);
+
+            await rawClient.SendStreamingResponseAsync(awsRequestId, responseStream, userAgent, cancellationToken);
+
+            return rawClient;
+        }
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

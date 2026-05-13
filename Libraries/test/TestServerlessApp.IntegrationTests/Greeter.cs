@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -38,7 +38,7 @@ namespace TestServerlessApp.IntegrationTests
                 RequestUri = new Uri($"{_fixture.HttpApiUrlPrefix}/Greeter/SayHelloAsync"),
                 Headers = {{ "names", new List<string>{"Alice", "Bob"}}}
             };
-            var response = _fixture.HttpClient.SendAsync(httpRequestMessage).Result;
+            var response = await _fixture.HttpClient.SendAsync(httpRequestMessage);
             response.EnsureSuccessStatusCode();
             var lambdaFunctionName = _fixture.LambdaFunctions.FirstOrDefault(x => string.Equals(x.LogicalId, "GreeterSayHelloAsync"))?.Name;
             Assert.False(string.IsNullOrEmpty(lambdaFunctionName));

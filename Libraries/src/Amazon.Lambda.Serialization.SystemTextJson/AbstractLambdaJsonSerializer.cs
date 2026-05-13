@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Serialization.SystemTextJson.Converters;
+using Amazon.Lambda.Serialization.SystemTextJson.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,9 +32,9 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
-            jsonWriterCustomizer?.Invoke(this.WriterOptions);
+            jsonWriterCustomizer?.Invoke(WriterOptions);
 
-            this._debug = string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true",
+            _debug = string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true",
                 StringComparison.OrdinalIgnoreCase);
         }
 
@@ -48,7 +48,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         {
             try
             {
-                if (_debug)
+                if (_debug && response != null)
                 {
                     using (var debugStream = new MemoryStream())
                     using (var utf8Writer = new Utf8JsonWriter(debugStream, WriterOptions))
@@ -130,11 +130,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         {
             var serializer = new JsonSerializerOptions()
             {
-#if NET6_0_OR_GREATER
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-#else
-                IgnoreNullValues = true,
-#endif
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = new AwsNamingPolicy(),
                 Converters =

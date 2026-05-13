@@ -1,19 +1,25 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\..\..\buildtools\common.props" />    
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp3.1;net6;net8.0</TargetFrameworks>
+        <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
         <Description>Amazon Lambda .NET Core support - Serialization.Json with System.Text.Json.</Description>
         <AssemblyTitle>Amazon.Lambda.Serialization.SystemTextJson</AssemblyTitle>
         <AssemblyName>Amazon.Lambda.Serialization.SystemTextJson</AssemblyName>
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
-        <VersionPrefix>2.4.3</VersionPrefix>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
+        <Version>3.0.0</Version>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+      <!--
+      Disabling the EOL check because when we remove support in our libraries is a different and slower cycle then the framework's cycle.
+      We need to be confident there is no longer a critical mass of customers still using the framework version and we need to be
+      ready to make a major version release of our libraries.
+      -->
+        <CheckEolTargetFramework>false</CheckEolTargetFramework>
     </PropertyGroup>
 	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\"/>
+		<None Include="README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 	
     <ItemGroup>

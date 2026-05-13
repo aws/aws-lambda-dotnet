@@ -1,0 +1,13 @@
+{
+  "display-name": "Annotations Framework Sample",
+  "system-name": "Annotations",
+  "description": "Sample application demonstrating how to use the Lambda Annotations framework.",
+  "sort-order": 120,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Annotations"
+  ]
+}

@@ -1,4 +1,4 @@
-﻿using Amazon.IdentityManagement;
+using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda.Model;
 using Amazon.S3;
@@ -15,9 +15,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class BaseCustomRuntimeTest
     {
+        protected readonly Runtime _providedRuntime = Runtime.ProvidedAl2023;
+
         public const int FUNCTION_MEMORY_MB = 512;
 
-        protected static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
+        public static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
         protected static readonly string LAMBDA_ASSUME_ROLE_POLICY =
         @"
         {
@@ -44,8 +46,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
-        protected BaseCustomRuntimeTest(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
+        private readonly IntegrationTestFixture _fixture;
+
+        protected BaseCustomRuntimeTest(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
         {
+            _fixture = fixture;
             FunctionName = functionName;
             ExecutionRoleName = FunctionName;
             Handler = handler;
@@ -60,7 +65,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// <param name="s3Client"></param>
         /// <param name="lambdaClient"></param>
         /// <returns></returns>
-        protected async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
+        public async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
             AmazonIdentityManagementServiceClient iamClient, bool roleAlreadyExisted)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
@@ -78,6 +83,21 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             {
                 try
                 {
+                    var listAttachedPoliciesRequest = new ListAttachedRolePoliciesRequest
+                    {
+                        RoleName = ExecutionRoleName
+                    };
+                    var attachedPolicies = await iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest);
+
+                    foreach (var policy in attachedPolicies.AttachedPolicies)
+                    {
+                        await iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                        {
+                            RoleName = ExecutionRoleName,
+                            PolicyArn = policy.PolicyArn
+                        });
+                    }
+
                     var deleteRoleRequest = new DeleteRoleRequest
                     {
                         RoleName = ExecutionRoleName
@@ -91,14 +111,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        protected async Task<bool> PrepareTestResources(IAmazonS3 s3Client, IAmazonLambda lambdaClient,
-            AmazonIdentityManagementServiceClient iamClient)
+        public async Task<bool> PrepareTestResources(IAmazonS3 s3Client, IAmazonLambda lambdaClient,
+            AmazonIdentityManagementServiceClient iamClient, Runtime runtime)
         {
             var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
 
             var testBucketName = TestBucketRoot + Guid.NewGuid().ToString();
             await CreateBucketWithDeploymentZipAsync(s3Client, testBucketName);
-            await CreateFunctionAsync(lambdaClient, testBucketName);
+            await CreateFunctionAsync(lambdaClient, testBucketName, runtime);
 
             return roleAlreadyExisted;
         }
@@ -189,6 +209,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected async Task<InvokeResponse> InvokeFunctionAsync(IAmazonLambda lambdaClient, string payload)
         {
+            await WaitForFunctionToBeReady(lambdaClient);
+
             var request = new InvokeRequest
             {
                 FunctionName = FunctionName,
@@ -198,9 +220,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             return await lambdaClient.InvokeAsync(request);
         }
 
-        protected async Task UpdateHandlerAsync(IAmazonLambda lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
+        protected async Task UpdateHandlerAsync(IAmazonLambda lambdaClient, string handler, Dictionary<string, string> environmentVariables = null, RuntimeLogLevel? logLevel = null)
         {
-            if(environmentVariables == null)
+            await WaitForFunctionToBeReady(lambdaClient);
+
+            if (environmentVariables == null)
             {
                 environmentVariables = new Dictionary<string, string>();
             }
@@ -216,8 +240,30 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     Variables = environmentVariables
                 }
             };
+
+            if (logLevel == null)
+            {
+                updateFunctionConfigurationRequest.LoggingConfig = new LoggingConfig
+                {
+                    LogFormat = LogFormat.Text
+                };
+            }
+            else
+            {
+                updateFunctionConfigurationRequest.LoggingConfig = new LoggingConfig
+                {
+                    ApplicationLogLevel = ConvertRuntimeLogLevel(logLevel.Value),
+                    LogFormat = LogFormat.JSON
+                };
+            }
+
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
 
+            await WaitForFunctionToBeReady(lambdaClient);
+        }
+
+        private async Task WaitForFunctionToBeReady(IAmazonLambda lambdaClient)
+        {
             // Wait for eventual consistency of function change.
             var getConfigurationRequest = new GetFunctionConfigurationRequest { FunctionName = FunctionName };
             GetFunctionConfigurationResponse getConfigurationResponse = null;
@@ -229,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await Task.Delay(1000);
         }
 
-        protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
+        protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName, Runtime runtime)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
 
@@ -241,10 +287,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     S3Bucket = bucketName,
                     S3Key = DeploymentZipKey
                 },
-                Handler = this.Handler,
+                Handler = Handler,
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
-                Runtime = Runtime.Dotnet6,
+                Runtime = runtime,
                 Role = ExecutionRoleArn
             };
 
@@ -303,17 +349,20 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// <returns></returns>
         private string GetDeploymentZipPath()
         {
-            var testsProjectDirectory = FindUp(System.Environment.CurrentDirectory, TestsProjectDirectoryName, true);
-            if (string.IsNullOrEmpty(testsProjectDirectory))
-            {
-                throw new NoDeploymentPackageFoundException();
-            }
-
-            var deploymentZipFile = Path.Combine(testsProjectDirectory, DeploymentPackageZipRelativePath.Replace('\\', Path.DirectorySeparatorChar));
+            var deploymentZipFile = _fixture.TestAppPaths[DeploymentPackageZipRelativePath];
 
             if (!File.Exists(deploymentZipFile))
             {
-                throw new NoDeploymentPackageFoundException();
+                var message = new StringBuilder();
+                message.AppendLine($"Deployment package for {DeploymentPackageZipRelativePath} not found at expected path: {deploymentZipFile}");
+                message.AppendLine("Available Test Bundles:");
+                foreach (var kvp in _fixture.TestAppPaths)
+                {
+                    message.AppendLine($"{kvp.Key}: {kvp.Value}");
+            }
+
+
+                throw new NoDeploymentPackageFoundException(message.ToString());
             }
 
             return deploymentZipFile;
@@ -342,7 +391,62 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected class NoDeploymentPackageFoundException : Exception
         {
+            public NoDeploymentPackageFoundException() { }
 
+            public NoDeploymentPackageFoundException(string message) : base(message) { }
+        }
+
+        private ApplicationLogLevel ConvertRuntimeLogLevel(RuntimeLogLevel runtimeLogLevel)
+        {
+            switch (runtimeLogLevel)
+            {
+                case RuntimeLogLevel.Trace:
+                    return ApplicationLogLevel.TRACE;
+                case RuntimeLogLevel.Debug:
+                    return ApplicationLogLevel.DEBUG;
+                case RuntimeLogLevel.Information:
+                    return ApplicationLogLevel.INFO;
+                case RuntimeLogLevel.Warning:
+                    return ApplicationLogLevel.WARN;
+                case RuntimeLogLevel.Error:
+                    return ApplicationLogLevel.ERROR;
+                case RuntimeLogLevel.Critical:
+                    return ApplicationLogLevel.FATAL;
+                default:
+                    throw new ArgumentException("Unknown log level: " + runtimeLogLevel);
+            }
+        }
+
+        public enum RuntimeLogLevel
+        {
+            /// <summary>
+            /// Trace level logging
+            /// </summary>
+            Trace = 0,
+            /// <summary>
+            /// Debug level logging
+            /// </summary>
+            Debug = 1,
+
+            /// <summary>
+            /// Information level logging
+            /// </summary>
+            Information = 2,
+
+            /// <summary>
+            /// Warning level logging
+            /// </summary>
+            Warning = 3,
+
+            /// <summary>
+            /// Error level logging
+            /// </summary>
+            Error = 4,
+
+            /// <summary>
+            /// Critical level logging
+            /// </summary>
+            Critical = 5
         }
     }
 }

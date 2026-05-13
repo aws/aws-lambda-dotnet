@@ -1,0 +1,52 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        var httpApiAuthorizerAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute>;
+        var restApiAuthorizerAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute>;
+
+        if (_model.LambdaMethod.ReturnsIAuthorizerResult)
+        {
+            // Determine the serialization format based on the authorizer attribute
+            string format;
+            if (httpApiAuthorizerAttribute != null && httpApiAuthorizerAttribute.Data.EnableSimpleResponses)
+            {
+                format = "AuthorizerResultSerializationOptions.AuthorizerFormat.HttpApiSimple";
+            }
+            else if (httpApiAuthorizerAttribute != null)
+            {
+                format = "AuthorizerResultSerializationOptions.AuthorizerFormat.HttpApiIamPolicy";
+            }
+            else
+            {
+                format = "AuthorizerResultSerializationOptions.AuthorizerFormat.RestApi";
+            }
+
+            // Determine if MethodArn is available (V1/REST have it, V2 has RouteArn)
+            var isV2 = httpApiAuthorizerAttribute != null && httpApiAuthorizerAttribute.Data.AuthorizerPayloadFormatVersion == Amazon.Lambda.Annotations.APIGateway.AuthorizerPayloadFormatVersion.V2;
+            var methodArnExpression = isV2 ? "__request__.RouteArn" : "__request__.MethodArn";
+#>
+            var authorizerResult = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+            var serializationOptions = new AuthorizerResultSerializationOptions
+            {
+                Format = <#= format #>,
+                MethodArn = <#= methodArnExpression #>
+            };
+            var response = authorizerResult.Serialize(serializationOptions);
+            return response;
+<#
+        }
+        else
+        {
+            // Raw return type - pass through directly (backwards compatibility)
+#>
+            var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+            return response;
+<#
+        }
+#>

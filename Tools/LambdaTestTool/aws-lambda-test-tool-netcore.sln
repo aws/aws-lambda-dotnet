@@ -38,6 +38,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateYamlExamp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToUpperFunc", "tests\LambdaFunctions\ToUpperFunc\ToUpperFunc.csproj", "{7BBBAB9A-1630-4B15-AEB8-FA90BBDC165C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegerFunc", "tests\LambdaFunctions\IntegerFunc\IntegerFunc.csproj", "{04026578-14B5-4EE0-8732-C4448F83356D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -92,6 +94,10 @@ Global
 		{7BBBAB9A-1630-4B15-AEB8-FA90BBDC165C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7BBBAB9A-1630-4B15-AEB8-FA90BBDC165C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7BBBAB9A-1630-4B15-AEB8-FA90BBDC165C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04026578-14B5-4EE0-8732-C4448F83356D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04026578-14B5-4EE0-8732-C4448F83356D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04026578-14B5-4EE0-8732-C4448F83356D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04026578-14B5-4EE0-8732-C4448F83356D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,6 +116,7 @@ Global
 		{1055D389-9927-4EED-9876-4B497CB3B3C2} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
 		{13B8F61E-5E34-46CD-B76F-A92D9DCF6946} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
 		{7BBBAB9A-1630-4B15-AEB8-FA90BBDC165C} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
+		{04026578-14B5-4EE0-8732-C4448F83356D} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E6C77567-6F16-4EE3-8743-ADE6B68434FD}

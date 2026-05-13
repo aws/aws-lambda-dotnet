@@ -1,0 +1,61 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.SNS;
+using Amazon.Lambda.SNSEvents;
+using System;
+
+namespace TestServerlessApp.SNSEventExamples
+{
+    // This file represents invalid usage of the SNSEventAttribute.
+    // This file is sent as input to the source generator unit tests and we assert that compilation errors are thrown with the appropriate diagnostic message.
+
+    public class InvalidSNSEvents
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SNSEvent("not-a-valid-arn")]
+        public void ProcessMessageWithInvalidTopicArn(SNSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SNSEvent("@testTopic")]
+        public void ProcessMessageWithInvalidParameters(SNSEvent evnt, bool invalidParameter1, int invalidParameter2)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SNSEvent("@testTopic")]
+        public bool ProcessMessageWithInvalidReturnType(SNSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+            return true;
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [RestApi(LambdaHttpMethod.Get, "/")]
+        [SNSEvent("@testTopic")]
+        public void ProcessMessageWithMultipleEventTypes(SNSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SNSEvent("@testTopic", ResourceName = "sns-event-source")]
+        public void ProcessMessageWithInvalidResourceName(SNSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SNSEvent("@testTopic", ResourceName = "")]
+        public void ProcessMessageWithEmptyResourceName(SNSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+    }
+}

@@ -1,15 +1,15 @@
-﻿using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.SampleRequests;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace Amazon.Lambda.TestTool
 {
     public class TestToolStartup
     {
-        private static bool shouldDisableLogs;
 
         public class RunConfiguration
         {
@@ -36,7 +36,7 @@ namespace Amazon.Lambda.TestTool
             try
             {
                 var commandOptions = CommandLineOptions.Parse(args);
-                shouldDisableLogs = Utils.ShouldDisableLogs(commandOptions);
+                var shouldDisableLogs = Utils.ShouldDisableLogs(commandOptions);
 
                 if (!shouldDisableLogs) Utils.PrintToolTitle(productName);
 
@@ -54,12 +54,12 @@ namespace Amazon.Lambda.TestTool
 
                 var lambdaAssemblyDirectory = commandOptions.Path ?? Directory.GetCurrentDirectory();
 
-#if NET6_0
-                var targetFramework = "net6.0";
-#elif NET7_0
-                var targetFramework = "net7.0";
-#elif NET8_0
+#if NET8_0
                 var targetFramework = "net8.0";
+#elif NET9_0
+                var targetFramework = "net9.0";
+#elif NET10_0
+                var targetFramework = "net10.0";
 #endif
 
                 // If running in the project directory select the build directory so the deps.json file can be found.
@@ -75,7 +75,7 @@ namespace Amazon.Lambda.TestTool
 
                 if (commandOptions.NoUI)
                 {
-                    ExecuteWithNoUi(localLambdaOptions, commandOptions, lambdaAssemblyDirectory, runConfiguration);
+                    ExecuteWithNoUi(localLambdaOptions, commandOptions, lambdaAssemblyDirectory, runConfiguration, shouldDisableLogs);
                 }
                 else
                 {
@@ -117,16 +117,16 @@ namespace Amazon.Lambda.TestTool
         }
 
 
-        public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, RunConfiguration runConfiguration)
+        public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, RunConfiguration runConfiguration, bool shouldDisableLogs)
         {
             if (!shouldDisableLogs) runConfiguration.OutputWriter.WriteLine("Executing Lambda function without web interface");
             var lambdaProjectDirectory = Utils.FindLambdaProjectDirectory(lambdaAssemblyDirectory);
 
-            string configFile = DetermineConfigFile(commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory);
-            LambdaConfigInfo configInfo = LoadLambdaConfigInfo(configFile, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
-            LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            string configFile = DetermineConfigFile(commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, shouldDisableLogs: shouldDisableLogs);
+            LambdaConfigInfo configInfo = LoadLambdaConfigInfo(configFile, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration, shouldDisableLogs: shouldDisableLogs);
+            LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration, shouldDisableLogs: shouldDisableLogs);
 
-            string payload = DeterminePayload(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            string payload = DeterminePayload(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration, shouldDisableLogs: shouldDisableLogs);
 
             var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
             if (!string.IsNullOrEmpty(awsProfile))
@@ -165,7 +165,7 @@ namespace Amazon.Lambda.TestTool
                 Function = lambdaFunction
             };
 
-            ExecuteRequest(request, localLambdaOptions, runConfiguration);
+            ExecuteRequest(request, localLambdaOptions, runConfiguration, shouldDisableLogs);
 
 
             if (runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
@@ -175,7 +175,7 @@ namespace Amazon.Lambda.TestTool
             }
         }
 
-        private static string DetermineConfigFile(CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory)
+        private static string DetermineConfigFile(CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, bool shouldDisableLogs)
         {
             string configFile = null;
             if (string.IsNullOrEmpty(commandOptions.ConfigFile))
@@ -198,7 +198,7 @@ namespace Amazon.Lambda.TestTool
             return configFile;
         }
 
-        private static LambdaConfigInfo LoadLambdaConfigInfo(string configFile, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        private static LambdaConfigInfo LoadLambdaConfigInfo(string configFile, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration, bool shouldDisableLogs)
         {
             LambdaConfigInfo configInfo;
             if (configFile != null)
@@ -225,7 +225,7 @@ namespace Amazon.Lambda.TestTool
             return configInfo;
         }
 
-        private static LambdaFunction LoadLambdaFunction(LambdaConfigInfo configInfo, LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        private static LambdaFunction LoadLambdaFunction(LambdaConfigInfo configInfo, LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration, bool shouldDisableLogs)
         {
             // If no function handler was explicitly set and there is only one function defined in the config file then assume the user wants to debug that function.
             var functionHandler = commandOptions.FunctionHandler;
@@ -263,7 +263,7 @@ namespace Amazon.Lambda.TestTool
             return lambdaFunction;
         }
 
-        private static string DeterminePayload(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        private static string DeterminePayload(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration, bool shouldDisableLogs)
         {
             var payload = commandOptions.Payload;
 
@@ -318,10 +318,34 @@ namespace Amazon.Lambda.TestTool
                 }
             }
 
+            try
+            {
+                var doc = JsonDocument.Parse(payload);
+            }
+            catch (JsonException)
+            {
+                try
+                {
+                    if (!payload.StartsWith("[") && !payload.StartsWith("{") && !payload.StartsWith("\""))
+                    {
+                        payload = "\"" + payload + "\"";
+                        JsonDocument.Parse(payload);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                catch (JsonException)
+                {
+                    throw new ArgumentException("Provided payload for Lambda function is not a valid JSON document.");
+                }
+            }
+
             return payload;
         }
 
-        private static void ExecuteRequest(ExecutionRequest request, LocalLambdaOptions localLambdaOptions, RunConfiguration runConfiguration)
+        private static void ExecuteRequest(ExecutionRequest request, LocalLambdaOptions localLambdaOptions, RunConfiguration runConfiguration, bool shouldDisableLogs)
         {
             try
             {

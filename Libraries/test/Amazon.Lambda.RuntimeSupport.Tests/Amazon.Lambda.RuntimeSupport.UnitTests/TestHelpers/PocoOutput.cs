@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -41,7 +41,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 int hash = hashBase;
                 hash = (hash * hashMultiplier) ^ (!Object.ReferenceEquals(null, OutputString) ? OutputString.GetHashCode() : 0);
-                hash = (hash * hashMultiplier) ^ (!Object.ReferenceEquals(null, OutputInt) ? OutputInt.GetHashCode() : 0);
+                hash = (hash * hashMultiplier) ^ OutputInt.GetHashCode();
                 return hash;
             }
         }

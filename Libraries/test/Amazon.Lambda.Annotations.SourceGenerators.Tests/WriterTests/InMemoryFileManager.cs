@@ -20,7 +20,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
         public void WriteAllText(string path, string contents) => _cacheContent[path] = contents;
 
-        public bool Exists(string path) => throw new System.NotImplementedException();
+        public bool Exists(string path) => _cacheContent.ContainsKey(path);
 
         public FileStream Create(string path) => throw new System.NotImplementedException();
     }

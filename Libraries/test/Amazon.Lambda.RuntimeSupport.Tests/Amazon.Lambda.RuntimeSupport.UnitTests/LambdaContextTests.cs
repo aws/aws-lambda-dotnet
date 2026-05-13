@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -31,9 +31,29 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var runtimeApiHeaders = new RuntimeApiHeaders(headers);
             var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
 
-            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter());
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
 
             Assert.True(context.RemainingTime >= TimeSpan.Zero, $"Remaining time is not a positive value: {context.RemainingTime}");
+        }
+
+        [Fact]
+        public void RuntimeApiHeadersAddedToContext()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["Lambda-Runtime-Aws-Request-Id"] = new[] { "request-generated-id" },
+                ["Lambda-Runtime-Invoked-Function-Arn"] = new[] { "my-function-arn" },
+                ["Lambda-Runtime-Aws-Tenant-Id"] = new[] { "tenant-generated-id" }
+            };
+
+            var runtimeApiHeaders = new RuntimeApiHeaders(headers);
+            var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
+
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+
+            Assert.Equal("request-generated-id", context.AwsRequestId);
+            Assert.Equal("my-function-arn", context.InvokedFunctionArn);
+            Assert.Equal("tenant-generated-id", context.TenantId);
         }
     }
 }

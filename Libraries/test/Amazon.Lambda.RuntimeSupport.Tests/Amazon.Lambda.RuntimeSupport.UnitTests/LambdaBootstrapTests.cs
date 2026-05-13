@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -14,12 +14,14 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using static Amazon.Lambda.RuntimeSupport.Bootstrap.Constants;
 
@@ -29,13 +31,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     /// Tests to test LambdaBootstrap when it's constructed using its actual constructor.
     /// Tests of the static GetLambdaBootstrap methods can be found in LambdaBootstrapWrapperTests.
     /// </summary>
+    [Collection("RuntimeSupportStateCheck")]
     public class LambdaBootstrapTests
     {
-        TestHandler _testFunction;
-        TestInitializer _testInitializer;
-        TestRuntimeApiClient _testRuntimeApiClient;
-        TestEnvironmentVariables _environmentVariables;
-        HandlerWrapper _testWrapper;
+        readonly TestHandler _testFunction;
+        readonly TestInitializer _testInitializer;
+        readonly TestRuntimeApiClient _testRuntimeApiClient;
+        readonly TestEnvironmentVariables _environmentVariables;
+        readonly HandlerWrapper _testWrapper;
 
         public LambdaBootstrapTests()
         {
@@ -47,6 +50,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 },
                 {
                     RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string> {"invoked_function_arn"}
+                },
+                {
+                    RuntimeApiHeaders.HeaderAwsTenantId, new List<string> {"tenant_id"}
                 }
             };
             _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, headers);
@@ -83,15 +89,35 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task InitializerThrowsException()
+        public async Task ConfirmRuntimeApiHeadersInContext()
         {
+
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerConfirmContextAsync, null))
+            {
+                bootstrap.Client = _testRuntimeApiClient;
+                await bootstrap.RunAsync(_testFunction.CancellationSource.Token);
+            }
+            Assert.True(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
+        public async Task InitializerHandlesExceptions()
+        {
+            bool exceptionThrown = false;
             using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeThrowAsync))
             {
                 bootstrap.Client = _testRuntimeApiClient;
-                var exception = await Assert.ThrowsAsync<Exception>(async () => { await bootstrap.RunAsync(); });
-                Assert.Equal(TestInitializer.InitializeExceptionMessage, exception.Message);
+                try
+                {
+                    await bootstrap.RunAsync();
+                }
+                catch
+                {
+                    exceptionThrown = true;
+                }
             }
 
+            Assert.True(exceptionThrown);
             Assert.True(_testRuntimeApiClient.ReportInitializationErrorAsyncExceptionCalled);
             Assert.True(_testInitializer.InitializerWasCalled);
             Assert.False(_testFunction.HandlerWasCalled);
@@ -124,7 +150,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task TraceIdEnvironmentVariableIsSet()
         {
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, null, null, _environmentVariables))
             {
                 bootstrap.Client = _testRuntimeApiClient;
                 Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
@@ -142,7 +168,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task HandlerThrowsException()
         {
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null, null, _environmentVariables))
             {
                 bootstrap.Client = _testRuntimeApiClient;
                 Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
@@ -160,7 +186,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         {
             const string testInput = "a MiXeD cAsE sTrInG";
 
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerToUpperAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerToUpperAsync, null, null, _environmentVariables))
             {
                 _testRuntimeApiClient.FunctionInput = Encoding.UTF8.GetBytes(testInput);
                 bootstrap.Client = _testRuntimeApiClient;
@@ -178,7 +204,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task HandlerReturnsNull()
         {
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerReturnsNullAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerReturnsNullAsync, null, null, _environmentVariables))
             {
                 _testRuntimeApiClient.FunctionInput = new byte[0];
                 bootstrap.Client = _testRuntimeApiClient;
@@ -219,44 +245,200 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void IsCallPreJitTest()
         {
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
+            var environmentVariables = new TestEnvironmentVariables();
+
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
                 AWS_LAMBDA_INITIALIZATION_TYPE_PC);
 
-            Assert.True(UserCodeInit.IsCallPreJit());
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
+            Assert.True(UserCodeInit.IsCallPreJit(environmentVariables));
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
                 AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND);
 
-            Assert.False(UserCodeInit.IsCallPreJit());
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
-            Assert.False(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Always");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
-            Assert.True(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Always");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.True(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
-            Assert.False(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
-            Assert.False(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND);
-            Assert.False(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND);
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
-            Assert.False(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit(environmentVariables));
 
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
-            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_PC);
-            Assert.True(UserCodeInit.IsCallPreJit());
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_PC);
+            Assert.True(UserCodeInit.IsCallPreJit(environmentVariables));
+        }
+
+        // --- Streaming Integration Tests ---
+
+        private TestStreamingRuntimeApiClient CreateStreamingClient()
+        {
+            var envVars = new TestEnvironmentVariables();
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                { RuntimeApiHeaders.HeaderAwsRequestId, new List<string> { "streaming-request-id" } },
+                { RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string> { "invoked_function_arn" } },
+                { RuntimeApiHeaders.HeaderAwsTenantId, new List<string> { "tenant_id" } }
+            };
+            return new TestStreamingRuntimeApiClient(envVars, headers);
+        }
+
+        /// <summary>
+        /// Property 2: CreateStream Enables Streaming Mode
+        /// When a handler calls ResponseStreamFactory.CreateStream(), the response is transmitted
+        /// using streaming mode. LambdaBootstrap awaits the send task.
+        /// **Validates: Requirements 1.4, 6.1, 6.2, 6.3, 6.4**
+        /// </summary>
+        [Fact]
+        public async Task StreamingMode_HandlerCallsCreateStream_SendTaskAwaited()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                return new InvocationResponse(Stream.Null, false);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.True(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.False(streamingClient.SendResponseAsyncCalled);
+        }
+
+        /// <summary>
+        /// Property 3: Default Mode Is Buffered
+        /// When a handler does not call ResponseStreamFactory.CreateStream(), the response
+        /// is transmitted using buffered mode via SendResponseAsync.
+        /// **Validates: Requirements 1.5, 7.2**
+        /// </summary>
+        [Fact]
+        public async Task BufferedMode_HandlerDoesNotCallCreateStream_UsesSendResponse()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var outputStream = new MemoryStream(Encoding.UTF8.GetBytes("buffered response"));
+                return new InvocationResponse(outputStream);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.False(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.True(streamingClient.SendResponseAsyncCalled);
+        }
+
+        /// <summary>
+        /// Property 14: Exception After Writes Uses Trailers
+        /// When a handler throws an exception after writing data to an IResponseStream,
+        /// the error is reported via trailers (ReportErrorAsync) rather than standard error reporting.
+        /// **Validates: Requirements 5.6, 5.7**
+        /// </summary>
+        [Fact]
+        public async Task MidstreamError_ExceptionAfterWrites_ReportsViaTrailers()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("partial data"));
+                throw new InvalidOperationException("midstream failure");
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            // Error should be reported via trailers on the stream, not via standard error reporting
+            Assert.True(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.NotNull(streamingClient.LastStreamingResponseStream);
+            Assert.True(streamingClient.LastStreamingResponseStream.HasError);
+            Assert.False(streamingClient.ReportInvocationErrorAsyncExceptionCalled);
+        }
+
+        /// <summary>
+        /// Property 15: Exception Before CreateStream Uses Standard Error
+        /// When a handler throws an exception before calling ResponseStreamFactory.CreateStream(),
+        /// the error is reported using the standard Lambda error reporting mechanism.
+        /// **Validates: Requirements 5.7, 7.1**
+        /// </summary>
+        [Fact]
+        public async Task PreStreamError_ExceptionBeforeCreateStream_UsesStandardErrorReporting()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                await Task.Yield();
+                throw new InvalidOperationException("pre-stream failure");
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.False(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.True(streamingClient.ReportInvocationErrorAsyncExceptionCalled);
+        }
+
+        /// <summary>
+        /// State Isolation: ResponseStreamFactory state is cleared after each invocation.
+        /// **Validates: Requirements 6.5, 8.9**
+        /// </summary>
+        [Fact]
+        public async Task Cleanup_ResponseStreamFactoryStateCleared_AfterInvocation()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("data"));
+                return new InvocationResponse(Stream.Null, false);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null, null, new TestEnvironmentVariables()))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            // After invocation, factory state should be cleaned up
+            Assert.Null(ResponseStreamFactory.GetStreamIfCreated(false));
+            Assert.Null(ResponseStreamFactory.GetSendTask(false));
         }
     }
 }

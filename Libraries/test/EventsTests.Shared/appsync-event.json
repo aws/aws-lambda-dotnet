@@ -1,0 +1,38 @@
+{
+  "arguments": {
+    "input": {
+      "title": "Support Ticket Test",
+      "description": "Support Ticket Test"
+    }
+  },
+  "identity": null,
+  "source": null,
+  "request": {
+    "headers": {
+      "key1": "value1",
+      "key2": "value2"
+    },
+    "domainName": null
+  },
+  "prev": null,
+  "info": {
+    "fieldName": "openSupportTicket",
+    "selectionSetList": [
+      "ticketId",
+      "status",
+      "title",
+      "description",
+      "createdAt",
+      "updatedAt"
+    ],
+    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n }",
+    "variables": {
+      "input": {
+        "title": "Support Ticket Test",
+        "description": "Support Ticket Test"
+      }
+    },
+    "parentTypeName": "Mutation"
+  },
+  "stash": {}
+}

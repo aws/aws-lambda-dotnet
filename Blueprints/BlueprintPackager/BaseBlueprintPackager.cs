@@ -47,6 +47,14 @@ namespace Packager
                         break;
                     }
                 }
+
+                // Skip blueprints that are file-based which are not compatible with Visual Studio.
+                var parentDirectory = Directory.GetParent(possible).FullName;
+                if (!Directory.GetFiles(parentDirectory, "*.csproj", SearchOption.AllDirectories).Any() && !Directory.GetFiles(parentDirectory, "*.fsproj", SearchOption.AllDirectories).Any())
+                {
+                    include = false;
+                }
+
                 if (include)
                 {
                     result.Add(possible);

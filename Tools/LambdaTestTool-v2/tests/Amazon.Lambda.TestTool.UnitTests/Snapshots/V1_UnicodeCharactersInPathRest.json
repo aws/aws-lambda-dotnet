@@ -1,0 +1,82 @@
+{
+  "Resource": "/test6/api/products/{productName}/reviews/{reviewTitle}",
+  "Path": "/test6/api/products/%E2%98%95%20Coffee/reviews/%F0%9F%98%8A%20Happy",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "X-Amzn-Trace-Id": "Root=1-67fd8892-563c02fe4dcb438f51739a1b",
+    "X-Forwarded-For": "IP_ADDRESS",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd8892-563c02fe4dcb438f51739a1b"
+    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": null,
+  "MultiValueQueryStringParameters": null,
+  "PathParameters": {
+    "productName": "%E2%98%95%20Coffee",
+    "reviewTitle": "%F0%9F%98%8A%20Happy"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test/test6/api/products/%E2%98%95%20Coffee/reviews/%F0%9F%98%8A%20Happy",
+    "AccountId": "ACCOUNT_ID",
+    "ResourceId": "RESOURCE_ID",
+    "Stage": "test",
+    "RequestId": "5005340a-1104-4054-98d0-afda9e163eb1",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "IP_ADDRESS",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": null,
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test6/api/products/{productName}/reviews/{reviewTitle}",
+    "HttpMethod": "POST",
+    "ApiId": "EXAMPLE",
+    "ExtendedRequestId": "JCJG5GmOvHcEK7g=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:13:38 \u002B0000",
+    "RequestTimeEpoch": 1744668818115,
+    "Status": null
+  },
+  "Body": null,
+  "IsBase64Encoded": false
+}
+
+

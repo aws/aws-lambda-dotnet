@@ -29,6 +29,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     /// <summary>
     /// Builds user delegate from the handler information.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("InvokeDelegateBuilder does not support trimming and is meant to be used in class library based Lambda functions.")]
     internal class InvokeDelegateBuilder
     {
         private readonly InternalLogger _logger;
@@ -46,7 +47,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <summary>
         /// Constructs the invoke delegate using Expressions
         ///
-        /// Serialize & Deserialize calls are only made when a serializer is provided.
+        /// Serialize and Deserialize calls are only made when a serializer is provided.
         /// Context is only passed when customer method has context parameter.
         /// Lambda return type can be void.
         ///
@@ -59,18 +60,17 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         ///
         /// </summary>
         /// <param name="customerObject">Wrapped customer object.</param>
-        /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
+        /// <param name="customerSerializerInstance">Instance of lambda input &amp; output serializer.</param>
+        /// <param name="isPreJit">If true forces more .NET code to get loaded during startup for jitting.</param>
         /// <returns>Action delegate pointing to customer's handler.</returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ConstructInvokeDelegate does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif        
         public Action<Stream, ILambdaContext, Stream> ConstructInvokeDelegate(object customerObject, object customerSerializerInstance, bool isPreJit)
         {
             var inStreamParameter = Expression.Parameter(Types.StreamType, "inStream");
             var outStreamParameter = Expression.Parameter(Types.StreamType, "outStream");
             var contextParameter = Expression.Parameter(typeof(ILambdaContext), "context");
 
-            _logger.LogDebug($"UCL : Constructing input expression");
+            _logger.LogDebug("UCL : Constructing input expression");
             var inputExpression = BuildInputExpressionOrNull(customerSerializerInstance, inStreamParameter, out var iLambdaContextType);
             if (isPreJit)
             {
@@ -78,13 +78,13 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 UserCodeInit.InitDeserializationAssembly(inputExpression, inStreamParameter);
             }
 
-            _logger.LogDebug($"UCL : Constructing context expression");
+            _logger.LogDebug("UCL : Constructing context expression");
             var contextExpression = BuildContextExpressionOrNull(iLambdaContextType, contextParameter);
 
-            _logger.LogDebug($"UCL : Constructing handler expression");
+            _logger.LogDebug("UCL : Constructing handler expression");
             var handlerExpression = CreateHandlerCallExpression(customerObject, inputExpression, contextExpression);
 
-            _logger.LogDebug($"UCL : Constructing output expression");
+            _logger.LogDebug("UCL : Constructing output expression");
             var outputExpression = CreateOutputExpression(customerSerializerInstance, outStreamParameter, handlerExpression);
             if (isPreJit)
             {
@@ -92,7 +92,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 UserCodeInit.InitSerializationAssembly(outputExpression, outStreamParameter, CustomerOutputType);
             }
 
-            _logger.LogDebug($"UCL : Constructing final expression");
+            _logger.LogDebug("UCL : Constructing final expression");
 
             var finalExpression = Expression.Lambda<Action<Stream, ILambdaContext, Stream>>(outputExpression, inStreamParameter, contextParameter, outStreamParameter);
 #if DEBUG
@@ -100,10 +100,10 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 .GetTypeInfo()
                 .GetProperty("DebugView", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(finalExpression);
-            _logger.LogDebug($"UCL : Constructed final expression:\n'{finalExpressionDebugView}'");
+            _logger.LogDebug("UCL : Constructed final expression:\n'{finalExpressionDebugView}'");
 #endif
 
-            _logger.LogDebug($"UCL : Compiling final expression");
+            _logger.LogDebug("UCL : Compiling final expression");
             return finalExpression.Compile();
         }
 
@@ -111,14 +111,12 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// Creates an expression to convert incoming Stream to the customer method inputs.
         /// If customer method takes no inputs or only takes ILambdaContext, return null.
         /// </summary>
-        /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
+        /// <param name="customerSerializerInstance">Instance of lambda input and output serializer.</param>
         /// <param name="inStreamParameter">Input stream parameter.</param>
         /// <param name="iLambdaContextType">Type of context passed for the invocation.</param>
         /// <returns>Expression that deserializes incoming stream to the customer method inputs or null if customer method takes no input.</returns>
         /// <exception cref="LambdaValidationException">Thrown when customer method inputs don't meet lambda requirements.</exception>
-#if NET8_0_OR_GREATER
-    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("BuildInputExpressionOrNull does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("BuildInputExpressionOrNull does not support trimming and is meant to be used in class library based Lambda functions.")]
         private Expression BuildInputExpressionOrNull(object customerSerializerInstance, Expression inStreamParameter, out Type iLambdaContextType)
         {
             Type inputType = null;
@@ -168,7 +166,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
             if (iLambdaContextType != null)
             {
-                _logger.LogDebug($"UCL : Validating iLambdaContextType");
+                _logger.LogDebug("UCL : Validating iLambdaContextType");
                 UserCodeValidator.ValidateILambdaContextType(iLambdaContextType);
             }
 
@@ -197,9 +195,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <param name="inputExpression">Input expression that defines customer input.</param>
         /// <param name="contextExpression">Context expression that defines context passed for the invocation.</param>
         /// <returns>Expression that unwraps customer object.</returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("CreateHandlerCallExpression does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif
 
         private Expression CreateHandlerCallExpression(object customerObject, Expression inputExpression, Expression contextExpression)
         {
@@ -254,13 +250,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// is just the handler call expression. Otherwise, the final expression is the
         /// serialization  expression operating on the handler call expression.
         /// </summary>
-        /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
+        /// <param name="customerSerializerInstance">Instance of lambda input and output serializer.</param>
         /// <param name="outStreamParameter">Expression that defines customer output.</param>
         /// <param name="handlerCallExpression">Expression that defines customer handler call.</param>
         /// <returns>Expression that serializes customer method output to outgoing stream.</returns>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("CreateOutputExpression does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif        
         private Expression CreateOutputExpression(object customerSerializerInstance, Expression outStreamParameter, Expression handlerCallExpression)
         {
             var outputType = _customerMethodInfo.ReturnType;
@@ -310,15 +304,13 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <summary>
         /// Generates an expression to serialize customer method result into the output stream
         /// </summary>
-        /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
+        /// <param name="customerSerializerInstance">Instance of lambda input and output serializer.</param>
         /// <param name="dataType">Customer input type.</param>
         /// <param name="customerObject">Expression that define customer object.</param>
         /// <param name="outStreamParameter">Expression that defines customer output.</param>
         /// <returns>Expression that serializes returned object to output stream.</returns>
-        /// <exception cref="LambdaValidationException">Thrown when customer input is serializable & serializer instance is null.</exception>
-#if NET8_0_OR_GREATER
+        /// <exception cref="LambdaValidationException">Thrown when customer input is serializable &amp; serializer instance is null.</exception>
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("CreateSerializeExpression does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif           
         private Expression CreateSerializeExpression(object customerSerializerInstance, Type dataType, Expression customerObject, Expression outStreamParameter)
         {
             // generic types, null for String and Stream converters
@@ -368,14 +360,12 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <summary>
         /// Generates an expression to deserialize incoming data to customer method input
         /// </summary>
-        /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
+        /// <param name="customerSerializerInstance">Instance of lambda input and output serializer.</param>
         /// <param name="dataType">Customer input type.</param>
         /// <param name="inStream">Input expression that defines customer input.</param>
         /// <returns>Expression that deserializes incoming data to customer method input.</returns>
         /// <exception cref="LambdaValidationException">Thrown when customer serializer doesn't match with expected serializer definition</exception>
-#if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("CreateDeserializeExpression does not support trimming and is meant to be used in class library based Lambda functions.")]
-#endif         
         private Expression CreateDeserializeExpression(object customerSerializerInstance, Type dataType, Expression inStream)
         {
             // generic types, null for String and Stream converters

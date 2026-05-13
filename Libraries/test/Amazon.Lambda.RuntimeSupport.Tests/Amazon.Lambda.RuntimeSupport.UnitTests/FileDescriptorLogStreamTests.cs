@@ -31,7 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 offsets.Add(offset);
                 counts.Add(count);
             });
-            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
+            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(new SystemEnvironmentVariables(), stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
             Assert.Empty(counts);
             Assert.Empty(offsets);
@@ -79,7 +79,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 offsets.Add(offset);
                 counts.Add(count);
             });
-            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
+            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(new SystemEnvironmentVariables(), stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
             Assert.Empty(counts);
             Assert.Empty(offsets);
@@ -126,7 +126,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 offsets.Add(offset);
                 counts.Add(count);
             });
-            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
+            TextWriter writer = FileDescriptorLogFactory.InitializeWriter(new SystemEnvironmentVariables(), stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
             Assert.Empty(counts);
             Assert.Empty(offsets);

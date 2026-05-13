@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +24,12 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// </summary>
     public abstract class AbstractAspNetCoreFunction
     {
+        internal const string ParameterizedPreviewMessage =
+            "Response streaming is in preview till a new version of .NET Lambda runtime client that supports response streaming " +
+            "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
+            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
+            "project file to \"true\"";
+
         /// <summary>
         /// Key to access the ILambdaContext object from the HttpContext.Items collection.
         /// </summary>
@@ -76,6 +84,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["application/zip"] = ResponseContentEncoding.Base64,
             ["application/pdf"] = ResponseContentEncoding.Base64,
             ["application/x-protobuf"] = ResponseContentEncoding.Base64,
+            ["application/wasm"] = ResponseContentEncoding.Base64
         };
 
         // Defines a mapping from registered content encodings to the response encoding format
@@ -117,8 +126,10 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected AbstractAspNetCoreFunction(IServiceProvider hostedServices)
         {
             _hostServices = hostedServices;
-            _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
-            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+            _server = _hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(_hostServices);
+
+            AddRegisterBeforeSnapshot();
         }
 
         /// <summary>
@@ -189,6 +200,15 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         public bool IncludeUnhandledExceptionDetailInResponse { get; set;  }
 
+        /// <summary>
+        /// When true, <see cref="FunctionHandlerAsync"/> writes the response directly to a
+        /// <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStream"/> instead of
+        /// buffering it and returning a typed response object (which will be <c>null</c>).
+        /// Requires net8.0 or later.
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        public virtual bool EnableResponseStreaming { get; set; } = false;
+
 
         /// <summary>
         /// Method to initialize the web builder before starting the web host. In a typical Web API this is similar to the main function. 
@@ -250,12 +270,86 @@ namespace Amazon.Lambda.AspNetCoreServer
             return builder;
         }
 
+        /// <summary>
+        /// Return one or more <see cref="HttpRequestMessage"/>s that will be used to invoke
+        /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
+        /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>,
+        /// improving the performance gains offered by SnapStart.
+        /// <para />
+        /// The returned <see cref="HttpRequestMessage"/>s must have a relative
+        /// <see cref="HttpRequestMessage.RequestUri"/> and the <see cref="HttpRequestMessage.Content"/> only supports
+        /// text based payload.
+        /// <para />.
+        /// Be aware that this will invoke your applications function handler code
+        /// multiple times.  Additionally, it uses a mock <see cref="ILambdaContext"/>
+        /// which may not be fully populated.
+        /// <para />
+        /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
+        /// <para />
+        /// If SnapStart is not enabled, then this method is never invoked.
+        /// <para />
+        /// Example:
+        /// <para />
+        /// <code>
+        /// <![CDATA[
+        /// public class HttpV2LambdaFunction : APIGatewayHttpApiV2ProxyFunction<Startup>
+        /// {
+        ///     protected override IEnumerable<HttpRequestMessage> RegisterBeforeSnapshotRequest() =>
+        ///     [
+        ///         new HttpRequestMessage
+        ///         {
+        ///             RequestUri = new Uri("/api/ExampleSnapstartInit"),
+        ///             Method = HttpMethod.Get
+        ///         }
+        ///     ];
+        /// }
+        /// ]]>
+        /// </code>
+        /// </summary>
+        protected virtual IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests() =>
+            Enumerable.Empty<HttpRequestMessage>();
+
         private protected bool IsStarted
         {
             get
             {
                 return _server != null;
             }
+        }
+
+        private void AddRegisterBeforeSnapshot()
+        {
+            Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
+            {
+                var beforeSnapstartRequests = GetBeforeSnapshotRequests();
+
+                foreach (var httpRequest in beforeSnapstartRequests)
+                {
+                    var invokeTimes = 5;
+
+                    var request = await HttpRequestMessageConverter.ConvertToLambdaRequest<TREQUEST>(httpRequest);
+
+                    for (var i = 0; i < invokeTimes; i++)
+                    {
+                        // Create a scope to properly handle scoped services (e.g., IAuthenticationHandlerProvider)
+                        // This matches the behavior in FunctionHandlerAsync and prevents InvalidOperationException
+                        // when resolving scoped services in Development mode where scope validation is enabled.
+                        using var scope = _hostServices.CreateScope();
+
+                        InvokeFeatures features = new InvokeFeatures();
+                        (features as IItemsFeature).Items = new Dictionary<object, object>();
+                        (features as IServiceProvidersFeature).RequestServices = scope.ServiceProvider;
+
+                        MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
+
+                        var context = CreateContext(features);
+
+                        var lambdaContext = new SnapStartEmptyLambdaContext();
+
+                        await ProcessRequest(lambdaContext, context, features);
+                    }
+                }
+            });
         }
 
         /// <summary>
@@ -273,16 +367,18 @@ namespace Amazon.Lambda.AspNetCoreServer
             PostCreateHost(host);
 
             host.Start();
-            this._hostServices = host.Services;
+            _hostServices = host.Services;
 
-            _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
+            _server = _hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)
             {
                 throw new Exception("Failed to find the Lambda implementation for the IServer interface in the IServiceProvider for the Host. This happens if UseLambdaServer was " +
                         "not called when constructing the IWebHostBuilder. If CreateHostBuilder was overridden it is recommended that ConfigureWebHostLambdaDefaults should be used " + 
                         "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
-            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(_hostServices);
+
+            AddRegisterBeforeSnapshot();
         }
 
         /// <summary>
@@ -388,13 +484,21 @@ namespace Amazon.Lambda.AspNetCoreServer
                 PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
             }
 
-            var scope = this._hostServices.CreateScope();
+#pragma warning disable CA2252
+            if (EnableResponseStreaming)
+            {
+                await ExecuteStreamingRequestAsync(features);
+                return default;
+            }
+#pragma warning restore CA2252
+
+            var scope = _hostServices.CreateScope();
             try
             {
                 ((IServiceProvidersFeature)features).RequestServices = scope.ServiceProvider;
 
-                var context = this.CreateContext(features);
-                var response = await this.ProcessRequest(lambdaContext, context, features);
+                var context = CreateContext(features);
+                var response = await ProcessRequest(lambdaContext, context, features);
 
                 return response;
             }
@@ -412,7 +516,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="features">An <see cref="InvokeFeatures"/> instance.</param>
         /// <param name="rethrowUnhandledError">
         /// If specified, an unhandled exception will be rethrown for custom error handling.
-        /// Ensure that the error handling code calls 'this.MarshallResponse(features, 500);' after handling the error to return a the typed Lambda object to the user.
+        /// Ensure that the error handling code calls 'MarshallResponse(features, 500);' after handling the error to return a the typed Lambda object to the user.
         /// </param>
         protected async Task<TRESPONSE> ProcessRequest(ILambdaContext lambdaContext, object context, InvokeFeatures features, bool rethrowUnhandledError = false)
         {
@@ -422,47 +526,13 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 try
                 {
-                    await this._server.Application.ProcessRequestAsync(context);
-                }
-                catch (AggregateException agex)
-                {
-                    ex = agex;
-                    _logger.LogError(agex, $"Caught AggregateException: '{agex}'");
-                    var sb = new StringBuilder();
-                    foreach (var newEx in agex.InnerExceptions)
-                    {
-                        sb.AppendLine(this.ErrorReport(newEx));
-                    }
-
-                    _logger.LogError(sb.ToString());
-                    ((IHttpResponseFeature)features).StatusCode = 500;
-                }
-                catch (ReflectionTypeLoadException rex)
-                {
-                    ex = rex;
-                    _logger.LogError(rex, $"Caught ReflectionTypeLoadException: '{rex}'");
-                    var sb = new StringBuilder();
-                    foreach (var loaderException in rex.LoaderExceptions)
-                    {
-                        var fileNotFoundException = loaderException as FileNotFoundException;
-                        if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
-                        {
-                            sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
-                        }
-                        else
-                        {
-                            sb.AppendLine(this.ErrorReport(loaderException));
-                        }
-                    }
-
-                    _logger.LogError(sb.ToString());
-                    ((IHttpResponseFeature)features).StatusCode = 500;
+                    await RunPipelineAsync(context, features);
                 }
                 catch (Exception e)
                 {
                     ex = e;
                     if (rethrowUnhandledError) throw;
-                    _logger.LogError(e, $"Unknown error responding to request: {this.ErrorReport(e)}");
+                    _logger.LogError(e, $"Unknown error responding to request: {ErrorReport(e)}");
                     ((IHttpResponseFeature)features).StatusCode = 500;
                 }
 
@@ -470,7 +540,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     await features.ResponseStartingEvents.ExecuteAsync();
                 }
-                var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
+                var response = MarshallResponse(features, lambdaContext, defaultStatusCode);
 
                 if (ex != null && IncludeUnhandledExceptionDetailInResponse)
                 {
@@ -486,7 +556,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
             finally
             {
-                this._server.Application.DisposeContext(context, ex);
+                _server.Application.DisposeContext(context, ex);
             }
         }
 
@@ -496,15 +566,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
-        /// <summary>
-        /// This method is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
-        /// WebHost hasn't been started yet.
-        /// </summary>
-        /// <param name="webHost"></param>
-        protected virtual void PostCreateWebHost(IWebHost webHost)
-        {
-
-        }
 
         /// <summary>
         /// This method is called after the IHost is created from the IHostBuilder and the services have been configured. The
@@ -610,5 +671,158 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="statusCodeIfNotSet"></param>
         /// <returns></returns>
         protected abstract TRESPONSE MarshallResponse(IHttpResponseFeature responseFeatures, ILambdaContext lambdaContext, int statusCodeIfNotSet = 200);
+
+        /// <summary>
+        /// Builds an <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/> from the current
+        /// ASP.NET Core response feature.
+        /// </summary>
+        /// <param name="responseFeature">The ASP.NET Core response feature for the current invocation.</param>
+        /// <returns>A populated <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/>.</returns>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected abstract Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature);
+
+        /// <summary>
+        /// Creates a <see cref="System.IO.Stream"/> for writing the streaming Lambda response.
+        /// The default implementation calls <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStreamFactory.CreateHttpStream"/>.
+        /// Subclasses may override this method to substitute a different stream (e.g. a
+        /// <see cref="System.IO.MemoryStream"/> in unit tests).
+        /// </summary>
+        /// <param name="prelude">The HTTP response prelude containing status code and headers.</param>
+        /// <returns>A writable <see cref="System.IO.Stream"/> for the response body.</returns>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        protected virtual System.IO.Stream CreateLambdaResponseStream(
+            Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
+        {
+            return Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStreamFactory.CreateHttpStream(prelude);
+        }
+
+        /// <summary>
+        /// Executes the streaming response path. Called by <see cref="FunctionHandlerAsync"/> when
+        /// <see cref="EnableResponseStreaming"/> is <c>true</c>. Writes the response directly to a
+        /// <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStream"/>.
+        /// </summary>
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+        private async Task ExecuteStreamingRequestAsync(InvokeFeatures features)
+        {
+            var responseFeature = (IHttpResponseFeature)features;
+            System.IO.Stream lambdaStream = null;
+            bool streamOpened = false;
+
+            async Task<System.IO.Stream> OpenStream()
+            {
+                var prelude = BuildStreamingPrelude(responseFeature);
+                _logger.LogDebug("Opening Lambda response stream with Status code {StatusCode}", prelude.StatusCode);
+                var stream = CreateLambdaResponseStream(prelude);
+                lambdaStream = stream;
+                streamOpened = true;
+                return stream;
+            }
+
+            var streamingBodyFeature = new Internal.StreamingResponseBodyFeature(_logger, responseFeature, OpenStream);
+            features[typeof(IHttpResponseBodyFeature)] = streamingBodyFeature;
+
+            var scope = _hostServices.CreateScope();
+            Exception pipelineException = null;
+            try
+            {
+                ((IServiceProvidersFeature)features).RequestServices = scope.ServiceProvider;
+
+                var context = CreateContext(features);
+                try
+                {
+                    try
+                    {
+                        await RunPipelineAsync(context, features);
+                        await streamingBodyFeature.CompleteAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        pipelineException = e;
+                        _logger.LogError(e, "Error in streaming request pipeline");
+
+                        if (!streamOpened)
+                        {
+                            var errorPrelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+                            {
+                                StatusCode = System.Net.HttpStatusCode.InternalServerError
+                            };
+                            var errorStream = CreateLambdaResponseStream(errorPrelude);
+                            lambdaStream = errorStream;
+                            streamOpened = true;
+                            if (IncludeUnhandledExceptionDetailInResponse)
+                            {
+                                var errorBytes = System.Text.Encoding.UTF8.GetBytes(ErrorReport(e));
+                                await errorStream.WriteAsync(errorBytes, 0, errorBytes.Length);
+                            }
+                        }
+                        else if (streamOpened)
+                        {
+                            _logger.LogError(e, $"Unhandled exception after response stream was opened: {ErrorReport(e)}");
+                        }
+                        else
+                        {
+                            _logger.LogError(e, $"Unknown error responding to request: {ErrorReport(e)}");
+                        }
+                    }
+                }
+                finally
+                {
+                    if (lambdaStream != null)
+                    {
+                        lambdaStream.Dispose();
+                    }
+
+                    if (features.ResponseCompletedEvents != null)
+                    {
+                        await features.ResponseCompletedEvents.ExecuteAsync();
+                    }
+
+                    _server.Application.DisposeContext(context, pipelineException);
+                }
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Invokes the ASP.NET Core pipeline for the given context, handling
+        /// <see cref="AggregateException"/> and <see cref="ReflectionTypeLoadException"/> with
+        /// detailed logging. Any other exception is rethrown to the caller.
+        /// </summary>
+        private async Task RunPipelineAsync(object context, InvokeFeatures features)
+        {
+            try
+            {
+                await _server.Application.ProcessRequestAsync(context);
+            }
+            catch (AggregateException agex)
+            {
+                _logger.LogError(agex, $"Caught AggregateException: '{agex}'");
+                var sb = new StringBuilder();
+                foreach (var newEx in agex.InnerExceptions)
+                    sb.AppendLine(ErrorReport(newEx));
+                _logger.LogError(sb.ToString());
+                ((IHttpResponseFeature)features).StatusCode = 500;
+                throw;
+            }
+            catch (ReflectionTypeLoadException rex)
+            {
+                _logger.LogError(rex, $"Caught ReflectionTypeLoadException: '{rex}'");
+                var sb = new StringBuilder();
+                foreach (var loaderException in rex.LoaderExceptions)
+                {
+                    var fileNotFoundException = loaderException as FileNotFoundException;
+                    if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
+                        sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
+                    else
+                        sb.AppendLine(ErrorReport(loaderException));
+                }
+                _logger.LogError(sb.ToString());
+                ((IHttpResponseFeature)features).StatusCode = 500;
+                throw;
+            }
+        }
     }
 }
