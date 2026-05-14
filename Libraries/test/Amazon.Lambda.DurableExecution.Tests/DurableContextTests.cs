@@ -2,8 +2,11 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.Serialization.SystemTextJson;
+using Amazon.Lambda.DurableExecution.Tests.Internal;
 using Amazon.Lambda.TestUtilities;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Amazon.Lambda.DurableExecution.Tests;
 
@@ -222,10 +225,61 @@ public class DurableContextTests
     }
 
     [Fact]
-    public void Logger_Defaults_ToNullLogger()
+    public void Logger_Default_IsReplayAwareLogger()
     {
         var context = CreateContext();
         Assert.NotNull(context.Logger);
+        Assert.IsType<ReplayAwareLogger>(context.Logger);
+    }
+
+    [Fact]
+    public void ConfigureLogger_NullArg_Throws()
+    {
+        var context = CreateContext();
+        Assert.Throws<ArgumentNullException>(() => context.ConfigureLogger(null!));
+    }
+
+    [Fact]
+    public void ConfigureLogger_WithCustomLogger_ReachesUserLogger()
+    {
+        var context = CreateContext();
+        var custom = new RecordingLogger();
+        context.ConfigureLogger(new LoggerConfig { CustomLogger = custom });
+
+        // Default state has no checkpoint → starts in Execution mode, so
+        // logs flow through immediately.
+        context.Logger.LogInformation("hi");
+
+        Assert.Single(custom.Records);
+        Assert.Equal(LogLevel.Information, custom.Records[0].Level);
+    }
+
+    [Fact]
+    public void ConfigureLogger_ModeAwareFalse_LogsDuringReplay()
+    {
+        // Seed a checkpoint so the context starts in Replay mode.
+        var custom = new RecordingLogger();
+        var context = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(99),
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Succeeded
+                }
+            }
+        });
+
+        context.ConfigureLogger(new LoggerConfig { CustomLogger = custom, ModeAware = true });
+        context.Logger.LogInformation("replay-default");
+        Assert.Empty(custom.Records);
+
+        context.ConfigureLogger(new LoggerConfig { ModeAware = false });
+        context.Logger.LogInformation("replay-disabled");
+        Assert.Single(custom.Records);
+        Assert.Contains("replay-disabled", custom.Records[0].Message);
     }
 
     [Fact]

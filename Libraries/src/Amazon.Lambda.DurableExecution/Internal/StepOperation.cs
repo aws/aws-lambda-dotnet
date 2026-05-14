@@ -198,7 +198,21 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         try
         {
             var stepContext = new StepContext(OperationId, attemptNumber, _logger);
-            var result = await _func(stepContext);
+
+            // Step-scoped metadata so structured log providers tag user code
+            // lines with the operation id, name, and current attempt. Wrap
+            // only the user-func call — checkpoint emission shouldn't carry
+            // step metadata into any side-channel logging.
+            T result;
+            using (_logger.BeginScope(new Dictionary<string, object>
+            {
+                ["operationId"] = OperationId,
+                ["operationName"] = Name ?? string.Empty,
+                ["attempt"] = attemptNumber,
+            }))
+            {
+                result = await _func(stepContext);
+            }
 
             await EnqueueAsync(new SdkOperationUpdate
             {
