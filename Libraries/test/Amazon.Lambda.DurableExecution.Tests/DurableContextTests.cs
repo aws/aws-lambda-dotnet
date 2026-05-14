@@ -1,6 +1,7 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
 using Xunit;
 
@@ -11,6 +12,9 @@ public class DurableContextTests
     /// <summary>Reproduces the Id that <see cref="OperationIdGenerator"/> emits for the n-th root-level operation.</summary>
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
 
+    private static TestLambdaContext CreateLambdaContext() =>
+        new() { Serializer = new DefaultLambdaJsonSerializer() };
+
     private static DurableContext CreateContext(
         InitialExecutionState? initialState = null,
         TerminationManager? terminationManager = null)
@@ -19,7 +23,7 @@ public class DurableContextTests
         state.LoadFromCheckpoint(initialState);
         var tm = terminationManager ?? new TerminationManager();
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
 
         return new DurableContext(state, tm, idGen, "arn:aws:lambda:us-east-1:123:durable-execution:test", lambdaContext);
     }
@@ -198,19 +202,21 @@ public class DurableContextTests
     }
 
     [Fact]
-    public async Task StepAsync_CustomSerializer_UsedForSerialization()
+    public async Task StepAsync_NoSerializerOnContext_ThrowsInvalidOperation()
     {
-        var serializer = new RecordingSerializer();
-        var context = CreateContext();
+        // The serializer comes from ILambdaContext.Serializer — without one,
+        // we can't checkpoint anything. The error message points users at the
+        // bootstrap registration point.
+        var state = new ExecutionState();
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = new TestLambdaContext(); // no Serializer set
+        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
 
-        var result = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return new TestPerson { Name = "Charlie", Age = 40 }; },
-            serializer,
-            name: "with_custom");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            context.StepAsync(async (_) => { await Task.CompletedTask; return "x"; }, name: "no_serializer"));
 
-        Assert.Equal("Charlie", result.Name);
-        Assert.True(serializer.SerializeCalled);
-        Assert.False(serializer.DeserializeCalled);
+        Assert.Contains("ILambdaSerializer", ex.Message);
     }
 
     [Fact]
@@ -275,34 +281,6 @@ public class DurableContextTests
                 },
                 name: "cancelled_step",
                 cancellationToken: cts.Token));
-    }
-
-    [Fact]
-    public async Task StepAsync_CustomSerializer_UsedForReplayDeserialization()
-    {
-        var serializer = new RecordingSerializer();
-        var context = CreateContext(new InitialExecutionState
-        {
-            Operations = new List<Operation>
-            {
-                new()
-                {
-                    Id = IdAt(1),
-                    Type = OperationTypes.Step,
-                    Status = OperationStatuses.Succeeded,
-                    StepDetails = new StepDetails { Result = "<custom>Dana,55</custom>" }
-                }
-            }
-        });
-
-        var result = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return new TestPerson { Name = "ignored", Age = 0 }; },
-            serializer,
-            name: "replay_step");
-
-        Assert.True(serializer.DeserializeCalled);
-        Assert.Equal("Dana", result.Name);
-        Assert.Equal(55, result.Age);
     }
 
     #endregion
@@ -385,7 +363,7 @@ public class DurableContextTests
             }
         });
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
 
@@ -452,7 +430,7 @@ public class DurableContextTests
         var state = new ExecutionState();
         state.LoadFromCheckpoint(null);
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
 
         var result = await DurableExecutionHandler.RunAsync<string>(
@@ -496,7 +474,7 @@ public class DurableContextTests
         });
 
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
         var processExecuted = false;
 
@@ -546,7 +524,7 @@ public class DurableContextTests
         });
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
@@ -577,7 +555,7 @@ public class DurableContextTests
         });
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
@@ -609,7 +587,7 @@ public class DurableContextTests
         });
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
-        var lambdaContext = new TestLambdaContext();
+        var lambdaContext = CreateLambdaContext();
         var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
@@ -639,31 +617,5 @@ public class DurableContextTests
     {
         public string? Name { get; set; }
         public int Age { get; set; }
-    }
-
-    /// <summary>
-    /// AOT-friendly test serializer using a trivial format. Demonstrates that
-    /// passing an <see cref="ICheckpointSerializer{T}"/> to the AOT-safe
-    /// <c>StepAsync</c> overload fully replaces the reflection-based
-    /// System.Text.Json path.
-    /// </summary>
-    private class RecordingSerializer : ICheckpointSerializer<TestPerson>
-    {
-        public bool SerializeCalled { get; private set; }
-        public bool DeserializeCalled { get; private set; }
-
-        public string Serialize(TestPerson value, SerializationContext context)
-        {
-            SerializeCalled = true;
-            return $"<custom>{value.Name},{value.Age}</custom>";
-        }
-
-        public TestPerson Deserialize(string data, SerializationContext context)
-        {
-            DeserializeCalled = true;
-            var inner = data.Replace("<custom>", "").Replace("</custom>", "");
-            var parts = inner.Split(',');
-            return new TestPerson { Name = parts[0], Age = int.Parse(parts[1]) };
-        }
     }
 }

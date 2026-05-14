@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Amazon.Lambda.Core;
 using Microsoft.Extensions.Logging;
 
@@ -32,12 +31,13 @@ public interface IDurableContext
 
     /// <summary>
     /// Execute a step with automatic checkpointing. The step result is serialized
-    /// to a checkpoint using reflection-based <c>System.Text.Json</c>.
-    /// For NativeAOT or trimmed deployments, use the overload that takes an
-    /// <see cref="ICheckpointSerializer{T}"/>.
+    /// to a checkpoint using the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/> (typically configured via
+    /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>). AOT and
+    /// reflection-based scenarios share this single overload — the AOT story is
+    /// determined by the registered serializer (e.g.,
+    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
     /// </summary>
-    [RequiresUnreferencedCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
-    [RequiresDynamicCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
     Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
         string? name = null,
@@ -49,17 +49,6 @@ public interface IDurableContext
     /// </summary>
     Task StepAsync(
         Func<IStepContext, Task> func,
-        string? name = null,
-        StepConfig? config = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute a step with AOT-safe checkpoint serialization. The supplied
-    /// <paramref name="serializer"/> is used in place of reflection-based JSON.
-    /// </summary>
-    Task<T> StepAsync<T>(
-        Func<IStepContext, Task<T>> func,
-        ICheckpointSerializer<T> serializer,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default);

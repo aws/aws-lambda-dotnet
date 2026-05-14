@@ -3,6 +3,7 @@ using System.Text.Json;
 using Amazon.Lambda;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Runtime;
 using Xunit;
@@ -17,6 +18,9 @@ public class DurableFunctionTests
 {
     /// <summary>Reproduces the Id that <see cref="OperationIdGenerator"/> emits for the n-th root-level operation.</summary>
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
+
+    private static TestLambdaContext CreateLambdaContext() =>
+        new() { Serializer = new DefaultLambdaJsonSerializer() };
 
     private readonly IAmazonLambda _mockClient = new MockLambdaClient();
 
@@ -44,7 +48,7 @@ public class DurableFunctionTests
         var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             MyWorkflow,
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Pending, output.Status);
@@ -89,7 +93,7 @@ public class DurableFunctionTests
         var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             MyWorkflow,
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -122,7 +126,7 @@ public class DurableFunctionTests
         var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             async (evt, ctx) => throw new InvalidOperationException("workflow error"),
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Failed, output.Status);
@@ -159,7 +163,7 @@ public class DurableFunctionTests
                 await ctx.StepAsync(async (_) => { await Task.CompletedTask; executed = true; }, name: "do_work");
             },
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -192,7 +196,7 @@ public class DurableFunctionTests
         var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             MyWorkflow,
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             mockClient);
 
         Assert.Equal(InvocationStatus.Pending, output.Status);
@@ -254,7 +258,7 @@ public class DurableFunctionTests
                 return new OrderResult { Status = "ok", OrderId = evt.OrderId };
             },
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -284,7 +288,7 @@ public class DurableFunctionTests
                 return new OrderResult { Status = "ok" };
             },
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -383,7 +387,7 @@ public class DurableFunctionTests
                 return new OrderResult { Status = "ok", OrderId = evt.OrderId };
             },
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -420,7 +424,7 @@ public class DurableFunctionTests
                 return new OrderResult { Status = "ok" };
             },
             input,
-            new TestLambdaContext(),
+            CreateLambdaContext(),
             _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
@@ -455,7 +459,7 @@ public class DurableFunctionTests
         var mockClient = new MockLambdaClient { CheckpointThrows = ex };
 
         var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            SingleStepWorkflow, input, new TestLambdaContext(), mockClient);
+            SingleStepWorkflow, input, CreateLambdaContext(), mockClient);
 
         Assert.Equal(InvocationStatus.Failed, output.Status);
         Assert.NotNull(output.Error);
@@ -484,7 +488,7 @@ public class DurableFunctionTests
 
         var thrown = await Assert.ThrowsAsync(ex.GetType(), () =>
             DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-                SingleStepWorkflow, input, new TestLambdaContext(), mockClient));
+                SingleStepWorkflow, input, CreateLambdaContext(), mockClient));
 
         Assert.Same(ex, thrown);
     }
@@ -519,7 +523,7 @@ public class DurableFunctionTests
 
         var thrown = await Assert.ThrowsAsync<AmazonServiceException>(() =>
             DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-                MyWorkflow, input, new TestLambdaContext(), mockClient));
+                MyWorkflow, input, CreateLambdaContext(), mockClient));
 
         Assert.Same(ex, thrown);
     }

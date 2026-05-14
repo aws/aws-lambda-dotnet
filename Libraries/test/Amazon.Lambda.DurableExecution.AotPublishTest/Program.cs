@@ -8,8 +8,10 @@ namespace Amazon.Lambda.DurableExecution.AotPublishTest;
 
 /// <summary>
 /// AOT publish smoke check. This program must publish under NativeAOT with
-/// zero IL2026/IL3050 warnings (promoted to errors by the csproj). It uses
-/// the JsonSerializerContext overload of WrapAsync.
+/// zero IL2026/IL3050 warnings (promoted to errors by the csproj). The serializer
+/// registered with <see cref="LambdaBootstrapBuilder"/> is the same one DurableExecution
+/// reads via <see cref="ILambdaContext.Serializer"/>, so AOT-safety is fully determined
+/// by the user's choice of serializer (here, <see cref="SourceGeneratorLambdaJsonSerializer{T}"/>).
 /// </summary>
 public class Program
 {
@@ -25,8 +27,7 @@ public class Program
 
     public static Task<DurableExecutionInvocationOutput> HandlerAsync(
         DurableExecutionInvocationInput input, ILambdaContext context) =>
-        DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            WorkflowAsync, input, context, AotJsonContext.Default);
+        DurableFunction.WrapAsync<OrderEvent, OrderResult>(WorkflowAsync, input, context);
 
     private static async Task<OrderResult> WorkflowAsync(OrderEvent input, IDurableContext context)
     {
@@ -36,22 +37,11 @@ public class Program
                 await Task.CompletedTask;
                 return new ValidationResult { IsValid = true };
             },
-            new ValidationResultSerializer(),
             name: "validate");
 
         await context.WaitAsync(TimeSpan.FromSeconds(30), name: "delay");
 
         return new OrderResult { Status = validation.IsValid ? "approved" : "rejected", OrderId = input.OrderId };
-    }
-
-    private sealed class ValidationResultSerializer : ICheckpointSerializer<ValidationResult>
-    {
-        public string Serialize(ValidationResult value, SerializationContext ctx) =>
-            System.Text.Json.JsonSerializer.Serialize(value, AotJsonContext.Default.ValidationResult);
-
-        public ValidationResult Deserialize(string data, SerializationContext ctx) =>
-            System.Text.Json.JsonSerializer.Deserialize(data, AotJsonContext.Default.ValidationResult)
-                ?? new ValidationResult();
     }
 
     public class OrderEvent

@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution.Internal;
 using Microsoft.Extensions.Logging;
@@ -40,14 +39,12 @@ internal sealed class DurableContext : IDurableContext
     public IExecutionContext ExecutionContext => new DurableExecutionContext(_durableExecutionArn);
     public ILambdaContext LambdaContext { get; }
 
-    [RequiresUnreferencedCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
-    [RequiresDynamicCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
     public Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default)
-        => RunStep(func, new ReflectionJsonCheckpointSerializer<T>(), name, config, cancellationToken);
+        => RunStep(func, name, config, cancellationToken);
 
     public async Task StepAsync(
         Func<IStepContext, Task> func,
@@ -55,30 +52,26 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config = null,
         CancellationToken cancellationToken = default)
     {
-        // Void steps don't carry a meaningful payload; we wrap with a null-only
-        // serializer that doesn't touch reflection.
+        // Void steps don't carry a meaningful payload — wrap with an object?-typed
+        // step that always returns null. The serializer isn't actually invoked
+        // with a non-null value, so any registered ILambdaSerializer suffices.
         await RunStep<object?>(
             async (ctx) => { await func(ctx); return null; },
-            NullCheckpointSerializer.Instance,
             name, config, cancellationToken);
     }
 
-    public Task<T> StepAsync<T>(
-        Func<IStepContext, Task<T>> func,
-        ICheckpointSerializer<T> serializer,
-        string? name = null,
-        StepConfig? config = null,
-        CancellationToken cancellationToken = default)
-        => RunStep(func, serializer, name, config, cancellationToken);
-
-
     private Task<T> RunStep<T>(
         Func<IStepContext, Task<T>> func,
-        ICheckpointSerializer<T> serializer,
         string? name,
         StepConfig? config,
         CancellationToken cancellationToken)
     {
+        var serializer = LambdaContext.Serializer
+            ?? throw new InvalidOperationException(
+                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
+                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
+                "(or in tests, set TestLambdaContext.Serializer).");
+
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
             operationId, name, func, config, serializer, Logger,
@@ -108,18 +101,6 @@ internal sealed class DurableContext : IDurableContext
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
-}
-
-/// <summary>
-/// Trim-safe serializer used by the void <c>StepAsync</c> overloads, which never
-/// carry a meaningful payload. Always serializes to <c>"null"</c> and discards
-/// on deserialize.
-/// </summary>
-internal sealed class NullCheckpointSerializer : ICheckpointSerializer<object?>
-{
-    public static NullCheckpointSerializer Instance { get; } = new();
-    public string Serialize(object? value, SerializationContext context) => "null";
-    public object? Deserialize(string data, SerializationContext context) => null;
 }
 
 internal sealed class DurableExecutionContext : IExecutionContext

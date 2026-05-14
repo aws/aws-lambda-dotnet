@@ -1,3 +1,6 @@
+using System.IO;
+using System.Text;
+using Amazon.Lambda.Core;
 using Microsoft.Extensions.Logging;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
@@ -16,16 +19,17 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///   <item>Replay (SUCCEEDED): return cached result; func is NOT re-executed.</item>
 ///   <item>Replay (FAILED): re-throw the recorded exception.</item>
 /// </list>
-/// Serialization is delegated to the supplied <see cref="ICheckpointSerializer{T}"/>;
-/// the AOT-safe overloads of <c>IDurableContext.StepAsync</c> wire in a
-/// user-supplied serializer, while the reflection overloads inject
-/// <see cref="ReflectionJsonCheckpointSerializer{T}"/>.
+/// Serialization is delegated to the <see cref="ILambdaSerializer"/> registered on
+/// <see cref="ILambdaContext.Serializer"/>. AOT-safe and reflection-based callers
+/// share the same code path: the AOT story is determined entirely by the serializer
+/// the user registered with the runtime (e.g.,
+/// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
 /// </remarks>
 internal sealed class StepOperation<T> : DurableOperation<T>
 {
     private readonly Func<IStepContext, Task<T>> _func;
     private readonly StepConfig? _config;
-    private readonly ICheckpointSerializer<T> _serializer;
+    private readonly ILambdaSerializer _serializer;
     private readonly ILogger _logger;
 
     public StepOperation(
@@ -33,7 +37,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         string? name,
         Func<IStepContext, Task<T>> func,
         StepConfig? config,
-        ICheckpointSerializer<T> serializer,
+        ILambdaSerializer serializer,
         ILogger logger,
         ExecutionState state,
         TerminationManager termination,
@@ -134,11 +138,17 @@ internal sealed class StepOperation<T> : DurableOperation<T>
     private T DeserializeResult(string? serialized)
     {
         if (serialized == null) return default!;
-        return _serializer.Deserialize(serialized, new SerializationContext(OperationId, DurableExecutionArn));
+        var bytes = Encoding.UTF8.GetBytes(serialized);
+        using var ms = new MemoryStream(bytes);
+        return _serializer.Deserialize<T>(ms);
     }
 
     private string SerializeResult(T value)
-        => _serializer.Serialize(value, new SerializationContext(OperationId, DurableExecutionArn));
+    {
+        using var ms = new MemoryStream();
+        _serializer.Serialize(value, ms);
+        return Encoding.UTF8.GetString(ms.ToArray());
+    }
 
     private static StepException CreateStepException(Operation failedOp)
     {

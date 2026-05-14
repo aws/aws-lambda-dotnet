@@ -1,7 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
+using System.IO;
+using System.Text;
 using System.Threading;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
@@ -15,60 +13,50 @@ namespace Amazon.Lambda.DurableExecution;
 /// <summary>
 /// Static helper that wraps a durable workflow function, handling all envelope
 /// translation between DurableExecutionInvocationInput/Output and user types.
+///
+/// All four overloads dispatch through the <see cref="ILambdaSerializer"/> registered
+/// on <see cref="ILambdaContext.Serializer"/>, so AOT-safe and reflection-based
+/// callers share a single code path. Callers wire AOT support by registering an
+/// AOT-aware serializer with the runtime
+/// (e.g., <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>) — no per-call
+/// <c>JsonSerializerContext</c> argument is required.
 /// </summary>
 public static class DurableFunction
 {
     private static readonly Lazy<IAmazonLambda> _cachedLambdaClient =
         new(() => new AmazonLambdaClient(), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Reflection-based overloads (JIT only)
-    // ──────────────────────────────────────────────────────────────────────
-
     /// <summary>
-    /// Wrap a workflow (typed input + output). Reflection-based JSON — not AOT-safe.
+    /// Wrap a workflow (typed input + output).
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON for TInput/TOutput. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON for TInput/TOutput. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext)
-    {
-        return WrapAsyncCore(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value, jsonContext: null);
-    }
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
 
     /// <summary>
     /// Wrap a workflow (typed input + output) with explicit Lambda client.
-    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON for TInput/TOutput. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON for TInput/TOutput. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
         IAmazonLambda lambdaClient)
-        => WrapAsyncCore(workflow, invocationInput, lambdaContext, lambdaClient, jsonContext: null);
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, lambdaClient);
 
     /// <summary>
-    /// Wrap a void workflow (typed input, no output). Reflection-based JSON — not AOT-safe.
+    /// Wrap a void workflow (typed input, no output).
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON for TInput. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON for TInput. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
         Func<TInput, IDurableContext, Task> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext)
-    {
-        return WrapAsync(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
-    }
+        => WrapAsync(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
 
     /// <summary>
-    /// Wrap a void workflow with explicit Lambda client. Reflection-based JSON — not AOT-safe.
+    /// Wrap a void workflow with explicit Lambda client.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON for TInput. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON for TInput. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
         Func<TInput, IDurableContext, Task> workflow,
         DurableExecutionInvocationInput invocationInput,
@@ -76,79 +64,20 @@ public static class DurableFunction
         IAmazonLambda lambdaClient)
         => WrapAsyncCore<TInput, object?>(
             async (input, ctx) => { await workflow(input, ctx); return null; },
-            invocationInput, lambdaContext, lambdaClient, jsonContext: null);
+            invocationInput, lambdaContext, lambdaClient);
 
-    // ──────────────────────────────────────────────────────────────────────
-    // AOT-safe overloads (caller supplies JsonSerializerContext)
-    // ──────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output). AOT-safe — requires
-    /// <c>[JsonSerializable(typeof(TInput))]</c> and <c>[JsonSerializable(typeof(TOutput))]</c>
-    /// on the supplied <paramref name="jsonContext"/>.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext)
-    {
-        return WrapAsyncCore(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value, jsonContext);
-    }
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output) with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext)
-        => WrapAsyncCore(workflow, invocationInput, lambdaContext, lambdaClient, jsonContext);
-
-    /// <summary>
-    /// Wrap a void workflow (typed input, no output). AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext)
-    {
-        return WrapAsyncCore<TInput, object?>(
-            async (input, ctx) => { await workflow(input, ctx); return null; },
-            invocationInput, lambdaContext, _cachedLambdaClient.Value, jsonContext);
-    }
-
-    /// <summary>
-    /// Wrap a void workflow with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext)
-        => WrapAsyncCore<TInput, object?>(
-            async (input, ctx) => { await workflow(input, ctx); return null; },
-            invocationInput, lambdaContext, lambdaClient, jsonContext);
-
-    // ──────────────────────────────────────────────────────────────────────
-    // Core implementation
-    // ──────────────────────────────────────────────────────────────────────
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026",
-        Justification = "When jsonContext is non-null, dispatch goes through JsonTypeInfo<T>; when null, the caller has [RequiresUnreferencedCode].")]
-    [UnconditionalSuppressMessage("AOT", "IL3050",
-        Justification = "When jsonContext is non-null, dispatch goes through JsonTypeInfo<T>; when null, the caller has [RequiresDynamicCode].")]
     private static async Task<DurableExecutionInvocationOutput> WrapAsyncCore<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext? jsonContext)
+        IAmazonLambda lambdaClient)
     {
+        var serializer = lambdaContext.Serializer
+            ?? throw new InvalidOperationException(
+                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
+                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
+                "(or in tests, set TestLambdaContext.Serializer).");
+
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
 
@@ -164,7 +93,7 @@ public static class DurableFunction
             nextMarker = marker;
         }
 
-        var userPayload = ExtractUserPayload<TInput>(invocationInput, jsonContext);
+        var userPayload = ExtractUserPayload<TInput>(invocationInput, serializer);
         var terminationManager = new TerminationManager();
         var idGenerator = new OperationIdGenerator();
 
@@ -195,7 +124,7 @@ public static class DurableFunction
             };
         }
 
-        return MapToOutput(result, jsonContext);
+        return MapToOutput(result, serializer);
     }
 
     /// <summary>
@@ -241,26 +170,12 @@ public static class DurableFunction
         return true;
     }
 
-    // Shared options for both user-payload deserialization (input) and user-result
-    // serialization (output) so the naming policy stays symmetric. We only enable
-    // case-insensitive matching here — keep PascalCase on the wire for output to
-    // preserve compatibility with existing serialized contracts. Only the user payload
-    // portion uses these options; the durable-execution envelope itself
-    // (DurableExecutionInvocationInput/Output) is serialized separately and is not
-    // affected.
-    private static readonly JsonSerializerOptions UserPayloadOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Guarded by jsonContext null check.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by jsonContext null check.")]
     // The user's input payload is stored inside the service envelope as an EXECUTION-type
     // operation. This is part of the durable execution wire format — each invocation includes
     // its input as a checkpoint record so the service can validate replay consistency.
     private static TInput ExtractUserPayload<TInput>(
         DurableExecutionInvocationInput input,
-        JsonSerializerContext? jsonContext)
+        ILambdaSerializer serializer)
     {
         if (input.InitialExecutionState?.Operations == null)
             return default!;
@@ -271,34 +186,24 @@ public static class DurableFunction
                 continue;
 
             var payload = op.ExecutionDetails.InputPayload;
-            if (jsonContext != null)
-            {
-                if (jsonContext.GetTypeInfo(typeof(TInput)) is JsonTypeInfo<TInput> typeInfo)
-                    return JsonSerializer.Deserialize(payload, typeInfo) ?? default!;
-
-                throw new InvalidOperationException(
-                    $"JsonSerializerContext {jsonContext.GetType().FullName} has no JsonTypeInfo for {typeof(TInput).FullName}. " +
-                    "Add [JsonSerializable(typeof(YourInput))] to your context.");
-            }
-
-            return JsonSerializer.Deserialize<TInput>(payload, UserPayloadOptions) ?? default!;
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            using var ms = new MemoryStream(bytes);
+            return serializer.Deserialize<TInput>(ms);
         }
 
         return default!;
     }
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Guarded by jsonContext null check.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by jsonContext null check.")]
     private static DurableExecutionInvocationOutput MapToOutput<TOutput>(
         HandlerResult<TOutput> result,
-        JsonSerializerContext? jsonContext)
+        ILambdaSerializer serializer)
     {
         return result.Status switch
         {
             InvocationStatus.Succeeded => new DurableExecutionInvocationOutput
             {
                 Status = InvocationStatus.Succeeded,
-                Result = SerializeOutput(result.Result, jsonContext)
+                Result = SerializeOutput(result.Result, serializer)
             },
             InvocationStatus.Failed => new DurableExecutionInvocationOutput
             {
@@ -317,22 +222,12 @@ public static class DurableFunction
         };
     }
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Guarded by jsonContext null check.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by jsonContext null check.")]
-    private static string? SerializeOutput<TOutput>(TOutput? value, JsonSerializerContext? jsonContext)
+    private static string? SerializeOutput<TOutput>(TOutput? value, ILambdaSerializer serializer)
     {
         if (value == null) return null;
 
-        if (jsonContext != null)
-        {
-            if (jsonContext.GetTypeInfo(typeof(TOutput)) is JsonTypeInfo<TOutput> typeInfo)
-                return JsonSerializer.Serialize(value, typeInfo);
-
-            throw new InvalidOperationException(
-                $"JsonSerializerContext {jsonContext.GetType().FullName} has no JsonTypeInfo for {typeof(TOutput).FullName}. " +
-                "Add [JsonSerializable(typeof(YourOutput))] to your context.");
-        }
-
-        return JsonSerializer.Serialize(value, UserPayloadOptions);
+        using var ms = new MemoryStream();
+        serializer.Serialize(value, ms);
+        return Encoding.UTF8.GetString(ms.ToArray());
     }
 }
