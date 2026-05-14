@@ -10,6 +10,7 @@ using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.DurableExecution.Services;
 using Amazon.Lambda.Model;
 using Amazon.Runtime;
+using Microsoft.Extensions.Logging;
 
 namespace Amazon.Lambda.DurableExecution;
 
@@ -113,9 +114,20 @@ public static class DurableFunction
         HandlerResult<TOutput> result;
         try
         {
-            result = await DurableExecutionHandler.RunAsync<TOutput>(
-                state, terminationManager,
-                async () => await workflow(userPayload, context));
+            // Push execution-level metadata into a logging scope so structured
+            // providers (the runtime's JSON formatter, Serilog, Powertools,
+            // etc.) tag every log line emitted by user code with the
+            // execution ARN and request id.
+            using (context.Logger.BeginScope(new Dictionary<string, object>
+            {
+                ["durableExecutionArn"] = invocationInput.DurableExecutionArn,
+                ["awsRequestId"] = lambdaContext.AwsRequestId ?? string.Empty,
+            }))
+            {
+                result = await DurableExecutionHandler.RunAsync<TOutput>(
+                    state, terminationManager,
+                    async () => await workflow(userPayload, context));
+            }
 
             await batcher.DrainAsync();
         }

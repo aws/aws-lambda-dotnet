@@ -4,7 +4,6 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution.Internal;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Amazon.Lambda.DurableExecution;
 
@@ -20,6 +19,7 @@ internal sealed class DurableContext : IDurableContext
     private readonly OperationIdGenerator _idGenerator;
     private readonly string _durableExecutionArn;
     private readonly CheckpointBatcher? _batcher;
+    private ILogger _logger;
 
     public DurableContext(
         ExecutionState state,
@@ -35,12 +35,24 @@ internal sealed class DurableContext : IDurableContext
         _durableExecutionArn = durableExecutionArn;
         _batcher = batcher;
         LambdaContext = lambdaContext;
+        _logger = new ReplayAwareLogger(new LambdaCoreLogger(), state, modeAware: true);
     }
 
-    // Replay-safe logger ships in a follow-up PR; see IDurableContext.Logger doc.
-    public ILogger Logger => NullLogger.Instance;
+    public ILogger Logger => _logger;
     public IExecutionContext ExecutionContext => new DurableExecutionContext(_durableExecutionArn);
     public ILambdaContext LambdaContext { get; }
+
+    public void ConfigureLogger(LoggerConfig config)
+    {
+        if (config == null) throw new ArgumentNullException(nameof(config));
+
+        // If the user supplies a CustomLogger, wrap it. Otherwise re-wrap the
+        // existing inner logger (unwrapping if it was already a ReplayAwareLogger)
+        // so toggling ModeAware works without losing the previous custom logger.
+        var inner = config.CustomLogger
+            ?? (_logger is ReplayAwareLogger existing ? existing.Inner : _logger);
+        _logger = new ReplayAwareLogger(inner, _state, config.ModeAware);
+    }
 
     public Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
