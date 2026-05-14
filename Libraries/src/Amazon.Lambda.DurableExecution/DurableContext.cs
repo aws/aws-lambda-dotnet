@@ -134,6 +134,24 @@ internal sealed class DurableContext : IDurableContext
             name, config, cancellationToken);
     }
 
+    public Task<TState> WaitForConditionAsync<TState>(
+        Func<TState, IConditionCheckContext, Task<TState>> check,
+        WaitForConditionConfig<TState> config,
+        string? name = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config.WaitStrategy);
+
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var operationId = _idGenerator.NextId();
+        var op = new WaitForConditionOperation<TState>(
+            operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
+            _state, _terminationManager, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
+
     private Task<T> RunChildContext<T>(
         Func<IDurableContext, Task<T>> func,
         string? name,

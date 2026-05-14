@@ -177,6 +177,34 @@ public interface IDurableContext
         string? name = null,
         InvokeConfig? config = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Poll a condition by repeatedly invoking <paramref name="check"/> until
+    /// the configured <see cref="IWaitStrategy{TState}"/> decides to stop.
+    /// Between polls the workflow is suspended (no compute charge); the
+    /// service re-invokes the Lambda when the strategy's chosen delay elapses.
+    /// </summary>
+    /// <remarks>
+    /// On every iteration the <paramref name="check"/> function receives the
+    /// state returned by the previous invocation (seeded by
+    /// <see cref="WaitForConditionConfig{TState}.InitialState"/> on the very
+    /// first call), so users can carry per-poll bookkeeping (e.g. a cursor or
+    /// retry counter) inside the state itself. If the strategy stops because
+    /// of <see cref="IWaitStrategy{TState}"/>'s max-attempts limit (rather
+    /// than because the condition is met), a <see cref="WaitForConditionException"/>
+    /// is thrown carrying the last observed state.
+    /// The check function's return value is serialized to a checkpoint using
+    /// the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>. AOT and reflection-based
+    /// scenarios share this single overload — the AOT story is determined by
+    /// the registered serializer (e.g.,
+    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
+    /// </remarks>
+    Task<TState> WaitForConditionAsync<TState>(
+        Func<TState, IConditionCheckContext, Task<TState>> check,
+        WaitForConditionConfig<TState> config,
+        string? name = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

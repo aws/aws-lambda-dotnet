@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.RegularExpressions;
+using Amazon.Lambda.DurableExecution.Internal;
 
 namespace Amazon.Lambda.DurableExecution;
 
@@ -175,19 +176,7 @@ internal sealed class ExponentialRetryStrategy : IRetryStrategy
     }
 
     internal TimeSpan CalculateDelay(int attemptNumber)
-    {
-        var baseDelay = _initialDelay.TotalSeconds * Math.Pow(_backoffRate, attemptNumber - 1);
-        var cappedDelay = Math.Min(baseDelay, _maxDelay.TotalSeconds);
-
-        var finalDelay = _jitter switch
-        {
-            JitterStrategy.Full => Random.Shared.NextDouble() * cappedDelay,
-            JitterStrategy.Half => cappedDelay * (0.5 + 0.5 * Random.Shared.NextDouble()),
-            _ => cappedDelay
-        };
-
-        return TimeSpan.FromSeconds(Math.Max(1, Math.Ceiling(finalDelay)));
-    }
+        => ExponentialBackoff.CalculateDelay(attemptNumber, _initialDelay, _maxDelay, _backoffRate, _jitter);
 }
 
 internal sealed class DelegateRetryStrategy : IRetryStrategy
