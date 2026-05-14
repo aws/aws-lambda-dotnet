@@ -76,7 +76,7 @@ internal sealed class DurableContext : IDurableContext
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
-            operationId, name, func, config, serializer, Logger,
+            operationId, name, _idGenerator.ParentId, func, config, serializer, Logger,
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
@@ -99,7 +99,58 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var waitSeconds = (int)Math.Max(1, Math.Ceiling(duration.TotalSeconds));
         var op = new WaitOperation(
-            operationId, name, waitSeconds,
+            operationId, name, _idGenerator.ParentId, waitSeconds,
+            _state, _terminationManager, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
+
+    public Task<T> RunInChildContextAsync<T>(
+        Func<IDurableContext, Task<T>> func,
+        string? name = null,
+        ChildContextConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunChildContext(func, name, config, cancellationToken);
+
+    public async Task RunInChildContextAsync(
+        Func<IDurableContext, Task> func,
+        string? name = null,
+        ChildContextConfig? config = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Void child contexts don't carry a meaningful payload; the wrapper
+        // returns null so the registered ILambdaSerializer is never asked to
+        // serialize a real value.
+        await RunChildContext<object?>(
+            async (ctx) => { await func(ctx); return null; },
+            name, config, cancellationToken);
+    }
+
+    private Task<T> RunChildContext<T>(
+        Func<IDurableContext, Task<T>> func,
+        string? name,
+        ChildContextConfig? config,
+        CancellationToken cancellationToken)
+    {
+        var serializer = LambdaContext.Serializer
+            ?? throw new InvalidOperationException(
+                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
+                "In the class library programming model, register one with " +
+                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
+                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
+                "In tests, set TestLambdaContext.Serializer.");
+
+        var operationId = _idGenerator.NextId();
+
+        // Capture this DurableContext's collaborators; the child shares state,
+        // termination, batcher, ARN, and Lambda context — but uses a child
+        // OperationIdGenerator so its operation IDs are deterministically
+        // namespaced under the parent op ID.
+        IDurableContext ChildFactory(string parentOpId) => new DurableContext(
+            _state, _terminationManager, _idGenerator.CreateChild(parentOpId),
+            _durableExecutionArn, LambdaContext, _batcher);
+
+        var op = new ChildContextOperation<T>(
+            operationId, name, _idGenerator.ParentId, func, config, serializer, ChildFactory,
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
