@@ -1197,10 +1197,9 @@ public class StepConfig
     public StepSemantics Semantics { get; set; } = StepSemantics.AtLeastOncePerRetry;
 
     // Note: there is no Serializer property here. Step result serialization
-    // is delegated to the ILambdaSerializer registered on ILambdaContext.Serializer
-    // (assembly attribute or LambdaBootstrapBuilder.Create). To swap the
-    // step-checkpoint format for a single step, the planned route is the
-    // StepAsync(..., ICheckpointSerializer<T>, ...) overload (post-v1).
+    // is delegated to the ILambdaSerializer registered on
+    // ILambdaContext.Serializer (assembly attribute or
+    // LambdaBootstrapBuilder.Create).
 }
 
 public enum StepSemantics
@@ -1231,10 +1230,9 @@ public class CallbackConfig
     /// </summary>
     public TimeSpan HeartbeatTimeout { get; set; } = TimeSpan.Zero;
 
-    /// <summary>
-    /// Custom serializer for callback result.
-    /// </summary>
-    public ICheckpointSerializer? Serializer { get; set; }
+    // Note: there is no Serializer property here. Callback result
+    // serialization flows through the ILambdaSerializer registered on
+    // ILambdaContext.Serializer, the same as StepAsync.
 }
 
 /// <summary>
@@ -1259,14 +1257,14 @@ public class InvokeConfig
     public TimeSpan Timeout { get; set; } = TimeSpan.Zero;
 
     /// <summary>
-    /// Custom serializer for the payload.
+    /// Optional tenant identifier propagated to the chained invocation.
+    /// Matches the tenantId field on Python/JS/Java InvokeConfig.
     /// </summary>
-    public ICheckpointSerializer? PayloadSerializer { get; set; }
+    public string? TenantId { get; set; }
 
-    /// <summary>
-    /// Custom serializer for the result.
-    /// </summary>
-    public ICheckpointSerializer? ResultSerializer { get; set; }
+    // Note: there are no payload/result serializer properties here. Both
+    // flow through the ILambdaSerializer registered on
+    // ILambdaContext.Serializer, the same as StepAsync.
 }
 
 /// <summary>
@@ -1381,10 +1379,9 @@ public class CompletionConfig
 /// </summary>
 public class ChildContextConfig
 {
-    /// <summary>
-    /// Custom serializer for the child context's return value.
-    /// </summary>
-    public ICheckpointSerializer? Serializer { get; set; }
+    // Note: there is no Serializer property here. The child context's
+    // return value is serialized via the ILambdaSerializer registered on
+    // ILambdaContext.Serializer, the same as StepAsync.
 
     /// <summary>
     /// Operation sub-type label for observability (e.g., in test runner output).
@@ -1425,34 +1422,54 @@ public class WaitForConditionConfig<TState>
 public interface IBatchResult<T>
 {
     /// <summary>
-    /// All items (succeeded and failed).
+    /// All items, in original index order.
     /// </summary>
     IReadOnlyList<IBatchItem<T>> All { get; }
 
     /// <summary>
-    /// Only successful items.
+    /// Items whose Status is Succeeded.
     /// </summary>
     IReadOnlyList<IBatchItem<T>> Succeeded { get; }
 
     /// <summary>
-    /// Only failed items.
+    /// Items whose Status is Failed.
     /// </summary>
     IReadOnlyList<IBatchItem<T>> Failed { get; }
 
     /// <summary>
-    /// Get all successful results. Throws if any failed.
+    /// Items still in flight when the batch resolved (CompletionConfig short-circuit).
+    /// </summary>
+    IReadOnlyList<IBatchItem<T>> Started { get; }
+
+    /// <summary>
+    /// Get all successful results in original index order. Throws if any failed.
     /// </summary>
     IReadOnlyList<T> GetResults();
 
     /// <summary>
-    /// Throw an exception if any item failed.
+    /// Get all errors from failed items.
+    /// </summary>
+    IReadOnlyList<DurableExecutionException> GetErrors();
+
+    /// <summary>
+    /// Throw a single aggregated exception if any item failed.
     /// </summary>
     void ThrowIfError();
 
     /// <summary>
-    /// Why the operation completed.
+    /// True if any item is in the Failed state.
+    /// </summary>
+    bool HasFailure { get; }
+
+    /// <summary>
+    /// Why the batch resolved.
     /// </summary>
     CompletionReason CompletionReason { get; }
+
+    int SuccessCount { get; }
+    int FailureCount { get; }
+    int StartedCount { get; }
+    int TotalCount { get; }
 }
 
 public interface IBatchItem<T>
@@ -1463,7 +1480,29 @@ public interface IBatchItem<T>
     DurableExecutionException? Error { get; }
 }
 
-public enum BatchItemStatus { Succeeded, Failed, Cancelled }
+/// <summary>
+/// Status of an individual item in a batch result.
+/// Mirrors the wire-state observed at the time the batch resolved — items still
+/// running when a CompletionConfig short-circuits remain in <see cref="Started"/>.
+/// </summary>
+public enum BatchItemStatus
+{
+    /// <summary>
+    /// The branch ran to completion and produced a result.
+    /// </summary>
+    Succeeded,
+
+    /// <summary>
+    /// The branch ran to completion and threw.
+    /// </summary>
+    Failed,
+
+    /// <summary>
+    /// The branch was still in flight when the batch's CompletionConfig
+    /// resolved (e.g., FirstSuccessful returned before this branch finished).
+    /// </summary>
+    Started
+}
 public enum CompletionReason { AllCompleted, MinSuccessfulReached, FailureToleranceExceeded }
 
 /// <summary>
@@ -1616,32 +1655,17 @@ public class BadResult
 
 ### Custom Serialization
 
-Implement `ICheckpointSerializer<T>` for custom serialization:
+There is no per-call serializer override on any durable-execution API. Every checkpoint — step results, callback results, invoke payloads/results, child-context results — is serialized via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`. To customize, register a different `ILambdaSerializer` for the function:
 
 ```csharp
-public interface ICheckpointSerializer<T>
-{
-    string Serialize(T value, SerializationContext context);
-    T Deserialize(string data, SerializationContext context);
-}
+// Class library mode — register via the assembly attribute.
+[assembly: LambdaSerializer(typeof(MyCustomSerializer))]
 
-public record SerializationContext(string OperationId, string DurableExecutionArn);
+// Executable / custom runtime — pass to LambdaBootstrapBuilder.Create.
+using var bootstrap = LambdaBootstrapBuilder.Create(handler, new MyCustomSerializer()).Build();
 ```
 
-Usage — pass the serializer to the per-step `StepAsync` overload directly. This is
-the only way to override the registered `ILambdaSerializer` for a single step's
-checkpoint; it's intentional that there's no `StepConfig.Serializer` knob, so you
-have one obvious place to opt in (and the type is `ICheckpointSerializer<T>`, not
-a non-generic marker, so the compiler catches a mismatched `T`):
-
-```csharp
-var result = await context.StepAsync(
-    async () => await GetLargeData(),
-    new CompressedJsonSerializer<LargeData>(),
-    name: "get_data");
-```
-
-> **Status:** the `ICheckpointSerializer<T>` overload is a planned post-v1 addition. Today, all step checkpoints flow through the `ILambdaSerializer` registered on `ILambdaContext.Serializer` — see [NativeAOT compatibility](#nativeaot-compatibility) for how that's wired.
+The customization applies uniformly to the whole function — there is no way today to swap the format for a single step or a single result type. See [NativeAOT compatibility](#nativeaot-compatibility) for how the registration flows in JIT vs. AOT.
 
 ### Class library vs. executable output
 
@@ -1722,27 +1746,7 @@ The SDK handles overflow transparently:
 
 **Lambda response exceeding 6 MB:** If the final orchestration result exceeds the response payload limit, the SDK checkpoints the result before returning the `DurableExecutionInvocationOutput`. The service reads the result from the checkpoint rather than from the response body.
 
-**Guidance for very large results:** For results that are inherently large (multi-MB payloads), use a custom `ICheckpointSerializer<T>` that offloads to external storage (S3, DynamoDB) and returns a reference. This keeps checkpoint sizes small and avoids pagination overhead:
-
-```csharp
-public class S3BackedSerializer<T> : ICheckpointSerializer<T>
-{
-    public string Serialize(T value, SerializationContext context)
-    {
-        var key = $"results/{context.DurableExecutionArn}/{context.OperationId}";
-        // Upload to S3, return the key as the checkpoint value
-        _s3Client.PutObject(new PutObjectRequest { BucketName = _bucket, Key = key, ... });
-        return key;
-    }
-
-    public T Deserialize(string data, SerializationContext context)
-    {
-        // Download from S3 using the stored key
-        var response = _s3Client.GetObject(new GetObjectRequest { BucketName = _bucket, Key = data });
-        return JsonSerializer.Deserialize<T>(response.ResponseStream);
-    }
-}
-```
+**Guidance for very large results:** For results that are inherently large (multi-MB payloads), do the offload yourself inside the step — write the payload to external storage (S3, DynamoDB) and return a reference (e.g. an S3 key) from the step. The reference is what the SDK serializes and checkpoints, so the checkpoint stays small and pagination is avoided. Subsequent steps fetch the payload from external storage on demand.
 
 ---
 
@@ -1946,7 +1950,7 @@ This is post-v1 work. For the initial release, developers test durable functions
 - **Lambda runtime:** Requires the managed .NET 8 runtime or a custom runtime (`provided.al2023`) for NativeAOT deployments.
 - **Durable execution service:** The function must be configured with `DurableConfig` (handled automatically by the `[DurableExecution]` source generator).
 - **Qualified function identifiers:** `InvokeAsync` requires a version number, alias, or `$LATEST` — unqualified ARNs are not supported for durable invocations.
-- **Serializable results:** All step return types must be JSON-serializable (or use a custom `ICheckpointSerializer<T>`).
+- **Serializable results:** All step return types must be serializable by the `ILambdaSerializer` registered on `ILambdaContext.Serializer` (default: `System.Text.Json`).
 
 ---
 
