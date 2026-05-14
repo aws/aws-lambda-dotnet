@@ -36,6 +36,14 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         public LambdaBootstrapHandler Handler { get; private set; }
 
+        /// <summary>
+        /// The serializer registered with the wrapper, if any. Surfaced so the
+        /// runtime bootstrap can attach it to the per-invocation
+        /// <see cref="ILambdaContext"/>, allowing user code to reuse it.
+        /// Null for handlers that don't take a typed input/output.
+        /// </summary>
+        public ILambdaSerializer Serializer { get; private set; }
+
         private HandlerWrapper(LambdaBootstrapHandler handler)
         {
             Handler = handler;
@@ -121,7 +129,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 await handler(input);
                 return EmptyInvocationResponse;
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -171,7 +179,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 await handler(input, invocation.LambdaContext);
                 return EmptyInvocationResponse;
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -218,7 +226,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 return new InvocationResponse(await handler(input));
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -265,7 +273,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 return new InvocationResponse(await handler(input, invocation.LambdaContext));
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -278,7 +286,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler();
@@ -300,7 +308,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<Stream, Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream);
@@ -322,7 +330,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TInput, TOutput>(Func<TInput, Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
@@ -345,7 +353,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<ILambdaContext, Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.LambdaContext);
@@ -367,7 +375,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<Stream, ILambdaContext, Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream, invocation.LambdaContext);
@@ -389,7 +397,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TInput, TOutput>(Func<TInput, ILambdaContext, Task<TOutput>> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = async (invocation) =>
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
@@ -449,7 +457,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 handler(input);
                 return Task.FromResult(EmptyInvocationResponse);
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -499,7 +507,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 handler(input, invocation.LambdaContext);
                 return Task.FromResult(EmptyInvocationResponse);
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -546,7 +554,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 return Task.FromResult(new InvocationResponse(handler(input)));
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -593,7 +601,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 return Task.FromResult(new InvocationResponse(handler(input, invocation.LambdaContext)));
-            });
+            }) { Serializer = serializer };
         }
 
         /// <summary>
@@ -606,7 +614,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler();
@@ -628,7 +636,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<Stream, TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream);
@@ -650,7 +658,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TInput, TOutput>(Func<TInput, TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
@@ -673,7 +681,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<ILambdaContext, TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.LambdaContext);
@@ -695,7 +703,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TOutput>(Func<Stream, ILambdaContext, TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream, invocation.LambdaContext);
@@ -717,7 +725,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A HandlerWrapper</returns>
         public static HandlerWrapper GetHandlerWrapper<TInput, TOutput>(Func<TInput, ILambdaContext, TOutput> handler, ILambdaSerializer serializer)
         {
-            var handlerWrapper = new HandlerWrapper();
+            var handlerWrapper = new HandlerWrapper { Serializer = serializer };
             handlerWrapper.Handler = (invocation) =>
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);

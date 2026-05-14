@@ -1,0 +1,25 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add ILambdaSerializer Serializer property to ILambdaContext (default-implemented to null on net8.0+) so user code can access the serializer registered with the runtime"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Expose the registered ILambdaSerializer on HandlerWrapper.Serializer and propagate it to the per-invocation ILambdaContext.Serializer"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add Serializer setter to TestLambdaContext to mirror the new ILambdaContext.Serializer property"
+      ]
+    }
+  ]
+}
