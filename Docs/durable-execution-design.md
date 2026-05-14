@@ -510,7 +510,7 @@ var paymentResult = await context.InvokeAsync<PaymentRequest, PaymentResult>(
     name: "process_payment",
     config: new InvokeConfig
     {
-        Timeout = TimeSpan.FromMinutes(5)
+        TenantId = "tenant-42"
     });
 ```
 
@@ -1295,11 +1295,6 @@ public class WaitForCallbackConfig : CallbackConfig
 public class InvokeConfig
 {
     /// <summary>
-    /// Maximum time to wait for the invoked function. Default (TimeSpan.Zero) means no timeout.
-    /// </summary>
-    public TimeSpan Timeout { get; set; } = TimeSpan.Zero;
-
-    /// <summary>
     /// Optional tenant identifier propagated to the chained invocation.
     /// Matches the tenantId field on Python/JS/Java InvokeConfig.
     /// </summary>
@@ -1627,14 +1622,28 @@ public class CallbackTimeoutException : CallbackException { }
 public class CallbackSubmitterException : CallbackException { }
 
 /// <summary>
-/// Thrown when an invoked function fails.
+/// Base exception for chained-invoke failures. Catch <c>InvokeException</c>
+/// to handle every non-success terminal state uniformly, or pattern-match the
+/// concrete subclasses (<c>InvokeFailedException</c>, <c>InvokeTimedOutException</c>,
+/// <c>InvokeStoppedException</c>) to react differently to specific outcomes.
+/// Mirrors the Java SDK's invoke exception tree.
 /// </summary>
 public class InvokeException : DurableExecutionException
 {
-    public string? FunctionName { get; }
-    public string? ErrorType { get; }
-    public string? ErrorData { get; }
+    public string? FunctionName { get; init; }
+    public string? ErrorType { get; init; }
+    public string? ErrorData { get; init; }
+    public IReadOnlyList<string>? OriginalStackTrace { get; init; }
 }
+
+/// <summary>The chained function ran and threw.</summary>
+public class InvokeFailedException : InvokeException { }
+
+/// <summary>The chained function did not complete within the configured (or service) timeout.</summary>
+public class InvokeTimedOutException : InvokeException { }
+
+/// <summary>The chained execution was stopped by the service before reaching a normal terminal state.</summary>
+public class InvokeStoppedException : InvokeException { }
 
 /// <summary>
 /// Thrown when a child context operation fails.

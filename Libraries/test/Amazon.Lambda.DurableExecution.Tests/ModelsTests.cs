@@ -56,6 +56,95 @@ public class ModelsTests
     }
 
     [Fact]
+    public void ErrorObject_FromException_UnwrapsStepException()
+    {
+        // A failing user step gets wrapped as StepException carrying the original
+        // ErrorType. Recording the wrapper's type would lose the user-facing
+        // exception identity across a chained-invoke boundary, so FromException
+        // pulls the original error fields through.
+        var ex = new StepException("intentional child failure")
+        {
+            ErrorType = "System.InvalidOperationException",
+            ErrorData = "{\"hint\":\"data\"}",
+            OriginalStackTrace = new[] { "at User.Workflow.Body()" }
+        };
+
+        var error = ErrorObject.FromException(ex);
+
+        Assert.Equal("System.InvalidOperationException", error.ErrorType);
+        Assert.Equal("intentional child failure", error.ErrorMessage);
+        Assert.Equal("{\"hint\":\"data\"}", error.ErrorData);
+        Assert.Equal(new[] { "at User.Workflow.Body()" }, error.StackTrace);
+    }
+
+    [Fact]
+    public void ErrorObject_FromException_UnwrapsChildContextException()
+    {
+        var ex = new ChildContextException("child failed")
+        {
+            ErrorType = "System.ArgumentException",
+            ErrorData = "{\"k\":\"v\"}",
+            OriginalStackTrace = new[] { "at Inner()" }
+        };
+
+        var error = ErrorObject.FromException(ex);
+
+        Assert.Equal("System.ArgumentException", error.ErrorType);
+        Assert.Equal("child failed", error.ErrorMessage);
+        Assert.Equal("{\"k\":\"v\"}", error.ErrorData);
+    }
+
+    [Fact]
+    public void ErrorObject_FromException_UnwrapsInvokeException()
+    {
+        var ex = new InvokeFailedException("downstream failed")
+        {
+            FunctionName = "arn:aws:lambda:...:function:downstream",
+            ErrorType = "System.TimeoutException",
+            ErrorData = "{\"region\":\"us-east-1\"}",
+            OriginalStackTrace = new[] { "at Downstream.Run()" }
+        };
+
+        var error = ErrorObject.FromException(ex);
+
+        Assert.Equal("System.TimeoutException", error.ErrorType);
+        Assert.Equal("downstream failed", error.ErrorMessage);
+        Assert.Equal("{\"region\":\"us-east-1\"}", error.ErrorData);
+    }
+
+    [Fact]
+    public void ErrorObject_FromException_UnwrapsCallbackException()
+    {
+        var ex = new CallbackFailedException("callback failed")
+        {
+            CallbackId = "cb-123",
+            ErrorType = "Acme.Errors.PaymentDeclined",
+            ErrorData = "{\"code\":42}",
+            OriginalStackTrace = new[] { "at External.Reject()" }
+        };
+
+        var error = ErrorObject.FromException(ex);
+
+        Assert.Equal("Acme.Errors.PaymentDeclined", error.ErrorType);
+        Assert.Equal("callback failed", error.ErrorMessage);
+        Assert.Equal("{\"code\":42}", error.ErrorData);
+    }
+
+    [Fact]
+    public void ErrorObject_FromException_UnwrapsStepException_WithNullErrorType()
+    {
+        // StepException without an explicit ErrorType (e.g., constructed by code
+        // that didn't set the init-only property) records null rather than
+        // falling back to the wrapper's type — the wrapper type is never useful.
+        var ex = new StepException("no type set");
+
+        var error = ErrorObject.FromException(ex);
+
+        Assert.Null(error.ErrorType);
+        Assert.Equal("no type set", error.ErrorMessage);
+    }
+
+    [Fact]
     public void ErrorObject_RoundTripSerialization()
     {
         var error = new ErrorObject
