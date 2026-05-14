@@ -14,12 +14,14 @@ internal abstract class DurableOperation<TResult>
     protected readonly TerminationManager Termination;
     protected readonly string OperationId;
     protected readonly string? Name;
+    protected readonly string? ParentId;
     protected readonly string DurableExecutionArn;
     protected readonly CheckpointBatcher? Batcher;
 
     protected DurableOperation(
         string operationId,
         string? name,
+        string? parentId,
         ExecutionState state,
         TerminationManager termination,
         string durableExecutionArn,
@@ -27,6 +29,7 @@ internal abstract class DurableOperation<TResult>
     {
         OperationId = operationId;
         Name = name;
+        ParentId = parentId;
         State = state;
         Termination = termination;
         DurableExecutionArn = durableExecutionArn;

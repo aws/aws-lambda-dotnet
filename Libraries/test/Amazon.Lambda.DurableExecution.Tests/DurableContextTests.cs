@@ -95,7 +95,9 @@ public class DurableContextTests
                         Error = new ErrorObject
                         {
                             ErrorType = "System.TimeoutException",
-                            ErrorMessage = "timed out"
+                            ErrorMessage = "timed out",
+                            ErrorData = "{\"detail\":\"x\"}",
+                            StackTrace = new[] { "at A.B()", "at C.D()" }
                         }
                     }
                 }
@@ -107,6 +109,9 @@ public class DurableContextTests
 
         Assert.Equal("System.TimeoutException", ex.ErrorType);
         Assert.Equal("timed out", ex.Message);
+        Assert.Equal("{\"detail\":\"x\"}", ex.ErrorData);
+        Assert.NotNull(ex.OriginalStackTrace);
+        Assert.Equal(2, ex.OriginalStackTrace!.Count);
     }
 
     [Fact]
