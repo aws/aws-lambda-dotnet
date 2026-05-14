@@ -101,7 +101,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
-            : this(handlerWrapper.Handler, initializer)
+            : this(ConstructHttpClient(), handlerWrapper.Handler, initializer, ownsHttpClient: true, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
-            : this(handlerWrapper.Handler, lambdaBootstrapOptions, initializer)
+            : this(ConstructHttpClient(), handlerWrapper.Handler, initializer, ownsHttpClient: true, lambdaBootstrapOptions: lambdaBootstrapOptions, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
-            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false)
+            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
-            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, lambdaBootstrapOptions: lambdaBootstrapOptions)
+            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, lambdaBootstrapOptions: lambdaBootstrapOptions, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -170,7 +170,8 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="configuration"> Get configuration to check if Invoke is with Pre JIT or SnapStart enabled </param>
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="environmentVariables"></param>
-        internal LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null, LambdaBootstrapOptions lambdaBootstrapOptions = null, IEnvironmentVariables environmentVariables = null)
+        /// <param name="serializer">The Lambda serializer to expose on the per-invocation <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/>. May be null.</param>
+        internal LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null, LambdaBootstrapOptions lambdaBootstrapOptions = null, IEnvironmentVariables environmentVariables = null, Amazon.Lambda.Core.ILambdaSerializer serializer = null)
         {
             if (ownsHttpClient && httpClient == null)
             {
@@ -183,7 +184,9 @@ namespace Amazon.Lambda.RuntimeSupport
             _initializer = initializer;
             _httpClient.Timeout = RuntimeApiHttpTimeout;
             _environmentVariables = environmentVariables ?? new SystemEnvironmentVariables();
-            Client = new RuntimeApiClient(_environmentVariables, _httpClient, lambdaBootstrapOptions);
+            var runtimeApiClient = new RuntimeApiClient(_environmentVariables, _httpClient, lambdaBootstrapOptions);
+            runtimeApiClient.Serializer = serializer;
+            Client = runtimeApiClient;
             _configuration = configuration ?? LambdaBootstrapConfiguration.GetDefaultConfiguration(_environmentVariables);
 
             _awsSdkTraceIdSetter = Utils.FindAWSSDKTraceIdSetter(_environmentVariables);

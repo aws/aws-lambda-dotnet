@@ -31,19 +31,31 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
         private readonly IConsoleLoggerWriter _consoleLogger;
+        private readonly ILambdaSerializer _serializer;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
-            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger)
+            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger, serializer: null)
+        {
+        }
+
+        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger, ILambdaSerializer serializer)
+            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger, serializer)
         {
         }
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper, IConsoleLoggerWriter consoleLogger)
+            : this(runtimeApiHeaders, lambdaEnvironment, dateTimeHelper, consoleLogger, serializer: null)
+        {
+        }
+
+        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper, IConsoleLoggerWriter consoleLogger, ILambdaSerializer serializer)
         {
 
             _lambdaEnvironment = lambdaEnvironment;
             _runtimeApiHeaders = runtimeApiHeaders;
             _dateTimeHelper = dateTimeHelper;
             _consoleLogger = consoleLogger;
+            _serializer = serializer;
 
             int.TryParse(_lambdaEnvironment.FunctionMemorySize, out _memoryLimitInMB);
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
@@ -76,6 +88,8 @@ namespace Amazon.Lambda.RuntimeSupport
         public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (_dateTimeHelper.UtcNow - UnixEpoch).TotalMilliseconds);
 
         public string TenantId => _runtimeApiHeaders.TenantId;
+
+        public ILambdaSerializer Serializer => _serializer;
 
         internal IRuntimeApiHeaders RuntimeApiHeaders => _runtimeApiHeaders;
     }

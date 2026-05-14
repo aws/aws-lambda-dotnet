@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
 using System.IO;
@@ -36,6 +37,13 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
+
+        /// <summary>
+        /// Optional serializer attached to the per-invocation
+        /// <see cref="ILambdaContext.Serializer"/> in <see cref="GetNextInvocationAsync"/>.
+        /// Set by <see cref="LambdaBootstrap"/> from the registered <see cref="HandlerWrapper.Serializer"/>.
+        /// </summary>
+        internal ILambdaSerializer Serializer { get; set; }
 
         /// <inheritdoc/>
         public IConsoleLoggerWriter ConsoleLogger => _consoleLoggerRedirector;
@@ -100,7 +108,8 @@ namespace Amazon.Lambda.RuntimeSupport
 
         /// <summary>
         /// Get the next function invocation from the Runtime API as an asynchronous operation.
-        /// Completes when the next invocation is received.
+        /// Completes when the next invocation is received. The <see cref="Serializer"/>
+        /// (if set) is attached to the resulting <see cref="ILambdaContext.Serializer"/>.
         /// </summary>
         /// <param name="cancellationToken">The optional cancellation token to use to stop listening for the next invocation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
@@ -109,7 +118,7 @@ namespace Amazon.Lambda.RuntimeSupport
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
             var headers = new RuntimeApiHeaders(response.Headers);
-            var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector);
+            var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector, Serializer);
             return new InvocationRequest
             {
                 InputStream = response.Result,
