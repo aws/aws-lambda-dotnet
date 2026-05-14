@@ -16,6 +16,15 @@ internal sealed class RecordingBatcher
 
     public CheckpointBatcher Batcher { get; }
 
+    /// <summary>
+    /// Optional hook invoked synchronously after each batch flush, with that
+    /// batch's updates. Tests modeling the durable-execution service's
+    /// <c>NewExecutionState</c> response (e.g. stamping a CallbackId onto a
+    /// freshly-started CALLBACK op) wire this up to mutate the test's
+    /// <see cref="ExecutionState"/>.
+    /// </summary>
+    public Action<IReadOnlyList<SdkOperationUpdate>>? OnFlush { get; set; }
+
     public RecordingBatcher(CheckpointBatcherConfig? config = null)
     {
         Batcher = new CheckpointBatcher("test-token", Flush, config);
@@ -46,6 +55,7 @@ internal sealed class RecordingBatcher
             _flushed.AddRange(ops);
             _flushBatchSizes.Add(ops.Count);
         }
+        OnFlush?.Invoke(ops);
         return Task.FromResult<string?>(token);
     }
 }

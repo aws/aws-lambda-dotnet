@@ -31,7 +31,18 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private bool _functionCreated;
     private bool _ecrRepoCreated;
 
+    // Optional paired "external system" Lambda — a plain (non-durable) function
+    // that the workflow's submitter invokes. Models a real-world callback flow
+    // where an out-of-band service resolves the durable execution.
+    private readonly string _externalFunctionName;
+    private readonly string _externalRepoName;
+    private readonly string _externalRoleName;
+    private string? _externalRoleArn;
+    private bool _externalFunctionCreated;
+    private bool _externalEcrRepoCreated;
+
     public string FunctionName => _functionName;
+    public string? ExternalFunctionName => _externalFunctionCreated ? _externalFunctionName : null;
     public IAmazonLambda LambdaClient => _lambdaClient;
 
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
@@ -47,17 +58,21 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         _functionName = $"durable-integ-{suffix}-{ShortId()}";
         _repoName = $"durable-integ-{suffix}-{ShortId()}";
         _roleName = $"durable-integ-{suffix}-{ShortId()}";
+        _externalFunctionName = $"durable-integ-{suffix}-ext-{ShortId()}";
+        _externalRepoName = $"durable-integ-{suffix}-ext-{ShortId()}";
+        _externalRoleName = $"durable-integ-{suffix}-ext-{ShortId()}";
     }
 
     public static async Task<DurableFunctionDeployment> CreateAsync(
         string testFunctionDir,
         string scenarioSuffix,
-        ITestOutputHelper output)
+        ITestOutputHelper output,
+        string? externalFunctionDir = null)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir);
+            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir);
         }
         catch
         {
@@ -69,11 +84,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         return deployment;
     }
 
-    private async Task InitializeAsync(string testFunctionDir)
-    {
-        // 1. Create IAM role
-        _output.WriteLine($"Creating IAM role: {_roleName}");
-        var assumeRolePolicy = """
+    private const string LambdaAssumeRolePolicy = """
         {
             "Version": "2012-10-17",
             "Statement": [{
@@ -84,10 +95,14 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         }
         """;
 
+    private async Task InitializeAsync(string testFunctionDir, string? externalFunctionDir)
+    {
+        // 1. Create the workflow's IAM role.
+        _output.WriteLine($"Creating IAM role: {_roleName}");
         var createRoleResponse = await _iamClient.CreateRoleAsync(new CreateRoleRequest
         {
             RoleName = _roleName,
-            AssumeRolePolicyDocument = assumeRolePolicy
+            AssumeRolePolicyDocument = LambdaAssumeRolePolicy
         });
         _roleArn = createRoleResponse.Role.Arn;
 
@@ -103,10 +118,72 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
         });
 
-        // Wait for IAM propagation
+        // 2. (optional) Create the external function's IAM role up front so its
+        //    sts:AssumeRole and lambda:SendDurableExecutionCallbackSuccess
+        //    permissions propagate alongside the workflow role's permissions
+        //    (single 10-second sleep covers both).
+        if (externalFunctionDir != null)
+        {
+            _output.WriteLine($"Creating external IAM role: {_externalRoleName}");
+            var extRoleResponse = await _iamClient.CreateRoleAsync(new CreateRoleRequest
+            {
+                RoleName = _externalRoleName,
+                AssumeRolePolicyDocument = LambdaAssumeRolePolicy
+            });
+            _externalRoleArn = extRoleResponse.Role.Arn;
+
+            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+            {
+                RoleName = _externalRoleName,
+                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            });
+
+            // Inline policy lets the external function call the durable callback API.
+            // Resource "*" because we don't yet know the workflow's ARN at this point —
+            // the external function only resolves callbacks belonging to executions the
+            // workflow created, so the blast radius is bounded by the role's lifetime.
+            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
+            {
+                RoleName = _externalRoleName,
+                PolicyName = "SendDurableExecutionCallback",
+                PolicyDocument = """
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": [
+                            "lambda:SendDurableExecutionCallbackSuccess",
+                            "lambda:SendDurableExecutionCallbackFailure"
+                        ],
+                        "Resource": "*"
+                    }]
+                }
+                """
+            });
+
+            // Workflow function will Invoke the external function — grant via inline policy.
+            // Scoped to the external function name we just minted.
+            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
+            {
+                RoleName = _roleName,
+                PolicyName = "InvokeExternalFunction",
+                PolicyDocument = $$"""
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": "lambda:InvokeFunction",
+                        "Resource": "arn:aws:lambda:*:*:function:{{_externalFunctionName}}"
+                    }]
+                }
+                """
+            });
+        }
+
+        // Wait for IAM propagation.
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        // 2. Create ECR repository
+        // 3. Create the workflow ECR repo + image.
         _output.WriteLine($"Creating ECR repository: {_repoName}");
         var createRepoResponse = await _ecrClient.CreateRepositoryAsync(new CreateRepositoryRequest
         {
@@ -115,14 +192,47 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         _ecrRepoCreated = true;
         var repositoryUri = createRepoResponse.Repository.RepositoryUri;
 
-        // 3. Build and push Docker image
         _output.WriteLine($"Building and pushing Docker image from {testFunctionDir}...");
         _imageUri = await BuildAndPushImage(testFunctionDir, repositoryUri);
         _output.WriteLine($"Image pushed: {_imageUri}");
 
-        // 4. Create Lambda function
+        // 4. (optional) Create + push the external function image and create the Lambda.
+        //    Done before the workflow Lambda so the workflow function's environment can
+        //    reference the external function name (which is already known from the ctor).
+        if (externalFunctionDir != null)
+        {
+            _output.WriteLine($"Creating external ECR repository: {_externalRepoName}");
+            var extRepoResponse = await _ecrClient.CreateRepositoryAsync(new CreateRepositoryRequest
+            {
+                RepositoryName = _externalRepoName
+            });
+            _externalEcrRepoCreated = true;
+            var extRepositoryUri = extRepoResponse.Repository.RepositoryUri;
+
+            _output.WriteLine($"Building external Docker image from {externalFunctionDir}...");
+            var extImageUri = await BuildAndPushImage(externalFunctionDir, extRepositoryUri);
+            _output.WriteLine($"External image pushed: {extImageUri}");
+
+            _output.WriteLine($"Creating external Lambda function: {_externalFunctionName}");
+            await _lambdaClient.CreateFunctionAsync(new CreateFunctionRequest
+            {
+                FunctionName = _externalFunctionName,
+                PackageType = PackageType.Image,
+                Role = _externalRoleArn,
+                Code = new FunctionCode { ImageUri = extImageUri },
+                Timeout = 30,
+                MemorySize = 256
+                // No DurableConfig — this is a plain function.
+            });
+            _externalFunctionCreated = true;
+
+            _output.WriteLine("Waiting for external function to become Active...");
+            await WaitForFunctionActive(_externalFunctionName);
+        }
+
+        // 5. Create the workflow Lambda.
         _output.WriteLine($"Creating Lambda function: {_functionName}");
-        await _lambdaClient.CreateFunctionAsync(new CreateFunctionRequest
+        var createReq = new CreateFunctionRequest
         {
             FunctionName = _functionName,
             PackageType = PackageType.Image,
@@ -131,11 +241,23 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             Timeout = 30,
             MemorySize = 256,
             DurableConfig = new DurableConfig { ExecutionTimeout = 60 }
-        });
+        };
+        if (externalFunctionDir != null)
+        {
+            // Tell the workflow which function to invoke as its "external system".
+            createReq.Environment = new Amazon.Lambda.Model.Environment
+            {
+                Variables = new Dictionary<string, string>
+                {
+                    ["EXTERNAL_FUNCTION_NAME"] = _externalFunctionName
+                }
+            };
+        }
+        await _lambdaClient.CreateFunctionAsync(createReq);
         _functionCreated = true;
 
         _output.WriteLine("Waiting for function to become Active...");
-        await WaitForFunctionActive();
+        await WaitForFunctionActive(_functionName);
     }
 
     public async Task<(InvokeResponse Response, string ExecutionName)> InvokeAsync(string payload, string? executionName = null)
@@ -309,28 +431,52 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         return null;
     }
 
-    private async Task WaitForFunctionActive()
+    private async Task WaitForFunctionActive(string functionName)
     {
         for (int i = 0; i < 60; i++)
         {
             try
             {
                 var config = await _lambdaClient.GetFunctionConfigurationAsync(
-                    new GetFunctionConfigurationRequest { FunctionName = _functionName });
+                    new GetFunctionConfigurationRequest { FunctionName = functionName });
                 if (config.State == State.Active) return;
                 if (config.State == State.Failed)
-                    throw new Exception($"Function creation failed: {config.StateReasonCode} - {config.StateReason}");
+                    throw new Exception($"Function '{functionName}' creation failed: {config.StateReasonCode} - {config.StateReason}");
             }
             catch (ResourceNotFoundException) { }
             await Task.Delay(TimeSpan.FromSeconds(2));
         }
-        throw new TimeoutException("Function did not become Active within 120 seconds");
+        throw new TimeoutException($"Function '{functionName}' did not become Active within 120 seconds");
     }
 
     private async Task<string> BuildAndPushImage(string testFunctionDir, string repositoryUri)
     {
+        // `dotnet test` spins up one testhost per TargetFramework (net8.0 + net10.0) and
+        // runs them concurrently. Both testhosts invoke the same test classes, which means
+        // two processes can race on the same TestFunctions/<X>/ source dir — wiping bin/
+        // and obj/ under each other's feet. Symptom: MSB3030 "Could not copy bootstrap.dll"
+        // because one process deleted obj/ while the other was mid-publish. Serialize the
+        // per-source-dir build with a cross-process file lock so different test functions
+        // can still build in parallel. (A Mutex would have thread-affinity issues across
+        // awaits; an exclusive FileStream avoids that.) Lock file goes under temp — keeping
+        // it out of the source tree avoids polluting git status across worktrees.
+        var lockKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            Encoding.UTF8.GetBytes(testFunctionDir.ToLowerInvariant())))[..16];
+        var lockPath = Path.Combine(Path.GetTempPath(), $"durable-integ-build-{lockKey}.lock");
+        using var lockHandle = await AcquireExclusiveFileLockAsync(lockPath, TimeSpan.FromMinutes(10));
+
         var publishDir = Path.Combine(testFunctionDir, "bin", "publish");
         if (Directory.Exists(publishDir)) Directory.Delete(publishDir, true);
+
+        // MSBuild's up-to-date check leaves stale .Up2Date markers under obj/ that
+        // make `dotnet publish` skip the copy-to-output step on a second run after
+        // we've wiped bin/publish/. Result: empty publish dir → empty Docker build
+        // context → "COPY bin/publish/ … not found". Nuking obj/ guarantees a real
+        // publish each time the helper is invoked. Cheap (each test function is small).
+        var objDir = Path.Combine(testFunctionDir, "obj");
+        if (Directory.Exists(objDir)) Directory.Delete(objDir, true);
+        var binDir = Path.Combine(testFunctionDir, "bin");
+        if (Directory.Exists(binDir)) Directory.Delete(binDir, true);
 
         await RunProcess("dotnet",
             $"publish -c Release -r linux-x64 --self-contained true -o \"{publishDir}\"",
@@ -355,6 +501,24 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         await RunProcess("docker", $"push {imageTag}", testFunctionDir);
 
         return imageTag;
+    }
+
+    private static async Task<FileStream> AcquireExclusiveFileLockAsync(string lockPath, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (true)
+        {
+            try
+            {
+                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException)
+            {
+                if (DateTime.UtcNow >= deadline)
+                    throw new TimeoutException($"Timed out waiting for build lock '{lockPath}' after {timeout.TotalSeconds:F0}s");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+            }
+        }
     }
 
     private async Task RunProcess(string fileName, string arguments, string workingDir, string? stdin = null)
@@ -421,6 +585,16 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             catch (Exception ex) { _output.WriteLine($"Cleanup error (function): {ex.Message}"); }
         }
 
+        if (_externalFunctionCreated)
+        {
+            try
+            {
+                _output.WriteLine($"Deleting external function: {_externalFunctionName}");
+                await _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _externalFunctionName });
+            }
+            catch (Exception ex) { _output.WriteLine($"Cleanup error (external function): {ex.Message}"); }
+        }
+
         if (_ecrRepoCreated)
         {
             try
@@ -435,13 +609,31 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             catch (Exception ex) { _output.WriteLine($"Cleanup error (ECR): {ex.Message}"); }
         }
 
+        if (_externalEcrRepoCreated)
+        {
+            try
+            {
+                _output.WriteLine($"Deleting external ECR repository: {_externalRepoName}");
+                await _ecrClient.DeleteRepositoryAsync(new DeleteRepositoryRequest
+                {
+                    RepositoryName = _externalRepoName,
+                    Force = true
+                });
+            }
+            catch (Exception ex) { _output.WriteLine($"Cleanup error (external ECR): {ex.Message}"); }
+        }
+
         if (_roleArn != null)
         {
             // Detach each policy independently — if one detach fails (e.g., the
             // policy was never attached because init bailed out early) we still
             // want to attempt the others and the final DeleteRole.
-            await TryDetachPolicy("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
-            await TryDetachPolicy("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy");
+            await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
+            await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy");
+            // Inline policy was only attached when an external function was deployed; the
+            // delete still has to fire because IAM rejects DeleteRole if any inline policy
+            // remains.
+            await TryDeleteInline(_roleName, "InvokeExternalFunction");
             try
             {
                 await _iamClient.DeleteRoleAsync(new DeleteRoleRequest { RoleName = _roleName });
@@ -449,17 +641,42 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteRole): {ex.Message}"); }
         }
 
-        async Task TryDetachPolicy(string policyArn)
+        if (_externalRoleArn != null)
+        {
+            await TryDetachManaged(_externalRoleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
+            await TryDeleteInline(_externalRoleName, "SendDurableExecutionCallback");
+            try
+            {
+                await _iamClient.DeleteRoleAsync(new DeleteRoleRequest { RoleName = _externalRoleName });
+            }
+            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteRole external): {ex.Message}"); }
+        }
+
+        async Task TryDetachManaged(string roleName, string policyArn)
         {
             try
             {
                 await _iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
                 {
-                    RoleName = _roleName,
+                    RoleName = roleName,
                     PolicyArn = policyArn
                 });
             }
             catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM Detach {policyArn}): {ex.Message}"); }
+        }
+
+        async Task TryDeleteInline(string roleName, string policyName)
+        {
+            try
+            {
+                await _iamClient.DeleteRolePolicyAsync(new DeleteRolePolicyRequest
+                {
+                    RoleName = roleName,
+                    PolicyName = policyName
+                });
+            }
+            catch (NoSuchEntityException) { /* policy was never attached — fine */ }
+            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteInline {policyName}): {ex.Message}"); }
         }
     }
 

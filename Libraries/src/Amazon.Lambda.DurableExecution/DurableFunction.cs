@@ -72,13 +72,7 @@ public static class DurableFunction
         ILambdaContext lambdaContext,
         IAmazonLambda lambdaClient)
     {
-        var serializer = lambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "In the class library programming model, register one with " +
-                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
-                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
-                "In tests, set TestLambdaContext.Serializer.");
+        var serializer = LambdaSerializerHelper.GetRequired(lambdaContext);
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
@@ -102,7 +96,12 @@ public static class DurableFunction
         await using var batcher = new CheckpointBatcher(
             checkpointToken,
             (token, ops, ct) => serviceClient.CheckpointAsync(
-                invocationInput.DurableExecutionArn, token, ops, ct));
+                invocationInput.DurableExecutionArn, token, ops,
+                // The service stamps a freshly-allocated CallbackId onto a started
+                // CALLBACK op (and may emit terminal-state callbacks/timers); merge
+                // those back into ExecutionState so the next ExecuteAsync sees them.
+                onNewOperations: state.AddOperations,
+                cancellationToken: ct));
 
         var context = new DurableContext(
             state, terminationManager, idGenerator,
@@ -138,7 +137,7 @@ public static class DurableFunction
     /// inner <see cref="AmazonServiceException"/>.
     /// </summary>
     /// <remarks>
-    /// Classification rule (mirrors <c>CheckpointError</c> in aws-durable-execution-sdk-python):
+    /// Classification rule:
     ///   - 4xx (except 429) → terminal: permanent caller-side failure (missing ARN/KMS key,
     ///     IAM denial, validation). Retrying will not fix it, so return Failed.
     ///   - 429 / 5xx / no status (network or SDK-internal) → not terminal: transient,

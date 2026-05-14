@@ -101,6 +101,52 @@ public interface IDurableContext
         string? name = null,
         ChildContextConfig? config = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Create a callback for an external system to complete. Returns an
+    /// <see cref="ICallback{T}"/> handle exposing the service-allocated
+    /// <see cref="ICallback{T}.CallbackId"/> (pass to the external system) and
+    /// <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
+    /// (await to suspend until a result arrives).
+    /// </summary>
+    /// <remarks>
+    /// The callback result is deserialized using the <see cref="ILambdaSerializer"/>
+    /// registered on <see cref="ILambdaContext.Serializer"/>. AOT and reflection-based
+    /// scenarios share this single overload — the AOT story is determined by the
+    /// registered serializer (e.g.,
+    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
+    /// <para>
+    /// Errors are deferred to <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>;
+    /// <c>CreateCallbackAsync</c> always returns successfully so user code
+    /// between <c>CreateCallbackAsync</c> and the result-await runs deterministically
+    /// across replays.
+    /// </para>
+    /// </remarks>
+    Task<ICallback<T>> CreateCallbackAsync<T>(
+        string? name = null,
+        CallbackConfig? config = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Composite operation that creates a callback, runs the supplied submitter
+    /// (which hands the <c>callbackId</c> to an external system), and suspends
+    /// until the external system delivers a result. Equivalent to manually
+    /// composing <see cref="CreateCallbackAsync{T}(string?, CallbackConfig?, System.Threading.CancellationToken)"/>
+    /// + <see cref="StepAsync{T}(System.Func{IStepContext, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
+    /// + <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
+    /// inside a child context.
+    /// </summary>
+    /// <remarks>
+    /// Submitter failures (after retries are exhausted) surface as
+    /// <see cref="CallbackSubmitterException"/>. Callback failures and timeouts
+    /// surface as <see cref="CallbackFailedException"/> /
+    /// <see cref="CallbackTimeoutException"/>.
+    /// </remarks>
+    Task<T> WaitForCallbackAsync<T>(
+        Func<string, IWaitForCallbackContext, Task> submitter,
+        string? name = null,
+        WaitForCallbackConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -574,6 +574,183 @@ public class DurableFunctionTests
         return new OrderResult { Status = "done" };
     }
 
+    [Fact]
+    public async Task WrapAsync_CreateCallbackThenWait_AllocatesCallbackIdAndSuspends()
+    {
+        // End-to-end through the real LambdaDurableServiceClient: the mock
+        // client returns NewExecutionState carrying a CallbackId on the
+        // CALLBACK START checkpoint response, and the SDK plumbs it through.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:cb-test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"OrderId\":\"o-1\"}" }
+                    }
+                }
+            }
+        };
+
+        var capturedCallbackId = (string?)null;
+        var mockClient = new MockLambdaClient
+        {
+            CheckpointHandler = req =>
+            {
+                // Echo back any CALLBACK START as a STARTED op with a service-allocated id.
+                var newOps = new List<Amazon.Lambda.Model.Operation>();
+                foreach (var u in req.Updates)
+                {
+                    if (u.Type == OperationTypes.Callback && u.Action == "START")
+                    {
+                        newOps.Add(new Amazon.Lambda.Model.Operation
+                        {
+                            Id = u.Id,
+                            Type = OperationTypes.Callback,
+                            Status = OperationStatuses.Started,
+                            Name = u.Name,
+                            CallbackDetails = new Amazon.Lambda.Model.CallbackDetails
+                            {
+                                CallbackId = "servicealloccbid"
+                            }
+                        });
+                    }
+                }
+                return new Amazon.Lambda.Model.CheckpointDurableExecutionResponse
+                {
+                    NewExecutionState = newOps.Count == 0
+                        ? null
+                        : new Amazon.Lambda.Model.CheckpointUpdatedExecutionState { Operations = newOps }
+                };
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (e, ctx) =>
+            {
+                var cb = await ctx.CreateCallbackAsync<string>(name: "approval");
+                capturedCallbackId = cb.CallbackId;
+                var status = await cb.GetResultAsync();
+                return new OrderResult { Status = status, OrderId = e.OrderId };
+            },
+            input,
+            CreateLambdaContext(),
+            mockClient);
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Equal("servicealloccbid", capturedCallbackId);
+    }
+
+    [Fact]
+    public async Task WrapAsync_ReplayCallbackSucceeded_ReturnsResultAfterSuspend()
+    {
+        // Second invocation: the callback's checkpoint is now SUCCEEDED;
+        // the workflow returns the deserialized result.
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:cb-test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"OrderId\":\"o-1\"}" }
+                    },
+                    new()
+                    {
+                        Id = IdAt(1),
+                        Type = OperationTypes.Callback,
+                        Status = OperationStatuses.Succeeded,
+                        Name = "approval",
+                        CallbackDetails = new CallbackDetails
+                        {
+                            CallbackId = "servicealloccbid",
+                            Result = "\"approved\""
+                        }
+                    }
+                }
+            }
+        };
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (e, ctx) =>
+            {
+                var cb = await ctx.CreateCallbackAsync<string>(name: "approval");
+                var status = await cb.GetResultAsync();
+                return new OrderResult { Status = status, OrderId = e.OrderId };
+            },
+            input,
+            CreateLambdaContext(),
+            new MockLambdaClient());
+
+        Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        Assert.NotNull(output.Result);
+        var result = JsonSerializer.Deserialize<OrderResult>(output.Result!);
+        Assert.Equal("approved", result!.Status);
+    }
+
+    [Fact]
+    public async Task WrapAsync_ReplayDeterminism_CallbackIdStableAcrossInvocations()
+    {
+        // First invocation allocates a callback ID via the mock; in a real run
+        // that ID would be persisted in the service's checkpoint state and
+        // returned to the second invocation via InitialExecutionState. Verify
+        // the same ID survives that round-trip (we model "round-trip" by
+        // replaying with a STARTED checkpoint that carries the same ID).
+        const string id = "stablecbidreplay";
+        var input = new DurableExecutionInvocationInput
+        {
+            DurableExecutionArn = "arn:test",
+            InitialExecutionState = new InitialExecutionState
+            {
+                Operations = new List<Operation>
+                {
+                    new()
+                    {
+                        Id = "exec-0",
+                        Type = OperationTypes.Execution,
+                        Status = OperationStatuses.Started,
+                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"OrderId\":\"o-1\"}" }
+                    },
+                    new()
+                    {
+                        Id = IdAt(1),
+                        Type = OperationTypes.Callback,
+                        Status = OperationStatuses.Started,
+                        Name = "approval",
+                        CallbackDetails = new CallbackDetails { CallbackId = id }
+                    }
+                }
+            }
+        };
+
+        string? observed = null;
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (e, ctx) =>
+            {
+                var cb = await ctx.CreateCallbackAsync<string>(name: "approval");
+                observed = cb.CallbackId;
+                var status = await cb.GetResultAsync();
+                return new OrderResult { Status = status, OrderId = e.OrderId };
+            },
+            input,
+            CreateLambdaContext(),
+            new MockLambdaClient());
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Equal(id, observed);
+    }
+
     private static async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
         var validation = await context.StepAsync(

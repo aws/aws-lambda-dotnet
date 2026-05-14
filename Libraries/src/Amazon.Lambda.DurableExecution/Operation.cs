@@ -184,6 +184,9 @@ public static class OperationSubTypes
     /// <summary>Callback sub-type.</summary>
     public const string Callback = "Callback";
 
+    /// <summary>Wait-for-callback sub-type.</summary>
+    public const string WaitForCallback = "WaitForCallback";
+
     /// <summary>Chained-invoke sub-type.</summary>
     public const string ChainedInvoke = "ChainedInvoke";
 
@@ -217,4 +220,7 @@ public static class OperationStatuses
 
     /// <summary>The operation was stopped.</summary>
     public const string Stopped = "STOPPED";
+
+    /// <summary>The operation timed out (e.g. callback or chained invoke timeout).</summary>
+    public const string TimedOut = "TIMED_OUT";
 }

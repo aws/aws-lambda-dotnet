@@ -66,13 +66,7 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "In the class library programming model, register one with " +
-                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
-                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
-                "In tests, set TestLambdaContext.Serializer.");
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
@@ -131,13 +125,7 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "In the class library programming model, register one with " +
-                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
-                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
-                "In tests, set TestLambdaContext.Serializer.");
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
 
@@ -154,6 +142,211 @@ internal sealed class DurableContext : IDurableContext
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
+
+    public Task<ICallback<T>> CreateCallbackAsync<T>(
+        string? name = null,
+        CallbackConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunCallback<T>(name, config, cancellationToken);
+
+    private Task<ICallback<T>> RunCallback<T>(
+        string? name,
+        CallbackConfig? config,
+        CancellationToken cancellationToken)
+    {
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+
+        var operationId = _idGenerator.NextId();
+        var op = new CallbackOperation<T>(
+            operationId, name, _idGenerator.ParentId, config, serializer,
+            _state, _terminationManager, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
+
+    public Task<T> WaitForCallbackAsync<T>(
+        Func<string, IWaitForCallbackContext, Task> submitter,
+        string? name = null,
+        WaitForCallbackConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunWaitForCallback<T>(submitter, name, config, cancellationToken);
+
+    /// <summary>
+    /// Composes WaitForCallback over RunInChildContextAsync + CreateCallbackAsync
+    /// + StepAsync(submitter) + callback.GetResultAsync.
+    /// </summary>
+    /// <remarks>
+    /// Sub-operation naming follows kebab-style: <c>"{name}-callback"</c> and
+    /// <c>"{name}-submitter"</c>. When the parent <paramref name="name"/> is null,
+    /// the inner ops are also nameless (no leading hyphen).
+    /// <para>
+    /// <see cref="ChildContextConfig.ErrorMapping"/> remaps a submitter
+    /// <see cref="StepException"/> to <see cref="CallbackSubmitterException"/>.
+    /// Callback errors (<see cref="CallbackException"/>) pass through unchanged.
+    /// </para>
+    /// </remarks>
+    private Task<T> RunWaitForCallback<T>(
+        Func<string, IWaitForCallbackContext, Task> submitter,
+        string? name,
+        WaitForCallbackConfig? config,
+        CancellationToken cancellationToken)
+    {
+        var callbackName = name == null ? null : $"{name}-callback";
+        var submitterName = name == null ? null : $"{name}-submitter";
+
+        var callbackConfig = config == null ? null : new CallbackConfig
+        {
+            Timeout = config.Timeout,
+            HeartbeatTimeout = config.HeartbeatTimeout,
+        };
+
+        var stepConfig = config?.RetryStrategy == null
+            ? null
+            : new StepConfig { RetryStrategy = config.RetryStrategy };
+
+        // Delegate to RunInChildContextAsync; the inner CreateCallbackAsync and
+        // StepAsync calls each pull the registered ILambdaSerializer from
+        // ILambdaContext.Serializer, so AOT and reflection-based scenarios share
+        // the same code path.
+        return RunInChildContextAsync<T>(
+            async childCtx =>
+            {
+                var callback = await childCtx.CreateCallbackAsync<T>(
+                    name: callbackName,
+                    config: callbackConfig,
+                    cancellationToken: cancellationToken);
+
+                await childCtx.StepAsync(
+                    async (stepCtx) =>
+                    {
+                        var submitterCtx = new WaitForCallbackContext(stepCtx.Logger);
+                        await submitter(callback.CallbackId, submitterCtx);
+                    },
+                    name: submitterName,
+                    config: stepConfig,
+                    cancellationToken: cancellationToken);
+
+                return await callback.GetResultAsync(cancellationToken);
+            },
+            name,
+            new ChildContextConfig
+            {
+                SubType = OperationSubTypes.WaitForCallback,
+                ErrorMapping = MapWaitForCallbackException,
+            },
+            cancellationToken);
+    }
+
+    private static Exception MapWaitForCallbackException(Exception ex)
+    {
+        // Callback errors are already user-meaningful (CallbackFailed/Timeout
+        // from inside the callback await). Pass through.
+        if (ex is CallbackException) return ex;
+
+        // The ChildContextOperation wraps thrown exceptions in
+        // ChildContextException; unwrap to surface the underlying cause.
+        if (ex is ChildContextException childEx)
+        {
+            // CallbackException thrown from GetResultAsync (callback completed
+            // with FAILED/TIMED_OUT) — surface directly.
+            //
+            // Fresh-execution path: InnerException is the live exception object.
+            // Replay path: InnerException is null but ErrorType carries the string.
+            if (childEx.InnerException is CallbackException nestedLive)
+                return nestedLive;
+            if (IsCallbackErrorTypeString(childEx.ErrorType))
+            {
+                // Replay-side reconstruction: preserve subclass fidelity by
+                // dispatching on the stored ErrorType FullName so a stored
+                // CallbackTimeoutException remaps to CallbackTimeoutException
+                // (not the more generic CallbackFailedException).
+                return BuildCallbackExceptionForReplay(childEx);
+            }
+
+            // Submitter step exhausted retries → wrap as CallbackSubmitterException.
+            // Fresh path: InnerException is the live StepException.
+            if (childEx.InnerException is StepException stepLive)
+            {
+                return new CallbackSubmitterException(stepLive.Message, stepLive)
+                {
+                    ErrorType = stepLive.ErrorType,
+                    ErrorData = stepLive.ErrorData,
+                    OriginalStackTrace = stepLive.OriginalStackTrace,
+                };
+            }
+            // Replay path: InnerException is null; ErrorType is the type string.
+            if (childEx.ErrorType == typeof(StepException).FullName)
+            {
+                return new CallbackSubmitterException(childEx.Message, childEx)
+                {
+                    ErrorType = childEx.ErrorType,
+                    ErrorData = childEx.ErrorData,
+                    OriginalStackTrace = childEx.OriginalStackTrace,
+                };
+            }
+        }
+
+        // Anything else — surface unchanged so the user sees the original cause.
+        return ex;
+    }
+
+    private static CallbackException BuildCallbackExceptionForReplay(ChildContextException childEx)
+    {
+        // Dispatch on the stored ErrorType FullName to preserve the original
+        // subclass across replays. Caller has already verified
+        // IsCallbackErrorTypeString(childEx.ErrorType) is true.
+        if (childEx.ErrorType == typeof(CallbackTimeoutException).FullName)
+        {
+            return new CallbackTimeoutException(childEx.Message, childEx)
+            {
+                ErrorType = childEx.ErrorType,
+                ErrorData = childEx.ErrorData,
+                OriginalStackTrace = childEx.OriginalStackTrace,
+            };
+        }
+        if (childEx.ErrorType == typeof(CallbackSubmitterException).FullName)
+        {
+            return new CallbackSubmitterException(childEx.Message, childEx)
+            {
+                ErrorType = childEx.ErrorType,
+                ErrorData = childEx.ErrorData,
+                OriginalStackTrace = childEx.OriginalStackTrace,
+            };
+        }
+        if (childEx.ErrorType == typeof(CallbackException).FullName)
+        {
+            return new CallbackException(childEx.Message, childEx)
+            {
+                ErrorType = childEx.ErrorType,
+                ErrorData = childEx.ErrorData,
+                OriginalStackTrace = childEx.OriginalStackTrace,
+            };
+        }
+        // CallbackFailedException.FullName (or any future callback subtype not
+        // listed above) defaults to CallbackFailedException — the most general
+        // "callback failed" surface that preserves user-catchable behavior.
+        return new CallbackFailedException(childEx.Message, childEx)
+        {
+            ErrorType = childEx.ErrorType,
+            ErrorData = childEx.ErrorData,
+            OriginalStackTrace = childEx.OriginalStackTrace,
+        };
+    }
+
+    private static bool IsCallbackErrorTypeString(string? errorType) =>
+        errorType == typeof(CallbackFailedException).FullName
+        || errorType == typeof(CallbackTimeoutException).FullName
+        || errorType == typeof(CallbackSubmitterException).FullName
+        || errorType == typeof(CallbackException).FullName;
+}
+
+internal sealed class WaitForCallbackContext : IWaitForCallbackContext
+{
+    public WaitForCallbackContext(ILogger logger)
+    {
+        Logger = logger;
+    }
+
+    public ILogger Logger { get; }
 }
 
 internal sealed class DurableExecutionContext : IExecutionContext
