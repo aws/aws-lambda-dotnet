@@ -44,6 +44,10 @@ internal abstract class DurableOperation<TResult>
     {
         State.ValidateReplayConsistency(OperationId, OperationType, Name);
 
+        // Record that the workflow has reached this op. If every completed
+        // checkpointed op has now been visited, the state flips out of replay.
+        State.TrackReplay(OperationId);
+
         var existing = State.GetOperation(OperationId);
         return existing == null
             ? StartAsync(cancellationToken)

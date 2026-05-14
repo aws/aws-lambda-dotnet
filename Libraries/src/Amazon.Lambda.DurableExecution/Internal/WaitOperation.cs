@@ -41,8 +41,6 @@ internal sealed class WaitOperation : DurableOperation<object?>
 
     protected override async Task<object?> StartAsync(CancellationToken cancellationToken)
     {
-        State.EnterExecutionMode();
-
         // Sync-flush WAIT START before suspending — the service can't schedule
         // a timer for a checkpoint it hasn't received.
         await EnqueueAsync(new SdkOperationUpdate

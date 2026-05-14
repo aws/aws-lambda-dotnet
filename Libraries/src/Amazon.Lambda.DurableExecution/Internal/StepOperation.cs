@@ -50,10 +50,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
     protected override string OperationType => OperationTypes.Step;
 
     protected override Task<T> StartAsync(CancellationToken cancellationToken)
-    {
-        State.EnterExecutionMode();
-        return ExecuteFunc(cancellationToken);
-    }
+        => ExecuteFunc(cancellationToken);
 
     protected override Task<T> ReplayAsync(Operation existing, CancellationToken cancellationToken)
     {
@@ -73,7 +70,6 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 // STARTED/READY/PENDING from a prior invocation — no retry logic
                 // in this commit, so fall through and execute fresh. (Future work
                 // on retries will replace this default with explicit arms.)
-                State.EnterExecutionMode();
                 return ExecuteFunc(cancellationToken);
         }
     }
