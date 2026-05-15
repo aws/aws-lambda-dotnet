@@ -20,7 +20,7 @@ if (!($AwsPowerShellFunctionEnvName))
 
 if (!($AwsPowerShellDefaultSdkVersion))
 {
-    New-Variable -Name AwsPowerShellDefaultSdkVersion -Value '7.5.4' -Option Constant
+    New-Variable -Name AwsPowerShellDefaultSdkVersion -Value '7.6.0' -Option Constant
 }
 
 if (!($AwsPowerShellTargetFramework))

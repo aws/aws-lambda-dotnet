@@ -27,7 +27,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// ELB Application Load Balancer
         /// </summary>
-        ApplicationLoadBalancer
+        ApplicationLoadBalancer,
+
+        /// <summary>
+        /// API Gateway WebSocket API
+        /// </summary>
+        WebsocketApi
     }
 
     /// <summary>
@@ -167,6 +172,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 LambdaEventSource.HttpApi => typeof(APIGatewayHttpApiV2LambdaRuntimeSupportServer),
                 LambdaEventSource.RestApi => typeof(APIGatewayRestApiLambdaRuntimeSupportServer),
                 LambdaEventSource.ApplicationLoadBalancer => typeof(ApplicationLoadBalancerLambdaRuntimeSupportServer),
+                LambdaEventSource.WebsocketApi => typeof(APIGatewayWebsocketApiLambdaRuntimeSupportServer),
                 _ => throw new ArgumentException($"Event source type {eventSource} unknown")
             };
 

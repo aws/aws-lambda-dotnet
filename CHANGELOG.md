@@ -1,3 +1,16 @@
+## Release 2026-05-15
+
+### Amazon.Lambda.AspNetCoreServer (10.1.0)
+* Add APIGatewayWebsocketApiProxyFunction (and TStartup variant) so API Gateway WebSocket APIs can be hosted via LambdaServer (DI, controllers). WebSocket events are dispatched as POST requests whose path is the RouteKey, allowing controller actions like [HttpPost("$default")] to handle them.
+* Expose ParseHttpPath, ParseHttpMethod, and AddMissingRequestHeaders as protected virtual hooks on APIGatewayProxyFunction so subclasses can customize how the API Gateway request is mapped onto the ASP.NET Core request feature.
+### Amazon.Lambda.AspNetCoreServer.Hosting (2.1.0)
+* Add LambdaEventSource.WebsocketApi so AddAWSLambdaHosting can wire ASP.NET Core minimal APIs and controllers up to API Gateway WebSocket events.
+
+## Release 2026-05-15
+
+### AWSLambdaPSCore PowerShell Module (5.0.1)
+* Fix dotnet10 runtime failures by updating template package references to versions with net10.0 assets. Bumped Amazon.Lambda.PowerShellHost from 3.0.3 to 4.0.0, Amazon.Lambda.Core from 2.8.1 to 3.0.0 (required transitively by PowerShellHost 4.0.0), and the default Microsoft.PowerShell.SDK from 7.5.4 to 7.6.0.
+
 ## Release 2026-05-13
 
 ### Amazon.Lambda.TestTool (0.14.1)
