@@ -12,7 +12,9 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+#pragma warning disable AWSLAMBDA001 // ILambdaContext.Serializer is preview; this is the test that proves it works.
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.Serialization.Json;
 using System;
 using System.Collections.Generic;
@@ -31,36 +33,52 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     {
         private static readonly JsonSerializer SharedSerializer = new JsonSerializer();
 
+        private readonly TestEnvironmentVariables _environmentVariables;
         private readonly LambdaEnvironment _lambdaEnvironment;
         private readonly RuntimeApiHeaders _runtimeApiHeaders;
+        private readonly Dictionary<string, IEnumerable<string>> _headers;
 
         public LambdaContextSerializerTests()
         {
-            var environmentVariables = new TestEnvironmentVariables();
-            _lambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            _environmentVariables = new TestEnvironmentVariables();
+            _lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
 
-            var headers = new Dictionary<string, IEnumerable<string>>
+            _headers = new Dictionary<string, IEnumerable<string>>
             {
                 [RuntimeApiHeaders.HeaderAwsRequestId] = new[] { "request-id" },
                 [RuntimeApiHeaders.HeaderInvokedFunctionArn] = new[] { "invoked-function-arn" }
             };
-            _runtimeApiHeaders = new RuntimeApiHeaders(headers);
+            _runtimeApiHeaders = new RuntimeApiHeaders(_headers);
         }
 
         [Fact]
-        public void LambdaContext_Serializer_DefaultsToNull_WhenNotSupplied()
+        public void LambdaContext_Serializer_DefaultsToNull()
         {
-            var context = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+            var context = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new LogLevelLoggerWriter(new SystemEnvironmentVariables()));
 
             Assert.Null(context.Serializer);
         }
 
         [Fact]
-        public void LambdaContext_Serializer_ReturnsConstructorArgument()
+        public void LambdaContextSerializerIsolated_TrySetSerializer_PopulatesProperty()
         {
-            var context = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()), SharedSerializer);
+            // The Isolated shim is the one place RuntimeSupport touches
+            // ILambdaContext.Serializer; everything else routes through this method
+            // so a TypeLoadException from a stale user-side Amazon.Lambda.Core can be
+            // caught at the call site.
+            var context = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+
+            LambdaContextSerializerIsolated.TrySetSerializer(context, SharedSerializer);
 
             Assert.Same(SharedSerializer, context.Serializer);
+        }
+
+        [Fact]
+        public void LambdaContextSerializerIsolated_TrySetSerializer_NullContext_DoesNotThrow()
+        {
+            // The shim is called on every invocation; a defensive null-check keeps it
+            // total even if a future refactor passes a non-LambdaContext implementation.
+            LambdaContextSerializerIsolated.TrySetSerializer(null, SharedSerializer);
         }
 
         [Fact]
@@ -88,7 +106,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             // One sample per overload family (Func/Action × Task/non-Task × in/out × ILambdaContext)
             // is enough — they share the same field-assignment line. This guards against future
             // overloads being added without setting Serializer.
-
             using (var w = HandlerWrapper.GetHandlerWrapper<PocoInput>((input) => Task.CompletedTask, SharedSerializer))
                 Assert.Same(SharedSerializer, w.Serializer);
 
@@ -114,14 +131,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task HandlerWrapper_HandlerSeesSerializerOnContext()
+        public async Task LambdaBootstrap_InvokeOnce_SetsSerializerOnContext()
         {
-            // End-to-end: invoke a handler through the wrapper machinery and confirm
-            // the user delegate sees context.Serializer == registered serializer.
-            //
-            // This validates the LambdaBootstrap → RuntimeApiClient → LambdaContext path
-            // by directly wiring a LambdaContext that carries the serializer (the same
-            // shape the bootstrap produces in production).
+            // End-to-end: a HandlerWrapper-backed bootstrap invokes once against a test
+            // RuntimeApiClient. The user's handler reads context.Serializer mid-invocation
+            // and must see the registered instance — proving SetSerializerOnContext fires
+            // through the Isolated shim during the invoke loop.
             ILambdaSerializer observed = null;
             using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(
                 (input, ctx) =>
@@ -131,43 +146,38 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 },
                 SharedSerializer);
 
-            var inputBytes = SerializeToBytes(new PocoInput { InputInt = 1, InputString = "x" });
-            var invocation = new InvocationRequest
+            using var bootstrap = new LambdaBootstrap(handlerWrapper);
+            var testClient = new TestRuntimeApiClient(_environmentVariables, _headers)
             {
-                InputStream = new MemoryStream(inputBytes),
-                LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()), handlerWrapper.Serializer)
+                FunctionInput = SerializeToBytes(new PocoInput { InputInt = 1, InputString = "x" })
             };
+            bootstrap.Client = testClient;
 
-            await handlerWrapper.Handler(invocation);
+            await bootstrap.InvokeOnceAsync();
 
             Assert.Same(SharedSerializer, observed);
         }
 
         [Fact]
-        public void LambdaBootstrap_ConstructedWithHandlerWrapper_PlumbsSerializerToRuntimeApiClient()
+        public async Task LambdaBootstrap_InvokeOnce_RawStreamHandler_LeavesSerializerNull()
         {
-            // The bootstrap copies HandlerWrapper.Serializer onto its internal
-            // RuntimeApiClient.Serializer; that field is what the per-invocation
-            // LambdaContext gets.
-            using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(
-                (input, ctx) => Task.FromResult(new PocoOutput()),
-                SharedSerializer);
+            // Raw-stream handlers don't register a serializer — context.Serializer must
+            // stay null even after the invoke loop runs.
+            ILambdaSerializer observed = SharedSerializer; // start non-null to prove it's set to null
+            using var handlerWrapper = HandlerWrapper.GetHandlerWrapper(
+                (Func<Stream, ILambdaContext, Task>)((input, ctx) =>
+                {
+                    observed = ctx.Serializer;
+                    return Task.CompletedTask;
+                }));
 
             using var bootstrap = new LambdaBootstrap(handlerWrapper);
+            var testClient = new TestRuntimeApiClient(_environmentVariables, _headers);
+            bootstrap.Client = testClient;
 
-            var runtimeApiClient = Assert.IsType<RuntimeApiClient>(bootstrap.Client);
-            Assert.Same(SharedSerializer, runtimeApiClient.Serializer);
-        }
+            await bootstrap.InvokeOnceAsync();
 
-        [Fact]
-        public void LambdaBootstrap_ConstructedWithRawHandler_HasNullSerializerOnRuntimeApiClient()
-        {
-            // Users who construct LambdaBootstrap directly with a LambdaBootstrapHandler
-            // bypass HandlerWrapper. There's no serializer to capture, so the field stays null.
-            using var bootstrap = new LambdaBootstrap(_ => Task.FromResult(new InvocationResponse(new MemoryStream(), false)));
-
-            var runtimeApiClient = Assert.IsType<RuntimeApiClient>(bootstrap.Client);
-            Assert.Null(runtimeApiClient.Serializer);
+            Assert.Null(observed);
         }
 
         private static byte[] SerializeToBytes<T>(T value)

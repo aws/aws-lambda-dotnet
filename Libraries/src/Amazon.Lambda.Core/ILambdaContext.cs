@@ -1,6 +1,7 @@
 namespace Amazon.Lambda.Core
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Object that allows you to access useful information available within
@@ -97,13 +98,22 @@ namespace Amazon.Lambda.Core
         string TraceId { get { return string.Empty; } }
 
         /// <summary>
-        /// The Lambda serializer registered for the current invocation. When the function
-        /// is run via <c>Amazon.Lambda.RuntimeSupport</c>, this is the same
-        /// <see cref="ILambdaSerializer"/> instance passed to
-        /// <c>LambdaBootstrapBuilder.Create</c> / <c>HandlerWrapper.GetHandlerWrapper</c>,
-        /// allowing user code to reuse it for ad-hoc serialization. Can be null
-        /// when the runtime did not register a serializer (e.g., raw-stream handlers).
+        /// The <see cref="ILambdaSerializer"/> the Lambda function registered with the
+        /// runtime — either the instance passed to
+        /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c> /
+        /// <c>HandlerWrapper.GetHandlerWrapper(handler, serializer)</c>, or the type set
+        /// via <c>[assembly: LambdaSerializer(typeof(...))]</c> in class-library mode.
+        /// User code can reuse it for ad-hoc (de)serialization without re-instantiating.
+        /// Can be null when the function did not register a serializer (e.g., raw-stream
+        /// handlers).
         /// </summary>
+        /// <remarks>
+        /// <para><b>Preview API.</b> Class-library mode requires an updated managed
+        /// Lambda runtime to populate this property; until that ships, the value will
+        /// be null when running in class-library mode. The <see cref="ExperimentalAttribute"/>
+        /// is applied to surface this caveat at the call site.</para>
+        /// </remarks>
+        [Experimental("AWSLAMBDA001")]
         ILambdaSerializer Serializer { get { return null; } }
 #endif
     }

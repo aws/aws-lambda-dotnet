@@ -31,31 +31,19 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
         private readonly IConsoleLoggerWriter _consoleLogger;
-        private readonly ILambdaSerializer _serializer;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
-            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger, serializer: null)
-        {
-        }
-
-        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger, ILambdaSerializer serializer)
-            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger, serializer)
+            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger)
         {
         }
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper, IConsoleLoggerWriter consoleLogger)
-            : this(runtimeApiHeaders, lambdaEnvironment, dateTimeHelper, consoleLogger, serializer: null)
-        {
-        }
-
-        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper, IConsoleLoggerWriter consoleLogger, ILambdaSerializer serializer)
         {
 
             _lambdaEnvironment = lambdaEnvironment;
             _runtimeApiHeaders = runtimeApiHeaders;
             _dateTimeHelper = dateTimeHelper;
             _consoleLogger = consoleLogger;
-            _serializer = serializer;
 
             int.TryParse(_lambdaEnvironment.FunctionMemorySize, out _memoryLimitInMB);
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
@@ -89,7 +77,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string TenantId => _runtimeApiHeaders.TenantId;
 
-        public ILambdaSerializer Serializer => _serializer;
+        /// <summary>
+        /// The serializer the Lambda function registered with the runtime, surfaced via
+        /// <see cref="ILambdaContext.Serializer"/>. Set per-invocation by
+        /// <see cref="Helpers.LambdaContextSerializerIsolated.TrySetSerializer"/>; the
+        /// Isolated shim exists so a stale <c>Amazon.Lambda.Core</c> in the user's function
+        /// (one without <c>ILambdaContext.Serializer</c>) cannot break the invoke loop.
+        /// </summary>
+        public ILambdaSerializer Serializer { get; internal set; }
 
         internal IRuntimeApiHeaders RuntimeApiHeaders => _runtimeApiHeaders;
     }

@@ -52,7 +52,16 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private readonly LambdaBootstrapInitializer _initializer;
         private readonly LambdaBootstrapHandler _handler;
+        // Mutable so RuntimeSupportInitializer (class-library mode) can set this after
+        // UserCodeLoader.Init resolves [assembly: LambdaSerializer]. Read on every
+        // invocation to populate ILambdaContext.Serializer via the Isolated shim.
+        private Amazon.Lambda.Core.ILambdaSerializer _serializer;
         private readonly bool _ownsHttpClient;
+        // Set true once a TypeLoadException/MissingMethodException has surfaced from the
+        // Isolated serializer shim, indicating the user's Amazon.Lambda.Core lacks
+        // ILambdaContext.Serializer. After that point we stop attempting to populate it
+        // for every subsequent invocation in this process.
+        private volatile bool _disableSerializerOnContext;
         private readonly InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
         private readonly HttpClient _httpClient;
@@ -61,6 +70,18 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly IEnvironmentVariables _environmentVariables;
 
         internal IRuntimeApiClient Client { get; set; }
+
+        /// <summary>
+        /// Set the serializer to surface on <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/>
+        /// for each invocation. Used by <see cref="RuntimeSupportInitializer"/> to plumb the
+        /// serializer constructed from <c>[assembly: LambdaSerializer]</c> after
+        /// <see cref="UserCodeLoader"/> has initialized. Setter is internal — public
+        /// callers register the serializer via <see cref="HandlerWrapper"/> instead.
+        /// </summary>
+        internal void SetSerializer(Amazon.Lambda.Core.ILambdaSerializer serializer)
+        {
+            _serializer = serializer;
+        }
 
 
         /// <summary>
@@ -180,13 +201,12 @@ namespace Amazon.Lambda.RuntimeSupport
 
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            _serializer = serializer;
             _ownsHttpClient = ownsHttpClient;
             _initializer = initializer;
             _httpClient.Timeout = RuntimeApiHttpTimeout;
             _environmentVariables = environmentVariables ?? new SystemEnvironmentVariables();
-            var runtimeApiClient = new RuntimeApiClient(_environmentVariables, _httpClient, lambdaBootstrapOptions);
-            runtimeApiClient.Serializer = serializer;
-            Client = runtimeApiClient;
+            Client = new RuntimeApiClient(_environmentVariables, _httpClient, lambdaBootstrapOptions);
             _configuration = configuration ?? LambdaBootstrapConfiguration.GetDefaultConfiguration(_environmentVariables);
 
             _awsSdkTraceIdSetter = Utils.FindAWSSDKTraceIdSetter(_environmentVariables);
@@ -368,6 +388,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
+                    SetSerializerOnContext(impl);
                 }
 
                 // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
@@ -481,6 +502,39 @@ namespace Amazon.Lambda.RuntimeSupport
                 // This is the default Lambda runtime mode blocking till the event has been
                 // fully processed and then another event will be asked for.
                 await processingFunc();
+            }
+        }
+
+        private void SetSerializerOnContext(LambdaContext context)
+        {
+            // No serializer was registered with this bootstrap (raw-stream handler, or
+            // the user constructed LambdaBootstrap with a LambdaBootstrapHandler directly).
+            // Nothing to surface — leave context.Serializer null.
+            if (_serializer == null) return;
+
+            // A previous invocation hit a TypeLoadException / MissingMethodException from
+            // an older Amazon.Lambda.Core in the user's function. Don't keep trying.
+            if (_disableSerializerOnContext) return;
+
+            try
+            {
+                LambdaContextSerializerIsolated.TrySetSerializer(context, _serializer);
+            }
+            catch (MissingMethodException)
+            {
+                _disableSerializerOnContext = true;
+                _logger.LogInformation(
+                    "Failed to set the serializer on ILambdaContext.Serializer due to the version of " +
+                    "Amazon.Lambda.Core referenced by the Lambda function being out of date. The serializer " +
+                    "will not be exposed via ILambdaContext for the remainder of this process.");
+            }
+            catch (TypeLoadException)
+            {
+                _disableSerializerOnContext = true;
+                _logger.LogInformation(
+                    "Failed to set the serializer on ILambdaContext.Serializer due to the version of " +
+                    "Amazon.Lambda.Core referenced by the Lambda function being out of date. The serializer " +
+                    "will not be exposed via ILambdaContext for the remainder of this process.");
             }
         }
 
