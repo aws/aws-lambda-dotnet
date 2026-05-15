@@ -42,7 +42,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <see cref="ILambdaContext"/>, allowing user code to reuse it.
         /// Null for handlers that don't take a typed input/output.
         /// </summary>
-        public ILambdaSerializer Serializer { get; private set; }
+        internal ILambdaSerializer Serializer { get; set; }
 
         private HandlerWrapper(LambdaBootstrapHandler handler)
         {
