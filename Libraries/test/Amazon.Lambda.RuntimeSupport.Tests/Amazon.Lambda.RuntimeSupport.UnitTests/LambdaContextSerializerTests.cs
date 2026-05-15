@@ -61,28 +61,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public void LambdaContextSerializerIsolated_TrySetSerializer_PopulatesProperty()
-        {
-            // The Isolated shim is the one place RuntimeSupport touches
-            // ILambdaContext.Serializer; everything else routes through this method
-            // so a TypeLoadException from a stale user-side Amazon.Lambda.Core can be
-            // caught at the call site.
-            var context = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new LogLevelLoggerWriter(new SystemEnvironmentVariables()));
-
-            LambdaContextSerializerIsolated.TrySetSerializer(context, SharedSerializer);
-
-            Assert.Same(SharedSerializer, context.Serializer);
-        }
-
-        [Fact]
-        public void LambdaContextSerializerIsolated_TrySetSerializer_NullContext_DoesNotThrow()
-        {
-            // The shim is called on every invocation; a defensive null-check keeps it
-            // total even if a future refactor passes a non-LambdaContext implementation.
-            LambdaContextSerializerIsolated.TrySetSerializer(null, SharedSerializer);
-        }
-
-        [Fact]
         public void HandlerWrapper_PocoInOut_ExposesSerializer()
         {
             using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(
@@ -138,7 +116,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             // End-to-end: a HandlerWrapper-backed bootstrap invokes once against a test
             // RuntimeApiClient. The user's handler reads context.Serializer mid-invocation
             // and must see the registered instance — proving SetSerializerOnContext fires
-            // through the Isolated shim during the invoke loop.
+            // during the invoke loop.
             ILambdaSerializer observed = null;
             using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(
                 (input, ctx) =>

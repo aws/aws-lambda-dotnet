@@ -54,14 +54,9 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly LambdaBootstrapHandler _handler;
         // Mutable so RuntimeSupportInitializer (class-library mode) can set this after
         // UserCodeLoader.Init resolves [assembly: LambdaSerializer]. Read on every
-        // invocation to populate ILambdaContext.Serializer via the Isolated shim.
+        // invocation to populate ILambdaContext.Serializer.
         private Amazon.Lambda.Core.ILambdaSerializer _serializer;
         private readonly bool _ownsHttpClient;
-        // Set true once a TypeLoadException/MissingMethodException has surfaced from the
-        // Isolated serializer shim, indicating the user's Amazon.Lambda.Core lacks
-        // ILambdaContext.Serializer. After that point we stop attempting to populate it
-        // for every subsequent invocation in this process.
-        private volatile bool _disableSerializerOnContext;
         private readonly InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
         private readonly HttpClient _httpClient;
@@ -512,30 +507,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // Nothing to surface — leave context.Serializer null.
             if (_serializer == null) return;
 
-            // A previous invocation hit a TypeLoadException / MissingMethodException from
-            // an older Amazon.Lambda.Core in the user's function. Don't keep trying.
-            if (_disableSerializerOnContext) return;
-
-            try
-            {
-                LambdaContextSerializerIsolated.TrySetSerializer(context, _serializer);
-            }
-            catch (MissingMethodException)
-            {
-                _disableSerializerOnContext = true;
-                _logger.LogInformation(
-                    "Failed to set the serializer on ILambdaContext.Serializer due to the version of " +
-                    "Amazon.Lambda.Core referenced by the Lambda function being out of date. The serializer " +
-                    "will not be exposed via ILambdaContext for the remainder of this process.");
-            }
-            catch (TypeLoadException)
-            {
-                _disableSerializerOnContext = true;
-                _logger.LogInformation(
-                    "Failed to set the serializer on ILambdaContext.Serializer due to the version of " +
-                    "Amazon.Lambda.Core referenced by the Lambda function being out of date. The serializer " +
-                    "will not be exposed via ILambdaContext for the remainder of this process.");
-            }
+            context.Serializer = _serializer;
         }
 
         volatile bool _disableTraceProvider = false;

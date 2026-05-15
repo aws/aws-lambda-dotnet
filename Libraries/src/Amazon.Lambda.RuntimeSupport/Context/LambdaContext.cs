@@ -79,10 +79,8 @@ namespace Amazon.Lambda.RuntimeSupport
 
         /// <summary>
         /// The serializer the Lambda function registered with the runtime, surfaced via
-        /// <see cref="ILambdaContext.Serializer"/>. Set per-invocation by
-        /// <see cref="Helpers.LambdaContextSerializerIsolated.TrySetSerializer"/>; the
-        /// Isolated shim exists so a stale <c>Amazon.Lambda.Core</c> in the user's function
-        /// (one without <c>ILambdaContext.Serializer</c>) cannot break the invoke loop.
+        /// <see cref="ILambdaContext.Serializer"/>. Assigned per-invocation by
+        /// <see cref="LambdaBootstrap"/>.
         /// </summary>
         public ILambdaSerializer Serializer { get; internal set; }
 
