@@ -8,7 +8,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     /// <summary>
     /// Wrapper around the call that sets <see cref="LambdaContext.Serializer"/>.
-    /// The user's Lambda function may reference an older <see cref="Amazon.Lambda.Core"/>
+    /// The user's Lambda function may reference an older <c>Amazon.Lambda.Core</c>
     /// that does not declare <c>ILambdaContext.Serializer</c>. By isolating the assignment
     /// in its own static method, the JIT only attempts to resolve the property when this
     /// method is called — letting the invoke loop wrap it in <c>try/catch</c> for

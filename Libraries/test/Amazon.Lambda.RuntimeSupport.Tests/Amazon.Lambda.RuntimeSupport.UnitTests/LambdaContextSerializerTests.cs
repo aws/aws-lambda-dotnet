@@ -14,6 +14,7 @@
  */
 #pragma warning disable AWSLAMBDA001 // ILambdaContext.Serializer is preview; this is the test that proves it works.
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.Serialization.Json;
 using System;
@@ -101,11 +102,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public void HandlerWrapper_AllSerializerOverloads_PropagateSerializer()
+        public void HandlerWrapper_SerializerOverloadFamilies_PropagateSerializer()
         {
-            // One sample per overload family (Func/Action × Task/non-Task × in/out × ILambdaContext)
-            // is enough — they share the same field-assignment line. This guards against future
-            // overloads being added without setting Serializer.
+            // One sample per overload family (Func/Action × Task/non-Task × in/out × ILambdaContext) —
+            // they share the same field-assignment line. This guards against future overloads being
+            // added without setting Serializer, but only spot-checks each family rather than every
+            // overload signature.
             using (var w = HandlerWrapper.GetHandlerWrapper<PocoInput>((input) => Task.CompletedTask, SharedSerializer))
                 Assert.Same(SharedSerializer, w.Serializer);
 
@@ -178,6 +180,60 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await bootstrap.InvokeOnceAsync();
 
             Assert.Null(observed);
+        }
+
+        [Fact]
+        public void UserCodeLoader_Init_PopulatesCustomerSerializerFromAssemblyAttribute()
+        {
+            // Class-library mode: [assembly: LambdaSerializer(typeof(JsonSerializer))] on the
+            // HandlerTest assembly should make UserCodeLoader.Init resolve a JsonSerializer
+            // instance. This is what RuntimeSupportInitializer reads and pushes onto
+            // LambdaBootstrap.SetSerializer in production.
+            var ucl = new UserCodeLoader(
+                new SystemEnvironmentVariables(),
+                "HandlerTest::HandlerTest.CustomerType::ZeroInZeroOut",
+                InternalLogger.NoOpLogger);
+
+            ucl.Init(message => { });
+
+            Assert.NotNull(ucl.CustomerSerializerInstance);
+            Assert.IsType<JsonSerializer>(ucl.CustomerSerializerInstance);
+        }
+
+        [Fact]
+        public async Task LambdaBootstrap_SetSerializer_FlowsAssemblySerializerToContext()
+        {
+            // End-to-end class-library wiring: the value UserCodeLoader.Init resolves from
+            // [assembly: LambdaSerializer] is what RuntimeSupportInitializer pushes onto the
+            // bootstrap via SetSerializer, after which the invoke loop must surface it on
+            // ILambdaContext.Serializer for every invocation.
+            var ucl = new UserCodeLoader(
+                new SystemEnvironmentVariables(),
+                "HandlerTest::HandlerTest.CustomerType::ZeroInZeroOut",
+                InternalLogger.NoOpLogger);
+            ucl.Init(message => { });
+            var assemblySerializer = (ILambdaSerializer)ucl.CustomerSerializerInstance;
+
+            ILambdaSerializer observed = null;
+            using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(
+                (input, ctx) =>
+                {
+                    observed = ctx.Serializer;
+                    return Task.FromResult(new PocoOutput());
+                },
+                SharedSerializer);
+
+            using var bootstrap = new LambdaBootstrap(handlerWrapper);
+            bootstrap.SetSerializer(assemblySerializer);
+            var testClient = new TestRuntimeApiClient(_environmentVariables, _headers)
+            {
+                FunctionInput = SerializeToBytes(new PocoInput { InputInt = 1, InputString = "x" })
+            };
+            bootstrap.Client = testClient;
+
+            await bootstrap.InvokeOnceAsync();
+
+            Assert.Same(assemblySerializer, observed);
         }
 
         private static byte[] SerializeToBytes<T>(T value)

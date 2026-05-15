@@ -49,11 +49,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <summary>
         /// The serializer instance constructed from the customer's
         /// <c>[LambdaSerializer(typeof(...))]</c> attribute (if any). Populated by
-        /// <see cref="Init"/>. Typed as <see cref="object"/> here because user code may
-        /// reference an older <c>Amazon.Lambda.Core</c> than what RuntimeSupport
-        /// references — the cross-version <see cref="ILambdaSerializer"/> identity is
-        /// not guaranteed. The Isolated shim that exposes the value via
-        /// <see cref="ILambdaContext.Serializer"/> handles the cross-version cast.
+        /// <see cref="Init"/>. Typed as <see cref="object"/> here because the value is
+        /// produced via reflection in <see cref="GetSerializerObject"/> and validated
+        /// against the loaded <c>ILambdaSerializer</c> interface there;
+        /// <see cref="RuntimeSupportInitializer"/> casts it back to <c>ILambdaSerializer</c>
+        /// before handing it to <see cref="LambdaBootstrap.SetSerializer"/>.
         /// </summary>
         internal object CustomerSerializerInstance { get; private set; }
 
