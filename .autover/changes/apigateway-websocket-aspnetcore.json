@@ -1,0 +1,19 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add APIGatewayWebsocketApiProxyFunction (and TStartup variant) so API Gateway WebSocket APIs can be hosted via LambdaServer (DI, controllers). WebSocket events are dispatched as POST requests whose path is the RouteKey, allowing controller actions like [HttpPost(\"$default\")] to handle them.",
+        "Expose ParseHttpPath, ParseHttpMethod, and AddMissingRequestHeaders as protected virtual hooks on APIGatewayProxyFunction so subclasses can customize how the API Gateway request is mapped onto the ASP.NET Core request feature."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add LambdaEventSource.WebsocketApi so AddAWSLambdaHosting can wire ASP.NET Core minimal APIs and controllers up to API Gateway WebSocket events."
+      ]
+    }
+  ]
+}
