@@ -115,7 +115,7 @@ public static class DurableFunction
 
             await batcher.DrainAsync();
         }
-        catch (AmazonServiceException ex) when (IsTerminalCheckpointError(ex))
+        catch (DurableExecutionException ex) when (ex.InnerException is AmazonServiceException sdkEx && IsTerminalCheckpointError(sdkEx))
         {
             return new DurableExecutionInvocationOutput
             {
@@ -129,7 +129,11 @@ public static class DurableFunction
 
     /// <summary>
     /// Returns true for checkpoint-flush SDK errors that should fail the workflow
-    /// (Failed envelope) instead of escaping to the host (Lambda retry).
+    /// (Failed envelope) instead of escaping to the host (Lambda retry). The catch
+    /// site unwraps a <see cref="DurableExecutionException"/> first because
+    /// <see cref="Services.LambdaDurableServiceClient"/> wraps every SDK error so
+    /// user logs show durable-execution context — this method then classifies the
+    /// inner <see cref="AmazonServiceException"/>.
     /// </summary>
     /// <remarks>
     /// Classification rule (mirrors <c>CheckpointError</c> in aws-durable-execution-sdk-python):
@@ -143,11 +147,13 @@ public static class DurableFunction
     ///
     /// Only checkpoint-flush errors flow through this catch. There are two paths:
     ///   1. A flush triggered synchronously from inside a user <c>StepAsync</c> call
-    ///      (the user awaits <c>EnqueueAsync</c> → batch flush → SDK throws).
+    ///      (the user awaits <c>EnqueueAsync</c> → batch flush → SDK throws → service client
+    ///      wraps).
     ///   2. The final <see cref="CheckpointBatcher.DrainAsync"/> after the workflow returns.
     ///
-    /// State-hydration errors (<c>GetExecutionStateAsync</c>) are NOT caught here — they
-    /// propagate to the host so Lambda retries, matching Python's <c>GetExecutionStateError</c>
+    /// State-hydration errors (<c>GetExecutionStateAsync</c>) propagate as
+    /// <see cref="DurableExecutionException"/> too, but they are NOT caught here — they
+    /// flow up to the host so Lambda retries, matching Python's <c>GetExecutionStateError</c>
     /// (which extends <c>InvocationError</c>).
     ///
     /// User-code SDK errors (e.g. an SDK call inside a Step body) are caught by

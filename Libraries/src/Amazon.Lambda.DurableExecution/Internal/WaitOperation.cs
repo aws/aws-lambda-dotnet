@@ -1,3 +1,4 @@
+using Amazon.Lambda;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 using SdkWaitOptions = Amazon.Lambda.Model.WaitOptions;
 
@@ -47,7 +48,7 @@ internal sealed class WaitOperation : DurableOperation<object?>
         {
             Id = OperationId,
             Type = OperationTypes.Wait,
-            Action = "START",
+            Action = OperationAction.START,
             SubType = "Wait",
             Name = Name,
             WaitOptions = new SdkWaitOptions { WaitSeconds = _waitSeconds }

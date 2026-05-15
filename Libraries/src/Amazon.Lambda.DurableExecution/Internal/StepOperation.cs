@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using Microsoft.Extensions.Logging;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
@@ -101,7 +102,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             {
                 Id = OperationId,
                 Type = OperationTypes.Step,
-                Action = "SUCCEED",
+                Action = OperationAction.SUCCEED,
                 SubType = "Step",
                 Name = Name,
                 Payload = SerializeResult(result)
@@ -122,7 +123,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             {
                 Id = OperationId,
                 Type = OperationTypes.Step,
-                Action = "FAIL",
+                Action = OperationAction.FAIL,
                 SubType = "Step",
                 Name = Name,
                 Error = ToSdkError(ex)

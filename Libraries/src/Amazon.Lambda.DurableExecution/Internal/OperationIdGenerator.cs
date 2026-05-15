@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Amazon.Util;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
 
@@ -60,27 +61,8 @@ internal sealed class OperationIdGenerator
     public static string HashOperationId(string rawId)
     {
         var bytes = Encoding.UTF8.GetBytes(rawId);
-        Span<byte> hash = stackalloc byte[32];
-#if NET8_0_OR_GREATER
-        SHA256.HashData(bytes, hash);
-#else
-        using var sha = SHA256.Create();
-        var computed = sha.ComputeHash(bytes);
-        computed.CopyTo(hash);
-#endif
-        return ToHex(hash);
-    }
-
-    private static string ToHex(ReadOnlySpan<byte> bytes)
-    {
-        const string Hex = "0123456789abcdef";
-        var chars = new char[bytes.Length * 2];
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            chars[i * 2] = Hex[bytes[i] >> 4];
-            chars[i * 2 + 1] = Hex[bytes[i] & 0xF];
-        }
-        return new string(chars);
+        var hash = SHA256.HashData(bytes);
+        return AWSSDKUtils.ToHex(hash, lowercase: true);
     }
 
     /// <summary>

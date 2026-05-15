@@ -1,5 +1,6 @@
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.Model;
+using Amazon.Runtime;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 using SdkOperation = Amazon.Lambda.Model.Operation;
 
@@ -19,6 +20,10 @@ internal sealed class LambdaDurableServiceClient
 
     /// <summary>
     /// Flushes pending checkpoint operations to the durable execution service.
+    /// SDK errors are wrapped in <see cref="DurableExecutionException"/> so user logs
+    /// show the durable-execution context (which API call, which ARN) alongside the
+    /// underlying SDK message — instead of a bare AWSSDK stack trace with no clue
+    /// about what was being called.
     /// </summary>
     public async Task<string?> CheckpointAsync(
         string durableExecutionArn,
@@ -36,12 +41,23 @@ internal sealed class LambdaDurableServiceClient
             Updates = pendingOperations is List<SdkOperationUpdate> list ? list : pendingOperations.ToList()
         };
 
-        var response = await _lambdaClient.CheckpointDurableExecutionAsync(request, cancellationToken);
-        return response.CheckpointToken;
+        try
+        {
+            var response = await _lambdaClient.CheckpointDurableExecutionAsync(request, cancellationToken);
+            return response.CheckpointToken;
+        }
+        catch (AmazonServiceException ex)
+        {
+            throw new DurableExecutionException(
+                $"Failed to checkpoint operations for durable execution '{durableExecutionArn}': {ex.Message}",
+                ex);
+        }
     }
 
     /// <summary>
     /// Fetches additional pages of execution state when the initial state is paginated.
+    /// SDK errors are wrapped in <see cref="DurableExecutionException"/> for the same
+    /// reason as <see cref="CheckpointAsync"/>.
     /// </summary>
     public async Task<(List<Internal.Operation> Operations, string? NextMarker)> GetExecutionStateAsync(
         string durableExecutionArn,
@@ -56,7 +72,17 @@ internal sealed class LambdaDurableServiceClient
             Marker = marker
         };
 
-        var response = await _lambdaClient.GetDurableExecutionStateAsync(request, cancellationToken);
+        GetDurableExecutionStateResponse response;
+        try
+        {
+            response = await _lambdaClient.GetDurableExecutionStateAsync(request, cancellationToken);
+        }
+        catch (AmazonServiceException ex)
+        {
+            throw new DurableExecutionException(
+                $"Failed to fetch execution state for durable execution '{durableExecutionArn}' (marker '{marker}'): {ex.Message}",
+                ex);
+        }
 
         var operations = new List<Internal.Operation>();
         if (response.Operations != null)

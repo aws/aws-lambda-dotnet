@@ -455,6 +455,9 @@ public class DurableFunctionTests
     [MemberData(nameof(TerminalCheckpointErrorCases))]
     public async Task WrapAsync_CheckpointThrowsTerminal_ReturnsFailed(AmazonServiceException ex)
     {
+        // LambdaDurableServiceClient now wraps SDK exceptions in DurableExecutionException
+        // so user logs carry context (which call, which ARN). The outer message includes
+        // the inner SDK message; the classifier matches on the wrapper's InnerException.
         var input = MakeCheckpointInput();
         var mockClient = new MockLambdaClient { CheckpointThrows = ex };
 
@@ -463,7 +466,8 @@ public class DurableFunctionTests
 
         Assert.Equal(InvocationStatus.Failed, output.Status);
         Assert.NotNull(output.Error);
-        Assert.Equal(ex.Message, output.Error!.ErrorMessage);
+        Assert.Contains(ex.Message, output.Error!.ErrorMessage);
+        Assert.Contains("Failed to checkpoint", output.Error.ErrorMessage);
     }
 
     public static IEnumerable<object[]> TransientCheckpointErrorCases() => new[]
@@ -483,14 +487,19 @@ public class DurableFunctionTests
     [MemberData(nameof(TransientCheckpointErrorCases))]
     public async Task WrapAsync_CheckpointThrowsTransient_PropagatesToHost(AmazonServiceException ex)
     {
+        // Transient SDK errors escape the IsTerminalCheckpointError catch and propagate
+        // to the host as DurableExecutionException wrapping the original SDK exception
+        // — Lambda's normal retry semantics fire on the wrapper. The original SDK
+        // exception is preserved as InnerException so callers can still introspect
+        // the original status code / error code.
         var input = MakeCheckpointInput();
         var mockClient = new MockLambdaClient { CheckpointThrows = ex };
 
-        var thrown = await Assert.ThrowsAsync(ex.GetType(), () =>
+        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(() =>
             DurableFunction.WrapAsync<OrderEvent, OrderResult>(
                 SingleStepWorkflow, input, CreateLambdaContext(), mockClient));
 
-        Assert.Same(ex, thrown);
+        Assert.Same(ex, thrown.InnerException);
     }
 
     [Fact]
@@ -521,11 +530,15 @@ public class DurableFunctionTests
         var ex = MakeServiceException("ResourceNotFoundException", HttpStatusCode.NotFound, "ARN gone");
         var mockClient = new MockLambdaClient { GetExecutionStateThrows = ex };
 
-        var thrown = await Assert.ThrowsAsync<AmazonServiceException>(() =>
+        // Hydration errors are wrapped in DurableExecutionException by
+        // LambdaDurableServiceClient.GetExecutionStateAsync but are NOT caught by the
+        // IsTerminalCheckpointError filter, so they escape to the host.
+        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(() =>
             DurableFunction.WrapAsync<OrderEvent, OrderResult>(
                 MyWorkflow, input, CreateLambdaContext(), mockClient));
 
-        Assert.Same(ex, thrown);
+        Assert.Same(ex, thrown.InnerException);
+        Assert.Contains("Failed to fetch execution state", thrown.Message);
     }
 
     private static AmazonServiceException MakeServiceException(string code, HttpStatusCode status, string message)

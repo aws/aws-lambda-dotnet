@@ -8,7 +8,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <remarks>
 /// Replay tracking mirrors the Python / Java / JavaScript reference SDKs:
 /// <list type="bullet">
-///   <item>At construction the workflow is "replaying" iff any user-replayable
+///   <item>At construction the workflow is "replaying" if and only if any user-replayable
 ///       op is present. The service always sends one <c>EXECUTION</c>-type op
 ///       carrying the input payload — that's bookkeeping, not user history,
 ///       so it doesn't count.</item>
