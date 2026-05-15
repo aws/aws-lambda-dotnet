@@ -1,3 +1,8 @@
+## Release 2026-05-15
+
+### AWSLambdaPSCore PowerShell Module (5.0.1)
+* Fix dotnet10 runtime failures by updating template package references to versions with net10.0 assets. Bumped Amazon.Lambda.PowerShellHost from 3.0.3 to 4.0.0, Amazon.Lambda.Core from 2.8.1 to 3.0.0 (required transitively by PowerShellHost 4.0.0), and the default Microsoft.PowerShell.SDK from 7.5.4 to 7.6.0.
+
 ## Release 2026-05-13
 
 ### Amazon.Lambda.TestTool (0.14.1)
