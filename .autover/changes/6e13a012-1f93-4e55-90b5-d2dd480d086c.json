@@ -1,0 +1,25 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add preview ILambdaSerializer Serializer property to ILambdaContext (default-implemented to null on net8.0+) so user code can access the serializer registered with the runtime. Marked [Experimental(\"AWSLAMBDA001\")]; class-library mode requires an updated managed Lambda runtime to populate this property. The Experimental flag will be removed in a follow-up release once the managed runtime is deployed."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Propagate the registered ILambdaSerializer to the per-invocation ILambdaContext.Serializer. Surfaces the new preview ILambdaContext.Serializer (AWSLAMBDA001); the Experimental flag will be removed in a follow-up release once the managed runtime is deployed."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add Serializer setter to TestLambdaContext to mirror the new preview ILambdaContext.Serializer property. Marked [Experimental(\"AWSLAMBDA001\")]; the Experimental flag will be removed in a follow-up release once the managed runtime is deployed."
+      ]
+    }
+  ]
+}
