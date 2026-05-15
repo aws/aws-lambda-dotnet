@@ -354,10 +354,10 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
-        /// Get the http path from the request.
+        /// Determines the path that should be assigned to <see cref="IHttpRequestFeature.Path"/> for this request.
+        /// The default implementation honors <c>{proxy+}</c> resource templates and falls back to <see cref="APIGatewayProxyRequest.Path"/>.
+        /// Subclasses can override to derive the path from a different source (e.g. websocket route keys).
         /// </summary>
-        /// <param name="apiGatewayRequest"></param>
-        /// <returns>string</returns>
         protected virtual string ParseHttpPath(APIGatewayProxyRequest apiGatewayRequest)
         {
             string path = null;
@@ -389,19 +389,20 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
-        /// Get the http method from the request.
+        /// Determines the HTTP method that should be assigned to <see cref="IHttpRequestFeature.Method"/>.
+        /// The default returns <see cref="APIGatewayProxyRequest.HttpMethod"/>; subclasses can override to force
+        /// a fixed method (e.g. websocket events are always exposed as POST).
         /// </summary>
-        /// <param name="apiGatewayRequest"></param>
-        /// <returns>string</returns>
         protected virtual string ParseHttpMethod(APIGatewayProxyRequest apiGatewayRequest)
         {
             return apiGatewayRequest.HttpMethod;
         }
 
         /// <summary>
-        /// Add missing headers to request.
+        /// Adds any headers that API Gateway did not include but ASP.NET Core needs in order to route or bind the request.
+        /// The default implementation adds a synthesized <c>Host</c> header. Subclasses can override to add additional defaults
+        /// (e.g. a default <c>Content-Type</c> for websocket payloads).
         /// </summary>
-        /// <returns>IHeaderDictionary</returns>
         protected virtual IHeaderDictionary AddMissingRequestHeaders(APIGatewayProxyRequest apiGatewayRequest, IHeaderDictionary headers)
         {
             if (!headers.ContainsKey("Host"))

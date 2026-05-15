@@ -468,7 +468,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     /// <summary>
     /// IServer for handling Lambda events from an API Gateway Websocket API.
     /// </summary>
-    public class APIGatewayWebsocketApiLambdaRuntimeSupportServer : LambdaRuntimeSupportServer
+    public class APIGatewayWebsocketApiLambdaRuntimeSupportServer : APIGatewayRestApiLambdaRuntimeSupportServer
     {
         /// <summary>
         /// Create instances
@@ -480,7 +480,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         }
 
         /// <summary>
-        /// Creates HandlerWrapper for processing events from API Gateway HTTP API
+        /// Creates HandlerWrapper for processing events from API Gateway Websocket API
         /// </summary>
         /// <param name="serviceProvider"></param>
         /// <returns></returns>
@@ -491,18 +491,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             var hostingOptions = serviceProvider.GetService<HostingOptions>();
             handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
 #pragma warning restore CA2252
-            Func<APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            Func<APIGatewayEvents.APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(bufferedHandler, Serializer);
         }
 
         /// <summary>
-        /// Create the APIGatewayWebsocketApiProxyFunction passing in the ASP.NET Core application's IServiceProvider
+        /// MinimalApi variant of APIGatewayWebsocketApiProxyFunction. Reuses the REST API MinimalApi plumbing
+        /// (snapshot collectors, hosting options, PostMarshall callbacks) and applies the websocket-specific
+        /// request transformations on top.
         /// </summary>
-        public class APIGatewayWebsocketMinimalApi : APIGatewayHttpApiV2ProxyFunction
+        public class APIGatewayWebsocketMinimalApi : APIGatewayRestApiLambdaRuntimeSupportServer.APIGatewayRestApiMinimalApi
         {
-            private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
-            private readonly HostingOptions? _hostingOptions;
-
             /// <summary>
             /// Create instances
             /// </summary>
@@ -510,93 +509,24 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public APIGatewayWebsocketMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
+            }
 
-                // Retrieve HostingOptions from service provider (may be null for backward compatibility)
-                _hostingOptions = serviceProvider.GetService<HostingOptions>();
+            /// <inheritdoc/>
+            protected override string ParseHttpPath(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest)
+                => "/" + System.Net.WebUtility.UrlDecode(apiGatewayRequest.RequestContext.RouteKey ?? string.Empty);
 
-                // Apply configuration from HostingOptions if available
-                if (_hostingOptions != null)
+            /// <inheritdoc/>
+            protected override string ParseHttpMethod(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest) => "POST";
+
+            /// <inheritdoc/>
+            protected override Microsoft.AspNetCore.Http.IHeaderDictionary AddMissingRequestHeaders(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest, Microsoft.AspNetCore.Http.IHeaderDictionary headers)
+            {
+                headers = base.AddMissingRequestHeaders(apiGatewayRequest, headers);
+                if (!headers.ContainsKey("Content-Type"))
                 {
-                    // Apply binary response configuration
-                    foreach (var kvp in _hostingOptions.ContentTypeEncodings)
-                    {
-                        RegisterResponseContentEncodingForContentType(kvp.Key, kvp.Value);
-                    }
-
-                    foreach (var kvp in _hostingOptions.ContentEncodingEncodings)
-                    {
-                        RegisterResponseContentEncodingForContentEncoding(kvp.Key, kvp.Value);
-                    }
-
-                    DefaultResponseContentEncoding = _hostingOptions.DefaultResponseContentEncoding;
-
-                    // Apply exception handling configuration
-                    IncludeUnhandledExceptionDetailInResponse = _hostingOptions.IncludeUnhandledExceptionDetailInResponse;
+                    headers["Content-Type"] = "application/json";
                 }
-            }
-
-            /// <inheritdoc/>
-            protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
-            {
-                foreach (var collector in _beforeSnapshotRequestsCollectors)
-                    if (collector.Request != null)
-                        yield return collector.Request;
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallRequestFeature(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
-
-                // Invoke configured callback if available
-                _hostingOptions?.PostMarshallRequestFeature?.Invoke(aspNetCoreRequestFeature, lambdaRequest, lambdaContext);
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse lambdaResponse, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallResponseFeature(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
-
-                // Invoke configured callback if available
-                _hostingOptions?.PostMarshallResponseFeature?.Invoke(aspNetCoreResponseFeature, lambdaResponse, lambdaContext);
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
-
-                // Invoke configured callback if available
-                _hostingOptions?.PostMarshallConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallHttpAuthenticationFeature(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
-
-                // Invoke configured callback if available
-                _hostingOptions?.PostMarshallHttpAuthenticationFeature?.Invoke(aspNetCoreHttpAuthenticationFeature, lambdaRequest, lambdaContext);
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallTlsConnectionFeature(ITlsConnectionFeature aspNetCoreConnectionFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallTlsConnectionFeature(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
-
-                // Invoke configured callback if available
-                _hostingOptions?.PostMarshallTlsConnectionFeature?.Invoke(aspNetCoreConnectionFeature, lambdaRequest, lambdaContext);
-            }
-
-            /// <inheritdoc/>
-            protected override void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
-            {
-                base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
-
-                // Invoke configured callback if available
-                // Note: LAMBDA_CONTEXT and LAMBDA_REQUEST_OBJECT are preserved by the base implementation
-                _hostingOptions?.PostMarshallItemsFeature?.Invoke(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
+                return headers;
             }
         }
     }
