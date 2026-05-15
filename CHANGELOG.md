@@ -1,3 +1,9 @@
+## Release 2026-05-13
+
+### Amazon.Lambda.TestTool (0.14.1)
+* Include AWSSDK.SecurityToken to resolve AWS credential profiles
+* Fixed static assets (CSS, JS, BlazorMonaco) failing to load when ASPNETCORE_ENVIRONMENT or DOTNET_ENVIRONMENT is set to a non-Production value by always serving static files from the tool's install directory.
+
 ## Release 2026-05-12
 
 ### Amazon.Lambda.TestTool (0.14.0)

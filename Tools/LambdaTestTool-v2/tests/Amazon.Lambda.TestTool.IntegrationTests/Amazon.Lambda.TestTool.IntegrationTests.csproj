@@ -20,7 +20,7 @@
 	  <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.7" />
     <PackageReference Include="AWSSDK.ApiGatewayV2" Version="4.0.4.9" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.9" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6.3" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.14" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
