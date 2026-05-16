@@ -3,6 +3,7 @@
 
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
         private readonly IEnvironmentVariables _environmentVariables;
 
         public Queue<InvocationEvent> InvocationEvents { get; } = new Queue<InvocationEvent>();
-        public Dictionary<string, InvocationEvent> ProcessInvocationEvents { get; } = new Dictionary<string, InvocationEvent>();
+        public ConcurrentDictionary<string, InvocationEvent> ProcessInvocationEvents { get; } = new ConcurrentDictionary<string, InvocationEvent>();
 
         public TestMultiConcurrencyRuntimeApiClient(IEnvironmentVariables environmentVariables, params InvocationEvent[] invocationEvents)
         {
@@ -58,15 +59,30 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
 
         public async Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken = default)
         {
-            // If InvocationEvents is empty then all of the test events have been processed.
-            // At this point we just need to wait for the test verification to run and then the
-            // cancellationToken will be triggered to end delay.
-            if (InvocationEvents.Count == 0)
+            InvocationEvent data;
+            lock (InvocationEvents)
             {
-                await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+                // If InvocationEvents is empty then all of the test events have been processed.
+                // At this point we just need to wait for the test verification to run and then the
+                // cancellationToken will be triggered to end delay.
+                if (InvocationEvents.Count == 0)
+                {
+                    // Release the lock before awaiting
+                    data = null;
+                }
+                else
+                {
+                    data = InvocationEvents.Dequeue();
+                }
             }
 
-            var data = InvocationEvents.Dequeue();
+            if (data == null)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+                // This line won't be reached in normal test flow since cancellation will throw
+                return null;
+            }
+
             ProcessInvocationEvents[data.AwsRequestId] = data;
 
             var inputStream = new MemoryStream(data.FunctionInput == null ? new byte[0] : data.FunctionInput);
@@ -84,14 +100,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
-            var data = ProcessInvocationEvents[awsRequestId];
-            data.Complete = true;
-            if (outputStream != null)
+            if (ProcessInvocationEvents.TryGetValue(awsRequestId, out var data))
             {
-                // copy the stream because it gets disposed by the bootstrap
-                data.OutputStream = new MemoryStream((int)outputStream.Length);
-                outputStream.CopyTo(data.OutputStream);
-                data.OutputStream.Position = 0;
+                data.Complete = true;
+                if (outputStream != null)
+                {
+                    // copy the stream because it gets disposed by the bootstrap
+                    data.OutputStream = new MemoryStream((int)outputStream.Length);
+                    outputStream.CopyTo(data.OutputStream);
+                    data.OutputStream.Position = 0;
+                }
             }
 
             return Task.Run(() => { });
