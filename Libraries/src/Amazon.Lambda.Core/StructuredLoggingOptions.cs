@@ -11,7 +11,7 @@ namespace Amazon.Lambda.Core;
 public class StructuredLoggingOptions
 {
     /// <summary>
-    /// Override the default JsonSerializerOptions used by the Lambda runtime for structured logging. This allows you to control things like property naming and which properties are included in the structured logs.
+    /// Override the default JsonSerializerOptions used by the Lambda runtime for serializing object parameters in structured logs.
     /// </summary>
     public JsonSerializerOptions OverrideSerializerOptions { get; set; }
 }

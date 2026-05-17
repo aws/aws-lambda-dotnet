@@ -8,40 +8,22 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
 {
     internal class ConfigureJsonLogMessageFormatterIsolated
     {
-        private readonly JsonLogMessageFormatter _formatter;
-        public ConfigureJsonLogMessageFormatterIsolated(JsonLogMessageFormatter formatter)
+        internal static void ConfigureCallbackInCore(Action<StructuredLoggingOptions> callback)
         {
-            _formatter = formatter;
-        }
-
-        internal void ConfigureCallbackInCore()
-        {
-            Amazon.Lambda.Core.LambdaLogger.SetConfigureStructuredLoggingAction(ConfigureStructuredLogging);
-        }
-
-        private void ConfigureStructuredLogging(Amazon.Lambda.Core.StructuredLoggingOptions options)
-        {
-            try
+            Amazon.Lambda.Core.LambdaLogger.SetConfigureStructuredLoggingAction((Amazon.Lambda.Core.StructuredLoggingOptions coreOptions) =>
             {
-                var isolatedOptions = new StructuredLoggingOptions
+                var isolatedOptions = new StructuredLoggingOptions();
+                try
                 {
-                    OverrideSerializerOptions = options.OverrideSerializerOptions
-                };
-            }
-            catch(Exception ex)
-            {
-                InternalLogger.GetDefaultLogger().LogDebug("Failed to configure structured logging. This generally happens when the version of Amazon.Lambda.Core is out of date. Update to latest version of Amazon.Lambda.Core: " + ex.ToString());
-            }
-        }
+                    isolatedOptions.OverrideSerializerOptions = coreOptions.OverrideSerializerOptions;
+                }
+                catch (Exception ex)
+                {
+                    InternalLogger.GetDefaultLogger().LogDebug("Failed to configure structured logging. This generally happens when the version of Amazon.Lambda.Core is out of date. Update to latest version of Amazon.Lambda.Core: " + ex.ToString());
+                }
 
-
-        /// <summary>
-        /// Mirror the version of StructuredLoggingOptions in Amazon.Lambda.Core because we can't guarantee that the version of Amazon.Lambda.Core used by the customer
-        /// will be the same as the version of Amazon.Lambda.RuntimeSupport.
-        /// </summary>
-        internal class StructuredLoggingOptions
-        {
-            public JsonSerializerOptions OverrideSerializerOptions { get; set; }
+                callback(isolatedOptions);
+            });
         }
     }
 }
