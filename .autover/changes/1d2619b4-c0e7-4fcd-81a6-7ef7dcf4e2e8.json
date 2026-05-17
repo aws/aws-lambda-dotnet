@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "[Preview ] Add LambdaLogger.ConfigureStructuredLogging to customize the JsonSerializerOptions used for serializing logging parameters."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add support for handling the structured logging customization from Amazon.Lambda.Core."
+      ]
+    }	
+  ]
+}
