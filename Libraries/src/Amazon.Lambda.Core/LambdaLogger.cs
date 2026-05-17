@@ -127,8 +127,8 @@ namespace Amazon.Lambda.Core
         /// <param name="args">Arguments to format the message with.</param>
         public static void Log(LogLevel level, Exception exception, string message, params object[] args) => Log(level.ToString(), exception, message, args);
 
-        // The name of this field must not change or be readonly because Amazon.Lambda.RuntimeSupport will use reflection to replace the
-        // value with an Action that directs the logging into its logging system.
+        // This field must not be readonly because SetConfigureStructuredLoggingAction replaces the value
+        // when Amazon.Lambda.RuntimeSupport registers its structured logging callback.
         private static Action<StructuredLoggingOptions> _configureStructuredLoggingAction = (options) => _placeHolderStructuredLoggingOptions = options;
 
         // Because a user might call ConfigureStructuredLogging before the Lambda runtime has a chance to replace the _configureStructuredLoggingAction with the
@@ -136,10 +136,10 @@ namespace Amazon.Lambda.Core
         private static StructuredLoggingOptions _placeHolderStructuredLoggingOptions;
 
         /// <summary>
-        /// When structured logging is enabled this method will allows overriding the default configuration the Lambda runtime uses for structured logging.
+        /// When structured logging is enabled this method will allow overriding the default configuration the Lambda runtime uses for structured logging.
         /// </summary>
         /// <param name="options">The options to use for configuring structured logging.</param>
-        [RequiresPreviewFeatures("This method is in preview till the latest changes of the .NET Lambda runtime client have been deployed to the Lambda managed runtimes")]
+        [RequiresPreviewFeatures("This method is in preview until the latest changes of the .NET Lambda runtime client have been deployed to the Lambda managed runtimes")]
         public static void ConfigureStructuredLogging(StructuredLoggingOptions options) => _configureStructuredLoggingAction(options);
 
         internal static void SetConfigureStructuredLoggingAction(Action<StructuredLoggingOptions> configureStructuredLoggingAction)

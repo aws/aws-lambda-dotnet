@@ -12,6 +12,12 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         {
             Amazon.Lambda.Core.LambdaLogger.SetConfigureStructuredLoggingAction((Amazon.Lambda.Core.StructuredLoggingOptions coreOptions) =>
             {
+                if (coreOptions == null)
+                {
+                    callback(null);
+                    return;
+                }
+
                 var isolatedOptions = new StructuredLoggingOptions();
                 try
                 {

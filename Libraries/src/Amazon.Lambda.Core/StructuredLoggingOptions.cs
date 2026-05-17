@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace Amazon.Lambda.Core;
 
 /// <summary>
-/// The options that can be overriden for structured logging.
+/// The options that can be overridden for structured logging.
 /// </summary>
 public class StructuredLoggingOptions
 {

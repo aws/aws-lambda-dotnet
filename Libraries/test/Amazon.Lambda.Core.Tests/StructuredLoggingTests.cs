@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Text.Json;
 using Xunit;
 
@@ -51,22 +52,38 @@ namespace Amazon.Lambda.Tests
         [Fact]
         public void SetConfigureStructuredLoggingAction_PendingOptionsForwardedToNewAction()
         {
-            // Simulate the placeholder behavior: _configureStructuredLoggingAction initially stores options
-            // in _placeHolderStructuredLoggingOptions. When the runtime later calls SetConfigureStructuredLoggingAction,
-            // the pending options are forwarded to the new action.
+            // Reset _placeHolderStructuredLoggingOptions and _configureStructuredLoggingAction to initial state
+            // so we can test the forwarding path.
+            var placeholderField = typeof(LambdaLogger).GetField("_placeHolderStructuredLoggingOptions", BindingFlags.NonPublic | BindingFlags.Static);
+            var actionField = typeof(LambdaLogger).GetField("_configureStructuredLoggingAction", BindingFlags.NonPublic | BindingFlags.Static);
 
-            // Step 1: Set up a placeholder-like action that stores the options
-            // (This mimics what happens in the real LambdaLogger static initializer)
-            StructuredLoggingOptions placeholderStore = null;
-            LambdaLogger.SetConfigureStructuredLoggingAction(options => placeholderStore = options);
+            // Reset to initial state: action stores to placeholder, placeholder is null
+            placeholderField.SetValue(null, null);
+            actionField.SetValue(null, new Action<StructuredLoggingOptions>(options =>
+            {
+                placeholderField.SetValue(null, options);
+            }));
 
-            // Step 2: User calls ConfigureStructuredLogging (simulating early call before runtime is ready)
+            // Step 1: User calls ConfigureStructuredLogging before runtime is ready.
+            // This stores the options in _placeHolderStructuredLoggingOptions.
             var userOptions = new StructuredLoggingOptions
             {
                 OverrideSerializerOptions = new JsonSerializerOptions { WriteIndented = true }
             };
             LambdaLogger.ConfigureStructuredLogging(userOptions);
-            Assert.Same(userOptions, placeholderStore);
+
+            Assert.Same(userOptions, placeholderField.GetValue(null));
+
+            // Step 2: Runtime calls SetConfigureStructuredLoggingAction.
+            // The pending options should be forwarded to the new action.
+            StructuredLoggingOptions forwardedOptions = null;
+            LambdaLogger.SetConfigureStructuredLoggingAction(options =>
+            {
+                forwardedOptions = options;
+            });
+
+            Assert.NotNull(forwardedOptions);
+            Assert.Same(userOptions, forwardedOptions);
         }
 
         [Fact]
