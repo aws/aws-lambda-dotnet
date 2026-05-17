@@ -26,17 +26,6 @@ public class OperationIdGeneratorTests
     }
 
     [Fact]
-    public void NextId_NameIsNotPartOfId()
-    {
-        // Name must not influence the deterministic ID — replays must still
-        // correlate after a step is renamed. The reference SDKs (Java/JS/Python)
-        // all keep Name in a separate field on OperationUpdate.
-        var gen = new OperationIdGenerator();
-        Assert.Equal(Sha256Hex("1"), gen.NextId());
-        Assert.Equal(Sha256Hex("2"), gen.NextId());
-    }
-
-    [Fact]
     public void HashOperationId_IsStable()
     {
         Assert.Equal(Sha256Hex("hello"), OperationIdGenerator.HashOperationId("hello"));
@@ -96,5 +85,39 @@ public class OperationIdGeneratorTests
         gen.NextId();
         gen.Reset();
         Assert.Equal(Sha256Hex("1"), gen.NextId());
+    }
+
+    [Fact]
+    public async Task NextId_ConcurrentCallers_ProduceUniqueIds()
+    {
+        // Without Interlocked.Increment, two threads racing on ++_counter can
+        // both observe the same pre-increment value and emit duplicate IDs,
+        // silently breaking replay determinism. Drive enough contention to
+        // catch a regression: many parallel callers, each making many calls.
+        const int threads = 16;
+        const int idsPerThread = 500;
+        const int total = threads * idsPerThread;
+
+        var gen = new OperationIdGenerator();
+        var allIds = new string[total];
+        var start = new ManualResetEventSlim(false);
+
+        var tasks = Enumerable.Range(0, threads).Select(t => Task.Run(() =>
+        {
+            start.Wait();
+            for (var i = 0; i < idsPerThread; i++)
+            {
+                allIds[t * idsPerThread + i] = gen.NextId();
+            }
+        })).ToArray();
+
+        start.Set();
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(total, allIds.Distinct().Count());
+
+        // Counter advanced exactly `total` times — the next ID must be hash("total+1").
+        Assert.Equal(Sha256Hex((total + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            gen.NextId());
     }
 }

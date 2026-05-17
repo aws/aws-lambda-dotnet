@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Amazon.Util;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -47,9 +48,18 @@ internal sealed class OperationIdGenerator
     /// Generates the next operation ID. The counter is pre-incremented so the
     /// first ID is <c>hash("1")</c>, matching the reference SDKs.
     /// </summary>
+    /// <remarks>
+    /// Uses <see cref="Interlocked.Increment(ref int)"/> so concurrent callers
+    /// (e.g. user code that wraps multiple <c>StepAsync</c> calls in
+    /// <c>Task.WhenAll</c> with <c>Task.Run</c>, or future <c>ParallelAsync</c>/
+    /// <c>MapAsync</c> branches that fan out before awaiting) cannot collide
+    /// on the same ID. Determinism still requires that calls happen in a
+    /// deterministic order — atomicity prevents duplicate IDs but not
+    /// reordering between replays. Matches Java's <c>AtomicInteger.incrementAndGet</c>.
+    /// </remarks>
     public string NextId()
     {
-        var counter = ++_counter;
+        var counter = Interlocked.Increment(ref _counter);
         return HashOperationId(_prefix + counter.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
 
@@ -74,10 +84,11 @@ internal sealed class OperationIdGenerator
     }
 
     /// <summary>
-    /// Resets the counter (used for testing only).
+    /// Resets the counter (used for testing only). Not safe to call concurrently
+    /// with <see cref="NextId"/>; tests must quiesce before resetting.
     /// </summary>
     internal void Reset()
     {
-        _counter = 0;
+        Interlocked.Exchange(ref _counter, 0);
     }
 }

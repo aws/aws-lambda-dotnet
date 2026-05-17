@@ -13,7 +13,9 @@ public class DurableContextTests
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
 
     private static TestLambdaContext CreateLambdaContext() =>
+#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         new() { Serializer = new DefaultLambdaJsonSerializer() };
+#pragma warning restore AWSLAMBDA001
 
     private static DurableContext CreateContext(
         InitialExecutionState? initialState = null,

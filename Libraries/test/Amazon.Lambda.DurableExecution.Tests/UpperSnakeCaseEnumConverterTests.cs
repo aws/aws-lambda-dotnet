@@ -43,7 +43,7 @@ public class UpperSnakeCaseEnumConverterTests
     }
 
     [Fact]
-    public void Read_AlreadyPascalCase_ParsesCaseInsensitively()
+    public void Read_CamelCase_ParsesCaseInsensitively()
     {
         // The converter first tries snake→pascal, then a raw case-insensitive parse.
         // A camel-case input like "fooBar" hits the fallback path.
