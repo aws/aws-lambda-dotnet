@@ -559,6 +559,68 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             await test.RunAsync();
         }
 
+        /// <summary>
+        /// Regression test for https://github.com/aws/aws-lambda-dotnet/issues/1907.
+        /// A handler with no input and Task return type must generate an unambiguous Create call.
+        /// </summary>
+        [Fact]
+        public async Task VerifyExecutableAssemblyWithParameterlessTaskReturnConstructor()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "parameterlesstask.template"));
+            var expectedSubNamespaceGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ParameterlessTaskMethods_NoParameterTask_Generated.g.cs"));
+            var expectedProgramGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProgramParameterlessTask.g.cs"));
+
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    OutputKind = OutputKind.ConsoleApplication,
+                    Sources =
+                    {
+                        (Path.Combine("TestExecutableServerlessApp", "ParameterlessTaskMethods.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "ParameterlessTaskMethods.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ParameterlessTaskMethods_NoParameterTask_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Program.g.cs",
+                            SourceText.From(expectedProgramGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ParameterlessTaskMethods_NoParameterTask_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    }
+                }
+            };
+
+            foreach (var file in Directory.GetFiles(
+                         Path.Combine("Amazon.Lambda.RuntimeSupport"),
+                         "*.cs", SearchOption.AllDirectories))
+            {
+                var content = await File.ReadAllTextAsync(file);
+
+                // Don't include RuntimeSupport's entry point.
+                if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
+                    continue;
+
+                test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
+            }
+
+            test.TestState.ExpectedDiagnostics.AddRange(GetExpectedRuntimeSupportDiagnostics());
+
+            await test.RunAsync();
+        }
+
         [Fact]
         public async Task VerifyExecutableAssembly_WithNullAttributeValues_ShouldComplete()
         {

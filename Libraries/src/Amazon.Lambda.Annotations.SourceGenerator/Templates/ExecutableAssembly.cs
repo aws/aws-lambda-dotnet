@@ -143,6 +143,64 @@ public class GeneratedProgram
             #line 45 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
     
             }
+            else if (!model.GeneratedMethod.Parameters.Any() && model.LambdaMethod.ReturnsVoidTask)
+            {
+
+            
+            #line default
+            #line hidden
+            this.Write("                Func<Stream, System.Threading.Tasks.Task> ");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ExecutableAssemblyHandlerName));
+            
+            #line default
+            #line hidden
+            this.Write(" = new ");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingNamespace));
+            
+            #line default
+            #line hidden
+            this.Write(".");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_Generated().");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Crea" +
+                    "te(");
+            
+            #line default
+            #line hidden
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ExecutableAssemblyHandlerName));
+            
+            #line default
+            #line hidden
+            this.Write(").Build().RunAsync();\r\n                break;\r\n");
+
+            }
             else
             {
 
