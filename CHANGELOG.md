@@ -1,3 +1,18 @@
+## Release 2026-05-18
+
+### Amazon.Lambda.Core (3.1.0)
+* [Preview] Add LambdaLogger.ConfigureStructuredLogging to customize the JsonSerializerOptions used for serializing logging parameters.
+* Add preview ILambdaSerializer Serializer property to ILambdaContext (default-implemented to null on net8.0+) so user code can access the serializer registered with the runtime. Marked [Experimental("AWSLAMBDA001")]; class-library mode requires an updated managed Lambda runtime to populate this property. The Experimental flag will be removed in a follow-up release once the managed runtime is deployed.
+### Amazon.Lambda.RuntimeSupport (2.1.0)
+* Add support for handling the structured logging customization from Amazon.Lambda.Core.
+* Propagate the registered ILambdaSerializer to the per-invocation ILambdaContext.Serializer. Surfaces the new preview ILambdaContext.Serializer (AWSLAMBDA001); the Experimental flag will be removed in a follow-up release once the managed runtime is deployed.
+### Amazon.Lambda.Annotations (2.0.1)
+* Fix CS0121 ambiguity error in generated Program.g.cs when a Lambda handler has no input parameters and returns Task. The source generator now uses the unambiguous LambdaBootstrapBuilder.Create(Func<Stream, Task>) overload for this case.
+### Amazon.Lambda.TestUtilities (4.1.0)
+* Add Serializer setter to TestLambdaContext to mirror the new preview ILambdaContext.Serializer property. Marked [Experimental("AWSLAMBDA001")]; the Experimental flag will be removed in a follow-up release once the managed runtime is deployed.
+### Amazon.Lambda.AspNetCoreServer (10.1.1)
+* Fix InvokeFeatures.Set<TFeature> to bump the feature collection revision so middleware that wraps the response body (e.g. OutputCache, ResponseCompression) is properly visible to ASP.NET Core's FeatureReferences cache. Resolves https://github.com/aws/aws-lambda-dotnet/issues/1702 where IOutputCache stored empty response bodies.
+
 ## Release 2026-05-15
 
 ### Amazon.Lambda.AspNetCoreServer (10.1.0)
