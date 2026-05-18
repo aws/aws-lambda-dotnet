@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Xunit;
 using static Amazon.Lambda.RuntimeSupport.UnitTests.LogMessageFormatterTests;
 
@@ -578,6 +579,141 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var properties = formatter.ParseProperties(message);
             var isPositional = formatter.UsingPositionalArguments(properties);
             Assert.Equal(expected, isPositional);
+        }
+
+        [Fact]
+        public void ConfigureStructuredLogging_OverrideSerializerOptions_UsesCustomOptions()
+        {
+            var customOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            };
+
+            // Constructing the formatter sets it as the callback target in LambdaLogger
+            var formatter = new JsonLogMessageFormatter();
+
+            // Call through the public API on LambdaLogger which flows to the formatter
+            Amazon.Lambda.Core.LambdaLogger.ConfigureStructuredLogging(new Amazon.Lambda.Core.StructuredLoggingOptions
+            {
+                OverrideSerializerOptions = customOptions
+            });
+
+            var timestamp = DateTime.UtcNow;
+            var product = new Product() { Name = "Widget", Inventory = 100 };
+
+            var state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Information,
+                MessageTemplate = "Product is {@product}",
+                MessageArguments = new object[] { product },
+                TimeStamp = timestamp
+            };
+
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            // With camelCase naming policy, the serialized product properties should be camelCase
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.GetProperty("product").ValueKind);
+            Assert.Equal("Widget", doc.RootElement.GetProperty("product").GetProperty("name").GetString());
+            Assert.Equal(100, doc.RootElement.GetProperty("product").GetProperty("inventory").GetInt32());
+        }
+
+        [Fact]
+        public void ConfigureStructuredLogging_NullOptions_DoesNotThrow()
+        {
+            var formatter = new JsonLogMessageFormatter();
+
+            Amazon.Lambda.Core.LambdaLogger.ConfigureStructuredLogging(null);
+
+            var timestamp = DateTime.UtcNow;
+            var product = new Product() { Name = "Widget", Inventory = 100 };
+
+            var state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Information,
+                MessageTemplate = "Product is {@product}",
+                MessageArguments = new object[] { product },
+                TimeStamp = timestamp
+            };
+
+            // Should still work with default options (PascalCase)
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.GetProperty("product").ValueKind);
+            Assert.Equal("Widget", doc.RootElement.GetProperty("product").GetProperty("Name").GetString());
+            Assert.Equal(100, doc.RootElement.GetProperty("product").GetProperty("Inventory").GetInt32());
+        }
+
+        [Fact]
+        public void ConfigureStructuredLogging_NullOverrideSerializerOptions_KeepsDefaults()
+        {
+            var formatter = new JsonLogMessageFormatter();
+
+            Amazon.Lambda.Core.LambdaLogger.ConfigureStructuredLogging(new Amazon.Lambda.Core.StructuredLoggingOptions
+            {
+                OverrideSerializerOptions = null
+            });
+
+            var timestamp = DateTime.UtcNow;
+            var product = new Product() { Name = "Widget", Inventory = 100 };
+
+            var state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Information,
+                MessageTemplate = "Product is {@product}",
+                MessageArguments = new object[] { product },
+                TimeStamp = timestamp
+            };
+
+            // Default options use PascalCase property names
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.GetProperty("product").ValueKind);
+            Assert.Equal("Widget", doc.RootElement.GetProperty("product").GetProperty("Name").GetString());
+            Assert.Equal(100, doc.RootElement.GetProperty("product").GetProperty("Inventory").GetInt32());
+        }
+
+        [Fact]
+        public void ConfigureStructuredLogging_CustomOptionsAffectsNullHandling()
+        {
+            var customOptions = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+                WriteIndented = false
+            };
+
+            var formatter = new JsonLogMessageFormatter();
+
+            Amazon.Lambda.Core.LambdaLogger.ConfigureStructuredLogging(new Amazon.Lambda.Core.StructuredLoggingOptions
+            {
+                OverrideSerializerOptions = customOptions
+            });
+
+            var timestamp = DateTime.UtcNow;
+            var product = new Product() { Name = "Widget", Inventory = 100, Cat = null };
+
+            var state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Information,
+                MessageTemplate = "Product is {@product}",
+                MessageArguments = new object[] { product },
+                TimeStamp = timestamp
+            };
+
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            // With DefaultIgnoreCondition.Never, null properties should be included
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.GetProperty("product").ValueKind);
+            Assert.True(doc.RootElement.GetProperty("product").TryGetProperty("Cat", out var catProp));
+            Assert.Equal(JsonValueKind.Null, catProp.ValueKind);
         }
 
         public class Product
