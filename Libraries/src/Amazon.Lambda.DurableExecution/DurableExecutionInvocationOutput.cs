@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Amazon.Lambda.DurableExecution.Internal;
 
 namespace Amazon.Lambda.DurableExecution;
 

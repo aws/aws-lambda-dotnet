@@ -24,6 +24,7 @@ internal sealed class ExecutionState
     private readonly Dictionary<string, Operation> _operations = new();
     private readonly HashSet<string> _visitedOperations = new();
     private bool _isReplaying;
+    private int _remainingReplayOps;
 
     public int CheckpointedOperationCount => _operations.Count;
 
@@ -44,7 +45,7 @@ internal sealed class ExecutionState
         // EXECUTION op (input payload bookkeeping) is always present and must
         // not count — see Python execution.py:258 / Java ExecutionManager:81 /
         // JS execution-context.ts:62 for the same rule.
-        _isReplaying = HasReplayableOperations();
+        (_isReplaying, _remainingReplayOps) = ScanReplayable();
     }
 
     public void AddOperations(IEnumerable<Operation> operations)
@@ -79,19 +80,13 @@ internal sealed class ExecutionState
     public void TrackReplay(string operationId)
     {
         if (!_isReplaying) return;
+        if (!_visitedOperations.Add(operationId)) return;
+        if (!_operations.TryGetValue(operationId, out var op)) return;
+        if (op.Type == OperationTypes.Execution) return;
+        if (!IsTerminalStatus(op.Status)) return;
 
-        _visitedOperations.Add(operationId);
-
-        // Have we visited every completed non-EXECUTION op? If so, anything
-        // emitted from here on is fresh execution.
-        foreach (var op in _operations.Values)
-        {
-            if (op.Type == OperationTypes.Execution) continue;
-            if (!IsTerminalStatus(op.Status)) continue;
-            if (!_visitedOperations.Contains(op.Id!)) return;
-        }
-
-        _isReplaying = false;
+        if (--_remainingReplayOps <= 0)
+            _isReplaying = false;
     }
 
     public void ValidateReplayConsistency(string operationId, string expectedType, string? expectedName)
@@ -117,13 +112,17 @@ internal sealed class ExecutionState
         }
     }
 
-    private bool HasReplayableOperations()
+    private (bool HasReplayable, int TerminalCount) ScanReplayable()
     {
+        var has = false;
+        var count = 0;
         foreach (var op in _operations.Values)
         {
-            if (op.Type != OperationTypes.Execution) return true;
+            if (op.Type == OperationTypes.Execution) continue;
+            has = true;
+            if (IsTerminalStatus(op.Status)) count++;
         }
-        return false;
+        return (has, count);
     }
 
     private static bool IsTerminalStatus(string? status) =>

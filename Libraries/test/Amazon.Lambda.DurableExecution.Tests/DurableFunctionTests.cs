@@ -268,10 +268,11 @@ public class DurableFunctionTests
     }
 
     [Fact]
-    public async Task WrapAsync_NoExecutionOp_ReceivesDefaultPayload()
+    public async Task WrapAsync_NoExecutionOp_ThrowsMalformedEnvelope()
     {
-        // No EXECUTION operation in the envelope — ExtractUserPayload returns default(TInput).
-        // Exercises the "loop falls through without finding EXECUTION" branch in DurableFunction.ExtractUserPayload.
+        // No EXECUTION operation in the envelope — ExtractUserPayload must throw a typed
+        // DurableExecutionException so the malformed envelope surfaces as a clear error
+        // instead of leaking default!/null into user code as a NullReferenceException.
         var input = new DurableExecutionInvocationInput
         {
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:no-exec",
@@ -281,20 +282,19 @@ public class DurableFunctionTests
             }
         };
 
-        OrderEvent? observed = null;
-        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            async (evt, ctx) =>
-            {
-                observed = evt;
-                await Task.CompletedTask;
-                return new OrderResult { Status = "ok" };
-            },
-            input,
-            CreateLambdaContext(),
-            _mockClient);
+        var ex = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                async (evt, ctx) =>
+                {
+                    await Task.CompletedTask;
+                    return new OrderResult { Status = "ok" };
+                },
+                input,
+                CreateLambdaContext(),
+                _mockClient));
 
-        Assert.Equal(InvocationStatus.Succeeded, output.Status);
-        Assert.Null(observed);  // default(OrderEvent) for a reference type is null
+        Assert.Contains("malformed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("EXECUTION", ex.Message);
     }
 
     [Fact]
@@ -409,28 +409,26 @@ public class DurableFunctionTests
     }
 
     [Fact]
-    public async Task WrapAsync_NullInitialExecutionState_ReceivesDefaultPayload()
+    public async Task WrapAsync_NullInitialExecutionState_ThrowsMalformedEnvelope()
     {
-        // No initial execution state at all. Same default-return branch in ExtractUserPayload.
+        // No initial execution state at all — same malformed-envelope branch in ExtractUserPayload.
         var input = new DurableExecutionInvocationInput
         {
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:null-state"
         };
 
-        OrderEvent? observed = null;
-        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            async (evt, ctx) =>
-            {
-                observed = evt;
-                await Task.CompletedTask;
-                return new OrderResult { Status = "ok" };
-            },
-            input,
-            CreateLambdaContext(),
-            _mockClient);
+        var ex = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                async (evt, ctx) =>
+                {
+                    await Task.CompletedTask;
+                    return new OrderResult { Status = "ok" };
+                },
+                input,
+                CreateLambdaContext(),
+                _mockClient));
 
-        Assert.Equal(InvocationStatus.Succeeded, output.Status);
-        Assert.Null(observed);
+        Assert.Contains("malformed", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     // ──────────────────────────────────────────────────────────────────────

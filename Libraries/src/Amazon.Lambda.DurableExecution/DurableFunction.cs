@@ -179,25 +179,30 @@ public static class DurableFunction
     // The user's input payload is stored inside the service envelope as an EXECUTION-type
     // operation. This is part of the durable execution wire format — each invocation includes
     // its input as a checkpoint record so the service can validate replay consistency.
+    // A missing EXECUTION op is a malformed envelope: surfacing it as a typed exception here
+    // gives a clear error instead of letting default!/null bubble into user code as an opaque
+    // NullReferenceException.
     private static TInput ExtractUserPayload<TInput>(
         DurableExecutionInvocationInput input,
         ILambdaSerializer serializer)
     {
-        if (input.InitialExecutionState?.Operations == null)
-            return default!;
-
-        foreach (var op in input.InitialExecutionState.Operations)
+        if (input.InitialExecutionState?.Operations != null)
         {
-            if (op.Type != OperationTypes.Execution || op.ExecutionDetails?.InputPayload == null)
-                continue;
+            foreach (var op in input.InitialExecutionState.Operations)
+            {
+                if (op.Type != OperationTypes.Execution || op.ExecutionDetails?.InputPayload == null)
+                    continue;
 
-            var payload = op.ExecutionDetails.InputPayload;
-            var bytes = Encoding.UTF8.GetBytes(payload);
-            using var ms = new MemoryStream(bytes);
-            return serializer.Deserialize<TInput>(ms);
+                var payload = op.ExecutionDetails.InputPayload;
+                var bytes = Encoding.UTF8.GetBytes(payload);
+                using var ms = new MemoryStream(bytes);
+                return serializer.Deserialize<TInput>(ms);
+            }
         }
 
-        return default!;
+        throw new DurableExecutionException(
+            "Durable execution envelope is malformed: no EXECUTION-type operation with an input payload was found. " +
+            "The service must include an EXECUTION op carrying the workflow's input on every invocation.");
     }
 
     private static DurableExecutionInvocationOutput MapToOutput<TOutput>(

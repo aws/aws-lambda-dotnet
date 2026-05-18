@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Internal;
 using Xunit;
 
 namespace Amazon.Lambda.DurableExecution.Tests;
