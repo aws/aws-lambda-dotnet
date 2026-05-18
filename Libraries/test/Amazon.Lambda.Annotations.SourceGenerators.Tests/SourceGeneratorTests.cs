@@ -2398,6 +2398,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 13, 34, 13, 71).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyBeforeSnapshotCallbacksToRegistry"),
                 DiagnosticResult.CompilerError("CS0117").WithSpan(snapFile, 14, 34, 14, 69).WithArguments("Amazon.Lambda.Core.SnapshotRestore", "CopyAfterRestoreCallbacksToRegistry"),
                 DiagnosticResult.CompilerError("CS0122").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Bootstrap{Path.DirectorySeparatorChar}ResponseStreaming{Path.DirectorySeparatorChar}ResponseStreamLambdaCoreInitializerIsolated.cs", 37, 51, 37, 72).WithArguments("Amazon.Lambda.Core.ResponseStreaming.ILambdaResponseStream"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan($"Amazon.Lambda.RuntimeSupport{Path.DirectorySeparatorChar}Helpers{Path.DirectorySeparatorChar}Logging{Path.DirectorySeparatorChar}ConfigureJsonLogMessageFormatterIsolated.cs", 13, 45, 13, 80).WithArguments("Amazon.Lambda.Core.LambdaLogger", "SetConfigureStructuredLoggingAction"),
             };
         }
     }
