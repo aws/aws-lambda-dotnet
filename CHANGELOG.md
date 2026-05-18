@@ -1,3 +1,8 @@
+## Release 2026-05-20
+
+### AWSLambdaPSCore PowerShell Module (5.0.2)
+* Reduce Lambda cold start INIT times by stripping files that are not used at runtime (PowerShell help XML and .pdb debug symbols) from AWS-authored modules (AWSPowerShell.NetCore and AWS.Tools.*) during packaging
+
 ## Release 2026-05-18
 
 ### Amazon.Lambda.Core (3.1.0)
