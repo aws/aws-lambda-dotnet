@@ -260,25 +260,6 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         /// <summary>
-        /// Get a HandlerWrapper for a stream-stream handler that also wants the supplied
-        /// <paramref name="serializer"/> exposed via <see cref="ILambdaContext.Serializer"/>.
-        /// The serializer is not used to (de)serialize the input/output streams — the handler
-        /// owns those — it is only made available on the context for handlers that perform
-        /// their own envelope (de)serialization and need to delegate an inner payload to a
-        /// user-supplied serializer.
-        /// </summary>
-        /// <param name="handler">Func called for each invocation of the Lambda function.</param>
-        /// <param name="serializer">ILambdaSerializer made available via <see cref="ILambdaContext.Serializer"/>.</param>
-        /// <returns>A HandlerWrapper</returns>
-        public static HandlerWrapper GetHandlerWrapper(Func<Stream, ILambdaContext, Task<Stream>> handler, ILambdaSerializer serializer)
-        {
-            return new HandlerWrapper(async (invocation) =>
-            {
-                return new InvocationResponse(await handler(invocation.InputStream, invocation.LambdaContext));
-            }) { Serializer = serializer };
-        }
-
-        /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
         /// Example handler signature: Task&lt;Stream&gt; Handler(PocoIn, ILambdaContext)
