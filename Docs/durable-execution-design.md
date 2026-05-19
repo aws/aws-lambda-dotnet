@@ -251,19 +251,28 @@ private async Task MyWorkflow(OrderEvent input, IDurableContext context)
 }
 ```
 
-For **NativeAOT** deployments, pass a `JsonSerializerContext` so the SDK can serialize/deserialize your input and output types without reflection:
+For **NativeAOT** deployments, register an AOT-aware `ILambdaSerializer` with the Lambda runtime. `WrapAsync` reads the registered serializer from `ILambdaContext.Serializer` and uses it for both envelope and step-checkpoint (de)serialization — there is no per-call `JsonSerializerContext` argument, and AOT and reflection callers share the same `WrapAsync` overloads.
+
+In the class library programming model, register via the assembly attribute:
 
 ```csharp
+[assembly: LambdaSerializer(typeof(SourceGeneratorLambdaJsonSerializer<MyJsonContext>))]
+
+// The user's context must include the wire-envelope types (the typed handler
+// signature is DurableExecutionInvocationInput → DurableExecutionInvocationOutput,
+// so Lambda's runtime needs to deserialize them with this serializer) plus every
+// TInput/TOutput/step-result POCO the workflow uses.
+[JsonSerializable(typeof(DurableExecutionInvocationInput))]
+[JsonSerializable(typeof(DurableExecutionInvocationOutput))]
 [JsonSerializable(typeof(OrderEvent))]
 [JsonSerializable(typeof(OrderResult))]
-internal partial class MyJsonContext : JsonSerializerContext { }
+public partial class MyJsonContext : JsonSerializerContext { }
 
 public class Function
 {
     public Task<DurableExecutionInvocationOutput> FunctionHandler(
         DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            MyWorkflow, invocationInput, context, MyJsonContext.Default);
+        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(MyWorkflow, invocationInput, context);
 
     private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
@@ -271,6 +280,8 @@ public class Function
     }
 }
 ```
+
+In an executable / custom-runtime deployment, pass the serializer to `LambdaBootstrapBuilder.Create(handler, serializer)` instead of using the assembly attribute — `RuntimeSupport` will propagate it onto `ILambdaContext.Serializer` for the SDK to pick up.
 
 To inject a custom `IAmazonLambda` client (e.g., for VPC endpoints or unit testing), use the overload that accepts one:
 
@@ -940,18 +951,18 @@ Static helper for the non-Annotations handler path. Wraps a workflow function, h
 /// <summary>
 /// Static helper that wraps a durable workflow function, handling all envelope
 /// translation between DurableExecutionInvocationInput/Output and user types.
-/// Inspired by OpenTelemetry.Instrumentation.AWSLambda's AWSLambdaWrapper.TraceAsync pattern.
+///
+/// All four overloads dispatch through the ILambdaSerializer registered on
+/// ILambdaContext.Serializer, so AOT-safe and reflection-based callers share a
+/// single code path. Callers wire AOT support by registering an AOT-aware
+/// serializer with the runtime (e.g., SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;)
+/// — there is no per-call JsonSerializerContext argument.
 /// </summary>
 public static class DurableFunction
 {
-    // ── Reflection-based overloads (JIT only) ──────────────────────────
-
     /// <summary>
-    /// Wrap a workflow that takes typed input and returns typed output.
-    /// Reflection-based JSON — not AOT-safe.
+    /// Wrap a workflow (typed input + output).
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
@@ -959,10 +970,7 @@ public static class DurableFunction
 
     /// <summary>
     /// Wrap a workflow (typed input + output) with explicit Lambda client.
-    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
@@ -971,10 +979,7 @@ public static class DurableFunction
 
     /// <summary>
     /// Wrap a void workflow (typed input, no output).
-    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
         Func<TInput, IDurableContext, Task> workflow,
         DurableExecutionInvocationInput invocationInput,
@@ -982,59 +987,16 @@ public static class DurableFunction
 
     /// <summary>
     /// Wrap a void workflow with explicit Lambda client.
-    /// Reflection-based JSON — not AOT-safe.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
     public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
         Func<TInput, IDurableContext, Task> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
         IAmazonLambda lambdaClient);
-
-    // ── AOT-safe overloads (caller supplies JsonSerializerContext) ──────
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output). AOT-safe — requires
-    /// [JsonSerializable(typeof(TInput))] and [JsonSerializable(typeof(TOutput))]
-    /// on the supplied jsonContext.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output) with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a void workflow (typed input, no output). AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a void workflow with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext);
 }
 ```
+
+`WrapAsync` requires an `ILambdaSerializer` on `ILambdaContext.Serializer`. If none is registered the helper throws `InvalidOperationException` with a message that points at the three places to register one (assembly attribute, `LambdaBootstrapBuilder.Create`, or `TestLambdaContext.Serializer` for tests).
 
 ### IDurableContext
 
@@ -1064,14 +1026,15 @@ public interface IDurableContext
     //  The user's function always receives IStepContext, matching the
     //  Python and JS SDKs (Java has no-context overloads but deprecated
     //  them — see https://github.com/aws/aws-durable-execution-sdk-java).
+    //  Step results are serialized via the ILambdaSerializer registered on
+    //  ILambdaContext.Serializer. AOT and reflection callers share one
+    //  overload — the AOT story is determined by the registered serializer.
 
     /// <summary>
-    /// Execute a step with automatic checkpointing using reflection-based JSON.
-    /// The IStepContext provides a step-scoped logger with operation metadata
-    /// (step name, attempt number, operation ID) and the current attempt number.
+    /// Execute a step with automatic checkpointing. The IStepContext provides
+    /// a step-scoped logger with operation metadata (step name, attempt number,
+    /// operation ID) and the current attempt number.
     /// </summary>
-    [RequiresUnreferencedCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
-    [RequiresDynamicCode("Reflection-based JSON for T. Use the ICheckpointSerializer<T> overload for AOT/trimmed deployments.")]
     Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
         string? name = null,
@@ -1079,21 +1042,10 @@ public interface IDurableContext
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute a step that returns no value. AOT-safe (no payload to serialize).
+    /// Execute a step that returns no value.
     /// </summary>
     Task StepAsync(
         Func<IStepContext, Task> func,
-        string? name = null,
-        StepConfig? config = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute a step with AOT-safe checkpoint serialization. The supplied
-    /// serializer is used in place of reflection-based JSON.
-    /// </summary>
-    Task<T> StepAsync<T>(
-        Func<IStepContext, Task<T>> func,
-        ICheckpointSerializer<T> serializer,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -1244,11 +1196,11 @@ public class StepConfig
     /// </summary>
     public StepSemantics Semantics { get; set; } = StepSemantics.AtLeastOncePerRetry;
 
-    // Note: there is no Serializer property here. Custom serializers are
-    // supplied via the AOT-safe StepAsync(..., ICheckpointSerializer<T>, ...)
-    // overload, which is type-safe (ICheckpointSerializer<T> instead of the
-    // non-generic marker) and gives one obvious way to opt into custom or
-    // AOT-friendly serialization.
+    // Note: there is no Serializer property here. Step result serialization
+    // is delegated to the ILambdaSerializer registered on ILambdaContext.Serializer
+    // (assembly attribute or LambdaBootstrapBuilder.Create). To swap the
+    // step-checkpoint format for a single step, the planned route is the
+    // StepAsync(..., ICheckpointSerializer<T>, ...) overload (post-v1).
 }
 
 public enum StepSemantics
@@ -1676,11 +1628,11 @@ public interface ICheckpointSerializer<T>
 public record SerializationContext(string OperationId, string DurableExecutionArn);
 ```
 
-Usage — pass the serializer to the AOT-safe `StepAsync` overload directly.
-This is the only way to override the default reflection-based JSON path; it's
-intentional that there's no `StepConfig.Serializer` knob, so you have one
-obvious place to opt in (and the type is `ICheckpointSerializer<T>`, not the
-non-generic marker, so the compiler catches a mismatched `T`):
+Usage — pass the serializer to the per-step `StepAsync` overload directly. This is
+the only way to override the registered `ILambdaSerializer` for a single step's
+checkpoint; it's intentional that there's no `StepConfig.Serializer` knob, so you
+have one obvious place to opt in (and the type is `ICheckpointSerializer<T>`, not
+a non-generic marker, so the compiler catches a mismatched `T`):
 
 ```csharp
 var result = await context.StepAsync(
@@ -1688,6 +1640,8 @@ var result = await context.StepAsync(
     new CompressedJsonSerializer<LargeData>(),
     name: "get_data");
 ```
+
+> **Status:** the `ICheckpointSerializer<T>` overload is a planned post-v1 addition. Today, all step checkpoints flow through the `ILambdaSerializer` registered on `ILambdaContext.Serializer` — see [NativeAOT compatibility](#nativeaot-compatibility) for how that's wired.
 
 ### Class library vs. executable output
 
@@ -1713,35 +1667,45 @@ Both approaches produce a self-contained executable that the Lambda custom runti
 
 ### NativeAOT compatibility
 
-The SDK is AOT-friendly but does not require AOT. The default JSON serialization uses reflection (standard `System.Text.Json` behavior), which works in JIT mode. For NativeAOT deployments, AOT safety is addressed at two levels — **at each level there are two overload families: a reflection-based one annotated with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` and an AOT-safe one that requires a serializer parameter**. The trimmer warns at the call site when reflection overloads are used in AOT/trimmed builds.
-
-1. **Entry point (`DurableFunction.WrapAsync`)** — the AOT-safe overload takes a `JsonSerializerContext` parameter that includes type info for your `TInput` and `TOutput` types.
-
-2. **Step checkpoints (`IDurableContext.StepAsync`)** — the AOT-safe overload takes an `ICheckpointSerializer<T>` directly as a parameter. Internally, the reflection overload constructs `ReflectionJsonCheckpointSerializer<T>` (whose constructor carries `[RequiresUnreferencedCode]`); the AOT-safe overload uses the user-supplied serializer and never touches reflection. The void `StepAsync` overloads are AOT-safe by default — they use a built-in null-only serializer since they have no payload.
+The SDK is AOT-friendly but does not require AOT. The default JSON serialization uses reflection (standard `System.Text.Json` behavior), which works in JIT mode. **AOT safety is determined entirely by which `ILambdaSerializer` the user registers with the Lambda runtime** — there is no separate AOT-only API surface in the SDK, and no per-call `JsonSerializerContext` argument anywhere on `WrapAsync` or `IDurableContext`. The same overloads work in JIT and AOT; the difference is whether `ILambdaContext.Serializer` resolves to `DefaultLambdaJsonSerializer` (reflection) or `SourceGeneratorLambdaJsonSerializer<TContext>` (AOT).
 
 The SDK itself avoids `Activator.CreateInstance`, `Type.GetType()`, and other reflection patterns, and uses `[DynamicallyAccessedMembers]` trimming annotations where needed.
 
-```csharp
-// Default: works with reflection (JIT mode); flagged for AOT.
-var result = await context.StepAsync<Order>(async (step) => await GetOrder());
+#### What the user registers in their `JsonSerializerContext`
 
-// AOT mode — entry point: pass JsonSerializerContext to WrapAsync.
+For AOT, the user's source-generated context must include:
+
+1. **Wire-envelope types** — `DurableExecutionInvocationInput` and `DurableExecutionInvocationOutput`. The handler signature is typed against these, so Lambda's runtime calls `serializer.Deserialize<DurableExecutionInvocationInput>(...)` on each invoke and the source generator needs `JsonTypeInfo` for both.
+2. **Workflow input / output POCOs** — every `TInput` / `TOutput` that appears in a `WrapAsync<TInput, TOutput>` call.
+3. **Step result types** — every `T` that appears in `context.StepAsync<T>(...)`. The SDK serializes step results via the same `ILambdaSerializer`, so each result type needs source-gen registration too.
+
+```csharp
+// Class library mode — register via the assembly attribute.
+[assembly: LambdaSerializer(typeof(SourceGeneratorLambdaJsonSerializer<MyJsonContext>))]
+
+[JsonSerializable(typeof(DurableExecutionInvocationInput))]
+[JsonSerializable(typeof(DurableExecutionInvocationOutput))]
 [JsonSerializable(typeof(OrderEvent))]
 [JsonSerializable(typeof(OrderResult))]
-[JsonSerializable(typeof(Order))]
-internal partial class MyJsonContext : JsonSerializerContext { }
+[JsonSerializable(typeof(Order))]               // step result
+public partial class MyJsonContext : JsonSerializerContext { }
 
-public Task<DurableExecutionInvocationOutput> FunctionHandler(
-    DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-    => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-        MyWorkflow, invocationInput, context, MyJsonContext.Default);
+public class Function
+{
+    public Task<DurableExecutionInvocationOutput> FunctionHandler(
+        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
+        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(MyWorkflow, invocationInput, context);
 
-// AOT mode — step checkpoint: pass ICheckpointSerializer<T> to StepAsync directly.
-var result = await context.StepAsync(
-    async () => await GetOrder(),
-    new JsonCheckpointSerializer<Order>(MyJsonContext.Default.Order),
-    name: "get_order");
+    private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
+    {
+        // Same StepAsync overload in JIT and AOT — the registered serializer decides.
+        var order = await context.StepAsync(async (step) => await GetOrder(), name: "get_order");
+        // ...
+    }
+}
 ```
+
+For executable / custom-runtime deployments (no class library attribute), the same context is registered by passing the serializer to `LambdaBootstrapBuilder.Create(handler, serializer)` — see the [Manual Handler](#manual-handler-without-annotations) section.
 
 ### Large payload and checkpoint overflow
 
