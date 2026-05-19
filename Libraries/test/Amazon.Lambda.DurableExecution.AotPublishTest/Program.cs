@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -7,25 +8,26 @@ namespace Amazon.Lambda.DurableExecution.AotPublishTest;
 
 /// <summary>
 /// AOT publish smoke check. This program must publish under NativeAOT with
-/// zero IL2026/IL3050 warnings (promoted to errors by the csproj).
-///
-/// The user-side <see cref="AotJsonContext"/> intentionally registers ONLY the
-/// workflow's input/output POCOs — no <c>DurableExecutionInvocation*</c> wire types.
-/// Envelope (de)serialization is owned by the library's internal context, so any
-/// internal-type leak from the public API surface would cause this project to fail
-/// AOT publish (CS0053 / SYSLIB1218 / SYSLIB1220).
+/// zero IL2026/IL3050 warnings (promoted to errors by the csproj). The serializer
+/// registered with <see cref="LambdaBootstrapBuilder"/> is the same one DurableExecution
+/// reads via <see cref="ILambdaContext.Serializer"/>, so AOT-safety is fully determined
+/// by the user's choice of serializer (here, <see cref="SourceGeneratorLambdaJsonSerializer{T}"/>).
 /// </summary>
 public class Program
 {
-    private static readonly DurableEntryPoint<OrderEvent, OrderResult> _entry = new(WorkflowAsync);
-
     public static async Task Main()
     {
+        var serializer = new SourceGeneratorLambdaJsonSerializer<AotJsonContext>();
+        Func<DurableExecutionInvocationInput, ILambdaContext, Task<DurableExecutionInvocationOutput>> handler = HandlerAsync;
         await LambdaBootstrapBuilder
-            .Create(_entry.InvokeAsync, new SourceGeneratorLambdaJsonSerializer<AotJsonContext>())
+            .Create(handler, serializer)
             .Build()
             .RunAsync();
     }
+
+    public static Task<DurableExecutionInvocationOutput> HandlerAsync(
+        DurableExecutionInvocationInput input, ILambdaContext context) =>
+        DurableFunction.WrapAsync<OrderEvent, OrderResult>(WorkflowAsync, input, context);
 
     private static async Task<OrderResult> WorkflowAsync(OrderEvent input, IDurableContext context)
     {
@@ -59,6 +61,8 @@ public class Program
     }
 }
 
+[JsonSerializable(typeof(DurableExecutionInvocationInput))]
+[JsonSerializable(typeof(DurableExecutionInvocationOutput))]
 [JsonSerializable(typeof(Program.OrderEvent))]
 [JsonSerializable(typeof(Program.OrderResult))]
 [JsonSerializable(typeof(Program.ValidationResult))]

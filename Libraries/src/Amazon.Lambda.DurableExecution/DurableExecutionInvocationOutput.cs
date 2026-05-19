@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.DurableExecution.Internal;
 
@@ -5,16 +6,14 @@ namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
 /// The service envelope output returned by a durable execution invocation.
-/// Written by <see cref="DurableEntryPoint{TInput,TOutput}"/> directly to the
-/// Lambda response stream.
 /// </summary>
-internal sealed class DurableExecutionInvocationOutput
+public sealed class DurableExecutionInvocationOutput
 {
     /// <summary>
     /// The terminal status of this invocation.
     /// </summary>
     [JsonPropertyName("Status")]
-    [JsonConverter(typeof(InvocationStatusConverter))]
+    [JsonConverter(typeof(UpperSnakeCaseEnumConverter<InvocationStatus>))]
     public required InvocationStatus Status { get; set; }
 
     /// <summary>

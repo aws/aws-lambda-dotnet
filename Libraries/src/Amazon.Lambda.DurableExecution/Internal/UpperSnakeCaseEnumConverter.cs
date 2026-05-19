@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// Converts between UPPER_SNAKE_CASE wire format (e.g., CHAINED_INVOKE)
 /// and PascalCase enum values (e.g., ChainedInvoke).
 /// </summary>
-internal class UpperSnakeCaseEnumConverter<T> : JsonConverter<T> where T : struct, Enum
+internal sealed class UpperSnakeCaseEnumConverter<T> : JsonConverter<T> where T : struct, Enum
 {
     /// <inheritdoc/>
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

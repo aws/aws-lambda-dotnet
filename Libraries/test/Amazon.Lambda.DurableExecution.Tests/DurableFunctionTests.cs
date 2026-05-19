@@ -1,8 +1,6 @@
-using System.IO;
 using System.Net;
 using System.Text.Json;
 using Amazon.Lambda;
-using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -16,14 +14,7 @@ using ExecutionDetails = Amazon.Lambda.DurableExecution.Internal.ExecutionDetail
 
 namespace Amazon.Lambda.DurableExecution.Tests;
 
-/// <summary>
-/// Drives <see cref="DurableEntryPoint{TInput,TOutput}"/> through its public
-/// <c>Stream → Stream</c> contract. Builds an internal envelope POCO,
-/// serializes it via the library's internal envelope context (mirroring what the
-/// real Lambda runtime delivers on the wire), then asserts on the deserialized
-/// output envelope. <c>InternalsVisibleTo</c> lets us reach the internal types.
-/// </summary>
-public class DurableEntryPointTests
+public class DurableFunctionTests
 {
     /// <summary>Reproduces the Id that <see cref="OperationIdGenerator"/> emits for the n-th root-level operation.</summary>
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
@@ -35,28 +26,8 @@ public class DurableEntryPointTests
 
     private readonly IAmazonLambda _mockClient = new MockLambdaClient();
 
-    private static MemoryStream EnvelopeStream(DurableExecutionInvocationInput input)
-    {
-        var ms = new MemoryStream();
-        JsonSerializer.Serialize(ms, input, DurableEnvelopeJsonContext.Default.DurableExecutionInvocationInput);
-        ms.Position = 0;
-        return ms;
-    }
-
-    private static async Task<DurableExecutionInvocationOutput> InvokeAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput input,
-        ILambdaContext ctx,
-        IAmazonLambda lambdaClient)
-    {
-        var entry = new DurableEntryPoint<TInput, TOutput>(workflow, lambdaClient);
-        using var inStream = EnvelopeStream(input);
-        var outStream = await entry.InvokeAsync(inStream, ctx);
-        return JsonSerializer.Deserialize(outStream, DurableEnvelopeJsonContext.Default.DurableExecutionInvocationOutput)!;
-    }
-
     [Fact]
-    public async Task FreshExecution_StepThenWait_ReturnsPending()
+    public async Task WrapAsync_FreshExecution_StepThenWait_ReturnsPending()
     {
         var input = new DurableExecutionInvocationInput
         {
@@ -76,14 +47,17 @@ public class DurableEntryPointTests
             }
         };
 
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
-            MyWorkflow, input, CreateLambdaContext(), _mockClient);
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            CreateLambdaContext(),
+            _mockClient);
 
         Assert.Equal(InvocationStatus.Pending, output.Status);
     }
 
     [Fact]
-    public async Task ReplayWithElapsedWait_ReturnsSucceeded()
+    public async Task WrapAsync_ReplayWithElapsedWait_ReturnsSucceeded()
     {
         var pastExpirationMs = DateTimeOffset.UtcNow.AddSeconds(-5).ToUnixTimeMilliseconds();
         var input = new DurableExecutionInvocationInput
@@ -118,8 +92,11 @@ public class DurableEntryPointTests
             }
         };
 
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
-            MyWorkflow, input, CreateLambdaContext(), _mockClient);
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            CreateLambdaContext(),
+            _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
         Assert.NotNull(output.Result);
@@ -128,7 +105,7 @@ public class DurableEntryPointTests
     }
 
     [Fact]
-    public async Task WorkflowThrows_ReturnsFailed()
+    public async Task WrapAsync_WorkflowThrows_ReturnsFailed()
     {
         var input = new DurableExecutionInvocationInput
         {
@@ -148,9 +125,11 @@ public class DurableEntryPointTests
             }
         };
 
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             async (evt, ctx) => throw new InvalidOperationException("workflow error"),
-            input, CreateLambdaContext(), _mockClient);
+            input,
+            CreateLambdaContext(),
+            _mockClient);
 
         Assert.Equal(InvocationStatus.Failed, output.Status);
         Assert.NotNull(output.Error);
@@ -159,7 +138,7 @@ public class DurableEntryPointTests
     }
 
     [Fact]
-    public async Task VoidWorkflow_ReturnsSucceeded()
+    public async Task WrapAsync_VoidWorkflow_ReturnSucceeded()
     {
         var input = new DurableExecutionInvocationInput
         {
@@ -180,23 +159,21 @@ public class DurableEntryPointTests
         };
 
         var executed = false;
-        var entry = new DurableEntryPoint<OrderEvent>(
+        var output = await DurableFunction.WrapAsync<OrderEvent>(
             async (evt, ctx) =>
             {
                 await ctx.StepAsync(async (_) => { await Task.CompletedTask; executed = true; }, name: "do_work");
             },
+            input,
+            CreateLambdaContext(),
             _mockClient);
-
-        using var inStream = EnvelopeStream(input);
-        var outStream = await entry.InvokeAsync(inStream, CreateLambdaContext());
-        var output = JsonSerializer.Deserialize(outStream, DurableEnvelopeJsonContext.Default.DurableExecutionInvocationOutput)!;
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
         Assert.True(executed);
     }
 
     [Fact]
-    public async Task CheckpointsAreSentToService()
+    public async Task WrapAsync_CheckpointsAreSentToService()
     {
         var mockClient = new MockLambdaClient();
         var input = new DurableExecutionInvocationInput
@@ -218,8 +195,11 @@ public class DurableEntryPointTests
             }
         };
 
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
-            MyWorkflow, input, CreateLambdaContext(), mockClient);
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            MyWorkflow,
+            input,
+            CreateLambdaContext(),
+            mockClient);
 
         Assert.Equal(InvocationStatus.Pending, output.Status);
         Assert.Equal(2, mockClient.CheckpointCalls.Count);
@@ -249,10 +229,10 @@ public class DurableEntryPointTests
     }
 
     [Fact]
-    public async Task UserPayload_BindsCamelCaseToPascalCaseProperty()
+    public async Task WrapAsync_UserPayload_BindsCamelCaseToPascalCaseProperty()
     {
         // The wire payload uses camelCase ("orderId"), the user POCO uses PascalCase (OrderId).
-        // Stage-2 deserialization must do case-insensitive binding so workflows can read input.OrderId.
+        // ExtractUserPayload must do case-insensitive binding so workflows can read input.OrderId.
         var input = new DurableExecutionInvocationInput
         {
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:case-test",
@@ -272,25 +252,27 @@ public class DurableEntryPointTests
         };
 
         string? observedOrderId = null;
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             async (evt, ctx) =>
             {
                 observedOrderId = evt.OrderId;
                 await Task.CompletedTask;
                 return new OrderResult { Status = "ok", OrderId = evt.OrderId };
             },
-            input, CreateLambdaContext(), _mockClient);
+            input,
+            CreateLambdaContext(),
+            _mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
         Assert.Equal("abc-123", observedOrderId);
     }
 
     [Fact]
-    public async Task NoExecutionOp_ThrowsMalformedEnvelope()
+    public async Task WrapAsync_NoExecutionOp_ThrowsMalformedEnvelope()
     {
-        // No EXECUTION operation in the envelope — DurableEntryPointCore.ExtractUserPayload must
-        // throw a typed DurableExecutionException so the malformed envelope surfaces as a clear
-        // error instead of leaking default!/null into user code as a NullReferenceException.
+        // No EXECUTION operation in the envelope — ExtractUserPayload must throw a typed
+        // DurableExecutionException so the malformed envelope surfaces as a clear error
+        // instead of leaking default!/null into user code as a NullReferenceException.
         var input = new DurableExecutionInvocationInput
         {
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:no-exec",
@@ -300,26 +282,29 @@ public class DurableEntryPointTests
             }
         };
 
-        var entry = new DurableEntryPoint<OrderEvent, OrderResult>(
-            async (evt, ctx) => { await Task.CompletedTask; return new OrderResult { Status = "ok" }; },
-            _mockClient);
-
-        using var inStream = EnvelopeStream(input);
-        var ex = await Assert.ThrowsAsync<DurableExecutionException>(
-            () => entry.InvokeAsync(inStream, CreateLambdaContext()));
+        var ex = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                async (evt, ctx) =>
+                {
+                    await Task.CompletedTask;
+                    return new OrderResult { Status = "ok" };
+                },
+                input,
+                CreateLambdaContext(),
+                _mockClient));
 
         Assert.Contains("malformed", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EXECUTION", ex.Message);
     }
 
     [Fact]
-    public async Task PaginatedInitialState_HydratesAllPages()
+    public async Task WrapAsync_PaginatedInitialState_HydratesAllPages()
     {
         // The service can return execution state across multiple pages — the first
         // page comes inline on the invocation envelope (InitialExecutionState) and
         // subsequent pages must be fetched via GetDurableExecutionState. Verify the
-        // pagination loop in DurableEntryPointCore walks every page so the workflow
-        // sees the full operation history on replay.
+        // pagination loop in WrapAsyncCore (DurableFunction.cs:160-167) walks every
+        // page so the workflow sees the full operation history on replay.
         var arn = "arn:aws:lambda:us-east-1:123:durable-execution:paginated";
 
         // Page 0 (in InitialExecutionState): EXECUTION op + step1 SUCCEEDED.
@@ -389,7 +374,7 @@ public class DurableEntryPointTests
         };
 
         var observed = new List<string>();
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             async (evt, ctx) =>
             {
                 // All three steps must replay the cached results from the paginated state
@@ -403,7 +388,9 @@ public class DurableEntryPointTests
                     async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step3"));
                 return new OrderResult { Status = "ok", OrderId = evt.OrderId };
             },
-            input, CreateLambdaContext(), mockClient);
+            input,
+            CreateLambdaContext(),
+            mockClient);
 
         Assert.Equal(InvocationStatus.Succeeded, output.Status);
 
@@ -422,7 +409,7 @@ public class DurableEntryPointTests
     }
 
     [Fact]
-    public async Task NullInitialExecutionState_ThrowsMalformedEnvelope()
+    public async Task WrapAsync_NullInitialExecutionState_ThrowsMalformedEnvelope()
     {
         // No initial execution state at all — same malformed-envelope branch in ExtractUserPayload.
         var input = new DurableExecutionInvocationInput
@@ -430,50 +417,18 @@ public class DurableEntryPointTests
             DurableExecutionArn = "arn:aws:lambda:us-east-1:123:durable-execution:null-state"
         };
 
-        var entry = new DurableEntryPoint<OrderEvent, OrderResult>(
-            async (evt, ctx) => { await Task.CompletedTask; return new OrderResult { Status = "ok" }; },
-            _mockClient);
-
-        using var inStream = EnvelopeStream(input);
-        var ex = await Assert.ThrowsAsync<DurableExecutionException>(
-            () => entry.InvokeAsync(inStream, CreateLambdaContext()));
+        var ex = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                async (evt, ctx) =>
+                {
+                    await Task.CompletedTask;
+                    return new OrderResult { Status = "ok" };
+                },
+                input,
+                CreateLambdaContext(),
+                _mockClient));
 
         Assert.Contains("malformed", ex.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task NoSerializerOnContext_ThrowsHelpfulException()
-    {
-        // Stage 2 (user payload (de)serialization) requires a serializer registered on
-        // ILambdaContext.Serializer. Without one, the entry point should throw a
-        // self-explanatory InvalidOperationException rather than NRE on the next line.
-        var input = new DurableExecutionInvocationInput
-        {
-            DurableExecutionArn = "arn:test",
-            InitialExecutionState = new InitialExecutionState
-            {
-                Operations = new List<Operation>
-                {
-                    new()
-                    {
-                        Id = "exec-0",
-                        Type = OperationTypes.Execution,
-                        Status = OperationStatuses.Started,
-                        ExecutionDetails = new ExecutionDetails { InputPayload = "{\"orderId\":\"x\"}" }
-                    }
-                }
-            }
-        };
-
-        var entry = new DurableEntryPoint<OrderEvent, OrderResult>(
-            async (evt, ctx) => { await Task.CompletedTask; return new OrderResult(); },
-            _mockClient);
-
-        using var inStream = EnvelopeStream(input);
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => entry.InvokeAsync(inStream, new TestLambdaContext()));
-
-        Assert.Contains("ILambdaContext.Serializer", ex.Message);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -484,7 +439,7 @@ public class DurableEntryPointTests
     //   Carve-out: InvalidParameterValueException "Invalid Checkpoint Token" → transient
     //
     // Driven through CheckpointDurableExecution: a workflow that succeeds a single Step
-    // forces the batcher to flush, which is wrapped by the try/catch in DurableEntryPointCore.
+    // forces the batcher to flush, which is wrapped by the try/catch in WrapAsyncCore.
     // ──────────────────────────────────────────────────────────────────────
 
     public static IEnumerable<object[]> TerminalCheckpointErrorCases() => new[]
@@ -498,12 +453,15 @@ public class DurableEntryPointTests
 
     [Theory]
     [MemberData(nameof(TerminalCheckpointErrorCases))]
-    public async Task CheckpointThrowsTerminal_ReturnsFailed(AmazonServiceException ex)
+    public async Task WrapAsync_CheckpointThrowsTerminal_ReturnsFailed(AmazonServiceException ex)
     {
+        // LambdaDurableServiceClient now wraps SDK exceptions in DurableExecutionException
+        // so user logs carry context (which call, which ARN). The outer message includes
+        // the inner SDK message; the classifier matches on the wrapper's InnerException.
         var input = MakeCheckpointInput();
         var mockClient = new MockLambdaClient { CheckpointThrows = ex };
 
-        var output = await InvokeAsync<OrderEvent, OrderResult>(
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
             SingleStepWorkflow, input, CreateLambdaContext(), mockClient);
 
         Assert.Equal(InvocationStatus.Failed, output.Status);
@@ -527,21 +485,25 @@ public class DurableEntryPointTests
 
     [Theory]
     [MemberData(nameof(TransientCheckpointErrorCases))]
-    public async Task CheckpointThrowsTransient_PropagatesToHost(AmazonServiceException ex)
+    public async Task WrapAsync_CheckpointThrowsTransient_PropagatesToHost(AmazonServiceException ex)
     {
+        // Transient SDK errors escape the IsTerminalCheckpointError catch and propagate
+        // to the host as DurableExecutionException wrapping the original SDK exception
+        // — Lambda's normal retry semantics fire on the wrapper. The original SDK
+        // exception is preserved as InnerException so callers can still introspect
+        // the original status code / error code.
         var input = MakeCheckpointInput();
         var mockClient = new MockLambdaClient { CheckpointThrows = ex };
-        var entry = new DurableEntryPoint<OrderEvent, OrderResult>(SingleStepWorkflow, mockClient);
 
-        using var inStream = EnvelopeStream(input);
-        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(
-            () => entry.InvokeAsync(inStream, CreateLambdaContext()));
+        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                SingleStepWorkflow, input, CreateLambdaContext(), mockClient));
 
         Assert.Same(ex, thrown.InnerException);
     }
 
     [Fact]
-    public async Task HydrationThrows_AlwaysPropagatesToHost()
+    public async Task WrapAsync_HydrationThrows_AlwaysPropagatesToHost()
     {
         // State hydration is OUTSIDE the IsTerminalCheckpointError try/catch — every
         // GetExecutionStateAsync failure escapes for Lambda retry, matching Python's
@@ -567,11 +529,13 @@ public class DurableEntryPointTests
         };
         var ex = MakeServiceException("ResourceNotFoundException", HttpStatusCode.NotFound, "ARN gone");
         var mockClient = new MockLambdaClient { GetExecutionStateThrows = ex };
-        var entry = new DurableEntryPoint<OrderEvent, OrderResult>(MyWorkflow, mockClient);
 
-        using var inStream = EnvelopeStream(input);
-        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(
-            () => entry.InvokeAsync(inStream, CreateLambdaContext()));
+        // Hydration errors are wrapped in DurableExecutionException by
+        // LambdaDurableServiceClient.GetExecutionStateAsync but are NOT caught by the
+        // IsTerminalCheckpointError filter, so they escape to the host.
+        var thrown = await Assert.ThrowsAsync<DurableExecutionException>(() =>
+            DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+                MyWorkflow, input, CreateLambdaContext(), mockClient));
 
         Assert.Same(ex, thrown.InnerException);
         Assert.Contains("Failed to fetch execution state", thrown.Message);

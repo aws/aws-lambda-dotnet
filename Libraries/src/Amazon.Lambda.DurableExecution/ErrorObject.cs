@@ -3,10 +3,9 @@ using System.Text.Json.Serialization;
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
-/// Serializable error representation stored in checkpoint state. Produced by the
-/// entry point when a workflow throws and shipped on the wire envelope.
+/// Serializable error representation stored in checkpoint state.
 /// </summary>
-internal sealed class ErrorObject
+public sealed class ErrorObject
 {
     /// <summary>
     /// The fully-qualified exception type name.

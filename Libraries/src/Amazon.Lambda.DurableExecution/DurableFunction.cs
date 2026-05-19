@@ -1,37 +1,82 @@
 using System.IO;
 using System.Text;
-using System.Text.Json;
+using System.Threading;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.DurableExecution.Services;
 using Amazon.Lambda.Model;
 using Amazon.Runtime;
 
-namespace Amazon.Lambda.DurableExecution.Internal;
+namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
-/// Shared orchestration body for <see cref="DurableEntryPoint{TInput,TOutput}"/>.
-/// Reads the envelope with the library context, runs the workflow with the user's
-/// serializer for <c>TInput</c>/<c>TOutput</c>, returns the populated output envelope.
+/// Static helper that wraps a durable workflow function, handling all envelope
+/// translation between DurableExecutionInvocationInput/Output and user types.
+///
+/// All four overloads dispatch through the <see cref="ILambdaSerializer"/> registered
+/// on <see cref="ILambdaContext.Serializer"/>, so AOT-safe and reflection-based
+/// callers share a single code path. Callers wire AOT support by registering an
+/// AOT-aware serializer with the runtime
+/// (e.g., <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>) — no per-call
+/// <c>JsonSerializerContext</c> argument is required.
 /// </summary>
-internal static class DurableEntryPointCore
+public static class DurableFunction
 {
-    public static async Task<DurableExecutionInvocationOutput> InvokeAsync<TInput, TOutput>(
+    private static readonly Lazy<IAmazonLambda> _cachedLambdaClient =
+        new(() => new AmazonLambdaClient(), LazyThreadSafetyMode.ExecutionAndPublication);
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output).
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        Stream input,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output) with explicit Lambda client.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, lambdaClient);
+
+    /// <summary>
+    /// Wrap a void workflow (typed input, no output).
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext)
+        => WrapAsync(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
+
+    /// <summary>
+    /// Wrap a void workflow with explicit Lambda client.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient)
+        => WrapAsyncCore<TInput, object?>(
+            async (input, ctx) => { await workflow(input, ctx); return null; },
+            invocationInput, lambdaContext, lambdaClient);
+
+    private static async Task<DurableExecutionInvocationOutput> WrapAsyncCore<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
         IAmazonLambda lambdaClient)
     {
         var serializer = lambdaContext.Serializer
             ?? throw new InvalidOperationException(
                 "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "In the class library programming model, register one with " +
-                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
-                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
-                "In tests, set TestLambdaContext.Serializer.");
-
-        var invocationInput = JsonSerializer.Deserialize(input, DurableEnvelopeJsonContext.Default.DurableExecutionInvocationInput)
-            ?? throw new DurableExecutionException("Durable execution envelope is malformed: input stream produced a null envelope.");
+                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
+                "(or in tests, set TestLambdaContext.Serializer).");
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
@@ -99,6 +144,21 @@ internal static class DurableEntryPointCore
     ///   - Carve-out: <c>InvalidParameterValueException</c> with a message starting with
     ///     "Invalid Checkpoint Token" is treated as transient — the service rejects a
     ///     stale token but a retry with a fresh token will succeed.
+    ///
+    /// Only checkpoint-flush errors flow through this catch. There are two paths:
+    ///   1. A flush triggered synchronously from inside a user <c>StepAsync</c> call
+    ///      (the user awaits <c>EnqueueAsync</c> → batch flush → SDK throws → service client
+    ///      wraps).
+    ///   2. The final <see cref="CheckpointBatcher.DrainAsync"/> after the workflow returns.
+    ///
+    /// State-hydration errors (<c>GetExecutionStateAsync</c>) propagate as
+    /// <see cref="DurableExecutionException"/> too, but they are NOT caught here — they
+    /// flow up to the host so Lambda retries, matching Python's <c>GetExecutionStateError</c>
+    /// (which extends <c>InvocationError</c>).
+    ///
+    /// User-code SDK errors (e.g. an SDK call inside a Step body) are caught by
+    /// <c>StepRunner</c> and surfaced as <c>StepException</c> for the workflow's normal
+    /// step-failure handling.
     /// </remarks>
     private static bool IsTerminalCheckpointError(AmazonServiceException ex)
     {
