@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Amazon.Lambda.DurableExecution.Internal;
 
 namespace Amazon.Lambda.DurableExecution;
 
@@ -22,21 +21,18 @@ public sealed class DurableExecutionInvocationInput
     public string? CheckpointToken { get; set; }
 
     /// <summary>
-    /// Previously checkpointed operation state for replay. Internal — consumed
-    /// only by <c>DurableFunction.WrapAsync</c> for replay correlation; user code
-    /// should never read or modify this. Marked <see cref="JsonIncludeAttribute"/>
-    /// so System.Text.Json populates it during deserialization despite being internal
-    /// (framework needs it, but it's not part of the public API contract).
+    /// Previously checkpointed operation state for replay. Consumed by
+    /// <c>DurableFunction.WrapAsync</c> for replay correlation; user code
+    /// should not modify this on a live invocation envelope.
     /// </summary>
     [JsonPropertyName("InitialExecutionState")]
-    [JsonInclude]
-    internal InitialExecutionState? InitialExecutionState { get; set; }
+    public InitialExecutionState? InitialExecutionState { get; set; }
 }
 
 /// <summary>
 /// The previously checkpointed execution state provided on replay invocations.
 /// </summary>
-internal sealed class InitialExecutionState
+public sealed class InitialExecutionState
 {
     /// <summary>
     /// The list of operations from prior invocations.

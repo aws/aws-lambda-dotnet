@@ -3,6 +3,10 @@ using Amazon.Lambda.Model;
 using Amazon.Runtime;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 using SdkOperation = Amazon.Lambda.Model.Operation;
+using Operation = Amazon.Lambda.DurableExecution.Operation;
+using StepDetails = Amazon.Lambda.DurableExecution.StepDetails;
+using WaitDetails = Amazon.Lambda.DurableExecution.WaitDetails;
+using ExecutionDetails = Amazon.Lambda.DurableExecution.ExecutionDetails;
 
 namespace Amazon.Lambda.DurableExecution.Services;
 
@@ -59,7 +63,7 @@ internal sealed class LambdaDurableServiceClient
     /// SDK errors are wrapped in <see cref="DurableExecutionException"/> for the same
     /// reason as <see cref="CheckpointAsync"/>.
     /// </summary>
-    public async Task<(List<Internal.Operation> Operations, string? NextMarker)> GetExecutionStateAsync(
+    public async Task<(List<Operation> Operations, string? NextMarker)> GetExecutionStateAsync(
         string durableExecutionArn,
         string? checkpointToken,
         string marker,
@@ -84,7 +88,7 @@ internal sealed class LambdaDurableServiceClient
                 ex);
         }
 
-        var operations = new List<Internal.Operation>();
+        var operations = new List<Operation>();
         if (response.Operations != null)
         {
             foreach (var sdkOp in response.Operations)
@@ -96,9 +100,9 @@ internal sealed class LambdaDurableServiceClient
         return (operations, response.NextMarker);
     }
 
-    private static Internal.Operation MapFromSdkOperation(SdkOperation sdkOp)
+    private static Operation MapFromSdkOperation(SdkOperation sdkOp)
     {
-        return new Internal.Operation
+        return new Operation
         {
             Id = sdkOp.Id,
             Type = sdkOp.Type,
@@ -106,7 +110,7 @@ internal sealed class LambdaDurableServiceClient
             Name = sdkOp.Name,
             ParentId = sdkOp.ParentId,
             SubType = sdkOp.SubType,
-            StepDetails = sdkOp.StepDetails != null ? new Internal.StepDetails
+            StepDetails = sdkOp.StepDetails != null ? new StepDetails
             {
                 Result = sdkOp.StepDetails.Result,
                 Error = sdkOp.StepDetails.Error != null ? new ErrorObject
@@ -119,13 +123,13 @@ internal sealed class LambdaDurableServiceClient
                     ? new DateTimeOffset(sdkOp.StepDetails.NextAttemptTimestamp.Value, TimeSpan.Zero).ToUnixTimeMilliseconds()
                     : null
             } : null,
-            WaitDetails = sdkOp.WaitDetails != null ? new Internal.WaitDetails
+            WaitDetails = sdkOp.WaitDetails != null ? new WaitDetails
             {
                 ScheduledEndTimestamp = sdkOp.WaitDetails.ScheduledEndTimestamp.HasValue
                     ? new DateTimeOffset(sdkOp.WaitDetails.ScheduledEndTimestamp.Value, TimeSpan.Zero).ToUnixTimeMilliseconds()
                     : null
             } : null,
-            ExecutionDetails = sdkOp.ExecutionDetails != null ? new Internal.ExecutionDetails
+            ExecutionDetails = sdkOp.ExecutionDetails != null ? new ExecutionDetails
             {
                 InputPayload = sdkOp.ExecutionDetails.InputPayload
             } : null

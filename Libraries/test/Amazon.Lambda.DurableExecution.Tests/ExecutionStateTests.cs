@@ -1,8 +1,7 @@
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
 using Xunit;
-using Operation = Amazon.Lambda.DurableExecution.Internal.Operation;
-using StepDetails = Amazon.Lambda.DurableExecution.Internal.StepDetails;
+
 namespace Amazon.Lambda.DurableExecution.Tests;
 
 public class ExecutionStateTests

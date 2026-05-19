@@ -7,10 +7,6 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Runtime;
 using Xunit;
-using Operation = Amazon.Lambda.DurableExecution.Internal.Operation;
-using StepDetails = Amazon.Lambda.DurableExecution.Internal.StepDetails;
-using WaitDetails = Amazon.Lambda.DurableExecution.Internal.WaitDetails;
-using ExecutionDetails = Amazon.Lambda.DurableExecution.Internal.ExecutionDetails;
 
 namespace Amazon.Lambda.DurableExecution.Tests;
 
