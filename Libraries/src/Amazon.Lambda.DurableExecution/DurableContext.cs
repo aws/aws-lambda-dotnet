@@ -69,8 +69,10 @@ internal sealed class DurableContext : IDurableContext
         var serializer = LambdaContext.Serializer
             ?? throw new InvalidOperationException(
                 "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
-                "(or in tests, set TestLambdaContext.Serializer).");
+                "In the class library programming model, register one with " +
+                "[assembly: LambdaSerializer(typeof(...))]. In an executable / custom " +
+                "runtime, pass it to LambdaBootstrapBuilder.Create(handler, serializer). " +
+                "In tests, set TestLambdaContext.Serializer.");
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(

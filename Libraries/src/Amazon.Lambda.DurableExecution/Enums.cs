@@ -1,9 +1,10 @@
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
-/// The terminal status of a durable execution invocation.
+/// The terminal status of a durable execution invocation. Appears on the wire
+/// envelope and on <c>HandlerResult</c>.
 /// </summary>
-public enum InvocationStatus
+internal enum InvocationStatus
 {
     /// <summary>The workflow completed successfully.</summary>
     Succeeded,

@@ -5,9 +5,10 @@ namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
 /// The service envelope input for a durable execution invocation.
-/// This is what Lambda receives from the durable execution service.
+/// <see cref="DurableEntryPoint{TInput,TOutput}"/> owns (de)serialization
+/// end-to-end so users only register their own POCO types.
 /// </summary>
-public sealed class DurableExecutionInvocationInput
+internal sealed class DurableExecutionInvocationInput
 {
     /// <summary>
     /// The unique ARN identifying this durable execution.
@@ -22,15 +23,13 @@ public sealed class DurableExecutionInvocationInput
     public string? CheckpointToken { get; set; }
 
     /// <summary>
-    /// Previously checkpointed operation state for replay. Internal — consumed
-    /// only by <c>DurableFunction.WrapAsync</c> for replay correlation; user code
-    /// should never read or modify this. Marked <see cref="JsonIncludeAttribute"/>
-    /// so System.Text.Json populates it during deserialization despite being internal
-    /// (framework needs it, but it's not part of the public API contract).
+    /// Previously checkpointed operation state for replay. Declared <c>public</c>
+    /// so <see cref="Internal.DurableEnvelopeJsonContext"/> emits a setter — STJ
+    /// source-gen reads declared accessibility, not effective accessibility, and
+    /// silently skips <c>internal</c>-declared members even within the same assembly.
     /// </summary>
     [JsonPropertyName("InitialExecutionState")]
-    [JsonInclude]
-    internal InitialExecutionState? InitialExecutionState { get; set; }
+    public InitialExecutionState? InitialExecutionState { get; set; }
 }
 
 /// <summary>

@@ -52,12 +52,13 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     public static async Task<DurableFunctionDeployment> CreateAsync(
         string testFunctionDir,
         string scenarioSuffix,
-        ITestOutputHelper output)
+        ITestOutputHelper output,
+        bool useDockerPublish = false)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir);
+            await deployment.InitializeAsync(testFunctionDir, useDockerPublish);
         }
         catch
         {
@@ -69,7 +70,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         return deployment;
     }
 
-    private async Task InitializeAsync(string testFunctionDir)
+    private async Task InitializeAsync(string testFunctionDir, bool useDockerPublish)
     {
         // 1. Create IAM role
         _output.WriteLine($"Creating IAM role: {_roleName}");
@@ -117,7 +118,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
         // 3. Build and push Docker image
         _output.WriteLine($"Building and pushing Docker image from {testFunctionDir}...");
-        _imageUri = await BuildAndPushImage(testFunctionDir, repositoryUri);
+        _imageUri = await BuildAndPushImage(testFunctionDir, repositoryUri, useDockerPublish);
         _output.WriteLine($"Image pushed: {_imageUri}");
 
         // 4. Create Lambda function
@@ -307,38 +308,148 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         throw new TimeoutException("Function did not become Active within 120 seconds");
     }
 
-    private async Task<string> BuildAndPushImage(string testFunctionDir, string repositoryUri)
+    private async Task<string> BuildAndPushImage(string testFunctionDir, string repositoryUri, bool useDockerPublish)
     {
-        var publishDir = Path.Combine(testFunctionDir, "bin", "publish");
-        if (Directory.Exists(publishDir)) Directory.Delete(publishDir, true);
-
-        await RunProcess("dotnet",
-            $"publish -c Release -r linux-x64 --self-contained true -o \"{publishDir}\"",
-            testFunctionDir);
-
         var imageTag = $"{repositoryUri}:latest";
-        await RunProcess("docker",
-            $"build --platform linux/amd64 --provenance=false -t {imageTag} .",
-            testFunctionDir);
 
-        var authResponse = await _ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
-        var authData = authResponse.AuthorizationData[0];
-        var token = Encoding.UTF8.GetString(Convert.FromBase64String(authData.AuthorizationToken));
-        var parts = token.Split(':');
-        var registryUrl = authData.ProxyEndpoint;
+        // Two flavors of `docker build`:
+        //   - Host-publish (default, JIT functions): `dotnet publish` runs on the host and
+        //     writes to bin/publish/, which the Dockerfile COPYs in. Build context = function dir.
+        //   - Docker-publish (NativeAOT): the host can't cross-compile AOT for linux-x64
+        //     reliably (needs clang/zlib), so `dotnet publish` runs *inside* the image.
+        //     The Dockerfile's project references reach back to Libraries\src\... and
+        //     buildtools\common.props, so we stage those into a temp directory and use it
+        //     as the build context.
+        string buildContextDir;
+        string dockerfilePath;
+        string? stagingDir = null;
 
-        await RunProcess("docker",
-            $"login --username {parts[0]} --password-stdin {registryUrl}",
-            testFunctionDir,
-            stdin: parts[1]);
+        if (useDockerPublish)
+        {
+            stagingDir = StageBuildContextForDockerPublish(testFunctionDir);
+            buildContextDir = stagingDir;
 
-        await RunProcess("docker", $"push {imageTag}", testFunctionDir);
+            // The function's project lives at the same relative path inside the staging dir.
+            var repoRoot = FindRepoRoot(testFunctionDir);
+            var relFunctionDir = Path.GetRelativePath(repoRoot, testFunctionDir);
+            dockerfilePath = Path.Combine(stagingDir, relFunctionDir, "Dockerfile");
+        }
+        else
+        {
+            var publishDir = Path.Combine(testFunctionDir, "bin", "publish");
+            if (Directory.Exists(publishDir)) Directory.Delete(publishDir, true);
+
+            await RunProcess("dotnet",
+                $"publish -c Release -r linux-x64 --self-contained true -o \"{publishDir}\"",
+                testFunctionDir);
+
+            buildContextDir = testFunctionDir;
+            dockerfilePath = Path.Combine(testFunctionDir, "Dockerfile");
+        }
+
+        try
+        {
+            await RunProcess("docker",
+                $"build --platform linux/amd64 --provenance=false -f \"{dockerfilePath}\" -t {imageTag} \"{buildContextDir}\"",
+                buildContextDir,
+                timeout: useDockerPublish ? TimeSpan.FromMinutes(20) : TimeSpan.FromMinutes(5));
+
+            var authResponse = await _ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
+            var authData = authResponse.AuthorizationData[0];
+            var token = Encoding.UTF8.GetString(Convert.FromBase64String(authData.AuthorizationToken));
+            var parts = token.Split(':');
+            var registryUrl = authData.ProxyEndpoint;
+
+            await RunProcess("docker",
+                $"login --username {parts[0]} --password-stdin {registryUrl}",
+                buildContextDir,
+                stdin: parts[1]);
+
+            await RunProcess("docker", $"push {imageTag}", buildContextDir);
+        }
+        finally
+        {
+            if (stagingDir != null && Directory.Exists(stagingDir))
+            {
+                try { Directory.Delete(stagingDir, true); }
+                catch (Exception ex) { _output.WriteLine($"Cleanup error (staging dir): {ex.Message}"); }
+            }
+        }
 
         return imageTag;
     }
 
-    private async Task RunProcess(string fileName, string arguments, string workingDir, string? stdin = null)
+    /// <summary>
+    /// Copies the minimum source tree needed to publish a NativeAOT durable function inside
+    /// a Docker container: <c>buildtools/</c> (pulled in by Libraries\src\...\common.props),
+    /// <c>Libraries/src/</c> (project references), and the function dir itself, all preserved
+    /// at their original relative paths so ProjectReferences resolve.
+    /// </summary>
+    private static string StageBuildContextForDockerPublish(string testFunctionDir)
     {
+        var repoRoot = FindRepoRoot(testFunctionDir);
+        var stagingRoot = Path.Combine(Path.GetTempPath(), $"durable-aot-stage-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(stagingRoot);
+
+        CopyDirectoryFiltered(Path.Combine(repoRoot, "buildtools"), Path.Combine(stagingRoot, "buildtools"));
+        CopyDirectoryFiltered(Path.Combine(repoRoot, "Libraries", "src"), Path.Combine(stagingRoot, "Libraries", "src"));
+
+        var relFunctionDir = Path.GetRelativePath(repoRoot, testFunctionDir);
+        CopyDirectoryFiltered(testFunctionDir, Path.Combine(stagingRoot, relFunctionDir));
+
+        return stagingRoot;
+    }
+
+    private static string FindRepoRoot(string startDir)
+    {
+        var dir = new DirectoryInfo(Path.GetFullPath(startDir));
+        while (dir != null)
+        {
+            if (Directory.Exists(Path.Combine(dir.FullName, "buildtools")) &&
+                Directory.Exists(Path.Combine(dir.FullName, "Libraries")))
+            {
+                return dir.FullName;
+            }
+            dir = dir.Parent;
+        }
+        throw new DirectoryNotFoundException(
+            $"Could not locate repo root (with buildtools/ and Libraries/) starting from {startDir}");
+    }
+
+    private static void CopyDirectoryFiltered(string source, string destination)
+    {
+        if (!Directory.Exists(source))
+            throw new DirectoryNotFoundException($"Source directory not found: {source}");
+
+        Directory.CreateDirectory(destination);
+        foreach (var dirPath in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
+        {
+            // Skip build artifacts — they bloat the docker context and AOT publish needs a clean obj/.
+            var rel = Path.GetRelativePath(source, dirPath);
+            if (rel.Contains("bin", StringComparison.OrdinalIgnoreCase) ||
+                rel.Contains("obj", StringComparison.OrdinalIgnoreCase) ||
+                rel.Contains(".vs", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            Directory.CreateDirectory(Path.Combine(destination, rel));
+        }
+        foreach (var filePath in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(source, filePath);
+            if (rel.Contains("bin" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                rel.Contains("obj" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                rel.Contains(".vs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            File.Copy(filePath, Path.Combine(destination, rel), overwrite: true);
+        }
+    }
+
+    private async Task RunProcess(string fileName, string arguments, string workingDir, string? stdin = null, TimeSpan? timeout = null)
+    {
+        var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(5);
         _output.WriteLine($"Running: {fileName} {arguments}");
         var psi = new System.Diagnostics.ProcessStartInfo
         {
@@ -364,12 +475,12 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
         await Task.WhenAny(
             process.WaitForExitAsync(),
-            Task.Delay(TimeSpan.FromMinutes(5)));
+            Task.Delay(effectiveTimeout));
 
         if (!process.HasExited)
         {
             process.Kill();
-            throw new TimeoutException($"{fileName} timed out after 5 minutes");
+            throw new TimeoutException($"{fileName} timed out after {effectiveTimeout.TotalMinutes} minutes");
         }
 
         var stdout = await stdoutTask;

@@ -32,11 +32,9 @@ public interface IDurableContext
     /// <summary>
     /// Execute a step with automatic checkpointing. The step result is serialized
     /// to a checkpoint using the <see cref="ILambdaSerializer"/> registered on
-    /// <see cref="ILambdaContext.Serializer"/> (typically configured via
-    /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>). AOT and
-    /// reflection-based scenarios share this single overload — the AOT story is
-    /// determined by the registered serializer (e.g.,
-    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
+    /// <see cref="ILambdaContext.Serializer"/>. AOT and reflection-based scenarios
+    /// share this single overload — the AOT story is determined by the registered
+    /// serializer (e.g., <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
     /// </summary>
     Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,

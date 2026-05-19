@@ -1,8 +1,9 @@
+using System.Text.Json.Serialization;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
-namespace DurableExecutionTestFunction;
+namespace DurableExecutionAotTestFunction;
 
 public class Function
 {
@@ -11,24 +12,23 @@ public class Function
     public static async Task Main()
     {
         await LambdaBootstrapBuilder
-            .Create(_entry.InvokeAsync, new DefaultLambdaJsonSerializer())
+            .Create(_entry.InvokeAsync, new SourceGeneratorLambdaJsonSerializer<AotJsonContext>())
             .Build()
             .RunAsync();
     }
 
     private static async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
     {
-        await context.StepAsync<string>(
-            async (_) =>
-            {
-                await Task.CompletedTask;
-                throw new InvalidOperationException("intentional failure for integration test");
-            },
-            name: "fail_step");
-
-        return new TestResult { Status = "should_not_reach" };
+        await context.WaitAsync(TimeSpan.FromSeconds(5), name: "only_wait");
+        return new TestResult { Status = "completed", Data = "wait_only" };
     }
 }
 
 public class TestEvent { public string? OrderId { get; set; } }
 public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }
+
+[JsonSerializable(typeof(TestEvent))]
+[JsonSerializable(typeof(TestResult))]
+public partial class AotJsonContext : JsonSerializerContext
+{
+}

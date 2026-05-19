@@ -79,10 +79,12 @@ Your function reads like a normal async method. The SDK deals with state, replay
 
 Durable functions use a replay-based execution model. Every invocation runs your code from the top, but previously completed steps return their cached result instead of re-executing.
 
-1. Lambda invokes your function with a `DurableExecutionInvocationInput` containing:
+1. Lambda invokes your function with a service-envelope payload containing:
    - `DurableExecutionArn` -- unique execution identifier
    - `CheckpointToken` -- for optimistic concurrency
    - `InitialExecutionState` -- previously checkpointed operations
+
+   The SDK reads this envelope, hands your workflow only the user payload, and writes the response envelope on the way out — your code never sees the wire format.
 
 2. Your function code runs **from the beginning** on every invocation.
 
@@ -190,23 +192,28 @@ Things to notice:
 
 #### Manual Handler (Without Annotations)
 
-If you don't use `Amazon.Lambda.Annotations`, use `DurableFunction.WrapAsync` — a static helper (inspired by [OpenTelemetry's `AWSLambdaWrapper.TraceAsync`](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.AWSLambda#lambda-function)) that handles the entire durable execution envelope for you:
+If you don't use `Amazon.Lambda.Annotations`, register `DurableEntryPoint<TInput, TOutput>` as your Lambda handler. The entry point owns all wire-envelope (de)serialization — your workflow only deals with `TInput`/`TOutput`:
 
 ```csharp
-using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
-
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+using Amazon.Lambda.RuntimeSupport;
+using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace MyDurableFunction;
 
 public class Function
 {
-    public Task<DurableExecutionInvocationOutput> FunctionHandler(
-        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(MyWorkflow, invocationInput, context);
+    private static readonly DurableEntryPoint<OrderEvent, OrderResult> _entry = new(MyWorkflow);
 
-    private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
+    public static async Task Main()
+    {
+        await LambdaBootstrapBuilder
+            .Create(_entry.InvokeAsync, new DefaultLambdaJsonSerializer())
+            .Build()
+            .RunAsync();
+    }
+
+    private static async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
         var validation = await context.StepAsync(
             async (step) => await ValidateOrder(input.OrderId),
@@ -224,26 +231,23 @@ public class Function
         return new OrderResult { Status = "approved", OrderId = result.OrderId };
     }
 
-    private async Task<ValidationResult> ValidateOrder(string orderId) { /* ... */ }
-    private async Task<ProcessResult> ProcessOrder(string orderId) { /* ... */ }
+    private static async Task<ValidationResult> ValidateOrder(string orderId) { /* ... */ }
+    private static async Task<ProcessResult> ProcessOrder(string orderId) { /* ... */ }
 }
 ```
 
-`DurableFunction.WrapAsync` handles all the plumbing:
-- Hydrates `ExecutionState` from `invocationInput.InitialExecutionState`
-- Extracts the user payload from the service envelope
-- Runs the workflow through `DurableExecutionHandler.RunAsync`
-- Constructs and returns the `DurableExecutionInvocationOutput` envelope (status mapping, JSON serialization)
-- Sets execution environment tracking
+`DurableEntryPoint.InvokeAsync` is a `Stream → Stream` Lambda handler. It:
+- Deserializes the service envelope using a library-internal `JsonSerializerContext`
+- Hydrates `ExecutionState` from `InitialExecutionState`
+- Extracts the user payload via the registered `ILambdaSerializer` and runs your workflow through `DurableExecutionHandler.RunAsync`
+- Serializes the result using the registered `ILambdaSerializer`, wraps it in the response envelope, and writes the envelope back to the stream
 
-For workflows that return no value, use the single-type-parameter overload:
+For workflows that return no value, use the single-type-parameter form:
 
 ```csharp
-public Task<DurableExecutionInvocationOutput> FunctionHandler(
-    DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-    => DurableFunction.WrapAsync<OrderEvent>(MyWorkflow, invocationInput, context);
+private static readonly DurableEntryPoint<OrderEvent> _entry = new(MyWorkflow);
 
-private async Task MyWorkflow(OrderEvent input, IDurableContext context)
+private static async Task MyWorkflow(OrderEvent input, IDurableContext context)
 {
     await context.StepAsync(async (step) => await SendNotification(input.UserId), name: "notify");
     await context.WaitAsync(TimeSpan.FromHours(1), name: "cooldown");
@@ -251,41 +255,37 @@ private async Task MyWorkflow(OrderEvent input, IDurableContext context)
 }
 ```
 
-For **NativeAOT** deployments, pass a `JsonSerializerContext` so the SDK can serialize/deserialize your input and output types without reflection:
+For **NativeAOT** deployments, register a `SourceGeneratorLambdaJsonSerializer<TContext>` whose `JsonSerializerContext` lists only your own types. The library's internal envelope context handles the wire format — users never register envelope types, so no source-gen warnings or accessibility errors:
 
 ```csharp
 [JsonSerializable(typeof(OrderEvent))]
 [JsonSerializable(typeof(OrderResult))]
-internal partial class MyJsonContext : JsonSerializerContext { }
+public partial class MyJsonContext : JsonSerializerContext { }
 
 public class Function
 {
-    public Task<DurableExecutionInvocationOutput> FunctionHandler(
-        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            MyWorkflow, invocationInput, context, MyJsonContext.Default);
+    private static readonly DurableEntryPoint<OrderEvent, OrderResult> _entry = new(MyWorkflow);
 
-    private async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
+    public static async Task Main()
+    {
+        await LambdaBootstrapBuilder
+            .Create(_entry.InvokeAsync, new SourceGeneratorLambdaJsonSerializer<MyJsonContext>())
+            .Build()
+            .RunAsync();
+    }
+
+    private static async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
         // ...
     }
 }
 ```
 
-To inject a custom `IAmazonLambda` client (e.g., for VPC endpoints or unit testing), use the overload that accepts one:
+To inject a custom `IAmazonLambda` client (e.g., for VPC endpoints or unit testing), pass it to the `DurableEntryPoint` constructor:
 
 ```csharp
-public class Function
-{
-    private readonly IAmazonLambda _lambdaClient;
-
-    public Function(IAmazonLambda lambdaClient) => _lambdaClient = lambdaClient;
-
-    public Task<DurableExecutionInvocationOutput> FunctionHandler(
-        DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-        => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-            MyWorkflow, invocationInput, context, _lambdaClient);
-}
+private static readonly DurableEntryPoint<OrderEvent, OrderResult> _entry =
+    new(MyWorkflow, new AmazonLambdaClient(/* custom config */));
 ```
 
 You'd also need to manually configure the CloudFormation template with `DurableConfig` and managed policies:
@@ -296,7 +296,7 @@ You'd also need to manually configure the CloudFormation template with `DurableC
     "MyFunction": {
       "Type": "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "MyDurableFunction::MyDurableFunction.Function::FunctionHandler",
+        "Handler": "MyDurableFunction",
         "Policies": [
           "AWSLambdaBasicExecutionRole",
           "AWSLambdaBasicDurableExecutionRolePolicy"
@@ -310,46 +310,23 @@ You'd also need to manually configure the CloudFormation template with `DurableC
 }
 ```
 
-##### What WrapAsync does internally
+##### Two-stage (de)serialization
 
-For reference, here's the expanded version of what `DurableFunction.WrapAsync` eliminates — this is effectively what the source generator produces for the Annotations path:
+The reason `DurableEntryPoint` exists — instead of a typed `(EnvelopeIn, ILambdaContext) → EnvelopeOut` handler — is to keep the wire envelope and its internal types out of the user's `JsonSerializerContext`. Under AOT/source-gen JSON, the user's context lives in a different assembly than the library, so it can't see internal envelope types or attribute-referenced internal converters. Splitting (de)serialization into two stages avoids the leak entirely:
 
-```csharp
-public async Task<DurableExecutionInvocationOutput> FunctionHandler(
-    DurableExecutionInvocationInput invocationInput,
-    ILambdaContext lambdaContext)
-{
-    // 1. Hydrate execution state from previously checkpointed operations
-    var state = new ExecutionState();
-    state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
+| Stage | Owner | Reads/writes | Context used |
+|---|---|---|---|
+| 1. Envelope | Library | `Stream` ↔ `DurableExecutionInvocationInput`/`Output` | Internal `DurableEnvelopeJsonContext` (sees all internal types) |
+| 2. User payload | User | `string` ↔ `TInput`/`TOutput` | The `ILambdaSerializer` you register with `LambdaBootstrapBuilder` |
 
-    // 2. Extract user payload from the service envelope (internal)
-    var userPayload = ExtractUserPayload<OrderEvent>(invocationInput);
+The user's serializer is read from `ILambdaContext.Serializer` at invocation time (the new `LambdaBootstrapBuilder.Create(Func<Stream, ILambdaContext, Task<Stream>>, ILambdaSerializer)` overload propagates it). With AOT this means the user only registers their own POCOs; the library's envelope types stay internal.
 
-    // 3. Run the user's workflow via DurableExecutionHandler.RunAsync
-    var result = await DurableExecutionHandler.RunAsync(
-        state,
-        async (durableContext) => await MyWorkflow(userPayload, durableContext),
-        invocationInput.DurableExecutionArn);
-
-    // 4. Construct and return the service output envelope
-    return new DurableExecutionInvocationOutput
-    {
-        Status = result.Status,
-        Result = result.Status == InvocationStatus.Succeeded
-            ? JsonSerializer.Serialize(result.Result)
-            : null,
-        ErrorMessage = result.Message
-    };
-}
-```
-
-Key differences between `WrapAsync` and the Annotations approach:
-- `WrapAsync` still requires you to define the Lambda entry point signature (`DurableExecutionInvocationInput` → `DurableExecutionInvocationOutput`)
+Differences vs the Annotations approach:
+- You define `Main` and call `LambdaBootstrapBuilder` yourself
 - You configure `DurableConfig` + managed policies in your CloudFormation template manually (not generated)
 - No `[LambdaFunction]` or `[DurableExecution]` attributes needed
 
-With `[LambdaFunction] + [DurableExecution]`, even the entry point and CloudFormation config are generated at compile time — you just write the workflow method.
+With `[LambdaFunction] + [DurableExecution]`, even the `Main` entry point and CloudFormation config are generated at compile time — you just write the workflow method.
 
 ---
 
@@ -932,109 +909,49 @@ When user code hits a pending wait or callback:
 
 ## API Reference
 
-### DurableFunction
+### DurableEntryPoint
 
-Static helper for the non-Annotations handler path. Wraps a workflow function, handling all envelope translation between `DurableExecutionInvocationInput`/`DurableExecutionInvocationOutput` and user types.
+The non-Annotations Lambda handler. Reads the wire envelope from a `Stream`, runs the workflow, and writes the response envelope back. Same shape regardless of JIT or AOT — the only thing that varies is the `ILambdaSerializer` you register with `LambdaBootstrapBuilder`.
 
 ```csharp
 /// <summary>
-/// Static helper that wraps a durable workflow function, handling all envelope
-/// translation between DurableExecutionInvocationInput/Output and user types.
-/// Inspired by OpenTelemetry.Instrumentation.AWSLambda's AWSLambdaWrapper.TraceAsync pattern.
+/// AOT-friendly entry point for a durable workflow. Owns (de)serialization of
+/// the wire envelope so users only register their own POCO types in their
+/// JsonSerializerContext.
 /// </summary>
-public static class DurableFunction
+public sealed class DurableEntryPoint<TInput, TOutput>
 {
-    // ── Reflection-based overloads (JIT only) ──────────────────────────
+    /// <summary>
+    /// Uses a default AmazonLambdaClient, constructed lazily and cached process-wide.
+    /// </summary>
+    public DurableEntryPoint(Func<TInput, IDurableContext, Task<TOutput>> workflow);
 
     /// <summary>
-    /// Wrap a workflow that takes typed input and returns typed output.
-    /// Reflection-based JSON — not AOT-safe.
+    /// Uses the supplied IAmazonLambda for checkpoint and state-fetch calls.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext);
+    public DurableEntryPoint(Func<TInput, IDurableContext, Task<TOutput>> workflow, IAmazonLambda lambdaClient);
 
     /// <summary>
-    /// Wrap a workflow (typed input + output) with explicit Lambda client.
-    /// Reflection-based JSON — not AOT-safe.
+    /// Lambda handler entry point. Register with LambdaBootstrapBuilder alongside
+    /// an ILambdaSerializer that knows how to (de)serialize TInput/TOutput.
     /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient);
+    public Task<Stream> InvokeAsync(Stream input, ILambdaContext context);
+}
 
-    /// <summary>
-    /// Wrap a void workflow (typed input, no output).
-    /// Reflection-based JSON — not AOT-safe.
-    /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext);
-
-    /// <summary>
-    /// Wrap a void workflow with explicit Lambda client.
-    /// Reflection-based JSON — not AOT-safe.
-    /// </summary>
-    [RequiresUnreferencedCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    [RequiresDynamicCode("Uses reflection-based JSON. Use the JsonSerializerContext overload for AOT.")]
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient);
-
-    // ── AOT-safe overloads (caller supplies JsonSerializerContext) ──────
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output). AOT-safe — requires
-    /// [JsonSerializable(typeof(TInput))] and [JsonSerializable(typeof(TOutput))]
-    /// on the supplied jsonContext.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a workflow (typed input + output) with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
-        Func<TInput, IDurableContext, Task<TOutput>> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a void workflow (typed input, no output). AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        JsonSerializerContext jsonContext);
-
-    /// <summary>
-    /// Wrap a void workflow with explicit Lambda client. AOT-safe.
-    /// </summary>
-    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
-        Func<TInput, IDurableContext, Task> workflow,
-        DurableExecutionInvocationInput invocationInput,
-        ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient,
-        JsonSerializerContext jsonContext);
+/// <summary>
+/// AOT-friendly entry point for a void durable workflow.
+/// </summary>
+public sealed class DurableEntryPoint<TInput>
+{
+    public DurableEntryPoint(Func<TInput, IDurableContext, Task> workflow);
+    public DurableEntryPoint(Func<TInput, IDurableContext, Task> workflow, IAmazonLambda lambdaClient);
+    public Task<Stream> InvokeAsync(Stream input, ILambdaContext context);
 }
 ```
+
+`DurableEntryPoint.InvokeAsync` requires an `ILambdaSerializer` to be registered on `ILambdaContext.Serializer`; if it's null, the entry point throws `InvalidOperationException` with a message pointing to `LambdaBootstrapBuilder.Create(handler, serializer)`. In tests, set `TestLambdaContext.Serializer` directly.
+
+The wire-envelope types (`DurableExecutionInvocationInput`/`Output`, `InvocationStatus`, `ErrorObject`) are intentionally `internal` — user code never constructs or reads them.
 
 ### IDurableContext
 
@@ -1713,11 +1630,11 @@ Both approaches produce a self-contained executable that the Lambda custom runti
 
 ### NativeAOT compatibility
 
-The SDK is AOT-friendly but does not require AOT. The default JSON serialization uses reflection (standard `System.Text.Json` behavior), which works in JIT mode. For NativeAOT deployments, AOT safety is addressed at two levels — **at each level there are two overload families: a reflection-based one annotated with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` and an AOT-safe one that requires a serializer parameter**. The trimmer warns at the call site when reflection overloads are used in AOT/trimmed builds.
+The SDK is AOT-friendly but does not require AOT. AOT safety is addressed at two levels:
 
-1. **Entry point (`DurableFunction.WrapAsync`)** — the AOT-safe overload takes a `JsonSerializerContext` parameter that includes type info for your `TInput` and `TOutput` types.
+1. **Entry point** — `DurableEntryPoint` owns wire-envelope (de)serialization through an internal `JsonSerializerContext`. The user-supplied `ILambdaSerializer` (registered with `LambdaBootstrapBuilder`) only handles `TInput`/`TOutput`. For AOT, register a `SourceGeneratorLambdaJsonSerializer<TContext>` whose context lists only your own POCOs — envelope types stay private to the library and never need to appear in the user's context.
 
-2. **Step checkpoints (`IDurableContext.StepAsync`)** — the AOT-safe overload takes an `ICheckpointSerializer<T>` directly as a parameter. Internally, the reflection overload constructs `ReflectionJsonCheckpointSerializer<T>` (whose constructor carries `[RequiresUnreferencedCode]`); the AOT-safe overload uses the user-supplied serializer and never touches reflection. The void `StepAsync` overloads are AOT-safe by default — they use a built-in null-only serializer since they have no payload.
+2. **Step checkpoints (`IDurableContext.StepAsync`)** — there are two overload families: a reflection-based one annotated with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`, and an AOT-safe one that takes an `ICheckpointSerializer<T>` parameter. Internally, the reflection overload constructs `ReflectionJsonCheckpointSerializer<T>` (whose constructor carries `[RequiresUnreferencedCode]`); the AOT-safe overload uses the user-supplied serializer and never touches reflection. The void `StepAsync` overloads are AOT-safe by default — they use a built-in null-only serializer since they have no payload.
 
 The SDK itself avoids `Activator.CreateInstance`, `Type.GetType()`, and other reflection patterns, and uses `[DynamicallyAccessedMembers]` trimming annotations where needed.
 
@@ -1725,16 +1642,22 @@ The SDK itself avoids `Activator.CreateInstance`, `Type.GetType()`, and other re
 // Default: works with reflection (JIT mode); flagged for AOT.
 var result = await context.StepAsync<Order>(async (step) => await GetOrder());
 
-// AOT mode — entry point: pass JsonSerializerContext to WrapAsync.
+// AOT mode — entry point: register a source-generated ILambdaSerializer.
+// Only your own types appear in the context — no envelope types.
 [JsonSerializable(typeof(OrderEvent))]
 [JsonSerializable(typeof(OrderResult))]
 [JsonSerializable(typeof(Order))]
-internal partial class MyJsonContext : JsonSerializerContext { }
+public partial class MyJsonContext : JsonSerializerContext { }
 
-public Task<DurableExecutionInvocationOutput> FunctionHandler(
-    DurableExecutionInvocationInput invocationInput, ILambdaContext context)
-    => DurableFunction.WrapAsync<OrderEvent, OrderResult>(
-        MyWorkflow, invocationInput, context, MyJsonContext.Default);
+private static readonly DurableEntryPoint<OrderEvent, OrderResult> _entry = new(MyWorkflow);
+
+public static async Task Main()
+{
+    await LambdaBootstrapBuilder
+        .Create(_entry.InvokeAsync, new SourceGeneratorLambdaJsonSerializer<MyJsonContext>())
+        .Build()
+        .RunAsync();
+}
 
 // AOT mode — step checkpoint: pass ICheckpointSerializer<T> to StepAsync directly.
 var result = await context.StepAsync(
@@ -1756,7 +1679,7 @@ The SDK handles overflow transparently:
 
 **Batch results (map/parallel) exceeding limits:** For large map/parallel operations, the SDK generates a compact summary for the parent operation's checkpoint. The summary includes item count, success/failure counts, and completion reason — but not individual item results. During replay, the SDK sets `ReplayChildren = true` on the state request, which causes the service to return child operation records so full results can be reconstructed.
 
-**Lambda response exceeding 6 MB:** If the final orchestration result exceeds the response payload limit, the SDK checkpoints the result before returning the `DurableExecutionInvocationOutput`. The service reads the result from the checkpoint rather than from the response body.
+**Lambda response exceeding 6 MB:** If the final orchestration result exceeds the response payload limit, the SDK checkpoints the result before returning the response envelope. The service reads the result from the checkpoint rather than from the response body.
 
 **Guidance for very large results:** For results that are inherently large (multi-MB payloads), use a custom `ICheckpointSerializer<T>` that offloads to external storage (S3, DynamoDB) and returns a reference. This keeps checkpoint sizes small and avoids pagination overhead:
 
@@ -1795,9 +1718,10 @@ The SDK uses existing Lambda core interfaces:
 The durable execution handler integrates with the existing runtime support bootstrap:
 
 ```csharp
-// The [DurableExecution] attribute signals that the handler
-// receives DurableExecutionInvocationInput and returns DurableExecutionInvocationOutput
-// The SDK handles the translation to/from the user's handler signature
+// The [DurableExecution] attribute signals that the handler is a durable workflow.
+// The Annotations source generator emits a Main method that registers a
+// DurableEntryPoint<TInput, TOutput> with LambdaBootstrapBuilder. The wire envelope
+// is invisible to the user's handler — they receive TInput and return TOutput.
 ```
 
 ### Amazon.Lambda.Annotations (optional)
@@ -1806,7 +1730,7 @@ The durable execution handler integrates with the existing runtime support boots
 
 When both packages are referenced, the Annotations source generator detects `[DurableExecution]` by fully-qualified name and at compile time:
 
-1. Generates a handler wrapper that translates `DurableExecutionInvocationInput` to/from your types
+1. Generates a `Main` entry point that wires up `DurableEntryPoint<TInput, TOutput>` for your workflow
 2. Manages context lifecycle (creation, checkpoint batching, cleanup)
 3. Adds `DurableConfig` to the CloudFormation template
 4. Adds the `AWSLambdaBasicDurableExecutionRolePolicy` managed policy
@@ -1853,7 +1777,7 @@ public class Functions
 }
 ```
 
-When no `LambdaClientFactory` is specified, the generated code creates a default `AmazonLambdaClient`. For the manual handler path (`DurableFunction.WrapAsync`), pass the client directly via the `IAmazonLambda lambdaClient` overload.
+When no `LambdaClientFactory` is specified, the generated code creates a default `AmazonLambdaClient`. For the manual handler path, pass the client to the `DurableEntryPoint` constructor.
 
 > **Dependency boundaries:** `Amazon.Lambda.Annotations` has **no dependency** on the AWS SDK or on `Amazon.Lambda.DurableExecution`. The Annotations source generator references durable execution types by fully-qualified name strings only — it never takes a compile-time dependency on the durable package. The `[DurableExecution]` attribute is defined in `Amazon.Lambda.DurableExecution`, and the generated code resolves against the user's project references. There is only one source generator (Annotations) — no coordination between multiple generators is needed.
 
