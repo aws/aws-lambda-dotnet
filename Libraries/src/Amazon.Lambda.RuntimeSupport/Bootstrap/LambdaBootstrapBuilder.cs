@@ -163,6 +163,21 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         /// <summary>
+        /// Create a builder for creating the LambdaBootstrap. Use this overload for handlers
+        /// that consume and produce raw <see cref="Stream"/>s but still want the supplied
+        /// <paramref name="serializer"/> exposed via <see cref="ILambdaContext.Serializer"/>
+        /// — useful for frameworks that perform their own envelope (de)serialization and
+        /// invoke the user's serializer for an inner payload.
+        /// </summary>
+        /// <param name="handler">The handler that will be called for each Lambda invocation</param>
+        /// <param name="serializer">The Lambda serializer made available via <see cref="ILambdaContext.Serializer"/>. Not used to (de)serialize the input/output streams themselves.</param>
+        /// <returns></returns>
+        public static LambdaBootstrapBuilder Create(Func<Stream, ILambdaContext, Task<Stream>> handler, ILambdaSerializer serializer)
+        {
+            return new LambdaBootstrapBuilder(HandlerWrapper.GetHandlerWrapper(handler, serializer));
+        }
+
+        /// <summary>
         /// Create a builder for creating the LambdaBootstrap.
         /// </summary>
         /// <param name="handler">The handler that will be called for each Lambda invocation</param>
