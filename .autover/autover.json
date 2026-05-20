@@ -49,7 +49,8 @@
     },
     {
       "Name": "Amazon.Lambda.DurableExecution",
-      "Path": "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj"
+      "Path": "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj",
+      "PrereleaseLabel": "preview"
     },
     {
       "Name": "Amazon.Lambda.DynamoDBEvents",

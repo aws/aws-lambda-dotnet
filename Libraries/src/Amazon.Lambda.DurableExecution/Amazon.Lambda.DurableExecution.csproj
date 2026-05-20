@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET SDK for Durable Execution - write multi-step workflows that persist state automatically.</Description>
     <AssemblyTitle>Amazon.Lambda.DurableExecution</AssemblyTitle>
-    <Version>0.0.1-preview</Version>
+    <Version>0.0.1</Version>
     <AssemblyName>Amazon.Lambda.DurableExecution</AssemblyName>
     <PackageId>Amazon.Lambda.DurableExecution</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Durable;Workflow</PackageTags>
