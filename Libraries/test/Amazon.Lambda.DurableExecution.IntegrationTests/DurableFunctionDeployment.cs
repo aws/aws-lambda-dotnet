@@ -263,8 +263,16 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             {
                 last = await GetHistoryAsync(durableExecutionArn, includeExecutionData);
                 var eventCount = last.Events?.Count ?? 0;
-                _output.WriteLine($"[WaitForHistory] attempt {attempt}: {eventCount} events");
-                if (predicate(last)) return last;
+                var typeCounts = last.Events?
+                    .GroupBy(e => e.EventType?.Value ?? "<null>")
+                    .Select(g => $"{g.Key}:{g.Count()}")
+                    .OrderBy(s => s);
+                _output.WriteLine($"[WaitForHistory] attempt {attempt}: {eventCount} events [{string.Join(",", typeCounts ?? Enumerable.Empty<string>())}]");
+                if (predicate(last))
+                {
+                    DumpEvents(last);
+                    return last;
+                }
             }
             catch (Exception ex)
             {
@@ -274,7 +282,19 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         }
 
         _output.WriteLine($"[WaitForHistory] gave up after {attempt} attempts; returning last response with {last?.Events?.Count ?? 0} events");
+        if (last != null) DumpEvents(last);
         return last ?? throw new TimeoutException($"GetDurableExecutionHistory never succeeded within {timeout.TotalSeconds}s");
+    }
+
+    private void DumpEvents(GetDurableExecutionHistoryResponse history)
+    {
+        var events = history.Events ?? new List<Event>();
+        _output.WriteLine($"[WaitForHistory] event dump ({events.Count} total):");
+        for (int i = 0; i < events.Count; i++)
+        {
+            var e = events[i];
+            _output.WriteLine($"  [{i}] type={e.EventType?.Value ?? "<null>"} name={e.Name ?? "<null>"} ts={e.EventTimestamp:O}");
+        }
     }
 
     public string? ExtractDurableExecutionArn(string responsePayload)
@@ -375,14 +395,18 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
 
-        if (!string.IsNullOrWhiteSpace(stdout))
-            _output.WriteLine($"stdout: {stdout[..Math.Min(stdout.Length, 1000)]}");
-
         if (process.ExitCode != 0)
         {
+            // Dump the FULL streams on failure — diagnosing build errors with
+            // truncated output is painful, and these only fire on test failure.
+            _output.WriteLine($"stdout: {stdout}");
             _output.WriteLine($"stderr: {stderr}");
-            throw new Exception($"{fileName} failed (exit {process.ExitCode}): {stderr}");
+            var detail = !string.IsNullOrWhiteSpace(stderr) ? stderr : stdout;
+            throw new Exception($"{fileName} failed (exit {process.ExitCode}): {detail}");
         }
+
+        if (!string.IsNullOrWhiteSpace(stdout))
+            _output.WriteLine($"stdout: {stdout[..Math.Min(stdout.Length, 1000)]}");
     }
 
     public async ValueTask DisposeAsync()

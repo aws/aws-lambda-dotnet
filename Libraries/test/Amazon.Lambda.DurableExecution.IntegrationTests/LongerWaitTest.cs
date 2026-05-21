@@ -30,10 +30,13 @@ public class LongerWaitTest
 
         var history = await deployment.WaitForHistoryAsync(
             arn!,
-            h => (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2
+            h => (h.Events?.Count(e => e.EventType == EventType.StepStarted) ?? 0) >= 2
+              && (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2
               && (h.Events?.Any(e => e.WaitSucceededDetails != null) ?? false),
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
+
+        Assert.Equal(2, events.Count(e => e.EventType == EventType.StepStarted));
 
         // Steps before and after the wait both ran, with the post-wait step seeing
         // the pre-wait step's value via replay.

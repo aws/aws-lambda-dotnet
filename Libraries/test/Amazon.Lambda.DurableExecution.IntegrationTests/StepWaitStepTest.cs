@@ -32,10 +32,13 @@ public class StepWaitStepTest
 
         var history = await deployment.WaitForHistoryAsync(
             arn!,
-            h => (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2
+            h => (h.Events?.Count(e => e.EventType == EventType.StepStarted) ?? 0) >= 2
+              && (h.Events?.Count(e => e.StepSucceededDetails != null) ?? 0) >= 2
               && (h.Events?.Any(e => e.WaitSucceededDetails != null) ?? false),
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
+
+        Assert.Equal(2, events.Count(e => e.EventType == EventType.StepStarted));
 
         // Both steps ran in order and produced the expected chained outputs.
         var stepResults = events

@@ -5,9 +5,14 @@ namespace Amazon.Lambda.DurableExecution;
 /// </summary>
 public sealed class StepConfig
 {
-    // TODO: Retry support is deferred to a follow-up PR. When added, this is
-    // where RetryStrategy and Semantics (AtLeastOncePerRetry / AtMostOncePerRetry)
-    // will live. The follow-up needs to use service-mediated retries (checkpoint
-    // a RETRY operation + suspend the Lambda) rather than an in-process Task.Delay
-    // loop, to avoid billing Lambda compute time during retry backoff.
+    /// <summary>
+    /// Retry strategy for failed steps. When null (default), failures are not retried.
+    /// </summary>
+    public IRetryStrategy? RetryStrategy { get; set; }
+
+    /// <summary>
+    /// Controls whether a step may re-execute if the Lambda is re-invoked mid-attempt.
+    /// Default is <see cref="StepSemantics.AtLeastOncePerRetry"/>.
+    /// </summary>
+    public StepSemantics Semantics { get; set; } = StepSemantics.AtLeastOncePerRetry;
 }
