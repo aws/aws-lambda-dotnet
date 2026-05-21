@@ -133,7 +133,7 @@ internal sealed class ExponentialRetryStrategy : IRetryStrategy
         _jitter = jitter;
         _retryableExceptions = retryableExceptions;
         _retryableMessagePatterns = retryableMessagePatterns?
-            .Select(p => new Regex(p, RegexOptions.Compiled))
+            .Select(p => new Regex(p))
             .ToArray();
     }
 

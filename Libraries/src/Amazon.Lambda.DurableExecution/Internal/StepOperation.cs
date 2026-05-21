@@ -109,9 +109,13 @@ internal sealed class StepOperation<T> : DurableOperation<T>
     }
 
     /// <summary>
-    /// PENDING means a retry was scheduled (RETRY checkpoint). If
-    /// NextAttemptTimestamp is in the future, re-suspend; otherwise the timer
-    /// has fired and we run the next attempt.
+    /// PENDING means a retry was scheduled (RETRY checkpoint). The service's
+    /// transition to READY when the timer fires is the authoritative "timer
+    /// fired" signal; we still get re-invoked in PENDING only if the service
+    /// re-invokes slightly early. The wall-clock check below is a safety net
+    /// for that case — clock skew can't cause a missed retry because if our
+    /// clock is fast we just run early, and if it's slow we re-suspend and
+    /// the service's READY transition takes over.
     /// </summary>
     private Task<T> ReplayPending(Operation pending, CancellationToken cancellationToken)
     {
