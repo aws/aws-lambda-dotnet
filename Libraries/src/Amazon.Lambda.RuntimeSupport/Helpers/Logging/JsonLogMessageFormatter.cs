@@ -18,7 +18,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         private static readonly UTF8Encoding UTF8NoBomNoThrow = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
         // Options used when serializing any message property values as a JSON to be added to the structured log message.
-        private readonly JsonSerializerOptions _jsonSerializationOptions;
+        private JsonSerializerOptions _jsonSerializationOptions;
 
         /// <summary>
         /// Constructs an instance of JsonLogMessageFormatter.
@@ -30,9 +30,27 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 WriteIndented = false
             };
+
+            try
+            {
+                ConfigureJsonLogMessageFormatterIsolated.ConfigureCallbackInCore(ConfigureStructuredLogging);
+            }
+            catch (TypeLoadException)
+            {
+                InternalLogger.GetDefaultLogger().LogDebug("Failed to configure Amazon.Lambda.Core with callback for configuring structured logging. This happens when the version of Amazon.Lambda.Core referenced by the Lambda function is out of date.");
+            }
         }
 
         private static readonly IReadOnlyList<MessageProperty> _emptyMessageProperties = new List<MessageProperty>();
+
+        private void ConfigureStructuredLogging(StructuredLoggingOptions options)
+        {
+            if (options == null)
+                return;
+
+            if (options.OverrideSerializerOptions != null)
+                _jsonSerializationOptions = options.OverrideSerializerOptions;
+        }
 
         /// <summary>
         /// Format the log message as a structured JSON log message.
@@ -312,5 +330,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         }
 
         private static string ToInvariantString(object obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Mirror the version of StructuredLoggingOptions in Amazon.Lambda.Core because we can't guarantee that the version of Amazon.Lambda.Core used by the customer
+    /// will be the same as the version of Amazon.Lambda.RuntimeSupport.
+    /// </summary>
+    internal class StructuredLoggingOptions
+    {
+        public JsonSerializerOptions OverrideSerializerOptions { get; set; }
     }
 }

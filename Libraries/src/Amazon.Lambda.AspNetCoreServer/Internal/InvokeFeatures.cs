@@ -117,10 +117,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         public void Set<TFeature>(TFeature instance)
         {
-            if (instance == null)
-                return;
-
-            _features[typeof(TFeature)] = instance;
+            // Delegate to the indexer so _containerRevision is bumped, otherwise
+            // ASP.NET Core's FeatureReferences cache will return stale feature
+            // references after middleware (e.g. OutputCache, ResponseCompression)
+            // wraps the response body via HttpContext.Response.Body = wrapper.
+            this[typeof(TFeature)] = instance;
         }
 
         IEnumerator IEnumerable.GetEnumerator()

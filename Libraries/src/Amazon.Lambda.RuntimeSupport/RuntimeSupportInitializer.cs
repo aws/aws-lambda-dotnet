@@ -63,11 +63,27 @@ namespace Amazon.Lambda.RuntimeSupport
             var environmentVariables = new SystemEnvironmentVariables();
             var userCodeLoader = new UserCodeLoader(environmentVariables, _handler, _logger);
             var initializer = new UserCodeInitializer(userCodeLoader, _logger);
+            // Pre-declare so the wrapped initializer can reference it. The closure runs
+            // later (inside bootstrap.RunAsync) by which time bootstrap is assigned.
+            LambdaBootstrap bootstrap = null;
+            // Wrap init to plumb the serializer ([assembly: LambdaSerializer]) onto the
+            // bootstrap right after UserCodeLoader resolves it. The bootstrap then
+            // surfaces it on ILambdaContext.Serializer for every invocation via the
+            // Isolated shim.
+            LambdaBootstrapInitializer wrappedInit = async () =>
+            {
+                var initResult = await initializer.InitializeAsync();
+                if (initResult)
+                {
+                    bootstrap.SetSerializer(userCodeLoader.CustomerSerializerInstance as Amazon.Lambda.Core.ILambdaSerializer);
+                }
+                return initResult;
+            };
             using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke))
-            using (var bootstrap = new LambdaBootstrap(
+            using (bootstrap = new LambdaBootstrap(
                         httpClient: null,
                         handler: handlerWrapper.Handler,
-                        initializer: initializer.InitializeAsync,
+                        initializer: wrappedInit,
                         ownsHttpClient: true,
                         lambdaBootstrapOptions: _lambdaBootstrapOptions,
                         environmentVariables: environmentVariables))

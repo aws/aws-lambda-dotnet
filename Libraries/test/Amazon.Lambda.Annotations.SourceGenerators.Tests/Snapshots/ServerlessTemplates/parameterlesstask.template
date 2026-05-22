@@ -1,15 +1,15 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v2.0.1.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
   "Resources": {
-    "TestServerlessAppNET8FunctionsToUpperGenerated": {
+    "TestServerlessAppParameterlessTaskMethodsNoParameterTaskGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet8",
+        "Runtime": "provided.al2",
         "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
@@ -17,7 +17,12 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestServerlessApp.NET8::TestServerlessApp.NET8.Functions_ToUpper_Generated::ToUpper"
+        "Handler": "TestProject",
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NoParameterTask"
+          }
+        }
       }
     }
   }

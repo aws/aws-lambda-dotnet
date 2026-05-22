@@ -7,6 +7,8 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <!-- CA2252: Tests call preview features (ConfigureStructuredLogging) which is expected -->
+    <NoWarn>CA2252</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
