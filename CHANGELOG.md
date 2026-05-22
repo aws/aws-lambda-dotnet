@@ -1,3 +1,8 @@
+## Release 2026-05-22
+
+### Amazon.Lambda.RuntimeSupport (2.1.1)
+* Fix thread pool starvation under multi-concurrency
+
 ## Release 2026-05-18
 
 ### Amazon.Lambda.Core (3.1.0)
