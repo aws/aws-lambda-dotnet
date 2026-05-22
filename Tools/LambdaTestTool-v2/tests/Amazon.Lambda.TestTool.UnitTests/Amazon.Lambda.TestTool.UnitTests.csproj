@@ -12,21 +12,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.14.2" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5" />
-    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.15.2" />
-    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.4.17" />
-    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.1.2" />
-    <PackageReference Include="coverlet.collector" Version="6.0.3">
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.0" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.15.6" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
+    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.4.32" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="4.0.0" />
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.0">
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
