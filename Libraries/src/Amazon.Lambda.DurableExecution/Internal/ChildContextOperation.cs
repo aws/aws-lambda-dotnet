@@ -122,6 +122,23 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         {
             throw;
         }
+        catch (NonDeterministicExecutionException)
+        {
+            // Replay-mismatch from an inner operation means the entire execution
+            // is corrupt — checkpointing this as CONTEXT FAIL would freeze the
+            // mismatch into history and prevent future invocations from
+            // re-detecting it. Bubble up untouched.
+            throw;
+        }
+        catch (StepInterruptedException)
+        {
+            // AtMostOncePerRetry crash recovery: a step inside the child saw a
+            // STARTED checkpoint with no terminal record and routed through its
+            // retry strategy. The step has already checkpointed its own outcome;
+            // wrapping this as CONTEXT FAIL would mask that. Bubble up so the
+            // step's strategy / replay flow stays authoritative.
+            throw;
+        }
         catch (Exception ex)
         {
             await EnqueueAsync(new SdkOperationUpdate
@@ -138,7 +155,8 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             throw MapFailureException(new ChildContextException(ex.Message, ex)
             {
                 SubType = _config?.SubType,
-                ErrorType = ex.GetType().FullName
+                ErrorType = ex.GetType().FullName,
+                OriginalStackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
             });
         }
 

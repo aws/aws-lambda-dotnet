@@ -225,6 +225,10 @@ public class ChildContextOperationTests
 
         Assert.Equal("inner boom", ex.Message);
         Assert.Equal("System.InvalidOperationException", ex.ErrorType);
+        // Fresh-path failures populate OriginalStackTrace alongside ErrorType so
+        // ErrorMapping callbacks see the same shape on both fresh and replay paths.
+        Assert.NotNull(ex.OriginalStackTrace);
+        Assert.NotEmpty(ex.OriginalStackTrace!);
 
         await recorder.Batcher.DrainAsync();
         var contextActions = recorder.Flushed
@@ -232,6 +236,50 @@ public class ChildContextOperationTests
             .Select(o => o.Action.ToString())
             .ToArray();
         Assert.Equal(new[] { "START", "FAIL" }, contextActions);
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_InnerNonDeterminism_BubblesUpWithoutCheckpointingFail()
+    {
+        // A child context whose inner step's checkpoint type doesn't match the
+        // user code (replay mismatch) must NOT be wrapped/checkpointed as
+        // CONTEXT FAIL — that would freeze the corruption into history.
+        var parentOpId = IdAt(1);
+        var innerOpId = ChildIdAt(parentOpId, 1);
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Started,
+                    Name = "phase"
+                },
+                new()
+                {
+                    Id = innerOpId,
+                    Type = OperationTypes.Wait,            // wrong type — code calls StepAsync
+                    Status = OperationStatuses.Succeeded,
+                    Name = "inner_step"
+                }
+            }
+        });
+
+        await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
+            context.RunInChildContextAsync(
+                async (childCtx) =>
+                {
+                    return await childCtx.StepAsync(
+                        async (_) => { await Task.CompletedTask; return "x"; },
+                        name: "inner_step");
+                },
+                name: "phase"));
+
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT" && o.Action == "FAIL");
     }
 
     [Fact]
@@ -367,7 +415,8 @@ public class ChildContextOperationTests
             "CONTEXT:SUCCEED"
         }, actions);
 
-        // Void overload uses NullCheckpointSerializer → "null" payload.
+        // Void overload returns a null object<?>, which the registered
+        // ILambdaSerializer serializes as the literal "null" payload.
         var contextSucceed = recorder.Flushed.Single(o => o.Type == "CONTEXT" && o.Action == "SUCCEED");
         Assert.Equal("null", contextSucceed.Payload);
     }
