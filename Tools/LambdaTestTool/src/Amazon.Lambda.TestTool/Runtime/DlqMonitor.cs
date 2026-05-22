@@ -1,4 +1,4 @@
-﻿using Amazon.SQS.Model;
+using Amazon.SQS.Model;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -25,27 +25,27 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         public DlqMonitor(ILocalLambdaRuntime runtime, LambdaFunction function, string profile, string region, string queueUrl)
         {
-            this._runtime = runtime;
-            this._function = function;
-            this._profile = profile;
-            this._region = region;
-            this._queueUrl = queueUrl;
+            _runtime = runtime;
+            _function = function;
+            _profile = profile;
+            _region = region;
+            _queueUrl = queueUrl;
         }
 
         public void Start()
         {
-            this._cancelSource = new CancellationTokenSource();
-            _ = Loop(this._cancelSource.Token);
+            _cancelSource = new CancellationTokenSource();
+            _ = Loop(_cancelSource.Token);
         }
 
         public void Stop()
         {
-            this._cancelSource.Cancel();
+            _cancelSource.Cancel();
         }
 
         private async Task Loop(CancellationToken token)
         {
-            var aws = this._runtime.AWSService;
+            var aws = _runtime.AWSService;
             while (!token.IsCancellationRequested)
             {
                 Message message = null;
@@ -53,7 +53,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 try
                 {
                     // Read a message from the queue using the ExternalCommands console application.
-                    message = await aws.ReadMessageAsync(this._profile, this._region, this._queueUrl);
+                    message = await aws.ReadMessageAsync(_profile, _region, _queueUrl);
                     if (token.IsCancellationRequested)
                     {
                         return;
@@ -68,9 +68,9 @@ namespace Amazon.Lambda.TestTool.Runtime
                     // If a message was received execute the Lambda function within the test tool.
                     var request = new ExecutionRequest
                     {
-                        AWSProfile = this._profile,
-                        AWSRegion = this._region,
-                        Function = this._function,
+                        AWSProfile = _profile,
+                        AWSRegion = _region,
+                        Function = _function,
                         Payload = JsonSerializer.Serialize(new
                         {
                             Records = new List<Message>
@@ -80,7 +80,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                         })
                     };
 
-                    var response = await this._runtime.ExecuteLambdaFunctionAsync(request);
+                    var response = await _runtime.ExecuteLambdaFunctionAsync(request);
 
                     // Capture the results to send back to the client application.
                     logRecord = new LogRecord
@@ -109,7 +109,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 lock (LOG_LOCK)
                 {
-                    this._records.Add(logRecord);
+                    _records.Add(logRecord);
                 }
             }
         }
@@ -119,8 +119,8 @@ namespace Amazon.Lambda.TestTool.Runtime
         {
             lock (LOG_LOCK)
             {
-                var logsToSend = this._records;
-                this._records = new List<LogRecord>();
+                var logsToSend = _records;
+                _records = new List<LogRecord>();
                 return logsToSend;
             }
         }

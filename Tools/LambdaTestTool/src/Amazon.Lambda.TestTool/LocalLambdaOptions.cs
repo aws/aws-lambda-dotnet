@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.TestTool.Runtime;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +18,7 @@ namespace Amazon.Lambda.TestTool
 
         public LambdaFunction LoadLambdaFuntion(string configFile, string functionHandler)
         {
-            var fullConfigFilePath = this.LambdaConfigFiles.FirstOrDefault(x =>
+            var fullConfigFilePath = LambdaConfigFiles.FirstOrDefault(x =>
                 string.Equals(configFile, x, StringComparison.OrdinalIgnoreCase) || string.Equals(configFile, Path.GetFileName(x), StringComparison.OrdinalIgnoreCase));
             if (fullConfigFilePath == null)
             {
@@ -51,7 +51,7 @@ namespace Amazon.Lambda.TestTool
                 throw new Exception($"Failed to find function {functionHandler}");
             }
 
-            var function = this.LambdaRuntime.LoadLambdaFunction(functionInfo);
+            var function = LambdaRuntime.LoadLambdaFunction(functionInfo);
             return function;
         }
 
@@ -60,14 +60,14 @@ namespace Amazon.Lambda.TestTool
         /// </summary>
         public string GetPreferenceDirectory(bool createIfNotExist)
         {
-            var currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
+            var currentDirectory = LambdaRuntime.LambdaAssemblyDirectory;
             while (currentDirectory != null && !Utils.IsProjectDirectory(currentDirectory))
             {
                 currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
             }
 
             if (currentDirectory == null)
-                currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
+                currentDirectory = LambdaRuntime.LambdaAssemblyDirectory;
 
             var preferenceDirectory = Path.Combine(currentDirectory, ".lambda-test-tool");
             if (createIfNotExist && !Directory.Exists(preferenceDirectory))

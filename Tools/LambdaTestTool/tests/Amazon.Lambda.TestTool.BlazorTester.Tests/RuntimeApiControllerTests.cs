@@ -171,9 +171,9 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
                 {
                     if (disposing)
                     {
-                        this.Client.Dispose();
-                        this.Source.Cancel();
-                        this.WebHost.StopAsync().GetAwaiter().GetResult();
+                        Client.Dispose();
+                        Source.Cancel();
+                        WebHost.StopAsync().GetAwaiter().GetResult();
                     }
 
                     disposedValue = true;
