@@ -60,6 +60,47 @@ public interface IDurableContext
         TimeSpan duration,
         string? name = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Run a user function inside a logical sub-workflow (a "child context").
+    /// The child has its own deterministic operation-ID space; its result is
+    /// checkpointed as a <c>CONTEXT</c> operation so subsequent invocations
+    /// replay the cached value without re-executing the func.
+    /// </summary>
+    /// <remarks>
+    /// Use child contexts to group related durable operations (e.g. a step plus
+    /// a wait plus a step) into a single observability/error-handling boundary.
+    /// On failure, surfaces as <see cref="ChildContextException"/>; supply
+    /// <see cref="ChildContextConfig.ErrorMapping"/> to remap into a
+    /// domain-specific exception.
+    /// The child context's return value is serialized to a checkpoint using the
+    /// <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>.
+    /// </remarks>
+    Task<T> RunInChildContextAsync<T>(
+        Func<IDurableContext, Task<T>> func,
+        string? name = null,
+        ChildContextConfig? config = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Run a user function inside a logical sub-workflow (a "child context")
+    /// that returns no value. The child has its own deterministic operation-ID
+    /// space and is checkpointed as a <c>CONTEXT</c> operation so subsequent
+    /// invocations skip re-executing the func.
+    /// </summary>
+    /// <remarks>
+    /// Use child contexts to group related durable operations (e.g. a step plus
+    /// a wait plus a step) into a single observability/error-handling boundary.
+    /// On failure, surfaces as <see cref="ChildContextException"/>; supply
+    /// <see cref="ChildContextConfig.ErrorMapping"/> to remap into a
+    /// domain-specific exception.
+    /// </remarks>
+    Task RunInChildContextAsync(
+        Func<IDurableContext, Task> func,
+        string? name = null,
+        ChildContextConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

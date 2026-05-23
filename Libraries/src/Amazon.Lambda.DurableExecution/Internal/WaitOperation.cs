@@ -28,12 +28,13 @@ internal sealed class WaitOperation : DurableOperation<object?>
     public WaitOperation(
         string operationId,
         string? name,
+        string? parentId,
         int waitSeconds,
         ExecutionState state,
         TerminationManager termination,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null)
-        : base(operationId, name, state, termination, durableExecutionArn, batcher)
+        : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _waitSeconds = waitSeconds;
     }
@@ -47,6 +48,7 @@ internal sealed class WaitOperation : DurableOperation<object?>
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Wait,
             Action = OperationAction.START,
             SubType = OperationSubTypes.Wait,

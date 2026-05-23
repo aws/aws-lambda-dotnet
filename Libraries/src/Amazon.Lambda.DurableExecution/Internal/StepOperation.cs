@@ -43,6 +43,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
     public StepOperation(
         string operationId,
         string? name,
+        string? parentId,
         Func<IStepContext, Task<T>> func,
         StepConfig? config,
         ILambdaSerializer serializer,
@@ -51,7 +52,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         TerminationManager termination,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null)
-        : base(operationId, name, state, termination, durableExecutionArn, batcher)
+        : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _func = func;
         _config = config;
@@ -182,6 +183,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             var startUpdate = new SdkOperationUpdate
             {
                 Id = OperationId,
+                ParentId = ParentId,
                 Type = OperationTypes.Step,
                 Action = OperationAction.START,
                 SubType = OperationSubTypes.Step,
@@ -207,6 +209,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             await EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
+                ParentId = ParentId,
                 Type = OperationTypes.Step,
                 Action = OperationAction.SUCCEED,
                 SubType = OperationSubTypes.Step,
@@ -254,6 +257,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 await EnqueueAsync(new SdkOperationUpdate
                 {
                     Id = OperationId,
+                    ParentId = ParentId,
                     Type = OperationTypes.Step,
                     Action = OperationAction.RETRY,
                     SubType = OperationSubTypes.Step,
@@ -269,6 +273,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Step,
             Action = OperationAction.FAIL,
             SubType = OperationSubTypes.Step,

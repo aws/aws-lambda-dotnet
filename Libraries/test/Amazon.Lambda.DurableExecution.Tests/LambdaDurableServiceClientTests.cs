@@ -178,6 +178,109 @@ public class LambdaDurableServiceClientTests
     }
 
     [Fact]
+    public async Task GetExecutionStateAsync_CopiesContextDetailsResultAndError()
+    {
+        var mockClient = new MockLambdaClient
+        {
+            GetExecutionStateHandler = _ => new GetDurableExecutionStateResponse
+            {
+                Operations = new List<Amazon.Lambda.Model.Operation>
+                {
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "ctx-1",
+                        Type = "CONTEXT",
+                        Status = "SUCCEEDED",
+                        Name = "phase",
+                        ContextDetails = new Amazon.Lambda.Model.ContextDetails
+                        {
+                            Result = "\"ok\""
+                        }
+                    },
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "ctx-2",
+                        Type = "CONTEXT",
+                        Status = "FAILED",
+                        Name = "phase2",
+                        ContextDetails = new Amazon.Lambda.Model.ContextDetails
+                        {
+                            Error = new SdkErrorObject
+                            {
+                                ErrorType = "System.InvalidOperationException",
+                                ErrorMessage = "boom",
+                                ErrorData = "{\"detail\":\"x\"}",
+                                StackTrace = new List<string> { "at A.B()", "at C.D()" }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var client = new LambdaDurableServiceClient(mockClient);
+
+        var (operations, _) = await client.GetExecutionStateAsync("arn", "tok", "marker");
+
+        Assert.Equal(2, operations.Count);
+
+        Assert.NotNull(operations[0].ContextDetails);
+        Assert.Equal("\"ok\"", operations[0].ContextDetails!.Result);
+        Assert.Null(operations[0].ContextDetails!.Error);
+
+        Assert.NotNull(operations[1].ContextDetails);
+        Assert.NotNull(operations[1].ContextDetails!.Error);
+        Assert.Equal("System.InvalidOperationException", operations[1].ContextDetails!.Error!.ErrorType);
+        Assert.Equal("boom", operations[1].ContextDetails!.Error!.ErrorMessage);
+        Assert.Equal("{\"detail\":\"x\"}", operations[1].ContextDetails!.Error!.ErrorData);
+        Assert.Equal(new[] { "at A.B()", "at C.D()" }, operations[1].ContextDetails!.Error!.StackTrace);
+    }
+
+    [Fact]
+    public async Task GetExecutionStateAsync_CopiesStepDetailsErrorStackTraceAndErrorData()
+    {
+        // Round-trip safety: the SDK returns ErrorObject with all four fields,
+        // and Internal.Operation must preserve them so StepException can surface
+        // OriginalStackTrace / ErrorData on replay.
+        var mockClient = new MockLambdaClient
+        {
+            GetExecutionStateHandler = _ => new GetDurableExecutionStateResponse
+            {
+                Operations = new List<Amazon.Lambda.Model.Operation>
+                {
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "step-1",
+                        Type = "STEP",
+                        Status = "FAILED",
+                        Name = "charge",
+                        StepDetails = new Amazon.Lambda.Model.StepDetails
+                        {
+                            Error = new SdkErrorObject
+                            {
+                                ErrorType = "System.TimeoutException",
+                                ErrorMessage = "timed out",
+                                ErrorData = "{\"detail\":\"y\"}",
+                                StackTrace = new List<string> { "at E.F()", "at G.H()" }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var client = new LambdaDurableServiceClient(mockClient);
+
+        var (operations, _) = await client.GetExecutionStateAsync("arn", "tok", "marker");
+
+        var op = Assert.Single(operations);
+        Assert.NotNull(op.StepDetails);
+        Assert.NotNull(op.StepDetails!.Error);
+        Assert.Equal("System.TimeoutException", op.StepDetails!.Error!.ErrorType);
+        Assert.Equal("timed out", op.StepDetails!.Error!.ErrorMessage);
+        Assert.Equal("{\"detail\":\"y\"}", op.StepDetails!.Error!.ErrorData);
+        Assert.Equal(new[] { "at E.F()", "at G.H()" }, op.StepDetails!.Error!.StackTrace);
+    }
+
+    [Fact]
     public async Task CheckpointAsync_ReturnsNewToken()
     {
         var mockClient = new MockLambdaClient();

@@ -7,6 +7,7 @@ using Operation = Amazon.Lambda.DurableExecution.Operation;
 using StepDetails = Amazon.Lambda.DurableExecution.StepDetails;
 using WaitDetails = Amazon.Lambda.DurableExecution.WaitDetails;
 using ExecutionDetails = Amazon.Lambda.DurableExecution.ExecutionDetails;
+using ContextDetails = Amazon.Lambda.DurableExecution.ContextDetails;
 
 namespace Amazon.Lambda.DurableExecution.Services;
 
@@ -116,7 +117,9 @@ internal sealed class LambdaDurableServiceClient
                 Error = sdkOp.StepDetails.Error != null ? new ErrorObject
                 {
                     ErrorType = sdkOp.StepDetails.Error.ErrorType,
-                    ErrorMessage = sdkOp.StepDetails.Error.ErrorMessage
+                    ErrorMessage = sdkOp.StepDetails.Error.ErrorMessage,
+                    StackTrace = sdkOp.StepDetails.Error.StackTrace,
+                    ErrorData = sdkOp.StepDetails.Error.ErrorData
                 } : null,
                 Attempt = sdkOp.StepDetails.Attempt,
                 NextAttemptTimestamp = sdkOp.StepDetails.NextAttemptTimestamp.HasValue
@@ -132,6 +135,17 @@ internal sealed class LambdaDurableServiceClient
             ExecutionDetails = sdkOp.ExecutionDetails != null ? new ExecutionDetails
             {
                 InputPayload = sdkOp.ExecutionDetails.InputPayload
+            } : null,
+            ContextDetails = sdkOp.ContextDetails != null ? new ContextDetails
+            {
+                Result = sdkOp.ContextDetails.Result,
+                Error = sdkOp.ContextDetails.Error != null ? new ErrorObject
+                {
+                    ErrorType = sdkOp.ContextDetails.Error.ErrorType,
+                    ErrorMessage = sdkOp.ContextDetails.Error.ErrorMessage,
+                    StackTrace = sdkOp.ContextDetails.Error.StackTrace,
+                    ErrorData = sdkOp.ContextDetails.Error.ErrorData
+                } : null
             } : null
         };
     }
