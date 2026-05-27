@@ -15,6 +15,7 @@ For a history of releases view the [release change log](CHANGELOG.md)
     - [Amazon.Lambda.Annotations](#amazonlambdaannotations)
     - [Amazon.Lambda.AspNetCoreServer](#amazonlambdaaspnetcoreserver)
     - [Amazon.Lambda.TestUtilities](#amazonlambdatestutilities)
+    - [Amazon.Lambda.DurableExecution](#amazonlambdadurableexecution)
   - [Blueprints](#blueprints)
     - [Dotnet CLI Templates](#dotnet-cli-templates)
     - [Yeoman (Deprecated)](#yeoman-deprecated)
@@ -112,6 +113,11 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.AspNetCoreS
 
 Package includes test implementation of the interfaces from Amazon.Lambda.Core and helper methods to help in locally testing.
 For more information see the [README.md](Libraries/src/Amazon.Lambda.TestUtilities/README.md) file for Amazon.Lambda.TestUtilities.
+
+### Amazon.Lambda.DurableExecution
+
+The Durable Execution SDK lets you write multi-step Lambda workflows that automatically checkpoint progress and resume after failures.
+For more information see the [README.md](Libraries/src/Amazon.Lambda.DurableExecution/README.md) file for Amazon.Lambda.DurableExecution.
 
 ## Blueprints
 
