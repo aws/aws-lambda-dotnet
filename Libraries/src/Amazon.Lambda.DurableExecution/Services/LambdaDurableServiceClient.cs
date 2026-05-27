@@ -178,7 +178,9 @@ internal sealed class LambdaDurableServiceClient
                 Error = sdkOp.CallbackDetails.Error != null ? new ErrorObject
                 {
                     ErrorType = sdkOp.CallbackDetails.Error.ErrorType,
-                    ErrorMessage = sdkOp.CallbackDetails.Error.ErrorMessage
+                    ErrorMessage = sdkOp.CallbackDetails.Error.ErrorMessage,
+                    StackTrace = sdkOp.CallbackDetails.Error.StackTrace,
+                    ErrorData = sdkOp.CallbackDetails.Error.ErrorData
                 } : null
             } : null
         };

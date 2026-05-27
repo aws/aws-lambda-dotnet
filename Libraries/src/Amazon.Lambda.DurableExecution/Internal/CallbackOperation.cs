@@ -171,6 +171,16 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
             return ResolveTerminal(_terminalReplay);
         }
 
+        // A later checkpoint in this same invocation (e.g. WaitForCallback's
+        // submitter step flush) may have merged a terminal status into
+        // ExecutionState via NewExecutionState. Re-read once before suspending
+        // so we avoid a wasted reinvocation when the answer is already here.
+        var current = State.GetOperation(OperationId);
+        if (IsTerminalStatus(current?.Status))
+        {
+            return ResolveTerminal(current!);
+        }
+
         // No terminal state yet. Suspend the workflow; the service re-invokes
         // when the external system delivers a result.
         return await Termination.SuspendAndAwait<T>(
