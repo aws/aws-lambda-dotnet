@@ -1,4 +1,3 @@
-using System.IO;
 using System.Linq;
 using System.Text;
 using Amazon.Lambda.Model;
@@ -14,46 +13,40 @@ public class CreateCallbackHappyPathTest
 
     /// <summary>
     /// End-to-end happy path for <c>CreateCallbackAsync</c>:
-    /// the workflow suspends inside <c>GetResultAsync</c>; the test acts as the
-    /// external system and delivers a result via <c>SendDurableExecutionCallbackSuccess</c>;
-    /// the workflow resumes and returns the delivered payload.
+    /// the workflow suspends inside <c>GetResultAsync</c>; a paired
+    /// <c>ApproverFunction</c> Lambda (Event-invoked from the workflow) acts
+    /// as the external system and delivers a result via
+    /// <c>SendDurableExecutionCallbackSuccess</c>; the workflow resumes and
+    /// returns the delivered payload.
     /// </summary>
+    /// <remarks>
+    /// The callback delivery has to come from a separate Lambda — not from the
+    /// test process — because the test's synchronous <c>InvokeAsync</c> blocks
+    /// until the durable execution reaches a terminal state. If the test tried
+    /// to deliver the callback itself, it would deadlock against its own
+    /// blocked Invoke.
+    /// </remarks>
     [Fact]
     public async Task CreateCallback_DeliversResultViaSendSuccess()
     {
         await using var deployment = await DurableFunctionDeployment.CreateAsync(
             DurableFunctionDeployment.FindTestFunctionDir("CreateCallbackHappyPathFunction"),
-            "cb-happy", _output);
+            "cb-happy", _output,
+            externalFunctionDir: DurableFunctionDeployment.FindTestFunctionDir("ApproverFunction"));
 
-        var (invokeResponse, executionName) = await deployment.InvokeAsync("""{"orderId": "approve-123"}""");
+        var (invokeResponse, executionName) = await deployment.InvokeAsync("""{"orderId":"integ-test"}""");
         var responsePayload = Encoding.UTF8.GetString(invokeResponse.Payload.ToArray());
         _output.WriteLine($"Initial response: {responsePayload}");
 
-        // The workflow suspends after CreateCallback's START checkpoint; locate the
-        // execution by name and pull the service-allocated CallbackId from history.
         var arn = await deployment.FindDurableExecutionArnByNameAsync(executionName, TimeSpan.FromSeconds(60));
         Assert.NotNull(arn);
-
-        var callbackId = await WaitForCallbackIdAsync(deployment, arn!, TimeSpan.FromSeconds(60));
-        Assert.False(string.IsNullOrEmpty(callbackId), "CallbackStarted event never appeared with a CallbackId");
-        _output.WriteLine($"Service-allocated CallbackId: {callbackId}");
-
-        // Act as the external system: deliver a result. The service will re-invoke the
-        // Lambda with CALLBACK SUCCEEDED, GetResultAsync deserializes it, and the
-        // workflow returns.
-        var resultJson = """{"Status":"approved","ApprovedBy":"integ-test"}""";
-        await deployment.LambdaClient.SendDurableExecutionCallbackSuccessAsync(
-            new SendDurableExecutionCallbackSuccessRequest
-            {
-                CallbackId = callbackId!,
-                Result = new MemoryStream(Encoding.UTF8.GetBytes(resultJson))
-            });
 
         var status = await deployment.PollForCompletionAsync(arn!, TimeSpan.FromSeconds(120));
         Assert.Equal("SUCCEEDED", status, ignoreCase: true);
 
-        // The execution result mirrors the payload we sent — proves GetResultAsync
-        // deserialized the wire-level callback Result and the workflow returned it.
+        // The execution result mirrors the payload the approver sent — proves
+        // GetResultAsync deserialized the wire-level callback Result and the
+        // workflow returned it.
         var execution = await deployment.GetExecutionAsync(arn!);
         Assert.NotNull(execution.Result);
         Assert.Contains("approved", execution.Result);
@@ -72,26 +65,5 @@ public class CreateCallbackHappyPathTest
 
         var succeeded = events.First(e => e.CallbackSucceededDetails != null);
         Assert.Equal("approve", succeeded.Name);
-    }
-
-    /// <summary>
-    /// Polls execution history until a <c>CallbackStarted</c> event surfaces a
-    /// <c>CallbackId</c>. The history endpoint is eventually consistent and the
-    /// callback ID isn't allocated until the service processes the START checkpoint.
-    /// </summary>
-    private static async Task<string?> WaitForCallbackIdAsync(
-        DurableFunctionDeployment deployment, string arn, TimeSpan timeout)
-    {
-        var history = await deployment.WaitForHistoryAsync(
-            arn,
-            h => h.Events?.Any(e =>
-                e.CallbackStartedDetails != null
-                && !string.IsNullOrEmpty(e.CallbackStartedDetails.CallbackId)) ?? false,
-            timeout);
-        return history.Events?
-            .Where(e => e.CallbackStartedDetails != null
-                     && !string.IsNullOrEmpty(e.CallbackStartedDetails.CallbackId))
-            .Select(e => e.CallbackStartedDetails.CallbackId)
-            .FirstOrDefault();
     }
 }

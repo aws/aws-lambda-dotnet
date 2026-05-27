@@ -1,5 +1,7 @@
+using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.Model;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
@@ -7,6 +9,8 @@ namespace DurableExecutionTestFunction;
 
 public class Function
 {
+    private static readonly IAmazonLambda LambdaClient = new AmazonLambdaClient();
+
     public static async Task Main(string[] args)
     {
         var handler = new Function();
@@ -22,12 +26,29 @@ public class Function
 
     private async Task<MyResult> Workflow(TestEvent input, IDurableContext context)
     {
-        // Test will deliver a failure via SendDurableExecutionCallbackFailure;
-        // GetResultAsync should raise CallbackFailedException, which the
-        // workflow does not catch — workflow surfaces FAILED.
+        // Hand the service-allocated callback ID to the paired RejecterFunction
+        // (Event invocation — fire-and-forget). The rejecter calls
+        // SendDurableExecutionCallbackFailure out-of-band, which surfaces in
+        // GetResultAsync as CallbackFailedException — uncaught here, so the
+        // workflow ends FAILED with that exception type recorded.
+        var externalFunctionName = System.Environment.GetEnvironmentVariable("EXTERNAL_FUNCTION_NAME")
+            ?? throw new InvalidOperationException("EXTERNAL_FUNCTION_NAME env var not set");
+
         var cb = await context.CreateCallbackAsync<MyResult>(name: "approve");
-        var result = await cb.GetResultAsync();
-        return result;
+
+        // Wrap the hand-off in a step so replays don't re-invoke the rejecter.
+        await context.StepAsync(async _ =>
+        {
+            var payload = $$"""{"callbackId":"{{cb.CallbackId}}","orderId":"{{input.OrderId}}"}""";
+            await LambdaClient.InvokeAsync(new InvokeRequest
+            {
+                FunctionName = externalFunctionName,
+                InvocationType = InvocationType.Event,
+                Payload = payload
+            });
+        }, name: "submit");
+
+        return await cb.GetResultAsync();
     }
 }
 
