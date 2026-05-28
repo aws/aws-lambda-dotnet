@@ -636,6 +636,9 @@ namespace Amazon.Lambda.RuntimeSupport
         /// threads available for both handler execution and polling task continuations. Without this,
         /// blocking handlers (Thread.Sleep, .Result, .Wait()) can exhaust the ThreadPool, preventing
         /// polling tasks from cycling back to /next and causing Runtime.Unavailable errors from RAPID.
+        ///
+        /// The default minimum is 2 * processorCount. Customers can override this via the
+        /// AWS_LAMBDA_DOTNET_MIN_THREADS environment variable.
         /// </summary>
         private void AdjustThreadPoolSettings()
         {
@@ -645,9 +648,19 @@ namespace Amazon.Lambda.RuntimeSupport
                 if (maxConcurrency <= 0)
                     return;
 
-                // Compute the minimum threads needed: enough for all concurrent handlers plus
-                // overhead for polling task continuations and other runtime work.
-                var desiredMinThreads = maxConcurrency + Environment.ProcessorCount;
+                // Check for customer override via environment variable
+                int desiredMinThreads;
+                var overrideValue = _environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_MIN_THREADS);
+                if (!string.IsNullOrEmpty(overrideValue) && int.TryParse(overrideValue, out var parsedOverride) && parsedOverride > 0)
+                {
+                    desiredMinThreads = parsedOverride;
+                }
+                else
+                {
+                    // Default: modest bump to ensure polling task continuations have threads
+                    // available without pre-creating too many threads.
+                    desiredMinThreads = 2 * Environment.ProcessorCount;
+                }
 
                 ThreadPool.GetMinThreads(out int currentMinWorker, out int currentMinIO);
 

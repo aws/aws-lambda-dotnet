@@ -33,6 +33,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         // used if AWS_LAMBDA_MAX_CONCURRENCY environment variable is set.
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PROCESSING_TASKS = "AWS_LAMBDA_DOTNET_PROCESSING_TASKS";
 
+        // .NET Lambda runtime specific environment variable used to override the minimum number of ThreadPool
+        // worker threads. When set, this value is used instead of the default (2 * processorCount).
+        // This allows customers to tune thread pool sizing for their specific workload.
+        internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_MIN_THREADS = "AWS_LAMBDA_DOTNET_MIN_THREADS";
+
         internal const string ENVIRONMENT_VARIABLE_DISABLE_HEAP_MEMORY_LIMIT = "AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK";
 
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT = "AWS_LAMBDA_DOTNET_PREJIT";
