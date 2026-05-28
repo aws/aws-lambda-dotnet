@@ -39,6 +39,15 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// deferred to <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
 /// so user code between <c>CreateCallbackAsync</c> and the result-await runs
 /// deterministically across replays.
+/// <para>
+/// LIFETIME: the handle returned to user code IS the operation object, so it
+/// transitively roots <see cref="ExecutionState"/>, <see cref="CheckpointBatcher"/>,
+/// and <see cref="TerminationManager"/>. This is invocation-scoped by design —
+/// do not store an <see cref="ICallback{T}"/> across invocations (e.g. in a
+/// static field on a warm Lambda container). The batcher is disposed when the
+/// workflow returns and the captured state belongs to that invocation only;
+/// re-using the handle later will read disposed/stale machinery.
+/// </para>
 /// Serialization is delegated to the <see cref="ILambdaSerializer"/> registered on
 /// <see cref="ILambdaContext.Serializer"/>. AOT-safe and reflection-based callers
 /// share the same code path: the AOT story is determined entirely by the serializer
