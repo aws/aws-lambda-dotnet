@@ -1060,18 +1060,47 @@ public interface IDurableContext
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Create a callback for external system integration.
+    /// Create a callback for an external system to complete. Returns an
+    /// <see cref="ICallback{T}"/> handle exposing the service-allocated
+    /// <see cref="ICallback{T}.CallbackId"/> (pass to the external system) and
+    /// <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
+    /// (await to suspend until a result arrives).
     /// </summary>
+    /// <remarks>
+    /// The callback result is deserialized using the <see cref="ILambdaSerializer"/>
+    /// registered on <see cref="ILambdaContext.Serializer"/>. AOT and reflection-based
+    /// scenarios share this single overload — the AOT story is determined by the
+    /// registered serializer (e.g.,
+    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
+    /// <para>
+    /// Errors are deferred to <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>;
+    /// <c>CreateCallbackAsync</c> always returns successfully so user code
+    /// between <c>CreateCallbackAsync</c> and the result-await runs deterministically
+    /// across replays.
+    /// </para>
+    /// </remarks>
     Task<ICallback<T>> CreateCallbackAsync<T>(
         string? name = null,
         CallbackConfig? config = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Wait for an external system to respond via callback.
+    /// Composite operation that creates a callback, runs the supplied submitter
+    /// (which hands the <c>callbackId</c> to an external system), and suspends
+    /// until the external system delivers a result. Equivalent to manually
+    /// composing <see cref="CreateCallbackAsync{T}(string?, CallbackConfig?, System.Threading.CancellationToken)"/>
+    /// + <see cref="StepAsync{T}(System.Func{IStepContext, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
+    /// + <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
+    /// inside a child context.
     /// </summary>
+    /// <remarks>
+    /// Submitter failures (after retries are exhausted) surface as
+    /// <see cref="CallbackSubmitterException"/>. Callback failures and timeouts
+    /// surface as <see cref="CallbackFailedException"/> /
+    /// <see cref="CallbackTimeoutException"/>.
+    /// </remarks>
     Task<T> WaitForCallbackAsync<T>(
-        Func<string, ICallbackContext, Task> submitter,
+        Func<string, IWaitForCallbackContext, Task> submitter,
         string? name = null,
         WaitForCallbackConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -1158,6 +1187,20 @@ public interface IStepContext
     /// The deterministic operation ID for this step.
     /// </summary>
     string OperationId { get; }
+}
+
+/// <summary>
+/// Context passed to the submitter delegate of <c>WaitForCallbackAsync</c>.
+/// Distinct from <see cref="IStepContext"/> so the submitter API can evolve
+/// independently. Mirrors <c>WaitForCallbackContext</c> in the Python and
+/// JavaScript SDKs (logger-only surface).
+/// </summary>
+public interface IWaitForCallbackContext
+{
+    /// <summary>
+    /// Logger scoped to the submitter step (replay-safe).
+    /// </summary>
+    ILogger Logger { get; }
 }
 
 /// <summary>
@@ -1519,7 +1562,9 @@ public interface ICallback<T>
     /// Wait for and return the callback result.
     /// Suspends execution until the result is available.
     /// </summary>
-    Task<T?> GetResultAsync(CancellationToken cancellationToken = default);
+    /// <exception cref="CallbackFailedException">External system reported failure.</exception>
+    /// <exception cref="CallbackTimeoutException">Service marked the callback TIMED_OUT.</exception>
+    Task<T> GetResultAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -1556,13 +1601,30 @@ public class StepException : DurableExecutionException
 }
 
 /// <summary>
-/// Thrown when a callback fails or times out.
+/// Base exception for callback failures. Concrete subclasses distinguish
+/// failure modes — pattern-match the subclass type rather than inspecting
+/// a flag.
 /// </summary>
 public class CallbackException : DurableExecutionException
 {
-    public string? CallbackId { get; }
-    public bool IsTimeout { get; }
+    public string? CallbackId { get; init; }
+    public string? ErrorType { get; init; }
+    public string? ErrorData { get; init; }
+    public IReadOnlyList<string>? OriginalStackTrace { get; init; }
 }
+
+/// <summary>External system reported a failure result for the callback.</summary>
+public class CallbackFailedException : CallbackException { }
+
+/// <summary>Service marked the callback TIMED_OUT (overall or heartbeat).</summary>
+public class CallbackTimeoutException : CallbackException { }
+
+/// <summary>
+/// Submitter step (the inner step inside <c>WaitForCallbackAsync</c>) failed
+/// after retries are exhausted. Wraps the underlying <c>StepException</c>.
+/// Only thrown from <c>WaitForCallbackAsync</c>.
+/// </summary>
+public class CallbackSubmitterException : CallbackException { }
 
 /// <summary>
 /// Thrown when an invoked function fails.

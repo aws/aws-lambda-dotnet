@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace Amazon.Lambda.DurableExecution.Internal;
 
 /// <summary>
@@ -17,10 +19,19 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       to the replay frontier and <see cref="IsReplaying"/> flips to <c>false</c>
 ///       for the rest of the invocation.</item>
 /// </list>
+/// <para>
+/// <see cref="AddOperations"/> is invoked from the <see cref="CheckpointBatcher"/>'s
+/// background worker (via the <c>onNewOperations</c> hook) while the workflow thread
+/// concurrently reads via <see cref="GetOperation"/> / <see cref="HasOperation"/> —
+/// e.g. the fire-and-forget <c>StepOperation</c> path where the workflow is not
+/// awaiting the flush. <c>_operations</c> is therefore a <see cref="ConcurrentDictionary{TKey, TValue}"/>.
+/// The replay-tracking fields (<c>_visitedOperations</c>, <c>_isReplaying</c>,
+/// <c>_remainingReplayOps</c>) are touched only on the workflow thread.
+/// </para>
 /// </remarks>
 internal sealed class ExecutionState
 {
-    private readonly Dictionary<string, Operation> _operations = new();
+    private readonly ConcurrentDictionary<string, Operation> _operations = new();
     private readonly HashSet<string> _visitedOperations = new();
     private bool _isReplaying;
     private int _remainingReplayOps;

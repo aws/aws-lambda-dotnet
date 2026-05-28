@@ -8,6 +8,7 @@ using StepDetails = Amazon.Lambda.DurableExecution.StepDetails;
 using WaitDetails = Amazon.Lambda.DurableExecution.WaitDetails;
 using ExecutionDetails = Amazon.Lambda.DurableExecution.ExecutionDetails;
 using ContextDetails = Amazon.Lambda.DurableExecution.ContextDetails;
+using CallbackDetails = Amazon.Lambda.DurableExecution.CallbackDetails;
 
 namespace Amazon.Lambda.DurableExecution.Services;
 
@@ -29,11 +30,17 @@ internal sealed class LambdaDurableServiceClient
     /// show the durable-execution context (which API call, which ARN) alongside the
     /// underlying SDK message — instead of a bare AWSSDK stack trace with no clue
     /// about what was being called.
+    /// When <paramref name="onNewOperations"/> is supplied, any
+    /// <c>NewExecutionState.Operations</c> the service returns (e.g. a freshly
+    /// allocated <c>CallbackId</c> after a callback START checkpoint, or a
+    /// timer-fired SUCCEEDED) are forwarded to the callback so the caller can
+    /// merge them into its in-memory <see cref="Internal.ExecutionState"/>.
     /// </summary>
     public async Task<string?> CheckpointAsync(
         string durableExecutionArn,
         string? checkpointToken,
         IReadOnlyList<SdkOperationUpdate> pendingOperations,
+        Action<IReadOnlyList<Operation>>? onNewOperations = null,
         CancellationToken cancellationToken = default)
     {
         if (pendingOperations.Count == 0)
@@ -46,10 +53,10 @@ internal sealed class LambdaDurableServiceClient
             Updates = pendingOperations is List<SdkOperationUpdate> list ? list : pendingOperations.ToList()
         };
 
+        CheckpointDurableExecutionResponse response;
         try
         {
-            var response = await _lambdaClient.CheckpointDurableExecutionAsync(request, cancellationToken);
-            return response.CheckpointToken;
+            response = await _lambdaClient.CheckpointDurableExecutionAsync(request, cancellationToken);
         }
         catch (AmazonServiceException ex)
         {
@@ -57,6 +64,23 @@ internal sealed class LambdaDurableServiceClient
                 $"Failed to checkpoint operations for durable execution '{durableExecutionArn}': {ex.Message}",
                 ex);
         }
+
+        // The service returns NewExecutionState carrying any operations updated
+        // since the last checkpoint — most importantly, the callback ID stamped
+        // onto a freshly-started CALLBACK op, plus any externally-completed
+        // callbacks/timers. Hand them to the caller (DurableFunction wires this
+        // back into ExecutionState) so subsequent replay-style lookups see the
+        // updated state immediately.
+        var updated = response.NewExecutionState?.Operations;
+        if (onNewOperations != null && updated != null && updated.Count > 0)
+        {
+            var mapped = new List<Operation>(updated.Count);
+            foreach (var sdkOp in updated)
+                mapped.Add(MapFromSdkOperation(sdkOp));
+            onNewOperations(mapped);
+        }
+
+        return response.CheckpointToken;
     }
 
     /// <summary>
@@ -145,6 +169,18 @@ internal sealed class LambdaDurableServiceClient
                     ErrorMessage = sdkOp.ContextDetails.Error.ErrorMessage,
                     StackTrace = sdkOp.ContextDetails.Error.StackTrace,
                     ErrorData = sdkOp.ContextDetails.Error.ErrorData
+                } : null
+            } : null,
+            CallbackDetails = sdkOp.CallbackDetails != null ? new CallbackDetails
+            {
+                CallbackId = sdkOp.CallbackDetails.CallbackId,
+                Result = sdkOp.CallbackDetails.Result,
+                Error = sdkOp.CallbackDetails.Error != null ? new ErrorObject
+                {
+                    ErrorType = sdkOp.CallbackDetails.Error.ErrorType,
+                    ErrorMessage = sdkOp.CallbackDetails.Error.ErrorMessage,
+                    StackTrace = sdkOp.CallbackDetails.Error.StackTrace,
+                    ErrorData = sdkOp.CallbackDetails.Error.ErrorData
                 } : null
             } : null
         };

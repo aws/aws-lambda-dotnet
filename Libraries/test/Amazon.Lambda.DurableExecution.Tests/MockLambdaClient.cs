@@ -38,12 +38,29 @@ internal class MockLambdaClient : AmazonLambdaClient
     /// </summary>
     public Exception? GetExecutionStateThrows { get; set; }
 
+    /// <summary>
+    /// Optional handler that produces a <see cref="CheckpointDurableExecutionResponse"/>
+    /// per request. Tests modeling the durable-execution service's
+    /// <c>NewExecutionState</c> response (e.g. stamping a CallbackId onto a
+    /// freshly-started CALLBACK op) wire this up. When null, a default
+    /// response is produced with only the auto-incremented checkpoint token.
+    /// </summary>
+    public Func<CheckpointDurableExecutionRequest, CheckpointDurableExecutionResponse>? CheckpointHandler { get; set; }
+
     public override Task<CheckpointDurableExecutionResponse> CheckpointDurableExecutionAsync(
         CheckpointDurableExecutionRequest request,
         CancellationToken cancellationToken = default)
     {
         CheckpointCalls.Add(request);
         if (CheckpointThrows != null) throw CheckpointThrows;
+        if (CheckpointHandler != null)
+        {
+            var resp = CheckpointHandler(request);
+            // Auto-fill token if the test left it blank.
+            if (string.IsNullOrEmpty(resp.CheckpointToken))
+                resp.CheckpointToken = $"token-{++_tokenCounter}";
+            return Task.FromResult(resp);
+        }
         return Task.FromResult(new CheckpointDurableExecutionResponse
         {
             CheckpointToken = $"token-{++_tokenCounter}"
