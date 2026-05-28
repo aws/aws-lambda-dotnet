@@ -33,6 +33,13 @@ namespace Amazon.Lambda.PowerShellHost
         private readonly string _powerShellScriptFileName;
         private string _powerShellScriptFileContent;
 
+        // Cached result of detecting whether a subclass has overridden LoadScript().
+        // When overridden, the host must execute the override's returned text instead of
+        // invoking the file directly, to preserve the pre-5.x contract that override return
+        // values are always executed. Lazy + short-circuit: only evaluated when a script
+        // file is present, then cached.
+        private bool? _isLoadScriptOverriddenCache;
+
         // The PowerShell Object for executing PowerShell code
         private readonly PowerShell _ps;
 
@@ -155,27 +162,8 @@ namespace Amazon.Lambda.PowerShellHost
             _ps.Runspace?.ResetRunspaceState();
             _output.Clear();
 
-            var providedScript = LoadScript(input, context);
-
-
-            string executingScript = 
-@"
-Param(
-   [string]$LambdaInputString,
-   [Amazon.Lambda.Core.ILambdaContext]$LambdaContext
-)
-  
-$LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
-
-";
-
             var isLambda = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT"));
-
             var tempFolder = isLambda ? "/tmp" : Path.GetTempPath();
-
-            executingScript += $"{Environment.NewLine}$env:TEMP=\"{tempFolder}\"";
-            executingScript += $"{Environment.NewLine}$env:TMP=\"{tempFolder}\"";
-            executingScript += $"{Environment.NewLine}$env:TMPDIR=\"{tempFolder}\"{Environment.NewLine}";
 
             if(isLambda && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HOME")))
             {
@@ -185,18 +173,64 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
                 Environment.SetEnvironmentVariable("HOME", $"{tempFolder}/home");
             }
 
-            executingScript += providedScript;
+            // Set environment variables and Lambda input/context as global variables.
+            // Using $global: makes them visible in all scopes including the user's script.
+            string setupScript = $@"
+$env:TEMP = '{tempFolder}'
+$env:TMP = '{tempFolder}'
+$env:TMPDIR = '{tempFolder}'
+$global:LambdaInputString = $args[0]
+$global:LambdaInput = ConvertFrom-Json -InputObject $args[0]
+$global:LambdaContext = $args[1]
+";
 
-            if (!string.IsNullOrEmpty(PowerShellFunctionName))
+            _ps.AddScript(setupScript, useLocalScope: false);
+            _ps.AddArgument(input);
+            _ps.AddArgument(context);
+            var setupResult = _ps.BeginInvoke();
+            WaitPowerShellExecution(setupResult);
+            _ps.Commands.Clear();
+
+            // Execute the user's script. Use the new AddCommand path only when a file exists
+            // AND no subclass has overridden LoadScript(). Reflection is short-circuited away
+            // entirely when no file path was provided (the common S3-fetched-script case).
+            if (!string.IsNullOrEmpty(_powerShellScriptFileName)
+                && File.Exists(_powerShellScriptFileName)
+                && !IsLoadScriptOverridden())
             {
-                executingScript += $"{Environment.NewLine}{PowerShellFunctionName} $LambdaInput $LambdaContext{Environment.NewLine}";
+                var scriptFullPath = Path.GetFullPath(_powerShellScriptFileName);
+
+                if (!string.IsNullOrEmpty(PowerShellFunctionName))
+                {
+                    // Dot-source the script so functions it defines are visible in the current scope,
+                    // then call the named function.
+                    _ps.AddScript(
+                        $". '{scriptFullPath}'{Environment.NewLine}{PowerShellFunctionName} $global:LambdaInput $global:LambdaContext",
+                        useLocalScope: false);
+                }
+                else
+                {
+                    // Invoke the script file directly. PowerShell resolves it as ExternalScript,
+                    // populating $PSScriptRoot, $PSCommandPath, $MyInvocation, etc.
+                    var command = new Command(scriptFullPath, isScript: true, useLocalScope: false);
+                    _ps.Commands.AddCommand(command);
+                }
             }
+            else
+            {
+                // Either no file on disk, or a subclass has overridden LoadScript() and we
+                // must execute its returned text rather than invoking the file directly.
+                // Automatic variables will be empty in both cases since there is no backing
+                // file from PowerShell's perspective.
+                var providedScript = LoadScript(input, context);
 
+                if (!string.IsNullOrEmpty(PowerShellFunctionName))
+                {
+                    providedScript += $"{Environment.NewLine}{PowerShellFunctionName} $global:LambdaInput $global:LambdaContext{Environment.NewLine}";
+                }
 
-            _ps.AddScript(executingScript);
-            _ps.AddParameter("LambdaInputString", input);
-            _ps.AddParameter("LambdaContext", context);
-
+                _ps.AddScript(providedScript, useLocalScope: false);
+            }
 
             return _ps.BeginInvoke<PSObject, PSObject>(null, _output);
         }
@@ -227,6 +261,29 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
             _powerShellScriptFileContent = File.ReadAllText(_powerShellScriptFileName);
 
             return _powerShellScriptFileContent;
+        }
+
+        // Detects (and caches) whether a subclass has overridden LoadScript(). The override
+        // is an officially advertised extension point; preserving its pre-5.x semantics is
+        // required for backward compatibility with subclassers who transform script content.
+        // Parameter types are specified explicitly so a future overload of LoadScript would
+        // not throw AmbiguousMatchException, and a null result is handled explicitly so any
+        // future signature/visibility change does not silently regress every caller onto the
+        // legacy path.
+        private bool IsLoadScriptOverridden()
+        {
+            if (!_isLoadScriptOverriddenCache.HasValue)
+            {
+                var method = GetType().GetMethod(
+                    nameof(LoadScript),
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    types: new[] { typeof(string), typeof(ILambdaContext) },
+                    modifiers: null);
+                _isLoadScriptOverriddenCache = method != null
+                    && method.DeclaringType != typeof(PowerShellFunctionHost);
+            }
+            return _isLoadScriptOverriddenCache.Value;
         }
 
         /// <summary>
