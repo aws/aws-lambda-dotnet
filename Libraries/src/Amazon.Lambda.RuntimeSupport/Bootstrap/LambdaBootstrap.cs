@@ -218,6 +218,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             AdjustMemorySettings();
+            AdjustThreadPoolSettings();
 
             if (_configuration.IsCallPreJit)
             {
@@ -629,6 +630,61 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         #region IDisposable Support
+
+        /// <summary>
+        /// When running in multi-concurrency mode, pre-size the .NET ThreadPool to ensure there are enough
+        /// threads available for both handler execution and polling task continuations. Without this,
+        /// blocking handlers (Thread.Sleep, .Result, .Wait()) can exhaust the ThreadPool, preventing
+        /// polling tasks from cycling back to /next and causing Runtime.Unavailable errors from RAPID.
+        ///
+        /// The default minimum is 2 * processorCount. Customers can override this via the
+        /// AWS_LAMBDA_DOTNET_MIN_THREADS environment variable.
+        /// </summary>
+        private void AdjustThreadPoolSettings()
+        {
+            try
+            {
+                var maxConcurrency = Utils.GetMaxConcurrency(_environmentVariables);
+                if (maxConcurrency <= 0)
+                    return;
+
+                // Check for customer override via environment variable
+                int desiredMinThreads;
+                var overrideValue = _environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_MIN_THREADS);
+                if (!string.IsNullOrEmpty(overrideValue) && int.TryParse(overrideValue, out var parsedOverride) && parsedOverride > 0)
+                {
+                    desiredMinThreads = parsedOverride;
+                }
+                else
+                {
+                    // Default: modest bump to ensure polling task continuations have threads
+                    // available without pre-creating too many threads.
+                    desiredMinThreads = 2 * Environment.ProcessorCount;
+                }
+
+                ThreadPool.GetMinThreads(out int currentMinWorker, out int currentMinIO);
+
+                // Only increase, never decrease — respect any higher value already set
+                // (e.g., by the customer in their code).
+                if (currentMinWorker >= desiredMinThreads)
+                    return;
+
+                var success = ThreadPool.SetMinThreads(desiredMinThreads, currentMinIO);
+                if (success)
+                {
+                    _logger.LogInformation($"Adjusted ThreadPool minimum worker threads from {currentMinWorker} to {desiredMinThreads} for multi-concurrency mode (max concurrency: {maxConcurrency}).");
+                }
+                else
+                {
+                    _logger.LogError(null, $"Failed to set ThreadPool minimum worker threads to {desiredMinThreads}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to adjust ThreadPool settings for multi-concurrency mode.");
+            }
+        }
+
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
