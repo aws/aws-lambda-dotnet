@@ -30,22 +30,32 @@ Your handler delegates to `DurableFunction.WrapAsync`, which gives your workflow
 dotnet add package Amazon.Lambda.DurableExecution
 ```
 
-### Your first durable function (managed runtime)
+### Your first durable function
 
-A complete order-processing workflow with two steps and a wait, deployed as a class library on a managed .NET runtime such as `dotnet8`. Register the serializer once with the `LambdaSerializer` assembly attribute and configure your handler as `MyAssembly::OrderProcessor.OrderProcessor::Handler`. `DurableFunction.WrapAsync` resolves the serializer from `ILambdaContext.Serializer`, which the managed runtime populates from the assembly attribute.
+> **Programming model:** the preview only supports the **executable programming model** — your function is an executable assembly that hosts its own bootstrap loop and passes the serializer to the runtime in code. Class-library handlers on the managed runtime will be supported once `Amazon.Lambda.RuntimeSupport` ships the changes that let `DurableFunction.WrapAsync` resolve the serializer from `ILambdaContext.Serializer`. This README will be updated then.
+
+A complete order-processing workflow with two steps and a wait, deployed as an executable assembly on the `dotnet10` runtime. `Main` builds a `LambdaBootstrap` with your handler and an `ILambdaSerializer`, and `DurableFunction.WrapAsync` uses that serializer to checkpoint step inputs and outputs.
 
 ```csharp
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
-
-[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
 
 namespace OrderProcessor;
 
 public class OrderProcessor
 {
-    // Lambda handler: OrderProcessor::OrderProcessor.OrderProcessor::Handler
+    public static async Task Main()
+    {
+        var handler = new OrderProcessor();
+        var serializer = new DefaultLambdaJsonSerializer();
+        using var wrapper = HandlerWrapper.GetHandlerWrapper<DurableExecutionInvocationInput, DurableExecutionInvocationOutput>(
+            handler.Handler, serializer);
+        using var bootstrap = new LambdaBootstrap(wrapper);
+        await bootstrap.RunAsync();
+    }
+
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
         => DurableFunction.WrapAsync<Order, OrderResult>(Workflow, input, context);
@@ -75,39 +85,6 @@ public record OrderResult(string OrderId, string TrackingNumber);
 ```
 
 For AOT or trim-friendly serialization, swap `DefaultLambdaJsonSerializer` for `SourceGeneratorLambdaJsonSerializer<TContext>` and register your `JsonSerializerContext`.
-
-### Executable assembly variant (custom runtime)
-
-If you target a custom runtime (`provided.al2023`) and deploy your function as an executable assembly, host it with `LambdaBootstrap` and pass the serializer in code instead of via an assembly attribute:
-
-```csharp
-using Amazon.Lambda.Core;
-using Amazon.Lambda.DurableExecution;
-using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.SystemTextJson;
-
-public class OrderProcessor
-{
-    public static async Task Main()
-    {
-        var handler = new OrderProcessor();
-        var serializer = new DefaultLambdaJsonSerializer();
-        using var wrapper = HandlerWrapper.GetHandlerWrapper<DurableExecutionInvocationInput, DurableExecutionInvocationOutput>(
-            handler.Handler, serializer);
-        using var bootstrap = new LambdaBootstrap(wrapper);
-        await bootstrap.RunAsync();
-    }
-
-    public Task<DurableExecutionInvocationOutput> Handler(
-        DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<Order, OrderResult>(Workflow, input, context);
-
-    private async Task<OrderResult> Workflow(Order order, IDurableContext ctx)
-    {
-        // ... same workflow body as above ...
-    }
-}
-```
 
 ## Documentation
 
