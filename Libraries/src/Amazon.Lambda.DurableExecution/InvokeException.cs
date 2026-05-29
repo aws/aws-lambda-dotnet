@@ -9,8 +9,8 @@ namespace Amazon.Lambda.DurableExecution;
 /// concrete subclasses to react differently to specific outcomes:
 /// <list type="bullet">
 ///   <item><see cref="InvokeFailedException"/> — the chained function threw.</item>
-///   <item><see cref="InvokeTimedOutException"/> — the configured (or service)
-///       timeout elapsed before completion.</item>
+///   <item><see cref="InvokeTimedOutException"/> — the chained invocation
+///       reached the service-side <c>TIMED_OUT</c> terminal state.</item>
 ///   <item><see cref="InvokeStoppedException"/> — the chained execution was
 ///       stopped by the service or an operator.</item>
 /// </list>
@@ -56,8 +56,7 @@ public class InvokeFailedException : InvokeException
 }
 
 /// <summary>
-/// Thrown when a chained invoke operation completes with status <c>TIMED_OUT</c>
-/// — the invocation did not complete within the service-level timeout.
+/// Thrown when a chained invoke operation completes with status <c>TIMED_OUT</c>.
 /// </summary>
 public class InvokeTimedOutException : InvokeException
 {

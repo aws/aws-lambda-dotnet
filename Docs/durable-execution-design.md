@@ -1639,7 +1639,7 @@ public class InvokeException : DurableExecutionException
 /// <summary>The chained function ran and threw.</summary>
 public class InvokeFailedException : InvokeException { }
 
-/// <summary>The chained function did not complete within the configured (or service) timeout.</summary>
+/// <summary>The chained invocation reached the service-side TIMED_OUT terminal state.</summary>
 public class InvokeTimedOutException : InvokeException { }
 
 /// <summary>The chained execution was stopped by the service before reaching a normal terminal state.</summary>
