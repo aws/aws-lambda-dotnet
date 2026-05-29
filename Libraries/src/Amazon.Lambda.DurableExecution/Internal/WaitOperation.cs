@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 using SdkWaitOptions = Amazon.Lambda.Model.WaitOptions;
