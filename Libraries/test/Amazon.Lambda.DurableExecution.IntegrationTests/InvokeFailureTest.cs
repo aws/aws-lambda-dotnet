@@ -61,10 +61,17 @@ public class InvokeFailureTest
             Assert.Contains("intentional child failure", error.ErrorMessage ?? string.Empty);
 
             // The parent's terminal result encodes "parent-saw-<errorType>" — confirms
-            // the parent's catch block ran and the exception's ErrorType field
+            // the parent's catch block ran AND the exception's ErrorType field
             // was populated by the SDK on resume from the FAILED chained invoke.
+            // Without the Result assertions, a regression that left ErrorType
+            // null would still produce a SUCCEEDED execution (parent-saw-unknown)
+            // and silently pass.
             var execution = await parent.GetExecutionAsync(arn!);
             Assert.Null(execution.Error);
+            Assert.NotNull(execution.Result);
+            Assert.Contains("parent-saw-", execution.Result);
+            Assert.DoesNotContain("parent-saw-unknown", execution.Result);
+            Assert.Contains("InvalidOperationException", execution.Result);
         }
     }
 }
