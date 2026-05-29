@@ -151,41 +151,15 @@ public interface IDurableContext
     /// <summary>
     /// Invoke another durable Lambda function and await its result. The
     /// invocation is checkpointed so it survives parent failures and is not
-    /// double-fired on replay.
+    /// double-fired on replay. The payload and result are serialized to/from
+    /// a checkpoint using the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The chained function runs out-of-process: the SDK checkpoints a
-    /// <c>CHAINED_INVOKE START</c> with the supplied <paramref name="payload"/>
-    /// and suspends; the durable execution service runs the target function
-    /// asynchronously and re-invokes the parent workflow when it completes.
-    /// On resume, the cached result is deserialized and returned, or the
-    /// recorded failure surfaces as an <see cref="InvokeException"/> subclass.
-    /// </para>
-    /// <para>
     /// <paramref name="functionName"/> must be a qualified identifier (version,
-    /// alias, or <c>$LATEST</c>). Unqualified ARNs are rejected by the durable
-    /// execution service. The SDK only validates that the value is non-null
-    /// and non-empty; ARN shape validation is left to the service to keep
-    /// behavior consistent with the Python, JavaScript, and Java SDKs.
-    /// </para>
-    /// <para>
-    /// The payload and result are serialized to/from a checkpoint using the
-    /// <see cref="ILambdaSerializer"/> registered on
-    /// <see cref="ILambdaContext.Serializer"/> (typically configured via
-    /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>). AOT and
-    /// reflection-based scenarios share this single overload — the AOT story
-    /// is determined by the registered serializer (e.g.,
-    /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
-    /// </para>
+    /// alias, or <c>$LATEST</c>); unqualified ARNs are rejected by the durable
+    /// execution service.
     /// </remarks>
-    /// <typeparam name="TPayload">The payload type sent to the chained function.</typeparam>
-    /// <typeparam name="TResult">The result type returned by the chained function.</typeparam>
-    /// <exception cref="ArgumentNullException"><paramref name="functionName"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="functionName"/> is empty or whitespace.</exception>
-    /// <exception cref="InvokeFailedException">The chained function threw.</exception>
-    /// <exception cref="InvokeTimedOutException">The chained function did not complete within the configured timeout.</exception>
-    /// <exception cref="InvokeStoppedException">The chained execution was stopped by the service.</exception>
     Task<TResult> InvokeAsync<TPayload, TResult>(
         string functionName,
         TPayload payload,
