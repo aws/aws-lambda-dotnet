@@ -1,5 +1,6 @@
-﻿using Amazon.Runtime;
+using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
+using Amazon.Runtime.Credentials;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ namespace Amazon.Lambda.TestTool.Services
             using (var client = new AmazonSQSClient(creds, RegionEndpoint.GetBySystemName(region)))
             {
                 var response = await client.ListQueuesAsync(new ListQueuesRequest());
-                return response.QueueUrls;
+                return response.QueueUrls ?? new List<string>();
             }
         }
 
@@ -51,11 +52,11 @@ namespace Amazon.Lambda.TestTool.Services
                     WaitTimeSeconds = 20,
                     MaxNumberOfMessages = 1,
                     VisibilityTimeout = 60,
-                    AttributeNames = new List<string>() { "All" },
+                    MessageSystemAttributeNames = new List<string>() { "All" },
                     MessageAttributeNames = new List<string>() { "*" }
                 };
                 var response = await client.ReceiveMessageAsync(request);
-                if (response.Messages.Count == 0)
+                if (response.Messages == null ||response.Messages.Count == 0)
                 {
                     return null;
                 }
@@ -104,7 +105,7 @@ namespace Amazon.Lambda.TestTool.Services
             }
             else
             {
-                credentials = FallbackCredentialsFactory.GetCredentials();
+                credentials = DefaultAWSCredentialsIdentityResolver.GetCredentials();
             }
             return credentials;
         }
