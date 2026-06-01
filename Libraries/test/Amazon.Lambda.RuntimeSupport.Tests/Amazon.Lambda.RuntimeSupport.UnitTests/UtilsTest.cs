@@ -29,8 +29,11 @@ public class UtilsTest
 
     [Theory]
     [InlineData(null, 4, 1)]
-    [InlineData("5", 4, 4)]
-    [InlineData("5", 1, 2)]
+    [InlineData("5", 4, 5)]
+    [InlineData("5", 1, 5)]
+    [InlineData("10", 2, 10)]
+    [InlineData("enabled", 4, 4)]
+    [InlineData("enabled", 1, 2)]
     public void DetermineProcessingTaskCount(string concurrency, int processCount, int expected)
     {
         var envVars = new TestEnvironmentVariables();

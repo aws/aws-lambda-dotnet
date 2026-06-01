@@ -479,6 +479,57 @@ function _formatArray
     return $sb.ToString()
 }
 
+function _stripAwsModuleFiles
+{
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$ModulesRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Filters,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$ModuleNamePatterns
+    )
+
+    if (!(Test-Path -Path $ModulesRoot))
+    {
+        return
+    }
+
+    foreach ($moduleDir in (Get-ChildItem -Path $ModulesRoot -Directory))
+    {
+        $matchesAws = $false
+        foreach ($pattern in $ModuleNamePatterns)
+        {
+            if ($moduleDir.Name -like $pattern)
+            {
+                $matchesAws = $true
+                break
+            }
+        }
+
+        if (-not $matchesAws)
+        {
+            continue
+        }
+
+        $removed = Get-ChildItem -Path $moduleDir.FullName -Recurse -File -Include $Filters -ErrorAction SilentlyContinue
+        foreach ($file in $removed)
+        {
+            Write-Verbose ('Removing AWS module file: {0}' -f $file.FullName)
+            Remove-Item -LiteralPath $file.FullName -Force -ErrorAction SilentlyContinue
+        }
+
+        $count = ($removed | Measure-Object).Count
+        if ($count -gt 0)
+        {
+            Write-Verbose ('Stripped {0} unwanted file(s) from AWS module {1}' -f $count, $moduleDir.Name)
+        }
+    }
+}
+
 function _prepareDependentPowerShellModules
 {
     param
@@ -567,6 +618,11 @@ function _prepareDependentPowerShellModules
     }
     ## Add verbosity that no RequiredModules found
     else {Write-Verbose "No RequiredModules found for script '$Script'"}
+
+    _stripAwsModuleFiles `
+        -ModulesRoot $SavedModulesDirectory `
+        -Filters $AwsModuleStripFilters `
+        -ModuleNamePatterns $AwsAuthoredModuleNamePatterns
 }
 
 function _findLocalModule

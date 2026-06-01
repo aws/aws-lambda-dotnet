@@ -47,6 +47,17 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         internal MethodInfo CustomerMethodInfo { get; private set; }
 
         /// <summary>
+        /// The serializer instance constructed from the customer's
+        /// <c>[LambdaSerializer(typeof(...))]</c> attribute (if any). Populated by
+        /// <see cref="Init"/>. Typed as <see cref="object"/> here because the value is
+        /// produced via reflection in <see cref="GetSerializerObject"/> and validated
+        /// against the loaded <c>ILambdaSerializer</c> interface there;
+        /// <see cref="RuntimeSupportInitializer"/> casts it back to <c>ILambdaSerializer</c>
+        /// before handing it to <see cref="LambdaBootstrap.SetSerializer"/>.
+        /// </summary>
+        internal object CustomerSerializerInstance { get; private set; }
+
+        /// <summary>
         /// Initializes UserCodeLoader with a given handler and internal logger.
         /// </summary>
         /// <param name="environmentVariables"></param>
@@ -129,6 +140,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             var customerObject = GetCustomerObject(customerType);
 
             var customerSerializerInstance = GetSerializerObject(customerAssembly);
+            CustomerSerializerInstance = customerSerializerInstance;
             _logger.LogDebug($"UCL : Constructing invoke delegate");
 
             var isPreJit = UserCodeInit.IsCallPreJit(_environmentVariables);

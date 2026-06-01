@@ -52,6 +52,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private readonly LambdaBootstrapInitializer _initializer;
         private readonly LambdaBootstrapHandler _handler;
+        // Mutable so RuntimeSupportInitializer (class-library mode) can set this after
+        // UserCodeLoader.Init resolves [assembly: LambdaSerializer]. Read on every
+        // invocation to populate ILambdaContext.Serializer.
+        private Amazon.Lambda.Core.ILambdaSerializer _serializer;
         private readonly bool _ownsHttpClient;
         private readonly InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
@@ -61,6 +65,18 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly IEnvironmentVariables _environmentVariables;
 
         internal IRuntimeApiClient Client { get; set; }
+
+        /// <summary>
+        /// Set the serializer to surface on <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/>
+        /// for each invocation. Used by <see cref="RuntimeSupportInitializer"/> to plumb the
+        /// serializer constructed from <c>[assembly: LambdaSerializer]</c> after
+        /// <see cref="UserCodeLoader"/> has initialized. Setter is internal — public
+        /// callers register the serializer via <see cref="HandlerWrapper"/> instead.
+        /// </summary>
+        internal void SetSerializer(Amazon.Lambda.Core.ILambdaSerializer serializer)
+        {
+            _serializer = serializer;
+        }
 
 
         /// <summary>
@@ -101,7 +117,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
-            : this(handlerWrapper.Handler, initializer)
+            : this(ConstructHttpClient(), handlerWrapper.Handler, initializer, ownsHttpClient: true, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -111,7 +127,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
-            : this(handlerWrapper.Handler, lambdaBootstrapOptions, initializer)
+            : this(ConstructHttpClient(), handlerWrapper.Handler, initializer, ownsHttpClient: true, lambdaBootstrapOptions: lambdaBootstrapOptions, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -122,7 +138,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
-            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false)
+            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -133,7 +149,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
-            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, lambdaBootstrapOptions: lambdaBootstrapOptions)
+            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, lambdaBootstrapOptions: lambdaBootstrapOptions, serializer: handlerWrapper.Serializer)
         { }
 
         /// <summary>
@@ -170,7 +186,8 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="configuration"> Get configuration to check if Invoke is with Pre JIT or SnapStart enabled </param>
         /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
         /// <param name="environmentVariables"></param>
-        internal LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null, LambdaBootstrapOptions lambdaBootstrapOptions = null, IEnvironmentVariables environmentVariables = null)
+        /// <param name="serializer">The Lambda serializer to expose on the per-invocation <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/>. May be null.</param>
+        internal LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null, LambdaBootstrapOptions lambdaBootstrapOptions = null, IEnvironmentVariables environmentVariables = null, Amazon.Lambda.Core.ILambdaSerializer serializer = null)
         {
             if (ownsHttpClient && httpClient == null)
             {
@@ -179,6 +196,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            _serializer = serializer;
             _ownsHttpClient = ownsHttpClient;
             _initializer = initializer;
             _httpClient.Timeout = RuntimeApiHttpTimeout;
@@ -200,6 +218,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             AdjustMemorySettings();
+            AdjustThreadPoolSettings();
 
             if (_configuration.IsCallPreJit)
             {
@@ -365,6 +384,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
+                    SetSerializerOnContext(impl);
                 }
 
                 // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
@@ -479,6 +499,16 @@ namespace Amazon.Lambda.RuntimeSupport
                 // fully processed and then another event will be asked for.
                 await processingFunc();
             }
+        }
+
+        private void SetSerializerOnContext(LambdaContext context)
+        {
+            // No serializer was registered with this bootstrap (raw-stream handler, or
+            // the user constructed LambdaBootstrap with a LambdaBootstrapHandler directly).
+            // Nothing to surface — leave context.Serializer null.
+            if (_serializer == null) return;
+
+            context.Serializer = _serializer;
         }
 
         volatile bool _disableTraceProvider = false;
@@ -600,6 +630,61 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         #region IDisposable Support
+
+        /// <summary>
+        /// When running in multi-concurrency mode, pre-size the .NET ThreadPool to ensure there are enough
+        /// threads available for both handler execution and polling task continuations. Without this,
+        /// blocking handlers (Thread.Sleep, .Result, .Wait()) can exhaust the ThreadPool, preventing
+        /// polling tasks from cycling back to /next and causing Runtime.Unavailable errors from RAPID.
+        ///
+        /// The default minimum is 2 * processorCount. Customers can override this via the
+        /// AWS_LAMBDA_DOTNET_MIN_THREADS environment variable.
+        /// </summary>
+        private void AdjustThreadPoolSettings()
+        {
+            try
+            {
+                var maxConcurrency = Utils.GetMaxConcurrency(_environmentVariables);
+                if (maxConcurrency <= 0)
+                    return;
+
+                // Check for customer override via environment variable
+                int desiredMinThreads;
+                var overrideValue = _environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_MIN_THREADS);
+                if (!string.IsNullOrEmpty(overrideValue) && int.TryParse(overrideValue, out var parsedOverride) && parsedOverride > 0)
+                {
+                    desiredMinThreads = parsedOverride;
+                }
+                else
+                {
+                    // Default: modest bump to ensure polling task continuations have threads
+                    // available without pre-creating too many threads.
+                    desiredMinThreads = 2 * Environment.ProcessorCount;
+                }
+
+                ThreadPool.GetMinThreads(out int currentMinWorker, out int currentMinIO);
+
+                // Only increase, never decrease — respect any higher value already set
+                // (e.g., by the customer in their code).
+                if (currentMinWorker >= desiredMinThreads)
+                    return;
+
+                var success = ThreadPool.SetMinThreads(desiredMinThreads, currentMinIO);
+                if (success)
+                {
+                    _logger.LogInformation($"Adjusted ThreadPool minimum worker threads from {currentMinWorker} to {desiredMinThreads} for multi-concurrency mode (max concurrency: {maxConcurrency}).");
+                }
+                else
+                {
+                    _logger.LogError(null, $"Failed to set ThreadPool minimum worker threads to {desiredMinThreads}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to adjust ThreadPool settings for multi-concurrency mode.");
+            }
+        }
+
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>

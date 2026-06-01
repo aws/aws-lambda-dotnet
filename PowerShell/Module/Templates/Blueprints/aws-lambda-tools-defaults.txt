@@ -2,7 +2,7 @@
     "profile"     : "CONFIGURED_PROFILE",
     "region"      : "CONFIGURED_REGION",
     "configuration" : "Release",
-    "function-runtime" : "dotnet6",
+    "function-runtime" : "",
     "function-memory-size" : DEFAULT_MEMORY,
     "function-timeout"     : DEFAULT_TIMEOUT,
     "function-handler"     : "PROJECT_NAME::PROJECT_NAME.Bootstrap::ExecuteFunction",

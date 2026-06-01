@@ -56,11 +56,31 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
                 else
                 {
-                    processingTaskCount = Math.Max(2, processorCount);
+                    // Use the max concurrency value as the default polling task count so there are
+                    // enough polling tasks to fill all available concurrency slots. Fall back to
+                    // the processor-based heuristic if the value cannot be parsed.
+                    var maxConcurrency = GetMaxConcurrency(environmentVariables);
+                    processingTaskCount = maxConcurrency > 0
+                        ? maxConcurrency
+                        : Math.Max(2, processorCount);
                 }
             }
 
             return processingTaskCount;
+        }
+
+        /// <summary>
+        /// Parses the AWS_LAMBDA_MAX_CONCURRENCY environment variable as an integer.
+        /// Returns the parsed value if valid and greater than 0, otherwise returns 0.
+        /// </summary>
+        internal static int GetMaxConcurrency(IEnvironmentVariables environmentVariables)
+        {
+            var value = environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY);
+            if (!string.IsNullOrEmpty(value) && int.TryParse(value, out var maxConcurrency) && maxConcurrency > 0)
+            {
+                return maxConcurrency;
+            }
+            return 0;
         }
 
         /// <summary>

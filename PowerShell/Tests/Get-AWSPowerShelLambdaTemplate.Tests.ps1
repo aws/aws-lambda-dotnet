@@ -7,31 +7,33 @@ Import-Module $moduleManifestPath
 InModuleScope -ModuleName $module -ScriptBlock {
     Describe -Name 'Get-AWSPowerShellLambdaTemplate' -Fixture {
 
-        function LoadFakeData
-        {
-            ConvertTo-Json -InputObject @{
-                manifestVersion = 1
-                blueprints      = @(
-                    @{
-                        name        = 'Basic'
-                        description = 'Bare bones script'
-                        content     = @(
-                            @{
-                                source   = 'basic.ps1.txt'
-                                output   = '{basename}.ps1'
-                                filetype = 'lambdaFunction'
-                            },
-                            @{
-                                source = 'readme.txt'
-                                output = 'readme.txt'
-                            }
-                        )
-                    }
-                )
+        BeforeAll {
+            function LoadFakeData
+            {
+                ConvertTo-Json -InputObject @{
+                    manifestVersion = 1
+                    blueprints      = @(
+                        @{
+                            name        = 'Basic'
+                            description = 'Bare bones script'
+                            content     = @(
+                                @{
+                                    source   = 'basic.ps1.txt'
+                                    output   = '{basename}.ps1'
+                                    filetype = 'lambdaFunction'
+                                },
+                                @{
+                                    source = 'readme.txt'
+                                    output = 'readme.txt'
+                                }
+                            )
+                        }
+                    )
+                }
             }
+            Mock -CommandName '_getHostedBlueprintsContent' -MockWith {LoadFakeData}
+            Mock -CommandName '_getLocalBlueprintsContent' -MockWith {LoadFakeData}
         }
-        Mock -CommandName '_getHostedBlueprintsContent' -MockWith {LoadFakeData}
-        Mock -CommandName '_getLocalBlueprintsContent' -MockWith {LoadFakeData}
 
         Context -Name 'Online Templates' -Fixture {
             It -Name 'Retrieves Blueprints from online sources by default' -Test {

@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v2.0.0.0).",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v2.0.1.0).",
   "Parameters": {
     "ArchitectureTypeParameter": {
       "Type": "String",
@@ -672,6 +672,28 @@
               "Path": "/",
               "Method": "GET"
             }
+          }
+        }
+      }
+    },
+    "TestServerlessAppParameterlessTaskMethodsNoParameterTaskGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "provided.al2",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestExecutableServerlessApp",
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NoParameterTask"
           }
         }
       }

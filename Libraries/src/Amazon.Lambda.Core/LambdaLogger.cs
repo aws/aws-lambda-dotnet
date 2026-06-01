@@ -126,6 +126,33 @@ namespace Amazon.Lambda.Core
         /// <param name="message">Message to log. The message may have format arguments.</param>
         /// <param name="args">Arguments to format the message with.</param>
         public static void Log(LogLevel level, Exception exception, string message, params object[] args) => Log(level.ToString(), exception, message, args);
+
+        // This field must not be readonly because SetConfigureStructuredLoggingAction replaces the value
+        // when Amazon.Lambda.RuntimeSupport registers its structured logging callback.
+        private static Action<StructuredLoggingOptions> _configureStructuredLoggingAction = (options) => _placeHolderStructuredLoggingOptions = options;
+
+        // Because a user might call ConfigureStructuredLogging before the Lambda runtime has a chance to replace the _configureStructuredLoggingAction with the
+        // real implementation, we need to hold onto the options they provided until the Lambda runtime can use them to configure structured logging.
+        private static StructuredLoggingOptions _placeHolderStructuredLoggingOptions;
+
+        /// <summary>
+        /// When structured logging is enabled this method will allow overriding the default configuration the Lambda runtime uses for structured logging.
+        /// </summary>
+        /// <param name="options">The options to use for configuring structured logging.</param>
+        [RequiresPreviewFeatures("This method is in preview until the latest changes of the .NET Lambda runtime client have been deployed to the Lambda managed runtimes")]
+        public static void ConfigureStructuredLogging(StructuredLoggingOptions options) => _configureStructuredLoggingAction(options);
+
+        internal static void SetConfigureStructuredLoggingAction(Action<StructuredLoggingOptions> configureStructuredLoggingAction)
+        {
+            _configureStructuredLoggingAction = configureStructuredLoggingAction;
+
+            // If a user set the structured logging options before the Lambda runtime set the real _configureStructuredLoggingAction,
+            // we need to call it now to make sure the user's options are applied.
+            if (_placeHolderStructuredLoggingOptions != null)
+            {
+                _configureStructuredLoggingAction(_placeHolderStructuredLoggingOptions);
+            }
+        }
 #endif
     }
 }

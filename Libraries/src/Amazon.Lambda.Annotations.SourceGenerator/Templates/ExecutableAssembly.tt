@@ -44,6 +44,18 @@ public class GeneratedProgram
                 break;
 <#    
             }
+            else if (!model.GeneratedMethod.Parameters.Any() && model.LambdaMethod.ReturnsVoidTask)
+            {
+                // No typed input and Task return: Func<Stream, Task> is ambiguous between
+                // Create<TInput>(Func<TInput, Task>, ILambdaSerializer) and
+                // Create<TOutput>(Func<Stream, TOutput>, ILambdaSerializer).
+                // Use the non-generic, non-serializer overload to resolve CS0121.
+#>
+                Func<Stream, System.Threading.Tasks.Task> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>).Build().RunAsync();
+                break;
+<#
+            }
             else
             {
 #>

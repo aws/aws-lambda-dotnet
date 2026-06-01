@@ -464,4 +464,70 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             }
         }
     }
+
+    /// <summary>
+    /// IServer for handling Lambda events from an API Gateway Websocket API.
+    /// </summary>
+    public class APIGatewayWebsocketApiLambdaRuntimeSupportServer : APIGatewayRestApiLambdaRuntimeSupportServer
+    {
+        /// <summary>
+        /// Create instances
+        /// </summary>
+        /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+        public APIGatewayWebsocketApiLambdaRuntimeSupportServer(IServiceProvider serviceProvider)
+            : base(serviceProvider)
+        {
+        }
+
+        /// <summary>
+        /// Creates HandlerWrapper for processing events from API Gateway Websocket API
+        /// </summary>
+        /// <param name="serviceProvider"></param>
+        /// <returns></returns>
+        protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
+        {
+            var handler = new APIGatewayWebsocketMinimalApi(serviceProvider);
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
+#pragma warning restore CA2252
+            Func<APIGatewayEvents.APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, Serializer);
+        }
+
+        /// <summary>
+        /// MinimalApi variant of APIGatewayWebsocketApiProxyFunction. Reuses the REST API MinimalApi plumbing
+        /// (snapshot collectors, hosting options, PostMarshall callbacks) and applies the websocket-specific
+        /// request transformations on top.
+        /// </summary>
+        public class APIGatewayWebsocketMinimalApi : APIGatewayRestApiLambdaRuntimeSupportServer.APIGatewayRestApiMinimalApi
+        {
+            /// <summary>
+            /// Create instances
+            /// </summary>
+            /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+            public APIGatewayWebsocketMinimalApi(IServiceProvider serviceProvider)
+                : base(serviceProvider)
+            {
+            }
+
+            /// <inheritdoc/>
+            protected override string ParseHttpPath(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest)
+                => "/" + System.Net.WebUtility.UrlDecode(apiGatewayRequest.RequestContext.RouteKey ?? string.Empty);
+
+            /// <inheritdoc/>
+            protected override string ParseHttpMethod(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest) => "POST";
+
+            /// <inheritdoc/>
+            protected override Microsoft.AspNetCore.Http.IHeaderDictionary AddMissingRequestHeaders(APIGatewayEvents.APIGatewayProxyRequest apiGatewayRequest, Microsoft.AspNetCore.Http.IHeaderDictionary headers)
+            {
+                headers = base.AddMissingRequestHeaders(apiGatewayRequest, headers);
+                if (!headers.ContainsKey("Content-Type"))
+                {
+                    headers["Content-Type"] = "application/json";
+                }
+                return headers;
+            }
+        }
+    }
 }
