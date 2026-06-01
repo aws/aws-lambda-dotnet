@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.TestTool.BlazorTester",
       "Type": "Minor",
       "ChangelogMessages": [
-        "Add AWSSDK.Signer package to support \u0027aws login\u0027 based credentials",
+        "Add AWSSDK.Signin package to support \u0027aws login\u0027 based credentials",
         "Update to V4 of the AWS SDK for .NET"
       ]
     },
@@ -12,7 +12,7 @@
       "Name": "Amazon.Lambda.TestTool",
       "Type": "Minor",
       "ChangelogMessages": [
-        "Add AWSSDK.Signer package to support \u0027aws login\u0027 based credentials",
+        "Add AWSSDK.Signin package to support \u0027aws login\u0027 based credentials",
 		"Update AWS SDK and Amazon Lambda packages to latest versions"
       ]
     }	
