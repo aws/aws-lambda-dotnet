@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.DurableExecution.Services;
 using Amazon.Lambda.Model;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;

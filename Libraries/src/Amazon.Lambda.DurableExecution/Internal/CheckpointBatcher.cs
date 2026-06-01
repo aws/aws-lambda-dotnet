@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
