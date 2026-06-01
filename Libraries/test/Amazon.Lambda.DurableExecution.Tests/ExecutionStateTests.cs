@@ -195,6 +195,34 @@ public class ExecutionStateTests
     }
 
     [Fact]
+    public void TrackReplay_TerminalSet_IncludesTimedOut()
+    {
+        // TIMED_OUT is a terminal state (matches Python/JS/Java reference SDKs).
+        // A timed-out chained-invoke that has been visited must allow the
+        // replay-mode flag to flip; otherwise IsReplaying would stay stuck on
+        // for the rest of the invocation and downstream replay-aware features
+        // (e.g., the future replay-aware logger) would mis-fire.
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                ExecutionInputOp(),
+                new()
+                {
+                    Id = "0-invoke",
+                    Type = OperationTypes.ChainedInvoke,
+                    Status = OperationStatuses.TimedOut
+                }
+            }
+        });
+        Assert.True(state.IsReplaying);
+
+        state.TrackReplay("0-invoke");
+        Assert.False(state.IsReplaying);
+    }
+
+    [Fact]
     public void GetOperation_ReturnsLatestRecord_WhenIdAppearsMultipleTimes()
     {
         // Wire format: when the service replays an envelope it includes the

@@ -146,5 +146,6 @@ internal sealed class ExecutionState
         status == OperationStatuses.Succeeded
         || status == OperationStatuses.Failed
         || status == OperationStatuses.Cancelled
-        || status == OperationStatuses.Stopped;
+        || status == OperationStatuses.Stopped
+        || status == OperationStatuses.TimedOut;
 }

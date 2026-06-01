@@ -9,6 +9,7 @@ using WaitDetails = Amazon.Lambda.DurableExecution.WaitDetails;
 using ExecutionDetails = Amazon.Lambda.DurableExecution.ExecutionDetails;
 using ContextDetails = Amazon.Lambda.DurableExecution.ContextDetails;
 using CallbackDetails = Amazon.Lambda.DurableExecution.CallbackDetails;
+using ChainedInvokeDetails = Amazon.Lambda.DurableExecution.ChainedInvokeDetails;
 
 namespace Amazon.Lambda.DurableExecution.Services;
 
@@ -138,13 +139,7 @@ internal sealed class LambdaDurableServiceClient
             StepDetails = sdkOp.StepDetails != null ? new StepDetails
             {
                 Result = sdkOp.StepDetails.Result,
-                Error = sdkOp.StepDetails.Error != null ? new ErrorObject
-                {
-                    ErrorType = sdkOp.StepDetails.Error.ErrorType,
-                    ErrorMessage = sdkOp.StepDetails.Error.ErrorMessage,
-                    StackTrace = sdkOp.StepDetails.Error.StackTrace,
-                    ErrorData = sdkOp.StepDetails.Error.ErrorData
-                } : null,
+                Error = MapError(sdkOp.StepDetails.Error),
                 Attempt = sdkOp.StepDetails.Attempt,
                 NextAttemptTimestamp = sdkOp.StepDetails.NextAttemptTimestamp.HasValue
                     ? new DateTimeOffset(sdkOp.StepDetails.NextAttemptTimestamp.Value, TimeSpan.Zero).ToUnixTimeMilliseconds()
@@ -163,26 +158,43 @@ internal sealed class LambdaDurableServiceClient
             ContextDetails = sdkOp.ContextDetails != null ? new ContextDetails
             {
                 Result = sdkOp.ContextDetails.Result,
-                Error = sdkOp.ContextDetails.Error != null ? new ErrorObject
-                {
-                    ErrorType = sdkOp.ContextDetails.Error.ErrorType,
-                    ErrorMessage = sdkOp.ContextDetails.Error.ErrorMessage,
-                    StackTrace = sdkOp.ContextDetails.Error.StackTrace,
-                    ErrorData = sdkOp.ContextDetails.Error.ErrorData
-                } : null
+                Error = MapError(sdkOp.ContextDetails.Error)
             } : null,
             CallbackDetails = sdkOp.CallbackDetails != null ? new CallbackDetails
             {
                 CallbackId = sdkOp.CallbackDetails.CallbackId,
                 Result = sdkOp.CallbackDetails.Result,
-                Error = sdkOp.CallbackDetails.Error != null ? new ErrorObject
-                {
-                    ErrorType = sdkOp.CallbackDetails.Error.ErrorType,
-                    ErrorMessage = sdkOp.CallbackDetails.Error.ErrorMessage,
-                    StackTrace = sdkOp.CallbackDetails.Error.StackTrace,
-                    ErrorData = sdkOp.CallbackDetails.Error.ErrorData
-                } : null
+                Error = MapError(sdkOp.CallbackDetails.Error)
+            } : null,
+            ChainedInvokeDetails = sdkOp.ChainedInvokeDetails != null ? new ChainedInvokeDetails
+            {
+                Result = sdkOp.ChainedInvokeDetails.Result,
+                Error = MapError(sdkOp.ChainedInvokeDetails.Error)
             } : null
+        };
+    }
+
+    /// <summary>
+    /// Maps an SDK <see cref="Amazon.Lambda.Model.ErrorObject"/> into the
+    /// internal <see cref="ErrorObject"/>. Carries every field the wire object
+    /// exposes — <c>ErrorType</c>, <c>ErrorMessage</c>, <c>ErrorData</c>, and
+    /// <c>StackTrace</c> — so the durable execution exception builders
+    /// (<see cref="StepException"/>, <see cref="ChildContextException"/>, and
+    /// the <see cref="InvokeException"/> tree) can rehydrate the original
+    /// failure faithfully on real-service replay.
+    /// </summary>
+    private static ErrorObject? MapError(Amazon.Lambda.Model.ErrorObject? sdkError)
+    {
+        if (sdkError == null) return null;
+        return new ErrorObject
+        {
+            ErrorType = sdkError.ErrorType,
+            ErrorMessage = sdkError.ErrorMessage,
+            ErrorData = sdkError.ErrorData,
+            // SDK exposes List<string>; assigning into IReadOnlyList<string>?
+            // is reference-identical. A null list (SDK 4.x default when the
+            // field isn't set on the wire) propagates as null on our side.
+            StackTrace = sdkError.StackTrace
         };
     }
 }

@@ -147,6 +147,25 @@ public interface IDurableContext
         string? name = null,
         WaitForCallbackConfig? config = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Invoke another durable Lambda function and await its result. The
+    /// invocation is checkpointed so it survives parent failures and is not
+    /// double-fired on replay. The payload and result are serialized to/from
+    /// a checkpoint using the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="functionName"/> must be a qualified identifier (version,
+    /// alias, or <c>$LATEST</c>); unqualified ARNs are rejected by the durable
+    /// execution service.
+    /// </remarks>
+    Task<TResult> InvokeAsync<TPayload, TResult>(
+        string functionName,
+        TPayload payload,
+        string? name = null,
+        InvokeConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -148,4 +148,117 @@ public class ExceptionsTests
         Assert.NotNull(new CallbackSubmitterException());
         Assert.Equal("m", new CallbackSubmitterException("m").Message);
     }
+
+    #region InvokeException tree
+
+    [Fact]
+    public void InvokeException_IsDurableExecutionException()
+    {
+        var ex = new InvokeException("invoke failed");
+        Assert.IsAssignableFrom<DurableExecutionException>(ex);
+        Assert.Equal("invoke failed", ex.Message);
+    }
+
+    [Fact]
+    public void InvokeException_ParameterlessCtor()
+    {
+        var ex = new InvokeException();
+        Assert.IsAssignableFrom<DurableExecutionException>(ex);
+    }
+
+    [Fact]
+    public void InvokeException_WrapsInnerException()
+    {
+        var inner = new InvalidOperationException("inner");
+        var ex = new InvokeException("outer", inner);
+        Assert.Same(inner, ex.InnerException);
+    }
+
+    [Fact]
+    public void InvokeException_HasInvokeProperties()
+    {
+        var ex = new InvokeException("boom")
+        {
+            FunctionName = "arn:aws:lambda:us-east-1:123:function:fn:prod",
+            ErrorType = "System.TimeoutException",
+            ErrorData = "{\"detail\":\"x\"}",
+            OriginalStackTrace = new[] { "at A.B()" }
+        };
+
+        Assert.Equal("arn:aws:lambda:us-east-1:123:function:fn:prod", ex.FunctionName);
+        Assert.Equal("System.TimeoutException", ex.ErrorType);
+        Assert.Equal("{\"detail\":\"x\"}", ex.ErrorData);
+        Assert.Single(ex.OriginalStackTrace!);
+    }
+
+    [Fact]
+    public void InvokeFailedException_IsInvokeException()
+    {
+        var ex = new InvokeFailedException("boom") { FunctionName = "fn:prod" };
+        Assert.IsAssignableFrom<InvokeException>(ex);
+        Assert.IsAssignableFrom<DurableExecutionException>(ex);
+        Assert.Equal("boom", ex.Message);
+        Assert.Equal("fn:prod", ex.FunctionName);
+    }
+
+    [Fact]
+    public void InvokeFailedException_AllCtorOverloads()
+    {
+        var inner = new InvalidOperationException("inner");
+        Assert.IsAssignableFrom<DurableExecutionException>(new InvokeFailedException());
+        Assert.Equal("m", new InvokeFailedException("m").Message);
+        Assert.Same(inner, new InvokeFailedException("m", inner).InnerException);
+    }
+
+    [Fact]
+    public void InvokeTimedOutException_IsInvokeException()
+    {
+        var ex = new InvokeTimedOutException("timed out");
+        Assert.IsAssignableFrom<InvokeException>(ex);
+        Assert.IsAssignableFrom<DurableExecutionException>(ex);
+        Assert.Equal("timed out", ex.Message);
+    }
+
+    [Fact]
+    public void InvokeTimedOutException_AllCtorOverloads()
+    {
+        var inner = new TimeoutException("inner");
+        Assert.IsAssignableFrom<DurableExecutionException>(new InvokeTimedOutException());
+        Assert.Equal("m", new InvokeTimedOutException("m").Message);
+        Assert.Same(inner, new InvokeTimedOutException("m", inner).InnerException);
+    }
+
+    [Fact]
+    public void InvokeStoppedException_IsInvokeException()
+    {
+        var ex = new InvokeStoppedException("stopped");
+        Assert.IsAssignableFrom<InvokeException>(ex);
+        Assert.IsAssignableFrom<DurableExecutionException>(ex);
+        Assert.Equal("stopped", ex.Message);
+    }
+
+    [Fact]
+    public void InvokeStoppedException_AllCtorOverloads()
+    {
+        var inner = new InvalidOperationException("inner");
+        Assert.IsAssignableFrom<DurableExecutionException>(new InvokeStoppedException());
+        Assert.Equal("m", new InvokeStoppedException("m").Message);
+        Assert.Same(inner, new InvokeStoppedException("m", inner).InnerException);
+    }
+
+    [Fact]
+    public void InvokeException_SubclassesCaughtByBase()
+    {
+        // Verifies the documented pattern-matching contract: catch
+        // (InvokeException) catches all three subclasses.
+        Exception failed = new InvokeFailedException("fail");
+        Exception timedOut = new InvokeTimedOutException("timeout");
+        Exception stopped = new InvokeStoppedException("stop");
+
+        Assert.True(failed is InvokeException);
+        Assert.True(timedOut is InvokeException);
+        Assert.True(stopped is InvokeException);
+    }
+
+    #endregion
 }

@@ -337,6 +337,44 @@ internal sealed class DurableContext : IDurableContext
         || errorType == typeof(CallbackTimeoutException).FullName
         || errorType == typeof(CallbackSubmitterException).FullName
         || errorType == typeof(CallbackException).FullName;
+
+    public Task<TResult> InvokeAsync<TPayload, TResult>(
+        string functionName,
+        TPayload payload,
+        string? name = null,
+        InvokeConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunInvoke<TPayload, TResult>(
+            functionName, payload,
+            name, config, cancellationToken);
+
+    private Task<TResult> RunInvoke<TPayload, TResult>(
+        string functionName,
+        TPayload payload,
+        string? name,
+        InvokeConfig? config,
+        CancellationToken cancellationToken)
+    {
+        // Argument validation runs synchronously at the call site (matches the
+        // .NET convention of failing fast for misuse). Match Python/JS/Java
+        // parity: only check for null/empty here; the durable execution service
+        // enforces the qualified-ARN rule and surfaces a precise error when an
+        // unqualified identifier is used.
+        ArgumentNullException.ThrowIfNull(functionName);
+        if (string.IsNullOrWhiteSpace(functionName))
+            throw new ArgumentException("Function name must not be empty or whitespace.", nameof(functionName));
+
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var operationId = _idGenerator.NextId();
+        var op = new InvokeOperation<TPayload, TResult>(
+            operationId, name, _idGenerator.ParentId, functionName, payload, config,
+            serializer,
+            _state, _terminationManager, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
 }
 
 internal sealed class WaitForCallbackContext : IWaitForCallbackContext

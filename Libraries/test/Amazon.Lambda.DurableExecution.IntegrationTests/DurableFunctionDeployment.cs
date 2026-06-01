@@ -28,8 +28,10 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private readonly string _roleName;
     private string? _roleArn;
     private string? _imageUri;
+    private string? _functionArn;
     private bool _functionCreated;
     private bool _ecrRepoCreated;
+    private readonly List<string> _inlinePolicyNames = new();
 
     // Optional paired "external system" Lambda — a plain (non-durable) function
     // that the workflow's submitter invokes. Models a real-world callback flow
@@ -43,6 +45,15 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
     public string FunctionName => _functionName;
     public string? ExternalFunctionName => _externalFunctionCreated ? _externalFunctionName : null;
+
+    /// <summary>
+    /// The fully-qualified function ARN (unqualified). Available after <see cref="CreateAsync"/>
+    /// or <see cref="CreateWithDownstreamAsync"/> completes. Use <c>$"{FunctionArn}:$LATEST"</c>
+    /// when constructing a qualified identifier for chained invocation.
+    /// </summary>
+    public string FunctionArn => _functionArn
+        ?? throw new InvalidOperationException("Function ARN is not available until the function has been created.");
+
     public IAmazonLambda LambdaClient => _lambdaClient;
 
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
@@ -67,12 +78,15 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         string testFunctionDir,
         string scenarioSuffix,
         ITestOutputHelper output,
-        string? externalFunctionDir = null)
+        string? externalFunctionDir = null,
+        IDictionary<string, string>? environment = null,
+        IReadOnlyList<string>? invokeAllowedFunctionArns = null,
+        bool enableTenancy = false)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir);
+            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy);
         }
         catch
         {
@@ -84,18 +98,88 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         return deployment;
     }
 
-    private const string LambdaAssumeRolePolicy = """
-        {
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Principal": {"Service": "lambda.amazonaws.com"},
-                "Action": "sts:AssumeRole"
-            }]
-        }
-        """;
+    /// <summary>
+    /// Two-step deployment for chained-invoke scenarios: deploys the downstream (callee)
+    /// function first, captures its ARN, then deploys the parent (caller) with
+    /// <c>DOWNSTREAM_FUNCTION_ARN</c> set in the parent's environment and the parent's
+    /// role granted <c>lambda:InvokeFunction</c> on the downstream's ARN.
+    /// </summary>
+    /// <remarks>
+    /// The parent and downstream are independent <see cref="DurableFunctionDeployment"/>
+    /// instances; both are returned so the caller can dispose them in the right order
+    /// (parent first, then downstream — the caller is the one in flight when the test ends).
+    /// The <c>DOWNSTREAM_FUNCTION_ARN</c> env var carries a qualified identifier
+    /// (<c>arn:...:function:name:$LATEST</c>) so the parent can pass it directly to
+    /// <c>ctx.InvokeAsync(...)</c> without further manipulation.
+    /// </remarks>
+    public static async Task<(DurableFunctionDeployment Parent, DurableFunctionDeployment Downstream)>
+        CreateWithDownstreamAsync(
+            string parentTestFunctionDir,
+            string downstreamTestFunctionDir,
+            string scenarioSuffix,
+            ITestOutputHelper output,
+            IDictionary<string, string>? extraParentEnvironment = null,
+            bool enableDownstreamTenancy = false)
+    {
+        // Deploy downstream first so we can pass its ARN to the parent's environment.
+        var downstream = await CreateAsync(
+            downstreamTestFunctionDir,
+            scenarioSuffix + "-d",
+            output,
+            enableTenancy: enableDownstreamTenancy);
 
-    private async Task InitializeAsync(string testFunctionDir, string? externalFunctionDir)
+        DurableFunctionDeployment? parent = null;
+        try
+        {
+            // Use a qualified identifier — the durable execution service rejects
+            // unqualified ARNs. $LATEST is fine for integration tests; production
+            // should use a version or alias.
+            var qualifiedDownstreamArn = downstream.FunctionArn + ":$LATEST";
+            var parentEnv = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["DOWNSTREAM_FUNCTION_ARN"] = qualifiedDownstreamArn,
+            };
+            if (extraParentEnvironment != null)
+            {
+                foreach (var kv in extraParentEnvironment)
+                    parentEnv[kv.Key] = kv.Value;
+            }
+
+            parent = await CreateAsync(
+                parentTestFunctionDir,
+                scenarioSuffix + "-p",
+                output,
+                environment: parentEnv,
+                invokeAllowedFunctionArns: new[] { downstream.FunctionArn });
+        }
+        catch
+        {
+            // Parent failed to deploy — tear down the downstream we already created
+            // so we don't leak resources.
+            await downstream.DisposeAsync();
+            throw;
+        }
+
+        return (parent!, downstream);
+    }
+
+    private const string LambdaAssumeRolePolicy = """
+    {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"Service": "lambda.amazonaws.com"},
+            "Action": "sts:AssumeRole"
+        }]
+    }
+    """;
+
+    private async Task InitializeAsync(
+        string testFunctionDir,
+        string? externalFunctionDir,
+        IDictionary<string, string>? environment,
+        IReadOnlyList<string>? invokeAllowedFunctionArns,
+        bool enableTenancy)
     {
         // 1. Create the workflow's IAM role.
         _output.WriteLine($"Creating IAM role: {_roleName}");
@@ -178,6 +262,43 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
                 }
                 """
             });
+            _inlinePolicyNames.Add("InvokeExternalFunction");
+        }
+
+        // Grant cross-Lambda invoke when the parent of a chained-invoke scenario
+        // needs to call out to a downstream function. The durable execution service
+        // is the one that actually drives the chained invocation in production —
+        // attaching this directly to the parent's role keeps the parent role
+        // capable of being used in non-durable contexts (e.g. for diagnostic
+        // direct invokes from the test harness).
+        if (invokeAllowedFunctionArns != null && invokeAllowedFunctionArns.Count > 0)
+        {
+            // Allow both the unqualified ARN and any qualifier (alias/version/$LATEST).
+            var resources = new List<string>(invokeAllowedFunctionArns.Count * 2);
+            foreach (var arn in invokeAllowedFunctionArns)
+            {
+                resources.Add(arn);
+                resources.Add(arn + ":*");
+            }
+            var resourceJson = "[" + string.Join(",", resources.Select(r => $"\"{r}\"")) + "]";
+            var policyDoc = $$"""
+            {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Action": ["lambda:InvokeFunction"],
+                    "Resource": {{resourceJson}}
+                }]
+            }
+            """;
+            const string PolicyName = "AllowChainedInvoke";
+            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
+            {
+                RoleName = _roleName,
+                PolicyName = PolicyName,
+                PolicyDocument = policyDoc
+            });
+            _inlinePolicyNames.Add(PolicyName);
         }
 
         // Wait for IAM propagation.
@@ -232,7 +353,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
         // 5. Create the workflow Lambda.
         _output.WriteLine($"Creating Lambda function: {_functionName}");
-        var createReq = new CreateFunctionRequest
+        var createFunctionRequest = new CreateFunctionRequest
         {
             FunctionName = _functionName,
             PackageType = PackageType.Image,
@@ -242,21 +363,44 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             MemorySize = 256,
             DurableConfig = new DurableConfig { ExecutionTimeout = 60 }
         };
-        if (externalFunctionDir != null)
+
+        // Tenant isolation must be set at function-creation time (Lambda rejects
+        // post-create modification). Without it, the durable execution service
+        // refuses chained invokes that carry a TenantId — so the tenant-routing
+        // integration test needs the *callee* deployed with PER_TENANT.
+        if (enableTenancy)
         {
-            // Tell the workflow which function to invoke as its "external system".
-            createReq.Environment = new Amazon.Lambda.Model.Environment
+            createFunctionRequest.TenancyConfig = new TenancyConfig
             {
-                Variables = new Dictionary<string, string>
-                {
-                    ["EXTERNAL_FUNCTION_NAME"] = _externalFunctionName
-                }
+                TenantIsolationMode = TenantIsolationMode.PER_TENANT
             };
         }
-        await _lambdaClient.CreateFunctionAsync(createReq);
-        _functionCreated = true;
 
-        _output.WriteLine("Waiting for function to become Active...");
+        // Build the function's environment: start with the caller-supplied vars, then
+        // tack on EXTERNAL_FUNCTION_NAME if a paired external function exists.
+        var envVars = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (environment != null)
+        {
+            foreach (var kv in environment)
+                envVars[kv.Key] = kv.Value;
+        }
+        if (externalFunctionDir != null)
+        {
+            envVars["EXTERNAL_FUNCTION_NAME"] = _externalFunctionName;
+        }
+        if (envVars.Count > 0)
+        {
+            createFunctionRequest.Environment = new Amazon.Lambda.Model.Environment
+            {
+                Variables = envVars
+            };
+        }
+
+        var createFunctionResponse = await _lambdaClient.CreateFunctionAsync(createFunctionRequest);
+        _functionCreated = true;
+        _functionArn = createFunctionResponse.FunctionArn;
+
+        _output.WriteLine($"Waiting for function to become Active... (ARN: {_functionArn})");
         await WaitForFunctionActive(_functionName);
     }
 
@@ -630,10 +774,13 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             // want to attempt the others and the final DeleteRole.
             await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
             await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy");
-            // Inline policy was only attached when an external function was deployed; the
-            // delete still has to fire because IAM rejects DeleteRole if any inline policy
-            // remains.
-            await TryDeleteInline(_roleName, "InvokeExternalFunction");
+
+            // Inline policies must be deleted (not detached) before DeleteRole succeeds.
+            foreach (var inline in _inlinePolicyNames)
+            {
+                await TryDeleteInline(_roleName, inline);
+            }
+
             try
             {
                 await _iamClient.DeleteRoleAsync(new DeleteRoleRequest { RoleName = _roleName });

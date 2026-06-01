@@ -281,6 +281,105 @@ public class LambdaDurableServiceClientTests
     }
 
     [Fact]
+    public async Task GetExecutionStateAsync_MapFromSdkOperation_RoundTripsAllErrorFields()
+    {
+        // Pre-existing bug guard: MapFromSdkOperation used to drop ErrorData
+        // and StackTrace from the SDK error object, so the durable exception
+        // builders (StepException, ChildContextException, and the
+        // InvokeException tree) always saw nulls for those fields on
+        // real-service replay. This test pins down the fix for all three
+        // operation types that carry an error.
+        var stack = new List<string> { "at Frame.One()", "at Frame.Two()" };
+
+        var mockClient = new MockLambdaClient
+        {
+            GetExecutionStateHandler = _ => new GetDurableExecutionStateResponse
+            {
+                Operations = new List<Amazon.Lambda.Model.Operation>
+                {
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "step-1",
+                        Type = "STEP",
+                        Status = "FAILED",
+                        StepDetails = new Amazon.Lambda.Model.StepDetails
+                        {
+                            Error = new SdkErrorObject
+                            {
+                                ErrorType = "System.InvalidOperationException",
+                                ErrorMessage = "step blew up",
+                                ErrorData = "{\"detail\":\"step\"}",
+                                StackTrace = stack
+                            }
+                        }
+                    },
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "ctx-1",
+                        Type = "CONTEXT",
+                        Status = "FAILED",
+                        ContextDetails = new Amazon.Lambda.Model.ContextDetails
+                        {
+                            Error = new SdkErrorObject
+                            {
+                                ErrorType = "System.ArgumentException",
+                                ErrorMessage = "ctx blew up",
+                                ErrorData = "{\"detail\":\"ctx\"}",
+                                StackTrace = stack
+                            }
+                        }
+                    },
+                    new Amazon.Lambda.Model.Operation
+                    {
+                        Id = "inv-1",
+                        Type = "CHAINED_INVOKE",
+                        Status = "FAILED",
+                        ChainedInvokeDetails = new Amazon.Lambda.Model.ChainedInvokeDetails
+                        {
+                            Error = new SdkErrorObject
+                            {
+                                ErrorType = "System.TimeoutException",
+                                ErrorMessage = "invoke blew up",
+                                ErrorData = "{\"detail\":\"invoke\"}",
+                                StackTrace = stack
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var client = new LambdaDurableServiceClient(mockClient);
+
+        var (operations, _) = await client.GetExecutionStateAsync("arn", "tok", "marker");
+
+        Assert.Equal(3, operations.Count);
+
+        // STEP — all four fields propagate.
+        var stepError = operations[0].StepDetails!.Error!;
+        Assert.Equal("System.InvalidOperationException", stepError.ErrorType);
+        Assert.Equal("step blew up", stepError.ErrorMessage);
+        Assert.Equal("{\"detail\":\"step\"}", stepError.ErrorData);
+        Assert.NotNull(stepError.StackTrace);
+        Assert.Equal(new[] { "at Frame.One()", "at Frame.Two()" }, stepError.StackTrace!);
+
+        // CHILD CONTEXT — all four fields propagate.
+        var ctxError = operations[1].ContextDetails!.Error!;
+        Assert.Equal("System.ArgumentException", ctxError.ErrorType);
+        Assert.Equal("ctx blew up", ctxError.ErrorMessage);
+        Assert.Equal("{\"detail\":\"ctx\"}", ctxError.ErrorData);
+        Assert.NotNull(ctxError.StackTrace);
+        Assert.Equal(new[] { "at Frame.One()", "at Frame.Two()" }, ctxError.StackTrace!);
+
+        // CHAINED_INVOKE — all four fields propagate.
+        var invError = operations[2].ChainedInvokeDetails!.Error!;
+        Assert.Equal("System.TimeoutException", invError.ErrorType);
+        Assert.Equal("invoke blew up", invError.ErrorMessage);
+        Assert.Equal("{\"detail\":\"invoke\"}", invError.ErrorData);
+        Assert.NotNull(invError.StackTrace);
+        Assert.Equal(new[] { "at Frame.One()", "at Frame.Two()" }, invError.StackTrace!);
+    }
+
+    [Fact]
     public async Task CheckpointAsync_ReturnsNewToken()
     {
         var mockClient = new MockLambdaClient();
