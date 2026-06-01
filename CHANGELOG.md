@@ -1,3 +1,12 @@
+## Release 2026-06-01
+
+### Amazon.Lambda.TestTool.BlazorTester (0.18.0)
+* Add AWSSDK.Signin package to support 'aws login' based credentials
+* Update to V4 of the AWS SDK for .NET
+### Amazon.Lambda.TestTool (0.15.0)
+* Add AWSSDK.Signin package to support 'aws login' based credentials
+* Update AWS SDK and Amazon Lambda packages to latest versions
+
 ## Release 2026-05-30
 
 ### AWSLambdaPSCore PowerShell Module (5.0.2)
