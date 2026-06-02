@@ -1,15 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda.Model;
 using Amazon.S3;
 using Amazon.S3.Model;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
@@ -291,7 +292,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
                 Runtime = runtime,
-                Role = ExecutionRoleArn
+                Role = ExecutionRoleArn,
+                Architectures = new List<string> { RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? Architecture.Arm64 : Architecture.X86_64 }
             };
 
             var startTime = DateTime.Now;
