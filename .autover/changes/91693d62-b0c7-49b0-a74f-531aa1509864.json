@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Initial preview release of the Durable Execution SDK for .NET. Build long-running Lambda workflows with automatic checkpointing via `StepAsync`, `WaitAsync`, `RunInChildContextAsync`, `CreateCallbackAsync`, and `WaitForCallbackAsync` on `IDurableContext`."
+      ]
+    }
+  ]
+}
