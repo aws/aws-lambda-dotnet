@@ -5,7 +5,7 @@
 `Amazon.Lambda.DurableExecution` is the .NET SDK for building resilient, long-running AWS Lambda functions that automatically checkpoint progress and resume after failures. Workflows can run for up to one year, with charges only for active compute time.
 
 ## Key Features
-gv
+
 - **Automatic checkpointing** — progress is saved after each step; failures resume from the last checkpoint.
 - **Cost-effective waits** — suspend execution for minutes, hours, or days without compute charges.
 - **Configurable retries** — built-in retry strategies with exponential backoff and jitter.
