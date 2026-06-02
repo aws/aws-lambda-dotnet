@@ -5,7 +5,7 @@
 `Amazon.Lambda.DurableExecution` is the .NET SDK for building resilient, long-running AWS Lambda functions that automatically checkpoint progress and resume after failures. Workflows can run for up to one year, with charges only for active compute time.
 
 ## Key Features
-
+gv
 - **Automatic checkpointing** — progress is saved after each step; failures resume from the last checkpoint.
 - **Cost-effective waits** — suspend execution for minutes, hours, or days without compute charges.
 - **Configurable retries** — built-in retry strategies with exponential backoff and jitter.
@@ -32,7 +32,7 @@ dotnet add package Amazon.Lambda.DurableExecution
 
 ### Your first durable function
 
-> **Programming model:** the preview only supports the **executable programming model** — your function is an executable assembly that hosts its own bootstrap loop and passes the serializer to the runtime in code. Class-library handlers on the managed runtime will be supported once `Amazon.Lambda.RuntimeSupport` ships the changes that let `DurableFunction.WrapAsync` resolve the serializer from `ILambdaContext.Serializer`. This README will be updated then.
+> **Programming model:** the preview only supports the **executable programming model** — your function is an executable assembly that hosts its own bootstrap loop and passes the serializer to the runtime in code. Class-library handlers on the managed runtime will be supported once the changes made to Amazon.Lambda.RuntimeSupport to support durable functions has been deployed to the managed runtime. This README will be updated then.
 
 A complete order-processing workflow with two steps and a wait, deployed as an executable assembly on the `dotnet10` runtime. `Main` builds a `LambdaBootstrap` with your handler and an `ILambdaSerializer`, and `DurableFunction.WrapAsync` uses that serializer to checkpoint step inputs and outputs.
 
