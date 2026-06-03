@@ -43,7 +43,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string DeploymentZipKey { get; }
         protected string DeploymentPackageZipRelativePath { get; }
         protected string TestBucketRoot { get; } = "customruntimetest-";
-        protected string ExecutionRoleName { get; } 
+        protected string TestBucketName { get; private set; }
+        protected string ExecutionRoleName { get; }
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
@@ -60,24 +61,16 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         /// <summary>
-        /// Clean up all test resources.
-        /// Also cleans up any resources that might be left from previous failed/interrupted tests.
+        /// Clean up the test resources created by this test run.
         /// </summary>
-        /// <param name="s3Client"></param>
-        /// <param name="lambdaClient"></param>
-        /// <returns></returns>
         public async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
             AmazonIdentityManagementServiceClient iamClient, bool roleAlreadyExisted)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
 
-            var listBucketsResponse = await s3Client.ListBucketsAsync();
-            foreach (var bucket in listBucketsResponse.Buckets)
+            if (!string.IsNullOrEmpty(TestBucketName))
             {
-                if (bucket.BucketName.StartsWith(TestBucketRoot))
-                {
-                    await DeleteDeploymentZipAndBucketAsync(s3Client, bucket.BucketName);
-                }
+                await DeleteDeploymentZipAndBucketAsync(s3Client, TestBucketName);
             }
 
             if (!roleAlreadyExisted)
@@ -117,9 +110,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         {
             var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
 
-            var testBucketName = TestBucketRoot + Guid.NewGuid().ToString();
-            await CreateBucketWithDeploymentZipAsync(s3Client, testBucketName);
-            await CreateFunctionAsync(lambdaClient, testBucketName, runtime);
+            TestBucketName = TestBucketRoot + Guid.NewGuid().ToString();
+            await CreateBucketWithDeploymentZipAsync(s3Client, TestBucketName);
+            await CreateFunctionAsync(lambdaClient, TestBucketName, runtime);
 
             return roleAlreadyExisted;
         }
