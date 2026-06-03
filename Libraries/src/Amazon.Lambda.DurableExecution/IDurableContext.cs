@@ -15,12 +15,20 @@ namespace Amazon.Lambda.DurableExecution;
 public interface IDurableContext
 {
     /// <summary>
-    /// A logger scoped to the durable execution. Currently returns
-    /// <see cref="Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance"/>;
-    /// the replay-safe <c>DurableLogger</c> (suppresses messages during replay)
-    /// ships in a follow-up PR.
+    /// Replay-safe logger. Messages emitted while the workflow is re-deriving
+    /// prior operations from checkpointed state are suppressed by default, so
+    /// a 30-step workflow re-invoked 30 times still emits each line once.
+    /// Use this instead of <c>Console.WriteLine</c> or other ambient loggers,
+    /// which will repeat on every replay. Replace the underlying logger or
+    /// disable replay-aware filtering via <see cref="ConfigureLogger"/>.
     /// </summary>
     ILogger Logger { get; }
+
+    /// <summary>
+    /// Swap the underlying logger or toggle replay-aware filtering. Idempotent —
+    /// later calls overwrite earlier configuration.
+    /// </summary>
+    void ConfigureLogger(LoggerConfig config);
 
     /// <summary>
     /// Metadata about the current durable execution.
@@ -177,7 +185,10 @@ public interface IDurableContext
 public interface IStepContext
 {
     /// <summary>
-    /// Logger scoped to this step.
+    /// Logger scoped to this step. Same instance as
+    /// <see cref="IDurableContext.Logger"/>; emits within an
+    /// <see cref="ILogger.BeginScope{TState}"/> that carries the step's
+    /// <c>operationId</c>, <c>operationName</c>, and <c>attempt</c>.
     /// </summary>
     ILogger Logger { get; }
 
