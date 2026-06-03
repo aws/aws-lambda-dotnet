@@ -2,6 +2,30 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "This template is partially managed by Amazon.Lambda.Annotations (v2.0.1.0).",
+  "Parameters": {
+    "ArchitectureTypeParameter": {
+      "Type": "String",
+      "Default": "x86_64",
+      "AllowedValues": [
+        "x86_64",
+        "arm64"
+      ],
+      "Description": "The architecture of the Lambda function."
+    }
+  },
+  "Globals": {
+    "Function": {
+      "Architectures": [
+        {
+          "Ref": "ArchitectureTypeParameter"
+        }
+      ],
+      "Tags": {
+        "aws-tests": "TestServerlessApp",
+        "aws-repo": "aws-lambda-dotnet"
+      }
+    }
+  },
   "Resources": {
     "AnnotationsHttpApi": {
       "Type": "AWS::Serverless::HttpApi",
