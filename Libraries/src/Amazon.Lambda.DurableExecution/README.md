@@ -19,6 +19,7 @@ Your handler delegates to `DurableFunction.WrapAsync`, which gives your workflow
 
 - `ctx.StepAsync` — run code and checkpoint the result. ([docs](docs/core/steps.md))
 - `ctx.WaitAsync` — suspend execution without compute charges. ([docs](docs/core/wait.md))
+- `ctx.WaitForConditionAsync` — poll a check function until a condition is met, suspending between polls. ([docs](docs/core/wait-for-condition.md))
 - `ctx.CreateCallbackAsync` / `ctx.WaitForCallbackAsync` — wait for external events (approvals, webhooks). ([docs](docs/core/callbacks.md))
 - `ctx.RunInChildContextAsync` — run an isolated child context with its own checkpoint log. ([docs](docs/core/child-contexts.md))
 
@@ -92,6 +93,7 @@ For AOT or trim-friendly serialization, swap `DefaultLambdaJsonSerializer` for `
 
 - [Steps](docs/core/steps.md) — execute code with automatic checkpointing, retry strategies, and at-least/at-most-once semantics.
 - [Wait](docs/core/wait.md) — pause execution without compute charges.
+- [Wait For Condition](docs/core/wait-for-condition.md) — poll until a condition is met, suspending between polls with a configurable wait strategy.
 - [Callbacks](docs/core/callbacks.md) — wait for external systems to respond.
 - [Child Contexts](docs/core/child-contexts.md) — group related operations into isolated, checkpointed units.
 
