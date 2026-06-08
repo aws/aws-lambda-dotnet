@@ -424,6 +424,29 @@ await context.WaitAsync(TimeSpan.FromDays(7), name: "weekly_reminder");
 
 > **Validation:** The duration must be at least 1 second. Values less than 1 second throw `ArgumentOutOfRangeException`. Sub-second precision is truncated to whole seconds (the underlying service operates at second granularity).
 
+#### Wait For Condition
+
+`WaitForConditionAsync` polls a user-supplied check function until a configured `IWaitStrategy<TState>` decides to stop. Between polls the workflow is suspended (no compute charge); the service re-invokes when the strategy's chosen delay elapses. The check function receives the state from the previous iteration, so users can carry per-poll bookkeeping inside the state itself.
+
+```csharp
+// Poll until an order's status reaches a terminal value.
+var finalStatus = await context.WaitForConditionAsync<OrderStatus>(
+    check: async (state, ctx) =>
+    {
+        ctx.Logger.LogInformation("Polling order on attempt {Attempt}", ctx.AttemptNumber);
+        return await orderService.GetStatusAsync(orderId);
+    },
+    config: new WaitForConditionConfig<OrderStatus>
+    {
+        InitialState = OrderStatus.Unknown,
+        WaitStrategy = WaitStrategy.Exponential<OrderStatus>(
+            isDone: s => s == OrderStatus.Completed || s == OrderStatus.Cancelled)
+    },
+    name: "wait_for_order_settle");
+```
+
+Built-in strategies live on the `WaitStrategy` factory (`Exponential`, `Linear`, `Fixed`, plus `FromDelegate`) and all accept an optional `isDone` predicate so the common case stays declarative. When the strategy hits its `maxAttempts` limit it throws `WaitForConditionException` (carrying `AttemptsExhausted` and `LastState`); when the check function itself throws, the operation surfaces a `StepException` with the original error type. State is checkpointed per-iteration in the operation's payload so polling survives Lambda re-invocations deterministically.
+
 ---
 
 ### Callbacks
@@ -1154,7 +1177,13 @@ public interface IDurableContext
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Poll until a condition is met.
+    /// Poll until a condition is met. The check function returns the next
+    /// state on each invocation; the configured <c>IWaitStrategy&lt;TState&gt;</c>
+    /// decides whether to keep polling and how long to wait between calls.
+    /// State is serialized using the <c>ILambdaSerializer</c> registered on
+    /// <c>ILambdaContext.Serializer</c> (AOT and reflection-based scenarios
+    /// share this single overload — the AOT story is determined by the
+    /// registered serializer).
     /// </summary>
     Task<TState> WaitForConditionAsync<TState>(
         Func<TState, IConditionCheckContext, Task<TState>> check,
@@ -1208,6 +1237,63 @@ public interface IWaitForCallbackContext
 /// traces and can be inspected by name in the test runner.
 /// </summary>
 public record DurableBranch<T>(string Name, Func<IDurableContext, Task<T>> Func);
+
+/// <summary>
+/// Context passed to a WaitForCondition check function on every polling
+/// iteration. Mirrors IStepContext minus OperationId (every iteration of a
+/// wait-for-condition operation shares the same operation ID, so exposing
+/// it here would be misleading).
+/// </summary>
+public interface IConditionCheckContext
+{
+    /// <summary>Logger scoped to this condition-check attempt.</summary>
+    ILogger Logger { get; }
+
+    /// <summary>The current 1-based attempt number.</summary>
+    int AttemptNumber { get; }
+}
+
+/// <summary>
+/// Decides, per polling iteration, whether a WaitForConditionAsync operation
+/// should keep polling and how long to wait. Implementations are typically
+/// obtained via the <c>WaitStrategy</c> factory; users may also implement
+/// directly. Built-in implementations throw <c>WaitForConditionException</c>
+/// when their max-attempts limit is reached so the operation can produce a
+/// failure with the last observed state.
+/// </summary>
+public interface IWaitStrategy<TState>
+{
+    WaitDecision Decide(TState state, int attemptNumber);
+}
+
+/// <summary>
+/// Decision returned by IWaitStrategy on each polling iteration. Stop()
+/// indicates the condition has been met (the operation SUCCEEDs and returns
+/// the latest state); ContinueAfter(delay) schedules the next poll.
+/// </summary>
+public readonly record struct WaitDecision
+{
+    public bool ShouldContinue { get; }
+    public TimeSpan Delay { get; }
+    public static WaitDecision Stop();
+    public static WaitDecision ContinueAfter(TimeSpan delay);
+}
+
+/// <summary>
+/// Factory for built-in IWaitStrategy implementations. Each accepts an
+/// optional isDone predicate so users can terminate polling declaratively
+/// when the latest state satisfies a condition (e.g. state =&gt; state.IsReady)
+/// without implementing IWaitStrategy themselves. Defaults are intentionally
+/// tuned for polling, NOT retry-on-exception: 60 attempts / 5s initial /
+/// 300s max / 1.5x backoff / Full jitter.
+/// </summary>
+public static class WaitStrategy
+{
+    public static IWaitStrategy<TState> Exponential<TState>(...);
+    public static IWaitStrategy<TState> Linear<TState>(...);
+    public static IWaitStrategy<TState> Fixed<TState>(TimeSpan delay, ...);
+    public static IWaitStrategy<TState> FromDelegate<TState>(Func<TState, int, WaitDecision> strategy);
+}
 ```
 
 #### CancellationToken behavior
@@ -1655,11 +1741,18 @@ public class ChildContextException : DurableExecutionException
 
 /// <summary>
 /// Thrown when a wait-for-condition operation exhausts all attempts
-/// without the condition being met.
+/// without the condition being met. Subclassable: future failure modes
+/// (e.g. timeout) should add derived exceptions rather than discriminator
+/// flags so callers can catch by static type.
 /// </summary>
 public class WaitForConditionException : DurableExecutionException
 {
     public int AttemptsExhausted { get; }
+
+    /// <summary>The most recent state observed by the check function before
+    /// the strategy gave up. Boxed because the exception type is not generic;
+    /// callers cast to the workflow's known state type.</summary>
+    public object? LastState { get; }
 }
 
 /// <summary>

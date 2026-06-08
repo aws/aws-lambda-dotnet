@@ -195,6 +195,9 @@ public static class OperationSubTypes
 
     /// <summary>Child-context sub-type.</summary>
     public const string Context = "Context";
+
+    /// <summary>Wait-for-condition (polling) sub-type.</summary>
+    public const string WaitForCondition = "WaitForCondition";
 }
 
 /// <summary>
