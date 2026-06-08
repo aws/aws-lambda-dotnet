@@ -172,6 +172,58 @@ public class CheckpointBatcherTests
         await Assert.ThrowsAnyAsync<Exception>(() => batcher.EnqueueAsync(Update("0-step")));
     }
 
+    private static SdkOperationUpdate UpdateWithPayload(string id, int payloadBytes) => new()
+    {
+        Id = id,
+        Type = "CONTEXT",
+        Action = "SUCCEED",
+        Payload = new string('p', payloadBytes)
+    };
+
+    [Fact]
+    public async Task EnqueueAsync_ByteCap_SplitsBatchesByBytes()
+    {
+        var batchByteTotals = new List<long>();
+        var batcher = new CheckpointBatcher("token-0",
+            (token, ops, ct) =>
+            {
+                long sum = 0;
+                foreach (var o in ops) sum += o.Payload?.Length ?? 0;
+                batchByteTotals.Add(sum);
+                return Task.FromResult<string?>(token);
+            },
+            new CheckpointBatcherConfig
+            {
+                MaxBatchBytes = 10 * 1024,
+                FlushInterval = TimeSpan.FromMilliseconds(100)
+            });
+
+        // Three 6 KB payloads: at most one fits per 10 KB batch with overhead.
+        var tasks = Enumerable.Range(0, 3)
+            .Select(i => batcher.EnqueueAsync(UpdateWithPayload($"{i}", 6 * 1024)))
+            .ToArray();
+        await Task.WhenAll(tasks);
+        await batcher.DrainAsync();
+
+        Assert.True(batchByteTotals.Count >= 2, "expected the byte cap to split into multiple batches");
+        Assert.All(batchByteTotals, total => Assert.True(total <= 10 * 1024));
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_SingleOversizedItem_SentAloneNoLoop()
+    {
+        var batches = new List<int>();
+        var batcher = new CheckpointBatcher("token-0",
+            (token, ops, ct) => { batches.Add(ops.Count); return Task.FromResult<string?>(token); },
+            new CheckpointBatcherConfig { MaxBatchBytes = 4 * 1024 });
+
+        await batcher.EnqueueAsync(UpdateWithPayload("huge", 50 * 1024));
+        await batcher.DrainAsync();
+
+        Assert.Single(batches);
+        Assert.Equal(1, batches[0]);
+    }
+
     [Fact]
     public async Task CheckpointToken_UpdatesAfterEachFlush()
     {

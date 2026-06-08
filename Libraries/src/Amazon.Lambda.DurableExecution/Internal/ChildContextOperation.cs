@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
+using SdkContextOptions = Amazon.Lambda.Model.ContextOptions;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
@@ -24,6 +25,10 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       and throw <see cref="ChildContextException"/>.</item>
 ///   <item><b>SUCCEEDED</b>: return cached deserialized result; user func is
 ///       NOT re-executed.</item>
+///   <item><b>SUCCEEDED (overflow)</b>: <c>ReplayChildren=true</c> + empty
+///       payload (the result was too large to checkpoint inline) → re-run the
+///       user func to recover the large result value; terminal checkpoints
+///       (SUCCEED/FAIL) are suppressed since the op is already terminal.</item>
 ///   <item><b>FAILED</b>: throw <see cref="ChildContextException"/> with the
 ///       recorded error; if <see cref="ChildContextConfig.ErrorMapping"/> is
 ///       set, the mapped exception is thrown instead.</item>
@@ -45,6 +50,8 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     private readonly WorkflowCancellation _workflowCancellation;
     private readonly CancellationToken _cooperativeBailToken;
     private readonly bool _isVirtual;
+    // Set once on overflow-replay re-execution; never reset.
+    private bool _suppressTerminalCheckpoint;
 
     public ChildContextOperation(
         string operationId,
@@ -105,6 +112,14 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         switch (existing.Status)
         {
             case OperationStatuses.Succeeded:
+                // Overflow: the result was too large to checkpoint inline
+                // (ReplayChildren=true, empty payload). Re-run the body to recover
+                // the value; the body's inner ops replay from their own
+                // checkpoints. Do NOT re-emit the (already terminal) SUCCEED.
+                if (existing.ContextDetails?.ReplayChildren == true)
+                {
+                    return ExecuteFuncNoCheckpoint(cancellationToken);
+                }
                 // Side-effecting code runs at most once: replay returns the
                 // cached result without invoking the user func.
                 return Task.FromResult(DeserializeResult(existing.ContextDetails?.Result));
@@ -125,6 +140,12 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                 throw new NonDeterministicExecutionException(
                     $"Child context operation '{Name ?? OperationId}' has unexpected status '{existing.Status}' on replay.");
         }
+    }
+
+    private Task<T> ExecuteFuncNoCheckpoint(CancellationToken cancellationToken)
+    {
+        _suppressTerminalCheckpoint = true;
+        return ExecuteFunc(cancellationToken);
     }
 
     private async Task<T> ExecuteFunc(CancellationToken cancellationToken)
@@ -180,8 +201,11 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         {
             // Virtual branches suppress the FAIL checkpoint but still propagate
             // the exception — the orchestrator records the failure inline on the
-            // parent payload.
-            if (!_isVirtual)
+            // parent payload. Overflow-replay re-execution also suppresses it: the
+            // op is already terminal (SUCCEEDED) in the store, so re-emitting a
+            // FAIL would corrupt that record (mirrors ReplayChildrenAsync, which
+            // never re-checkpoints). The exception still propagates below.
+            if (!_isVirtual && !_suppressTerminalCheckpoint)
             {
                 await EnqueueAsync(new SdkOperationUpdate
                 {
@@ -205,8 +229,17 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
 
         // Virtual branches suppress the SUCCEED checkpoint; the orchestrator
         // serializes the result inline on the parent payload instead.
-        if (!_isVirtual)
+        // _suppressTerminalCheckpoint is set on overflow replay re-execution: the
+        // child is already terminal in the store, so we re-run only to recover the
+        // in-memory value and must NOT re-emit a SUCCEED.
+        if (!_isVirtual && !_suppressTerminalCheckpoint)
         {
+            var serialized = SerializeResult(result);
+            // Overflow: result too large to checkpoint inline. Emit an empty
+            // payload + ReplayChildren so replay re-executes this body to recover
+            // the value (mirrors the concurrent-operation overflow strategy).
+            var overflow = Encoding.UTF8.GetByteCount(serialized) > DurableConstants.MaxOperationCheckpointBytes;
+
             await EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
@@ -215,7 +248,10 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                 Action = OperationAction.SUCCEED,
                 SubType = _config?.SubType,
                 Name = Name,
-                Payload = SerializeResult(result)
+                Payload = overflow ? string.Empty : serialized,
+                ContextOptions = overflow
+                    ? new SdkContextOptions { ReplayChildren = true }
+                    : null
             }, cancellationToken);
         }
 

@@ -33,6 +33,36 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     private Exception? _terminalError;
     private int _disposed;
 
+    // Per-update wire-footprint estimate constants. Deliberate over-estimates:
+    // flushing slightly early is safe, flushing late risks a request-too-large.
+    private const int PerOpEnvelopeOverheadBytes = 512;
+    private const int StackFrameOverheadBytes = 8;
+
+    /// <summary>
+    /// Cheap UTF-8 byte estimate of one update's wire footprint — variable string
+    /// fields plus a fixed envelope. No JSON is produced (AOT-safe). Payload is
+    /// counted at 2x because it is already-serialized JSON re-escaped as a string
+    /// value, which roughly doubles for escape-heavy content.
+    /// </summary>
+    private static int EstimateUpdateBytes(SdkOperationUpdate u)
+    {
+        var size = PerOpEnvelopeOverheadBytes;
+        // int arithmetic is safe: payloads are bounded by the 6MB Lambda
+        // invocation-payload cap, so the 2x multiply can never overflow a 32-bit int.
+        if (u.Payload != null) size += System.Text.Encoding.UTF8.GetByteCount(u.Payload) * 2;
+        size += ByteCount(u.Id) + ByteCount(u.ParentId) + ByteCount(u.Name);
+        if (u.Error != null)
+        {
+            size += ByteCount(u.Error.ErrorType) + ByteCount(u.Error.ErrorMessage) + ByteCount(u.Error.ErrorData);
+            if (u.Error.StackTrace != null)
+                foreach (var line in u.Error.StackTrace)
+                    size += ByteCount(line) + StackFrameOverheadBytes;
+        }
+        return size;
+    }
+
+    private static int ByteCount(string? s) => s == null ? 0 : System.Text.Encoding.UTF8.GetByteCount(s);
+
     public CheckpointBatcher(
         string? initialCheckpointToken,
         Func<string?, IReadOnlyList<SdkOperationUpdate>, CancellationToken, Task<string?>> flushAsync,
@@ -113,25 +143,43 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
 
     private async Task RunWorkerAsync(CancellationToken shutdownToken)
     {
-        // TODO: also enforce _config.MaxBatchBytes here. Today we only cap by
-        // operation count; an item whose serialized size pushes the batch over
-        // ~750 KB will be sent and rejected service-side. See CheckpointBatcherConfig.
-        var batch = new List<BatchItem>(_config.MaxBatchOperations);
+        // Both caps are enforced: before adding an item that would push the batch
+        // over MaxBatchOperations OR MaxBatchBytes, the current batch is flushed.
+        // A lone item already over the byte cap is sent by itself (never loops).
+        // The byte accumulator is seeded with a fixed reserve covering the request
+        // prefix (checkpoint token + ARN + array framing) that the per-update
+        // estimate does not include.
+        const int RequestEnvelopeReserveBytes = 4 * 1024;
+        var batch = new PendingBatch(_config.MaxBatchOperations);
+
+        async Task AddItemAsync(BatchItem item)
+        {
+            var itemBytes = EstimateUpdateBytes(item.Update);
+            if (batch.Count > 0 &&
+                (batch.Count + 1 > _config.MaxBatchOperations ||
+                 RequestEnvelopeReserveBytes + batch.Bytes + itemBytes > _config.MaxBatchBytes))
+            {
+                await FlushBatchAsync(batch.Items, shutdownToken).ConfigureAwait(false);
+                batch.Clear();
+            }
+
+            batch.Add(item);
+
+            // Lone item already over the cap: send it alone, do not loop.
+            if (batch.Count == 1 &&
+                RequestEnvelopeReserveBytes + batch.Bytes > _config.MaxBatchBytes)
+            {
+                await FlushBatchAsync(batch.Items, shutdownToken).ConfigureAwait(false);
+                batch.Clear();
+            }
+        }
 
         try
         {
             while (await _channel.Reader.WaitToReadAsync(shutdownToken).ConfigureAwait(false))
             {
-                // Drain everything currently queued.
                 while (_channel.Reader.TryRead(out var item))
-                {
-                    batch.Add(item);
-                    if (batch.Count >= _config.MaxBatchOperations)
-                    {
-                        await FlushBatchAsync(batch, shutdownToken).ConfigureAwait(false);
-                        batch.Clear();
-                    }
-                }
+                    await AddItemAsync(item).ConfigureAwait(false);
 
                 // Optionally wait for late arrivals to coalesce into one batch.
                 if (_config.FlushInterval > TimeSpan.Zero && batch.Count > 0)
@@ -143,14 +191,7 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
                         while (await _channel.Reader.WaitToReadAsync(windowCts.Token).ConfigureAwait(false))
                         {
                             while (_channel.Reader.TryRead(out var item))
-                            {
-                                batch.Add(item);
-                                if (batch.Count >= _config.MaxBatchOperations)
-                                {
-                                    await FlushBatchAsync(batch, shutdownToken).ConfigureAwait(false);
-                                    batch.Clear();
-                                }
-                            }
+                                await AddItemAsync(item).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException) when (!shutdownToken.IsCancellationRequested)
@@ -161,7 +202,7 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
 
                 if (batch.Count > 0)
                 {
-                    await FlushBatchAsync(batch, shutdownToken).ConfigureAwait(false);
+                    await FlushBatchAsync(batch.Items, shutdownToken).ConfigureAwait(false);
                     batch.Clear();
                 }
             }
@@ -179,9 +220,9 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         }
         finally
         {
-            // Anything left in the channel after the worker exits — fail it.
+            // Anything left in the batch/channel after the worker exits — fail it.
             var failure = Volatile.Read(ref _terminalError) ?? new ObjectDisposedException(nameof(CheckpointBatcher));
-            foreach (var leftover in batch)
+            foreach (var leftover in batch.Items)
                 leftover.Completion.TrySetException(failure);
             while (_channel.Reader.TryRead(out var item))
                 item.Completion.TrySetException(failure);
@@ -212,6 +253,18 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
             // No rethrow: the worker loop exits via the completed channel and
             // RunWorkerAsync's finally handles any leftovers.
         }
+    }
+
+    /// <summary>Accumulates a batch plus its estimated byte footprint so the two
+    /// never drift across the worker's add/flush/clear sites.</summary>
+    private sealed class PendingBatch
+    {
+        public readonly List<BatchItem> Items;
+        public long Bytes;
+        public PendingBatch(int capacity) { Items = new List<BatchItem>(capacity); }
+        public int Count => Items.Count;
+        public void Add(BatchItem item) { Items.Add(item); Bytes += EstimateUpdateBytes(item.Update); }
+        public void Clear() { Items.Clear(); Bytes = 0; }
     }
 
     private readonly record struct BatchItem(SdkOperationUpdate Update, TaskCompletionSource<bool> Completion);
