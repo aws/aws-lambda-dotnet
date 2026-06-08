@@ -71,6 +71,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string ScheduledEvent = "Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent";
         public const string ScheduleEventAttribute = "Amazon.Lambda.Annotations.Schedule.ScheduleEventAttribute";
 
+        public const string DurableExecutionAttribute = "Amazon.Lambda.Annotations.DurableExecutionAttribute";
+        public const string DurableExecutionInvocationInput = "Amazon.Lambda.DurableExecution.DurableExecutionInvocationInput";
+        public const string DurableExecutionInvocationOutput = "Amazon.Lambda.DurableExecution.DurableExecutionInvocationOutput";
+        public const string DurableFunction = "Amazon.Lambda.DurableExecution.DurableFunction";
+        public const string IDurableContext = "Amazon.Lambda.DurableExecution.IDurableContext";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
@@ -103,7 +109,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             S3EventAttribute,
             DynamoDBEventAttribute,
             SNSEventAttribute,
-            ScheduleEventAttribute
+            ScheduleEventAttribute,
+            DurableExecutionAttribute
         };
     }
 }

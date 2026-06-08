@@ -7,6 +7,9 @@
     <AWSProjectType>Lambda</AWSProjectType>
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- src\Function is a separate, self-contained project. Exclude its subtree so this project's
+         default globs don't pick up its sources or generated obj\AssemblyInfo (which causes CS0579). -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);src\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

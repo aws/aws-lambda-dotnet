@@ -24,3 +24,7 @@ AWSLambda0136 | AWSLambdaCSharpGenerator | Error | Invalid S3EventAttribute
 AWSLambda0137 | AWSLambdaCSharpGenerator | Error | Invalid DynamoDBEventAttribute
 AWSLambda0138 | AWSLambdaCSharpGenerator | Error | Invalid SNSEventAttribute
 AWSLambda0139 | AWSLambdaCSharpGenerator | Error | Invalid ScheduleEventAttribute
+AWSLambda0141 | AWSLambdaCSharpGenerator | Error | DurableExecution requires Zip packaging
+AWSLambda0142 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecution method signature
+AWSLambda0143 | AWSLambdaCSharpGenerator | Info | DurableExecution function with explicit Role needs checkpoint permissions
+AWSLambda0144 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecutionAttribute

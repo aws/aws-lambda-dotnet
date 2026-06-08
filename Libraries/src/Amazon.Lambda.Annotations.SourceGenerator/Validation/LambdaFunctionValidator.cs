@@ -72,8 +72,82 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             ValidateScheduleEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateS3Events(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateDurableExecution(context, lambdaMethodSymbol, lambdaFunctionModel, methodLocation, diagnostics);
 
             return ReportDiagnostics(diagnosticReporter, diagnostics);
+        }
+
+        private static void ValidateDurableExecution(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.DurableExecution))
+            {
+                return;
+            }
+
+            // Durable functions support BOTH programming models on the managed runtime:
+            //  - executable: the generated wrapper delegates to DurableFunction.WrapAsync, which reads the
+            //    serializer off the ILambdaContext populated by the bootstrap loop the executable hosts.
+            //  - class library: the managed runtime hosts its own bootstrap, resolves [assembly: LambdaSerializer],
+            //    and populates ILambdaContext.Serializer the same way, so WrapAsync finds the serializer there too.
+            // Either way the wrapper is identical; only the deployed Handler string differs (assembly name vs.
+            // Assembly::Type::Method), which LambdaFunctionModel.Handler already derives from IsExecutable. So no
+            // OutputKind gate is needed here.
+
+            // Image packaging strips Handler/Runtime from the function resource, which the durable
+            // managed-runtime model depends on. Durable functions must be packaged as Zip.
+            if (lambdaFunctionModel.PackageType == LambdaPackageType.Image)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionZipOnly, methodLocation));
+            }
+
+            // Validate the attribute's property values (RetentionPeriodInDays / ExecutionTimeout bounds) so a
+            // misconfiguration surfaces as a build-time diagnostic instead of a deploy-time service rejection,
+            // matching how every other event attribute calls its own Validate() above.
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.DurableExecutionAttribute)
+                    continue;
+
+                var durableExecutionAttribute = ((AttributeModel<DurableExecutionAttribute>)att).Data;
+                var validationErrors = durableExecutionAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidDurableExecutionAttribute, methodLocation, errorMessage)));
+            }
+
+            // The generated wrapper hands the user method group to DurableFunction.WrapAsync, whose overloads
+            // accept Func<TInput, IDurableContext, Task> or Func<TInput, IDurableContext, Task<TOutput>>. A
+            // mismatched signature would produce a C# error in the generated code, so reject it up front with
+            // a diagnostic pointing at the user's method instead.
+            ValidateDurableExecutionSignature(lambdaMethodSymbol, lambdaFunctionModel, methodLocation, diagnostics);
+
+            // When the user supplies an explicit Role, the generator does not manage the function's Policies,
+            // so it cannot inject the checkpoint policy. Inform the user to attach the actions themselves.
+            if (!string.IsNullOrEmpty(lambdaFunctionModel.Role))
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionExplicitRoleNeedsCheckpointPolicy, methodLocation));
+            }
+        }
+
+        private static void ValidateDurableExecutionSignature(IMethodSymbol lambdaMethodSymbol, LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            void AddSignatureError(string detail) =>
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionInvalidSignature, methodLocation, detail));
+
+            // Must be exactly (TInput, IDurableContext).
+            if (lambdaMethodSymbol.Parameters.Length != 2)
+            {
+                AddSignatureError($"The method has {lambdaMethodSymbol.Parameters.Length} parameter(s).");
+            }
+            else if (lambdaMethodSymbol.Parameters[1].Type.ToDisplayString() != TypeFullNames.IDurableContext)
+            {
+                AddSignatureError($"The second parameter must be '{TypeFullNames.IDurableContext}'.");
+            }
+
+            // Must return Task or Task<TOutput>. ValueTask, void, or a bare value are not accepted by WrapAsync.
+            // Reuse the model's return-type classification (computed with SymbolEqualityComparer in the builder).
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoidOrGenericTask)
+            {
+                AddSignatureError($"The return type must be Task or Task<TOutput> but was '{lambdaMethodSymbol.ReturnType.ToDisplayString()}'.");
+            }
         }
 
         internal static bool ValidateDependencies(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, Location methodLocation, DiagnosticReporter diagnosticReporter)

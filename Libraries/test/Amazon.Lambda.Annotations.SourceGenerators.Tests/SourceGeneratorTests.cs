@@ -14,6 +14,15 @@ using VerifyCS = Amazon.Lambda.Annotations.SourceGenerators.Tests.CSharpSourceGe
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
+    // Shared with DurableExecutionE2ETests: both write/read the same TestServerlessApp/serverless.template,
+    // so they must not run concurrently (xUnit runs distinct classes in parallel by default).
+    [CollectionDefinition(TestServerlessAppCollection.Name, DisableParallelization = true)]
+    public sealed class TestServerlessAppCollection
+    {
+        public const string Name = "TestServerlessApp serverless.template";
+    }
+
+    [Collection(TestServerlessAppCollection.Name)]
     public class SourceGeneratorTests : IDisposable
     {
         [Fact]

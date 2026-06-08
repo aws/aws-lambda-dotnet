@@ -117,6 +117,31 @@ public class OrderProcessor
 
 The project is a normal Lambda class library; the managed runtime supplies the bootstrap loop and invokes `Handler` directly.
 
+### Using Lambda Annotations
+
+If you use [Amazon.Lambda.Annotations](../Amazon.Lambda.Annotations/README.md), you can skip the handler/`WrapAsync` boilerplate. Annotate your workflow method with both `[LambdaFunction]` and `[DurableExecution]` — the source generator emits the handler wrapper that calls `DurableFunction.WrapAsync`, and adds the `DurableConfig` block and checkpoint-API IAM permissions to the generated `serverless.template`.
+
+```csharp
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.DurableExecution;
+
+public class OrderProcessor
+{
+    [LambdaFunction]
+    [DurableExecution(RetentionPeriodInDays = 7, ExecutionTimeout = 300)]
+    public async Task<OrderResult> Workflow(Order order, IDurableContext ctx)
+    {
+        var reservation = await ctx.StepAsync(
+            async (_, ct) => await InventoryService.ReserveAsync(order.Items, ct),
+            name: "reserve-inventory");
+        // ... remaining steps ...
+        return new OrderResult(order.Id, /* ... */ "tracking");
+    }
+}
+```
+
+Works with both the executable and class-library programming models — set `[assembly: LambdaGlobalProperties(GenerateMain = true)]` for the executable model, or omit it for a class library (the generated `serverless.template` `Handler` adapts to each). The generator validates the `(TInput, IDurableContext) -> Task`/`Task<TOutput>` signature and Zip packaging, and reports a diagnostic otherwise.
+
 ## Documentation
 
 **Core operations**
