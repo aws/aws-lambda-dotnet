@@ -28,6 +28,10 @@ public interface IDurableContext
     /// Swap the underlying logger or toggle replay-aware filtering. Idempotent —
     /// later calls overwrite earlier configuration.
     /// </summary>
+    /// <param name="config">
+    /// The logger configuration specifying the underlying logger and whether
+    /// replay-aware filtering is enabled.
+    /// </param>
     void ConfigureLogger(LoggerConfig config);
 
     /// <summary>
@@ -47,6 +51,20 @@ public interface IDurableContext
     /// share this single overload — the AOT story is determined by the registered
     /// serializer (e.g., <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
     /// </summary>
+    /// <typeparam name="T">The type of the step's result.</typeparam>
+    /// <param name="func">
+    /// The step body to execute. Receives an <see cref="IStepContext"/> exposing
+    /// the step's logger, attempt number, and operation ID.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the step, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional step configuration (e.g. retry policy). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>The deserialized result of the step.</returns>
     Task<T> StepAsync<T>(
         Func<IStepContext, Task<T>> func,
         string? name = null,
@@ -56,6 +74,18 @@ public interface IDurableContext
     /// <summary>
     /// Execute a step that returns no value.
     /// </summary>
+    /// <param name="func">
+    /// The step body to execute. Receives an <see cref="IStepContext"/> exposing
+    /// the step's logger, attempt number, and operation ID.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the step, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional step configuration (e.g. retry policy). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
     Task StepAsync(
         Func<IStepContext, Task> func,
         string? name = null,
@@ -67,6 +97,14 @@ public interface IDurableContext
     /// The Lambda is suspended and the service re-invokes it after the wait elapses.
     /// Duration must be at least 1 second (service timer granularity).
     /// </summary>
+    /// <param name="duration">
+    /// How long to suspend execution. Must be at least 1 second.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the wait, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
     Task WaitAsync(
         TimeSpan duration,
         string? name = null,
@@ -88,6 +126,21 @@ public interface IDurableContext
     /// <see cref="ILambdaSerializer"/> registered on
     /// <see cref="ILambdaContext.Serializer"/>.
     /// </remarks>
+    /// <typeparam name="T">The type of the child context's result.</typeparam>
+    /// <param name="func">
+    /// The user function to run inside the child context. Receives a nested
+    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the child context, used for observability and to derive
+    /// the deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional child context configuration (e.g.
+    /// <see cref="ChildContextConfig.ErrorMapping"/>). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>The deserialized result of the child context.</returns>
     Task<T> RunInChildContextAsync<T>(
         Func<IDurableContext, Task<T>> func,
         string? name = null,
@@ -107,6 +160,19 @@ public interface IDurableContext
     /// <see cref="ChildContextConfig.ErrorMapping"/> to remap into a
     /// domain-specific exception.
     /// </remarks>
+    /// <param name="func">
+    /// The user function to run inside the child context. Receives a nested
+    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the child context, used for observability and to derive
+    /// the deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional child context configuration (e.g.
+    /// <see cref="ChildContextConfig.ErrorMapping"/>). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
     Task RunInChildContextAsync(
         Func<IDurableContext, Task> func,
         string? name = null,
@@ -133,6 +199,19 @@ public interface IDurableContext
     /// across replays.
     /// </para>
     /// </remarks>
+    /// <typeparam name="T">The type of the result the callback will deliver.</typeparam>
+    /// <param name="name">
+    /// An optional name for the callback, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional callback configuration (e.g. timeout). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>
+    /// An <see cref="ICallback{T}"/> handle exposing the service-allocated callback
+    /// ID and a method to await the result.
+    /// </returns>
     Task<ICallback<T>> CreateCallbackAsync<T>(
         string? name = null,
         CallbackConfig? config = null,
@@ -153,6 +232,21 @@ public interface IDurableContext
     /// surface as <see cref="CallbackFailedException"/> /
     /// <see cref="CallbackTimeoutException"/>.
     /// </remarks>
+    /// <typeparam name="T">The type of the result the callback will deliver.</typeparam>
+    /// <param name="submitter">
+    /// A function that hands the service-allocated <c>callbackId</c> to the external
+    /// system. Receives the callback ID and an <see cref="IWaitForCallbackContext"/>.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the operation, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional configuration (e.g. submitter retry policy and callback timeout).
+    /// Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>The deserialized result delivered by the external system.</returns>
     Task<T> WaitForCallbackAsync<T>(
         Func<string, IWaitForCallbackContext, Task> submitter,
         string? name = null,
@@ -171,6 +265,22 @@ public interface IDurableContext
     /// alias, or <c>$LATEST</c>); unqualified ARNs are rejected by the durable
     /// execution service.
     /// </remarks>
+    /// <typeparam name="TPayload">The type of the payload sent to the target function.</typeparam>
+    /// <typeparam name="TResult">The type of the result returned by the target function.</typeparam>
+    /// <param name="functionName">
+    /// The qualified identifier (version, alias, or <c>$LATEST</c>) of the durable
+    /// Lambda function to invoke. Unqualified ARNs are rejected.
+    /// </param>
+    /// <param name="payload">The payload to pass to the target function.</param>
+    /// <param name="name">
+    /// An optional name for the invocation, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional invocation configuration (e.g. retry policy). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>The deserialized result returned by the target function.</returns>
     Task<TResult> InvokeAsync<TPayload, TResult>(
         string functionName,
         TPayload payload,
@@ -200,6 +310,25 @@ public interface IDurableContext
     /// the registered serializer (e.g.,
     /// <c>SourceGeneratorLambdaJsonSerializer&lt;TContext&gt;</c>).
     /// </remarks>
+    /// <typeparam name="TState">
+    /// The type of the per-poll state carried between condition checks.
+    /// </typeparam>
+    /// <param name="check">
+    /// The condition check invoked on each poll. Receives the state returned by the
+    /// previous invocation (seeded by
+    /// <see cref="WaitForConditionConfig{TState}.InitialState"/> on the first call)
+    /// and an <see cref="IConditionCheckContext"/>, and returns the next state.
+    /// </param>
+    /// <param name="config">
+    /// The configuration controlling polling, including the
+    /// <see cref="IWaitStrategy{TState}"/> and the initial state.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the operation, used for observability and to derive the
+    /// deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>The final state observed when the strategy decides to stop.</returns>
     Task<TState> WaitForConditionAsync<TState>(
         Func<TState, IConditionCheckContext, Task<TState>> check,
         WaitForConditionConfig<TState> config,
