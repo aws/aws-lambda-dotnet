@@ -35,7 +35,7 @@ public class Program
     private static async Task<OrderResult> WorkflowAsync(OrderEvent input, IDurableContext context)
     {
         var validation = await context.StepAsync(
-            async (_) =>
+            async (_, _) =>
             {
                 await Task.CompletedTask;
                 return new ValidationResult { IsValid = true };

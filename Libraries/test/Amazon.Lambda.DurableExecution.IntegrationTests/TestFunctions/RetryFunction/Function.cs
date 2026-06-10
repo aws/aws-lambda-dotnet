@@ -26,7 +26,7 @@ public class Function
     private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
     {
         var result = await context.StepAsync<string>(
-            async (ctx) =>
+            async (ctx, _) =>
             {
                 await Task.CompletedTask;
                 if (ctx.AttemptNumber < 3)

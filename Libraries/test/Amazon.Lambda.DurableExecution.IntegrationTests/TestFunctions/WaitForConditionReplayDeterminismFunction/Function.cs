@@ -25,14 +25,14 @@ public class Function
         // Step 1: capture a fresh value. On replay this MUST return the
         // checkpointed value rather than re-executing.
         var generatedId = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
+            async (_, _) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
             name: "before_poll");
 
         // Wait-for-condition with 3 polls. Each poll iteration is a separate
         // invocation, and the operation's deterministic ID + RETRY-payload
         // state must round-trip across re-invocations.
         var pollResult = await context.WaitForConditionAsync<Counter>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 await Task.CompletedTask;
                 return new Counter(state.Count + 1);
@@ -50,7 +50,7 @@ public class Function
         // Step 2: echo the generated ID. After replay, this should see the
         // SAME GUID from step 1 — proves replay returned the cached value.
         var echoed = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"echo:{generatedId}:{pollResult.Count}"; },
+            async (_, _) => { await Task.CompletedTask; return $"echo:{generatedId}:{pollResult.Count}"; },
             name: "after_poll");
 
         return new TestResult { Status = "completed", Data = echoed };

@@ -30,7 +30,7 @@ public class Function
         // FAILED chained invocation and raises InvokeFailedException with the
         // step's error type (System.InvalidOperationException) attached.
         await context.StepAsync<string>(
-            async (_) =>
+            async (_, _) =>
             {
                 await Task.CompletedTask;
                 throw new InvalidOperationException("intentional child failure");

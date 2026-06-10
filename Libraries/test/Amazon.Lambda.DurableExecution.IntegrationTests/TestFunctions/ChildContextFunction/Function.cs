@@ -29,16 +29,16 @@ public class Function
         // return value is checkpointed at the parent level as a CONTEXT
         // SUCCEED record, so on replay we'd see it returned from cache.
         var phaseResult = await context.RunInChildContextAsync<string>(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 var validated = await childCtx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return $"validated-{input.OrderId}"; },
+                    async (_, _) => { await Task.CompletedTask; return $"validated-{input.OrderId}"; },
                     name: "validate");
 
                 await childCtx.WaitAsync(TimeSpan.FromSeconds(2), name: "short_wait");
 
                 var processed = await childCtx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return $"processed-{validated}"; },
+                    async (_, _) => { await Task.CompletedTask; return $"processed-{validated}"; },
                     name: "process");
 
                 return processed;

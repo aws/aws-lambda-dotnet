@@ -26,7 +26,7 @@ public class Function
     private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
     {
         await context.StepAsync<string>(
-            async (_) =>
+            async (_, _) =>
             {
                 await Task.CompletedTask;
                 throw new InvalidOperationException("intentional failure for integration test");

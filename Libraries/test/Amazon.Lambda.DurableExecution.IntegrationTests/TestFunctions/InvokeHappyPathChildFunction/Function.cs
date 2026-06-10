@@ -26,7 +26,7 @@ public class Function
     private async Task<string> Workflow(int input, IDurableContext context)
     {
         var prefixed = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"got-{input}"; },
+            async (_, _) => { await Task.CompletedTask; return $"got-{input}"; },
             name: "format");
         return prefixed;
     }

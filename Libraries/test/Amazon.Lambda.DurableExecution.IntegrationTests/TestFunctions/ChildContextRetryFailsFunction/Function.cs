@@ -30,10 +30,10 @@ public class Function
         // close as ContextFailed when retries are exhausted — proving the
         // child is a single retry/error boundary.
         await context.RunInChildContextAsync<string>(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 return await childCtx.StepAsync<string>(
-                    async (ctx) =>
+                    async (ctx, _) =>
                     {
                         await Task.CompletedTask;
                         throw new InvalidOperationException(

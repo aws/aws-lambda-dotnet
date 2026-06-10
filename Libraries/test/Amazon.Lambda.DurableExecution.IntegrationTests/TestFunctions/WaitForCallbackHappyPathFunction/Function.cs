@@ -41,7 +41,7 @@ public class Function
             ?? throw new InvalidOperationException("EXTERNAL_FUNCTION_NAME env var not set");
 
         var result = await context.WaitForCallbackAsync<MyResult>(
-            submitter: async (callbackId, cbCtx) =>
+            submitter: async (callbackId, cbCtx, _) =>
             {
                 var payload = $$"""{"callbackId":"{{callbackId}}","orderId":"{{input.OrderId}}"}""";
                 await LambdaClient.InvokeAsync(new InvokeRequest
