@@ -38,21 +38,23 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// </remarks>
 internal sealed class StepOperation<T> : DurableOperation<T>
 {
-    private readonly Func<IStepContext, Task<T>> _func;
+    private readonly Func<IStepContext, CancellationToken, Task<T>> _func;
     private readonly StepConfig? _config;
     private readonly ILambdaSerializer _serializer;
     private readonly ILogger _logger;
+    private readonly WorkflowCancellation _workflowCancellation;
 
     public StepOperation(
         string operationId,
         string? name,
         string? parentId,
-        Func<IStepContext, Task<T>> func,
+        Func<IStepContext, CancellationToken, Task<T>> func,
         StepConfig? config,
         ILambdaSerializer serializer,
         ILogger logger,
         ExecutionState state,
         TerminationManager termination,
+        WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
@@ -61,6 +63,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         _config = config;
         _serializer = serializer;
         _logger = logger;
+        _workflowCancellation = workflowCancellation;
     }
 
     protected override string OperationType => OperationTypes.Step;
@@ -204,6 +207,14 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         }
 
 
+        // Link the caller's token with the workflow-shutdown token so the user
+        // step body observes both upstream cancel intent and SDK-driven workflow
+        // teardown. The linked token is passed to the user Func only; checkpoint
+        // writes still use the caller's token (workflow shutdown must NOT abort
+        // a successful step's SUCCEED checkpoint — see cancellation-design.md §7).
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _workflowCancellation.Token);
+
         try
         {
             var stepContext = new StepContext(OperationId, attemptNumber, _logger);
@@ -220,7 +231,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 ["attempt"] = attemptNumber,
             }))
             {
-                result = await _func(stepContext);
+                result = await _func(stepContext, linked.Token);
             }
 
             await EnqueueAsync(new SdkOperationUpdate
@@ -236,14 +247,21 @@ internal sealed class StepOperation<T> : DurableOperation<T>
 
             return result;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
+            // Cancellation owned by the linked source (caller-cancel or workflow
+            // shutdown). Do NOT checkpoint FAIL and do NOT consult the retry
+            // strategy — the termination signal that fired (if any) owns the
+            // suspend/abort decision; an upstream caller-cancel propagates up
+            // as a fault on the workflow user task.
             throw;
         }
         catch (Exception ex)
         {
             // Funnel into the retry/fail decision tree. May checkpoint RETRY and
-            // suspend (Pending), or checkpoint FAIL and rethrow to user.
+            // suspend (Pending), or checkpoint FAIL and rethrow to user. A user-
+            // thrown OperationCanceledException unrelated to our linked token
+            // falls through here and is treated as a normal step failure.
             return await HandleStepFailureAsync(ex, attemptNumber, cancellationToken);
         }
     }

@@ -22,6 +22,7 @@ Your handler delegates to `DurableFunction.WrapAsync`, which gives your workflow
 - `ctx.WaitForConditionAsync` — poll a check function until a condition is met, suspending between polls. ([docs](docs/core/wait-for-condition.md))
 - `ctx.CreateCallbackAsync` / `ctx.WaitForCallbackAsync` — wait for external events (approvals, webhooks). ([docs](docs/core/callbacks.md))
 - `ctx.RunInChildContextAsync` — run an isolated child context with its own checkpoint log. ([docs](docs/core/child-contexts.md))
+- Every user `Func` receives a `CancellationToken` linking the caller's token with the SDK's workflow-shutdown signal. ([docs](docs/core/cancellation.md))
 
 ## Quick Start
 
@@ -64,17 +65,17 @@ public class OrderProcessor
     private async Task<OrderResult> Workflow(Order order, IDurableContext ctx)
     {
         var reservation = await ctx.StepAsync(
-            async _ => await InventoryService.ReserveAsync(order.Items),
+            async (_, ct) => await InventoryService.ReserveAsync(order.Items, ct),
             name: "reserve-inventory");
 
         var payment = await ctx.StepAsync(
-            async _ => await PaymentService.ChargeAsync(order.PaymentMethod, order.Total),
+            async (_, ct) => await PaymentService.ChargeAsync(order.PaymentMethod, order.Total, ct),
             name: "process-payment");
 
         await ctx.WaitAsync(TimeSpan.FromHours(2), name: "warehouse-processing");
 
         var shipment = await ctx.StepAsync(
-            async _ => await ShippingService.ShipAsync(reservation, order.Address),
+            async (_, ct) => await ShippingService.ShipAsync(reservation, order.Address, ct),
             name: "confirm-shipment");
 
         return new OrderResult(order.Id, shipment.TrackingNumber);

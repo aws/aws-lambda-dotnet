@@ -8,7 +8,7 @@ Use it when you're waiting on something whose readiness you can only learn by *a
 
 ```csharp
 Task<TState> WaitForConditionAsync<TState>(
-    Func<TState, IConditionCheckContext, Task<TState>> check,
+    Func<TState, IConditionCheckContext, CancellationToken, Task<TState>> check,
     WaitForConditionConfig<TState> config,
     string? name = null,
     CancellationToken cancellationToken = default);
@@ -16,7 +16,7 @@ Task<TState> WaitForConditionAsync<TState>(
 
 On every iteration the `check` function receives the state returned by the previous invocation — seeded by `config.InitialState` on the very first call — and returns the next state. The configured `IWaitStrategy<TState>` then decides whether to keep polling and how long to wait. State is checkpointed each iteration, so the polling loop survives Lambda re-invocations deterministically and you can carry per-poll bookkeeping (a cursor, a counter) inside the state itself.
 
-The `IConditionCheckContext` parameter exposes the current `AttemptNumber` (1-based) and a scoped `Logger`. The returned state is serialized via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`.
+The `IConditionCheckContext` parameter exposes the current `AttemptNumber` (1-based) and a scoped `Logger`. The `CancellationToken` parameter is a linked token combining the caller-supplied token with the SDK's workflow-shutdown signal — pass it to the underlying I/O so the check unwinds cleanly when the workflow is being torn down. The returned state is serialized via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`.
 
 When the strategy stops because its `maxAttempts` limit is reached — rather than because the condition was met — the operation throws `WaitForConditionException` carrying `AttemptsExhausted` and the last observed `LastState`.
 
@@ -26,10 +26,10 @@ Poll an order's status until it reaches a terminal value:
 
 ```csharp
 var finalStatus = await ctx.WaitForConditionAsync(
-    check: async (state, checkCtx) =>
+    check: async (state, checkCtx, ct) =>
     {
         checkCtx.Logger.LogInformation("Polling order on attempt {Attempt}", checkCtx.AttemptNumber);
-        return await orderService.GetStatusAsync(orderId);
+        return await orderService.GetStatusAsync(orderId, ct);
     },
     config: new WaitForConditionConfig<OrderStatus>
     {

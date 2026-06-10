@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// Base exception type for callback failures surfaced from
 /// <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
 /// or
-/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>.
+/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.CancellationToken, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>.
 /// Concrete subclasses distinguish failure modes — pattern-match
 /// <see cref="CallbackFailedException"/>, <see cref="CallbackTimeoutException"/>,
 /// or <see cref="CallbackSubmitterException"/> in <c>catch</c> clauses.
@@ -71,7 +71,7 @@ public class CallbackTimeoutException : CallbackException
 
 /// <summary>
 /// Thrown only from
-/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>
+/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.CancellationToken, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>
 /// when the user-supplied submitter delegate (the step that hands the callback
 /// ID to the external system) fails after retries are exhausted. Wraps the
 /// underlying <see cref="StepException"/> as <see cref="System.Exception.InnerException"/>.

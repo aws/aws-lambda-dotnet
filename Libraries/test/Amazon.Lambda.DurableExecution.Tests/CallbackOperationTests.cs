@@ -29,7 +29,7 @@ public class CallbackOperationTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
     }
 
@@ -477,7 +477,7 @@ public class CallbackOperationTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = new TestLambdaContext();  // no Serializer set
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             context.CreateCallbackAsync<string>(name: "no-serializer"));

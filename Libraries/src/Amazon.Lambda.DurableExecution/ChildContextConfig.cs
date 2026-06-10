@@ -9,7 +9,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// <remarks>
 /// A child context is a logical sub-workflow with its own deterministic
 /// operation-ID space, persisted as a <c>CONTEXT</c> operation. Use
-/// <see cref="IDurableContext.RunInChildContextAsync{T}(System.Func{IDurableContext, System.Threading.Tasks.Task{T}}, string?, ChildContextConfig?, System.Threading.CancellationToken)"/>
+/// <see cref="IDurableContext.RunInChildContextAsync{T}(System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, ChildContextConfig?, System.Threading.CancellationToken)"/>
 /// (and overloads) to run code inside one.
 /// </remarks>
 public sealed class ChildContextConfig
