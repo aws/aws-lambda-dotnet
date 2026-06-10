@@ -11,7 +11,8 @@ namespace Amazon.Lambda.DurableExecution.Tests;
 /// <summary>
 /// Cancellation-flow tests for <see cref="WorkflowCancellation"/> and the
 /// linked-token contract surfaced through <see cref="IDurableContext"/>.
-/// Companion to <c>docs/design/cancellation-design.md</c>.
+/// Companion to
+/// <c>Libraries/src/Amazon.Lambda.DurableExecution/docs/design/cancellation-design.md</c>.
 /// </summary>
 public class WorkflowCancellationTests
 {
@@ -76,19 +77,26 @@ public class WorkflowCancellationTests
     [Fact]
     public async Task StepAsync_CallerToken_PropagatesIntoFunc()
     {
+        // Cancel AFTER the func has started — pre-cancellation would short-circuit
+        // in StepOperation.ExecuteFunc's ThrowIfCancellationRequested before the
+        // user body runs and we'd never observe the propagation.
         var harness = CreateHarness();
         using var caller = new CancellationTokenSource();
-        CancellationToken seen = default;
+        var entered = new TaskCompletionSource();
 
+        var task = harness.Context.StepAsync<int>(async (_, ct) =>
+        {
+            entered.TrySetResult();
+            // Block on the linked token; if the caller's cancel propagates into
+            // ct via the linked CTS, this throws.
+            await Task.Delay(Timeout.Infinite, ct);
+            return 0;
+        }, name: "step", cancellationToken: caller.Token);
+
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
         caller.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            harness.Context.StepAsync(async (_, ct) =>
-            {
-                seen = ct;
-                await Task.CompletedTask;
-                return 0;
-            }, name: "step", cancellationToken: caller.Token));
+        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
     }
 
     [Fact]

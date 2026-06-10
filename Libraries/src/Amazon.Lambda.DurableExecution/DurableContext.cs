@@ -242,16 +242,24 @@ internal sealed class DurableContext : IDurableContext
         // Delegate to RunInChildContextAsync; the inner CreateCallbackAsync and
         // StepAsync calls each pull the registered ILambdaSerializer from
         // ILambdaContext.Serializer, so AOT and reflection-based scenarios share
-        // the same code path. The token threaded into childCtx and the inner
-        // submitter step is the linked workflow+caller token forwarded by the
-        // child context machinery.
+        // the same code path.
+        //
+        // Pass the OUTER cancellationToken (not childCtx's linked token) into the
+        // inner operations. Each inner operation will re-link the caller's token
+        // with the workflow-shutdown CTS itself when it invokes its user Func, so
+        // the submitter still observes both signals. Threading the already-linked
+        // childToken through here would propagate the workflow-shutdown signal
+        // into the inner operations' checkpoint writes (EnqueueAsync uses the
+        // cancellationToken parameter directly), which would risk lost START /
+        // SUCCEED checkpoints when termination fires mid-flush. See §7 of
+        // docs/design/cancellation-design.md.
         return RunInChildContextAsync<T>(
-            async (childCtx, childToken) =>
+            async (childCtx, _) =>
             {
                 var callback = await childCtx.CreateCallbackAsync<T>(
                     name: callbackName,
                     config: callbackConfig,
-                    cancellationToken: childToken);
+                    cancellationToken: cancellationToken);
 
                 await childCtx.StepAsync(
                     async (stepCtx, stepToken) =>
@@ -261,9 +269,9 @@ internal sealed class DurableContext : IDurableContext
                     },
                     name: submitterName,
                     config: stepConfig,
-                    cancellationToken: childToken);
+                    cancellationToken: cancellationToken);
 
-                return await callback.GetResultAsync(childToken);
+                return await callback.GetResultAsync(cancellationToken);
             },
             name,
             new ChildContextConfig
