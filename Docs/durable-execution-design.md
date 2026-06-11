@@ -582,7 +582,7 @@ For better observability, you can name individual branches (matching the JS SDK 
 ```csharp
 // Named branches for easier debugging and testing
 var results = await context.ParallelAsync(
-    new NamedBranch<object>[]
+    new DurableBranch<object>[]
     {
         new("fetch_user", async (ctx) => await ctx.StepAsync(async (step) => await FetchUserData(userId))),
         new("fetch_orders", async (ctx) => await ctx.StepAsync(async (step) => await FetchOrderHistory(userId))),
@@ -1491,6 +1491,13 @@ public class CompletionConfig
 {
     public int? MinSuccessful { get; set; }
     public int? ToleratedFailureCount { get; set; }
+    /// <summary>
+    /// Maximum tolerated failure ratio, expressed as a value in the range
+    /// <c>0.0</c> to <c>1.0</c> (inclusive). For example, <c>0.25</c> means
+    /// "tolerate up to 25% failures; fail when the failure ratio strictly
+    /// exceeds 25%". <c>null</c> = no ratio-based threshold. Validated by the
+    /// setter; out-of-range values throw <see cref="ArgumentOutOfRangeException"/>.
+    /// </summary>
     public double? ToleratedFailurePercentage { get; set; }
 
     public static CompletionConfig AllSuccessful() => new() { ToleratedFailureCount = 0 };
