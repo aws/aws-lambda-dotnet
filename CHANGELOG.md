@@ -1,3 +1,10 @@
+## Release 2026-06-11
+
+### Amazon.Lambda.DurableExecution (0.0.1-preview)
+* Thread CancellationToken into every user Func accepted by IDurableContext (StepAsync, RunInChildContextAsync, WaitForCallbackAsync, WaitForConditionAsync). The token links the caller-supplied cancellation token with an SDK-owned workflow-shutdown signal so user step bodies unwind cleanly when the workflow is being torn down. Cancellation via the linked token is not checkpointed; user-thrown OperationCanceledException unrelated to the linked token continues to be treated as a normal step failure.
+* Initial preview release of the Durable Execution SDK for .NET. Build long-running Lambda workflows with automatic checkpointing via `StepAsync`, `WaitAsync`, `RunInChildContextAsync`, `CreateCallbackAsync`, and `WaitForCallbackAsync` on `IDurableContext`.
+* Add WaitForConditionAsync polling primitive: IDurableContext.WaitForConditionAsync<TState>, IConditionCheckContext, WaitForConditionConfig<TState>, IWaitStrategy<TState>, WaitDecision, WaitStrategy factory (Exponential/Linear/Fixed/FromDelegate), and WaitForConditionException with AttemptsExhausted and LastState
+
 ## Release 2026-06-01
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.18.0)

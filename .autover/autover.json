@@ -48,6 +48,11 @@
       "Path": "Libraries/src/Amazon.Lambda.Core/Amazon.Lambda.Core.csproj"
     },
     {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Path": "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj",
+      "PrereleaseLabel": "preview"
+    },
+    {
       "Name": "Amazon.Lambda.DynamoDBEvents",
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
     },

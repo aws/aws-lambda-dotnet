@@ -41,3 +41,6 @@ global.json
 
 **/cdk.out/**
 **/.DS_Store
+
+# JetBrains Rider per-project cache
+**/*.lscache
