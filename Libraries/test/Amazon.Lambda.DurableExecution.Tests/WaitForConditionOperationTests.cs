@@ -28,7 +28,7 @@ public class WaitForConditionOperationTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext(serializer);
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
     }
 
@@ -44,7 +44,7 @@ public class WaitForConditionOperationTests
         // success path with no polling iterations.
         int checkInvocations = 0;
         var result = await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 checkInvocations++;
                 Assert.Equal(checkInvocations, ctx.AttemptNumber);
@@ -81,7 +81,7 @@ public class WaitForConditionOperationTests
 
         // Strategy says continue → operation must emit RETRY and suspend.
         var task = context.WaitForConditionAsync<int>(
-            check: async (state, _) => { await Task.CompletedTask; return state + 1; },
+            check: async (state, _, _) => { await Task.CompletedTask; return state + 1; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -113,7 +113,7 @@ public class WaitForConditionOperationTests
 
         int? observedInitial = null;
         await context.WaitForConditionAsync<int>(
-            check: async (state, _) =>
+            check: async (state, _, _) =>
             {
                 observedInitial ??= state;
                 await Task.CompletedTask;
@@ -136,7 +136,7 @@ public class WaitForConditionOperationTests
 
         int observed = -1;
         await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observed = ctx.AttemptNumber;
                 await Task.CompletedTask;
@@ -161,7 +161,7 @@ public class WaitForConditionOperationTests
 
         ILogger? observedLogger = null;
         await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observedLogger = ctx.Logger;
                 await Task.CompletedTask;
@@ -199,7 +199,7 @@ public class WaitForConditionOperationTests
 
         var checkInvoked = false;
         var result = await context.WaitForConditionAsync<int>(
-            check: async (_, _) => { checkInvoked = true; await Task.CompletedTask; return 0; },
+            check: async (_, _, _) => { checkInvoked = true; await Task.CompletedTask; return 0; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -244,7 +244,7 @@ public class WaitForConditionOperationTests
 
         var checkInvoked = false;
         var task = context.WaitForConditionAsync<int>(
-            check: async (_, _) => { checkInvoked = true; await Task.CompletedTask; return 0; },
+            check: async (_, _, _) => { checkInvoked = true; await Task.CompletedTask; return 0; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -293,7 +293,7 @@ public class WaitForConditionOperationTests
         int? observedState = null;
         int? observedAttempt = null;
         var result = await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observedState = state;
                 observedAttempt = ctx.AttemptNumber;
@@ -346,7 +346,7 @@ public class WaitForConditionOperationTests
         int? observedState = null;
         int? observedAttempt = null;
         var result = await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observedState = state;
                 observedAttempt = ctx.AttemptNumber;
@@ -392,7 +392,7 @@ public class WaitForConditionOperationTests
         int? observedState = null;
         int? observedAttempt = null;
         var result = await context.WaitForConditionAsync<int>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observedState = state;
                 observedAttempt = ctx.AttemptNumber;
@@ -444,7 +444,7 @@ public class WaitForConditionOperationTests
 
         var ex = await Assert.ThrowsAsync<StepException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -490,7 +490,7 @@ public class WaitForConditionOperationTests
 
         var ex = await Assert.ThrowsAsync<WaitForConditionException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -513,7 +513,7 @@ public class WaitForConditionOperationTests
 
         var liveEx = await Assert.ThrowsAsync<WaitForConditionException>(() =>
             liveCtx.WaitForConditionAsync<int>(
-                check: async (state, _) => { await Task.CompletedTask; return state + 1; },
+                check: async (state, _, _) => { await Task.CompletedTask; return state + 1; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 5,
@@ -555,7 +555,7 @@ public class WaitForConditionOperationTests
 
         var replayEx = await Assert.ThrowsAsync<WaitForConditionException>(() =>
             replayCtx.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -601,7 +601,7 @@ public class WaitForConditionOperationTests
 
         var ex = await Assert.ThrowsAsync<WaitForConditionException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -625,7 +625,7 @@ public class WaitForConditionOperationTests
         // condition was met. Operation must throw, not SUCCEED.
         var ex = await Assert.ThrowsAsync<WaitForConditionException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (state, _) => { await Task.CompletedTask; return state + 1; },
+                check: async (state, _, _) => { await Task.CompletedTask; return state + 1; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 5,
@@ -658,7 +658,7 @@ public class WaitForConditionOperationTests
         // The same maxAttempts=1 strategy WITH an isDone that's satisfied
         // should SUCCEED, not throw.
         var result = await context.WaitForConditionAsync<int>(
-            check: async (_, _) => { await Task.CompletedTask; return 99; },
+            check: async (_, _, _) => { await Task.CompletedTask; return 99; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -681,7 +681,7 @@ public class WaitForConditionOperationTests
 
         var ex = await Assert.ThrowsAsync<StepException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; throw new InvalidOperationException("boom"); },
+                check: async (_, _, _) => { await Task.CompletedTask; throw new InvalidOperationException("boom"); },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -735,7 +735,7 @@ public class WaitForConditionOperationTests
         CounterState? observed = null;
         int? observedAttempt = null;
         var result = await context.WaitForConditionAsync<CounterState>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 observed = state;
                 observedAttempt = ctx.AttemptNumber;
@@ -786,7 +786,7 @@ public class WaitForConditionOperationTests
             serializer: serializer);
 
         var result = await context.WaitForConditionAsync<TestPerson>(
-            check: async (_, _) => { await Task.CompletedTask; return new TestPerson { Name = "ignored", Age = 0 }; },
+            check: async (_, _, _) => { await Task.CompletedTask; return new TestPerson { Name = "ignored", Age = 0 }; },
             config: new WaitForConditionConfig<TestPerson>
             {
                 InitialState = new TestPerson { Name = "init", Age = 0 },
@@ -810,7 +810,7 @@ public class WaitForConditionOperationTests
         var (context, recorder, tm, _) = CreateContext();
 
         var task = context.WaitForConditionAsync<int>(
-            check: async (state, _) => { await Task.CompletedTask; return state + 1; },
+            check: async (state, _, _) => { await Task.CompletedTask; return state + 1; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -852,7 +852,7 @@ public class WaitForConditionOperationTests
 
         await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -882,7 +882,7 @@ public class WaitForConditionOperationTests
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: new WaitForConditionConfig<int>
                 {
                     InitialState = 0,
@@ -915,7 +915,7 @@ public class WaitForConditionOperationTests
         var (context, _, _, _) = CreateContext();
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             context.WaitForConditionAsync<int>(
-                check: async (_, _) => { await Task.CompletedTask; return 0; },
+                check: async (_, _, _) => { await Task.CompletedTask; return 0; },
                 config: null!));
     }
 
@@ -948,11 +948,12 @@ public class WaitForConditionOperationTests
         var recorder = new RecordingBatcher();
         var logger = new RecordingLogger();
 
+        var tm = new TerminationManager();
         var op = new WaitForConditionOperation<int>(
             operationId: IdAt(1),
             name: "poll",
             parentId: null,
-            check: async (s, _) => { await Task.CompletedTask; return s; },
+            check: async (s, _, _) => { await Task.CompletedTask; return s; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 999,
@@ -961,7 +962,8 @@ public class WaitForConditionOperationTests
             serializer: new ThrowingLambdaSerializer(),
             logger: logger,
             state: state,
-            termination: new TerminationManager(),
+            termination: tm,
+            workflowCancellation: new WorkflowCancellation(tm),
             durableExecutionArn: "arn:test",
             batcher: recorder.Batcher);
 
@@ -1008,11 +1010,12 @@ public class WaitForConditionOperationTests
         var recorder = new RecordingBatcher();
         var logger = new RecordingLogger();
 
+        var tm = new TerminationManager();
         var op = new WaitForConditionOperation<int>(
             operationId: IdAt(1),
             name: "poll",
             parentId: null,
-            check: async (s, _) => { await Task.CompletedTask; return s; },
+            check: async (s, _, _) => { await Task.CompletedTask; return s; },
             config: new WaitForConditionConfig<int>
             {
                 InitialState = 0,
@@ -1021,7 +1024,8 @@ public class WaitForConditionOperationTests
             serializer: new ThrowingLambdaSerializer(),
             logger: logger,
             state: state,
-            termination: new TerminationManager(),
+            termination: tm,
+            workflowCancellation: new WorkflowCancellation(tm),
             durableExecutionArn: "arn:test",
             batcher: recorder.Batcher);
 

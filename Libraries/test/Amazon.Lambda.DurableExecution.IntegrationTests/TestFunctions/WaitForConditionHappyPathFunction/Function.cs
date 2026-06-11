@@ -26,7 +26,7 @@ public class Function
         // Each poll iteration is a separate Lambda invocation; the state is
         // carried across iterations via the RETRY checkpoint payload.
         var finalState = await context.WaitForConditionAsync<State>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 await Task.CompletedTask;
                 return new State(state.Counter + 1, ctx.AttemptNumber);

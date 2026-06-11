@@ -32,7 +32,7 @@ public class WaitForCallbackTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
     }
 
@@ -69,7 +69,7 @@ public class WaitForCallbackTests
 
         string? receivedCallbackId = null;
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (callbackId, ctx) =>
+            async (callbackId, ctx, _) =>
             {
                 receivedCallbackId = callbackId;
                 Assert.NotNull(ctx.Logger);
@@ -106,7 +106,7 @@ public class WaitForCallbackTests
         WireServiceCallbackIdAllocation(recorder, state, "cb-1");
 
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, _) => await Task.CompletedTask,
+            async (_, _, _) => await Task.CompletedTask,
             name: "approval");
 
         await Task.WhenAny(resultTask, tm.TerminationTask);
@@ -129,7 +129,7 @@ public class WaitForCallbackTests
         WireServiceCallbackIdAllocation(recorder, state, "cb-1");
 
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, _) => await Task.CompletedTask);
+            async (_, _, _) => await Task.CompletedTask);
 
         await Task.WhenAny(resultTask, tm.TerminationTask);
         await recorder.Batcher.DrainAsync();
@@ -150,7 +150,7 @@ public class WaitForCallbackTests
         WireServiceCallbackIdAllocation(recorder, state, "cb-1");
 
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, _) => await Task.CompletedTask,
+            async (_, _, _) => await Task.CompletedTask,
             name: "approval");
 
         await Task.WhenAny(resultTask, tm.TerminationTask);
@@ -177,7 +177,7 @@ public class WaitForCallbackTests
         WireServiceCallbackIdAllocation(recorder, state, "cb-1");
 
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, _) => await Task.CompletedTask,
+            async (_, _, _) => await Task.CompletedTask,
             name: "approval",
             config: new WaitForCallbackConfig
             {
@@ -219,7 +219,7 @@ public class WaitForCallbackTests
 
         var executed = false;
         var result = await context.WaitForCallbackAsync<string>(
-            async (_, _) => { executed = true; await Task.CompletedTask; },
+            async (_, _, _) => { executed = true; await Task.CompletedTask; },
             name: "approval");
 
         Assert.False(executed); // Replay returns cached without re-running submitter.
@@ -278,7 +278,7 @@ public class WaitForCallbackTests
 
         var ex = await Assert.ThrowsAsync<CallbackTimeoutException>(() =>
             context.WaitForCallbackAsync<string>(
-                async (_, _) => await Task.CompletedTask,
+                async (_, _, _) => await Task.CompletedTask,
                 name: "approval"));
 
         Assert.Equal("callback timed out", ex.Message);
@@ -335,7 +335,7 @@ public class WaitForCallbackTests
 
         var ex = await Assert.ThrowsAsync<CallbackFailedException>(() =>
             context.WaitForCallbackAsync<string>(
-                async (_, _) => await Task.CompletedTask,
+                async (_, _, _) => await Task.CompletedTask,
                 name: "approval"));
 
         Assert.Equal("external rejected", ex.Message);
@@ -374,7 +374,7 @@ public class WaitForCallbackTests
 
         var ex = await Assert.ThrowsAsync<CallbackSubmitterException>(() =>
             context.WaitForCallbackAsync<string>(
-                async (_, _) => await Task.CompletedTask,
+                async (_, _, _) => await Task.CompletedTask,
                 name: "approval"));
 
         Assert.IsAssignableFrom<CallbackException>(ex);
@@ -421,7 +421,7 @@ public class WaitForCallbackTests
 
         var ex = await Assert.ThrowsAsync<CallbackTimeoutException>(() =>
             context.WaitForCallbackAsync<string>(
-                async (_, _) => await Task.CompletedTask,
+                async (_, _, _) => await Task.CompletedTask,
                 name: "approval"));
 
         // Concrete-type check: not just `is CallbackException` — must be the
@@ -462,7 +462,7 @@ public class WaitForCallbackTests
 
         var ex = await Assert.ThrowsAsync<CallbackFailedException>(() =>
             context.WaitForCallbackAsync<string>(
-                async (_, _) => await Task.CompletedTask,
+                async (_, _, _) => await Task.CompletedTask,
                 name: "approval"));
 
         Assert.Equal(typeof(CallbackFailedException), ex.GetType());
@@ -479,7 +479,7 @@ public class WaitForCallbackTests
 
         var seenAttempts = new List<int>();
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, ctx) =>
+            async (_, ctx, _) =>
             {
                 // The submitter receives an IWaitForCallbackContext (no AttemptNumber)
                 // — but this test doesn't need to verify retry mechanics, only
@@ -514,7 +514,7 @@ public class WaitForCallbackTests
 
         Type? observedContextType = null;
         var resultTask = context.WaitForCallbackAsync<string>(
-            async (_, ctx) =>
+            async (_, ctx, _) =>
             {
                 observedContextType = ctx.GetType();
                 await Task.CompletedTask;

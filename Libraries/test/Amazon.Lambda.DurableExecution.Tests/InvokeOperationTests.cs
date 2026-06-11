@@ -27,7 +27,7 @@ public class InvokeOperationTests
         var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
 #pragma warning restore AWSLAMBDA001
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
     }
 
@@ -189,7 +189,7 @@ public class InvokeOperationTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = new TestLambdaContext(); // no serializer!
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             context.InvokeAsync<string, string>(FunctionArn, "x", name: "no_serializer"));
@@ -479,16 +479,16 @@ public class InvokeOperationTests
         var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
 #pragma warning restore AWSLAMBDA001
         var batcher = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, batcher.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, batcher.Batcher);
 
         var result = await DurableExecutionHandler.RunAsync<string>(
             state, tm,
             async () =>
             {
-                await context.StepAsync(async (_) => { await Task.CompletedTask; return "validated"; }, name: "validate");
+                await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "validated"; }, name: "validate");
                 var paymentId = await context.InvokeAsync<string, string>(
                     FunctionArn, "validated", name: "process_payment");
-                return await context.StepAsync(async (_) => { await Task.CompletedTask; return paymentId + "-done"; }, name: "finalize");
+                return await context.StepAsync(async (_, _) => { await Task.CompletedTask; return paymentId + "-done"; }, name: "finalize");
             });
 
         Assert.Equal(InvocationStatus.Pending, result.Status);
@@ -530,21 +530,21 @@ public class InvokeOperationTests
 #pragma warning disable AWSLAMBDA001
         var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
 #pragma warning restore AWSLAMBDA001
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
         var finalizeRan = false;
 
         var result = await DurableExecutionHandler.RunAsync<string>(
             state, tm,
             async () =>
             {
-                var validated = await context.StepAsync(async (_) => { await Task.CompletedTask; return "fresh-validated"; }, name: "validate");
+                var validated = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "fresh-validated"; }, name: "validate");
                 Assert.Equal("validated", validated); // cached
 
                 var paymentId = await context.InvokeAsync<string, string>(
                     FunctionArn, validated, name: "process_payment");
                 Assert.Equal("pmt-42", paymentId); // cached
 
-                return await context.StepAsync(async (_) =>
+                return await context.StepAsync(async (_, _) =>
                 {
                     finalizeRan = true;
                     await Task.CompletedTask;

@@ -11,13 +11,13 @@ Two APIs are available:
 
 ```csharp
 Task<T> WaitForCallbackAsync<T>(
-    Func<string, IWaitForCallbackContext, Task> submitter,
+    Func<string, IWaitForCallbackContext, CancellationToken, Task> submitter,
     string? name = null,
     WaitForCallbackConfig? config = null,
     CancellationToken cancellationToken = default);
 ```
 
-The submitter receives the freshly allocated `callbackId` and an `IWaitForCallbackContext` (logger-only). Submitter failures (after retries are exhausted) surface as `CallbackSubmitterException`; callback failures and timeouts surface as `CallbackFailedException` / `CallbackTimeoutException`.
+The submitter receives the freshly allocated `callbackId`, an `IWaitForCallbackContext` (logger-only), and a `CancellationToken` linking the caller-supplied token with the SDK's workflow-shutdown signal. Submitter failures (after retries are exhausted) surface as `CallbackSubmitterException`; callback failures and timeouts surface as `CallbackFailedException` / `CallbackTimeoutException`.
 
 ## `CreateCallbackAsync<T>`
 
@@ -78,7 +78,7 @@ public class Function
         // with this callback ID. The submitter is invoked once with a freshly-allocated
         // ID; it hands the ID to the approver and returns immediately.
         var result = await ctx.WaitForCallbackAsync<ApprovalResult>(
-            submitter: async (callbackId, cbCtx) =>
+            submitter: async (callbackId, cbCtx, ct) =>
             {
                 var payload = $$"""{"callbackId":"{{callbackId}}","orderId":"{{input.OrderId}}"}""";
                 await LambdaClient.InvokeAsync(new InvokeRequest
@@ -86,7 +86,7 @@ public class Function
                     FunctionName = approverFunctionName,
                     InvocationType = InvocationType.Event,   // fire-and-forget
                     Payload = payload
-                });
+                }, ct);
             },
             name: "approve");
 
@@ -154,7 +154,7 @@ private async Task<ApprovalResult> Workflow(OrderInput input, IDurableContext ct
 {
     var cb = await ctx.CreateCallbackAsync<ApprovalResult>(name: "approve");
 
-    await ctx.StepAsync(async _ =>
+    await ctx.StepAsync(async (_, ct) =>
     {
         var payload = $$"""{"callbackId":"{{cb.CallbackId}}","orderId":"{{input.OrderId}}"}""";
         await LambdaClient.InvokeAsync(new InvokeRequest
@@ -162,7 +162,7 @@ private async Task<ApprovalResult> Workflow(OrderInput input, IDurableContext ct
             FunctionName = approverFunctionName,
             InvocationType = InvocationType.Event,
             Payload = payload
-        });
+        }, ct);
     }, name: "submit");
 
     return await cb.GetResultAsync();

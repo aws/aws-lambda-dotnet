@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
 /// Context passed to the submitter delegate of
-/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>.
+/// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.CancellationToken, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>.
 /// Provides a replay-safe logger scoped to the submitter step.
 /// </summary>
 /// <remarks>

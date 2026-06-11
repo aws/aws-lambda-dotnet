@@ -54,7 +54,11 @@ public interface IDurableContext
     /// <typeparam name="T">The type of the step's result.</typeparam>
     /// <param name="func">
     /// The step body to execute. Receives an <see cref="IStepContext"/> exposing
-    /// the step's logger, attempt number, and operation ID.
+    /// the step's logger, attempt number, and operation ID, and a
+    /// <see cref="CancellationToken"/> linking the caller-supplied token with
+    /// the SDK's workflow-shutdown signal — pass it to cancellation-aware APIs
+    /// (<c>HttpClient.SendAsync</c>, <c>Task.Delay</c>, AWS SDK calls) so the
+    /// step body unwinds cleanly when the workflow is being torn down.
     /// </param>
     /// <param name="name">
     /// An optional name for the step, used for observability and to derive the
@@ -63,10 +67,13 @@ public interface IDurableContext
     /// <param name="config">
     /// Optional step configuration (e.g. retry policy). Defaults are used when null.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="func"/>.
+    /// </param>
     /// <returns>The deserialized result of the step.</returns>
     Task<T> StepAsync<T>(
-        Func<IStepContext, Task<T>> func,
+        Func<IStepContext, CancellationToken, Task<T>> func,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -76,7 +83,9 @@ public interface IDurableContext
     /// </summary>
     /// <param name="func">
     /// The step body to execute. Receives an <see cref="IStepContext"/> exposing
-    /// the step's logger, attempt number, and operation ID.
+    /// the step's logger, attempt number, and operation ID, and a
+    /// <see cref="CancellationToken"/> linking the caller-supplied token with
+    /// the SDK's workflow-shutdown signal.
     /// </param>
     /// <param name="name">
     /// An optional name for the step, used for observability and to derive the
@@ -85,9 +94,12 @@ public interface IDurableContext
     /// <param name="config">
     /// Optional step configuration (e.g. retry policy). Defaults are used when null.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="func"/>.
+    /// </param>
     Task StepAsync(
-        Func<IStepContext, Task> func,
+        Func<IStepContext, CancellationToken, Task> func,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -129,7 +141,9 @@ public interface IDurableContext
     /// <typeparam name="T">The type of the child context's result.</typeparam>
     /// <param name="func">
     /// The user function to run inside the child context. Receives a nested
-    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space.
+    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space,
+    /// and a <see cref="CancellationToken"/> linking the caller-supplied token with
+    /// the SDK's workflow-shutdown signal.
     /// </param>
     /// <param name="name">
     /// An optional name for the child context, used for observability and to derive
@@ -139,10 +153,13 @@ public interface IDurableContext
     /// Optional child context configuration (e.g.
     /// <see cref="ChildContextConfig.ErrorMapping"/>). Defaults are used when null.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="func"/>.
+    /// </param>
     /// <returns>The deserialized result of the child context.</returns>
     Task<T> RunInChildContextAsync<T>(
-        Func<IDurableContext, Task<T>> func,
+        Func<IDurableContext, CancellationToken, Task<T>> func,
         string? name = null,
         ChildContextConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -162,7 +179,9 @@ public interface IDurableContext
     /// </remarks>
     /// <param name="func">
     /// The user function to run inside the child context. Receives a nested
-    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space.
+    /// <see cref="IDurableContext"/> with its own deterministic operation-ID space,
+    /// and a <see cref="CancellationToken"/> linking the caller-supplied token with
+    /// the SDK's workflow-shutdown signal.
     /// </param>
     /// <param name="name">
     /// An optional name for the child context, used for observability and to derive
@@ -172,9 +191,12 @@ public interface IDurableContext
     /// Optional child context configuration (e.g.
     /// <see cref="ChildContextConfig.ErrorMapping"/>). Defaults are used when null.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="func"/>.
+    /// </param>
     Task RunInChildContextAsync(
-        Func<IDurableContext, Task> func,
+        Func<IDurableContext, CancellationToken, Task> func,
         string? name = null,
         ChildContextConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -222,7 +244,7 @@ public interface IDurableContext
     /// (which hands the <c>callbackId</c> to an external system), and suspends
     /// until the external system delivers a result. Equivalent to manually
     /// composing <see cref="CreateCallbackAsync{T}(string?, CallbackConfig?, System.Threading.CancellationToken)"/>
-    /// + <see cref="StepAsync{T}(System.Func{IStepContext, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
+    /// + <see cref="StepAsync{T}(System.Func{IStepContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
     /// + <see cref="ICallback{T}.GetResultAsync(System.Threading.CancellationToken)"/>
     /// inside a child context.
     /// </summary>
@@ -235,7 +257,9 @@ public interface IDurableContext
     /// <typeparam name="T">The type of the result the callback will deliver.</typeparam>
     /// <param name="submitter">
     /// A function that hands the service-allocated <c>callbackId</c> to the external
-    /// system. Receives the callback ID and an <see cref="IWaitForCallbackContext"/>.
+    /// system. Receives the callback ID, an <see cref="IWaitForCallbackContext"/>,
+    /// and a <see cref="CancellationToken"/> linking the caller-supplied token with
+    /// the SDK's workflow-shutdown signal.
     /// </param>
     /// <param name="name">
     /// An optional name for the operation, used for observability and to derive the
@@ -245,10 +269,13 @@ public interface IDurableContext
     /// Optional configuration (e.g. submitter retry policy and callback timeout).
     /// Defaults are used when null.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="submitter"/>.
+    /// </param>
     /// <returns>The deserialized result delivered by the external system.</returns>
     Task<T> WaitForCallbackAsync<T>(
-        Func<string, IWaitForCallbackContext, Task> submitter,
+        Func<string, IWaitForCallbackContext, CancellationToken, Task> submitter,
         string? name = null,
         WaitForCallbackConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -316,8 +343,10 @@ public interface IDurableContext
     /// <param name="check">
     /// The condition check invoked on each poll. Receives the state returned by the
     /// previous invocation (seeded by
-    /// <see cref="WaitForConditionConfig{TState}.InitialState"/> on the first call)
-    /// and an <see cref="IConditionCheckContext"/>, and returns the next state.
+    /// <see cref="WaitForConditionConfig{TState}.InitialState"/> on the first call),
+    /// an <see cref="IConditionCheckContext"/>, and a <see cref="CancellationToken"/>
+    /// linking the caller-supplied token with the SDK's workflow-shutdown signal,
+    /// and returns the next state.
     /// </param>
     /// <param name="config">
     /// The configuration controlling polling, including the
@@ -327,10 +356,13 @@ public interface IDurableContext
     /// An optional name for the operation, used for observability and to derive the
     /// deterministic operation ID. Defaults to a name inferred from the call site.
     /// </param>
-    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <param name="cancellationToken">
+    /// A token to observe for cancellation. Linked with an SDK-owned workflow
+    /// shutdown source; the resulting token is forwarded to <paramref name="check"/>.
+    /// </param>
     /// <returns>The final state observed when the strategy decides to stop.</returns>
     Task<TState> WaitForConditionAsync<TState>(
-        Func<TState, IConditionCheckContext, Task<TState>> check,
+        Func<TState, IConditionCheckContext, CancellationToken, Task<TState>> check,
         WaitForConditionConfig<TState> config,
         string? name = null,
         CancellationToken cancellationToken = default);

@@ -26,23 +26,23 @@ public class Function
     private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
     {
         var step1 = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"a-{input.OrderId}"; },
+            async (_, _) => { await Task.CompletedTask; return $"a-{input.OrderId}"; },
             name: "step_1");
 
         var step2 = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"{step1}-b"; },
+            async (_, _) => { await Task.CompletedTask; return $"{step1}-b"; },
             name: "step_2");
 
         var step3 = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"{step2}-c"; },
+            async (_, _) => { await Task.CompletedTask; return $"{step2}-c"; },
             name: "step_3");
 
         var step4 = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"{step3}-d"; },
+            async (_, _) => { await Task.CompletedTask; return $"{step3}-d"; },
             name: "step_4");
 
         var step5 = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"{step4}-e"; },
+            async (_, _) => { await Task.CompletedTask; return $"{step4}-e"; },
             name: "step_5");
 
         return new TestResult { Status = "completed", Data = step5 };

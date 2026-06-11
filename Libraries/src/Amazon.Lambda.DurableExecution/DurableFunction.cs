@@ -95,6 +95,7 @@ public static class DurableFunction
 
         var userPayload = ExtractUserPayload<TInput>(invocationInput, serializer);
         var terminationManager = new TerminationManager();
+        using var workflowCancellation = new WorkflowCancellation(terminationManager);
         var idGenerator = new OperationIdGenerator();
 
         await using var batcher = new CheckpointBatcher(
@@ -108,7 +109,7 @@ public static class DurableFunction
                 cancellationToken: ct));
 
         var context = new DurableContext(
-            state, terminationManager, idGenerator,
+            state, terminationManager, workflowCancellation, idGenerator,
             invocationInput.DurableExecutionArn, lambdaContext, batcher);
 
         HandlerResult<TOutput> result;

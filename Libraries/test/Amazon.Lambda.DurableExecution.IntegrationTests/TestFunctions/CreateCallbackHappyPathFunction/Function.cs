@@ -42,7 +42,7 @@ public class Function
         var cb = await context.CreateCallbackAsync<MyResult>(name: "approve");
 
         // Wrap the hand-off in a step so replays don't re-invoke the approver.
-        await context.StepAsync(async _ =>
+        await context.StepAsync(async (_, _) =>
         {
             var payload = $$"""{"callbackId":"{{cb.CallbackId}}","orderId":"integ-test"}""";
             await LambdaClient.InvokeAsync(new InvokeRequest

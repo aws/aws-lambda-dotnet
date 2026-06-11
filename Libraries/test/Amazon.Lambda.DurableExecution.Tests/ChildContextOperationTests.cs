@@ -29,7 +29,7 @@ public class ChildContextOperationTests
         var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
 #pragma warning restore AWSLAMBDA001
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
     }
 
@@ -40,10 +40,10 @@ public class ChildContextOperationTests
 
         var executed = false;
         var result = await context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 executed = true;
-                return await childCtx.StepAsync(async (_) => { await Task.CompletedTask; return "inner"; }, name: "inner_step");
+                return await childCtx.StepAsync(async (_, _) => { await Task.CompletedTask; return "inner"; }, name: "inner_step");
             },
             name: "phase");
 
@@ -76,10 +76,10 @@ public class ChildContextOperationTests
         var (context, recorder, _, _) = CreateContext();
 
         await context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
-                await childCtx.StepAsync(async (_) => { await Task.CompletedTask; return "a"; }, name: "first");
-                await childCtx.StepAsync(async (_) => { await Task.CompletedTask; return "b"; }, name: "second");
+                await childCtx.StepAsync(async (_, _) => { await Task.CompletedTask; return "a"; }, name: "first");
+                await childCtx.StepAsync(async (_, _) => { await Task.CompletedTask; return "b"; }, name: "second");
                 return 0;
             },
             name: "phase");
@@ -116,7 +116,7 @@ public class ChildContextOperationTests
 
         var executed = false;
         var result = await context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 executed = true;
                 await Task.CompletedTask;
@@ -161,7 +161,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<ChildContextException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; return "should not run"; },
+                async (_, _) => { await Task.CompletedTask; return "should not run"; },
                 name: "phase"));
 
         Assert.Equal("child went wrong", ex.Message);
@@ -202,7 +202,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; return "x"; },
+                async (_, _) => { await Task.CompletedTask; return "x"; },
                 name: "phase",
                 config: new ChildContextConfig
                 {
@@ -223,7 +223,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<ChildContextException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; throw new InvalidOperationException("inner boom"); },
+                async (_, _) => { await Task.CompletedTask; throw new InvalidOperationException("inner boom"); },
                 name: "phase"));
 
         Assert.Equal("inner boom", ex.Message);
@@ -273,10 +273,10 @@ public class ChildContextOperationTests
 
         await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.RunInChildContextAsync(
-                async (childCtx) =>
+                async (childCtx, _) =>
                 {
                     return await childCtx.StepAsync(
-                        async (_) => { await Task.CompletedTask; return "x"; },
+                        async (_, _) => { await Task.CompletedTask; return "x"; },
                         name: "inner_step");
                 },
                 name: "phase"));
@@ -292,7 +292,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; throw new TimeoutException("inner timeout"); },
+                async (_, _) => { await Task.CompletedTask; throw new TimeoutException("inner timeout"); },
                 name: "phase",
                 config: new ChildContextConfig
                 {
@@ -315,7 +315,7 @@ public class ChildContextOperationTests
         // wins on the termination signal; the test below short-circuits via
         // the same TerminationManager.IsTerminated check.
         var task = context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 await childCtx.WaitAsync(TimeSpan.FromSeconds(5), name: "wait_inside");
                 return "should not return";
@@ -366,10 +366,10 @@ public class ChildContextOperationTests
 
         var innerExecuted = false;
         var result = await context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 return await childCtx.StepAsync(
-                    async (_) => { innerExecuted = true; await Task.CompletedTask; return "fresh_inner"; },
+                    async (_, _) => { innerExecuted = true; await Task.CompletedTask; return "fresh_inner"; },
                     name: "inner_step");
             },
             name: "phase");
@@ -397,10 +397,10 @@ public class ChildContextOperationTests
 
         var executed = false;
         await context.RunInChildContextAsync(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 await childCtx.StepAsync(
-                    async (_) => { executed = true; await Task.CompletedTask; },
+                    async (_, _) => { executed = true; await Task.CompletedTask; },
                     name: "inner_void");
             },
             name: "phase");
@@ -444,7 +444,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; return "x"; },
+                async (_, _) => { await Task.CompletedTask; return "x"; },
                 name: "phase"));
 
         Assert.Contains("expected type 'CONTEXT'", ex.Message);
@@ -471,7 +471,7 @@ public class ChildContextOperationTests
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; return "x"; },
+                async (_, _) => { await Task.CompletedTask; return "x"; },
                 name: "new_name"));
 
         Assert.Contains("expected name 'new_name'", ex.Message);
@@ -497,7 +497,7 @@ public class ChildContextOperationTests
 
         await Assert.ThrowsAsync<NonDeterministicExecutionException>(() =>
             context.RunInChildContextAsync<string>(
-                async (_) => { await Task.CompletedTask; return "x"; },
+                async (_, _) => { await Task.CompletedTask; return "x"; },
                 name: "phase"));
     }
 
@@ -507,7 +507,7 @@ public class ChildContextOperationTests
         var (context, recorder, _, _) = CreateContext();
 
         await context.RunInChildContextAsync<string>(
-            async (_) => { await Task.CompletedTask; return "ok"; },
+            async (_, _) => { await Task.CompletedTask; return "ok"; },
             name: "phase",
             config: new ChildContextConfig { SubType = "WaitForCallback" });
 

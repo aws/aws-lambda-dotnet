@@ -38,21 +38,23 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// </remarks>
 internal sealed class ChildContextOperation<T> : DurableOperation<T>
 {
-    private readonly Func<IDurableContext, Task<T>> _func;
+    private readonly Func<IDurableContext, CancellationToken, Task<T>> _func;
     private readonly ChildContextConfig? _config;
     private readonly ILambdaSerializer _serializer;
     private readonly Func<string, IDurableContext> _childContextFactory;
+    private readonly WorkflowCancellation _workflowCancellation;
 
     public ChildContextOperation(
         string operationId,
         string? name,
         string? parentId,
-        Func<IDurableContext, Task<T>> func,
+        Func<IDurableContext, CancellationToken, Task<T>> func,
         ChildContextConfig? config,
         ILambdaSerializer serializer,
         Func<string, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
+        WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
@@ -61,6 +63,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         _config = config;
         _serializer = serializer;
         _childContextFactory = childContextFactory;
+        _workflowCancellation = workflowCancellation;
     }
 
     protected override string OperationType => OperationTypes.Context;
@@ -116,13 +119,22 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
 
         var childContext = _childContextFactory(OperationId);
 
+        // Link the caller's token with the workflow-shutdown token. The user
+        // func observes both signals; the SDK's checkpoint writes (CONTEXT
+        // FAIL / SUCCEED below) continue to use the caller's token only.
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _workflowCancellation.Token);
+
         T result;
         try
         {
-            result = await _func(childContext);
+            result = await _func(childContext, linked.Token);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
+            // Cancellation owned by the linked source — caller cancel or workflow
+            // shutdown. Do NOT checkpoint CONTEXT FAIL: the termination signal
+            // (or upstream cancel) owns the outcome.
             throw;
         }
         catch (NonDeterministicExecutionException)

@@ -30,7 +30,7 @@ public class Function
         try
         {
             await context.WaitForConditionAsync<int>(
-                check: async (state, _) =>
+                check: async (state, _, _) =>
                 {
                     await Task.CompletedTask;
                     return state + 1;

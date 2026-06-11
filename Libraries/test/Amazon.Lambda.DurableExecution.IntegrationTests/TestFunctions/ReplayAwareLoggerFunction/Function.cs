@@ -36,7 +36,7 @@ public class Function
         Console.WriteLine($"LOG_REPLAY_CONTROL workflow_start order={input.OrderId}");
 
         var step1 = await context.StepAsync(
-            async (_) =>
+            async (_, _) =>
             {
                 // Emitted inside the step's BeginScope, so the line carries
                 // both execution-level scope (durableExecutionArn, awsRequestId)
@@ -57,7 +57,7 @@ public class Function
         // Step 2 runs fresh on invocation 2 — its EnterExecutionMode flips the
         // logger from suppress to passthrough. The next LogInformation lands.
         var step2 = await context.StepAsync(
-            async (_) =>
+            async (_, _) =>
             {
                 await Task.CompletedTask;
                 return $"processed-{step1}";

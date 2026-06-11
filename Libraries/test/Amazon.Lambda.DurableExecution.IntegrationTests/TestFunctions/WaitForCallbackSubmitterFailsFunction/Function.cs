@@ -30,7 +30,7 @@ public class Function
         // failure as CallbackSubmitterException. The workflow does not catch
         // it, so the durable execution surfaces FAILED with that exception.
         var result = await context.WaitForCallbackAsync<MyResult>(
-            submitter: async (callbackId, cbCtx) =>
+            submitter: async (callbackId, cbCtx, _) =>
             {
                 await Task.CompletedTask;
                 throw new InvalidOperationException("submitter intentional failure");

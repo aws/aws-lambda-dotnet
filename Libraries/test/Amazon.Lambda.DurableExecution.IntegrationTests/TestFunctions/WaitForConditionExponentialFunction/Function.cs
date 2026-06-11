@@ -27,7 +27,7 @@ public class Function
         // backoffRate=1.5, maxDelay=4s, no jitter: delays are 1s, 1.5s
         // (which the SDK ceilings to 2s due to 1s timer granularity).
         var finalState = await context.WaitForConditionAsync<State>(
-            check: async (state, ctx) =>
+            check: async (state, ctx, _) =>
             {
                 await Task.CompletedTask;
                 var done = ctx.AttemptNumber >= 3;

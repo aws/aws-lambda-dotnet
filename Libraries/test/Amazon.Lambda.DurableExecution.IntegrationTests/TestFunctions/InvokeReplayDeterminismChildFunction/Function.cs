@@ -26,7 +26,7 @@ public class Function
     private async Task<string> Workflow(string input, IDurableContext context)
     {
         var echoed = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"echoed:{input}"; },
+            async (_, _) => { await Task.CompletedTask; return $"echoed:{input}"; },
             name: "child_echo");
         return echoed;
     }

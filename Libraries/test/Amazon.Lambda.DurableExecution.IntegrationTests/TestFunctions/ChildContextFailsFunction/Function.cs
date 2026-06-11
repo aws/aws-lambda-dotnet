@@ -29,10 +29,10 @@ public class Function
         // service must record a ContextFailed event with the error details and
         // mark the workflow FAILED.
         await context.RunInChildContextAsync<string>(
-            async (childCtx) =>
+            async (childCtx, _) =>
             {
                 await childCtx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return $"prepared-{input.OrderId}"; },
+                    async (_, _) => { await Task.CompletedTask; return $"prepared-{input.OrderId}"; },
                     name: "prepare");
 
                 throw new InvalidOperationException("intentional child context failure for integration test");

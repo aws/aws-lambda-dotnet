@@ -32,7 +32,7 @@ public class Function
         // checkpointed value — proves the SDK's deterministic operation IDs
         // line up with the service's view of the state.
         var generatedId = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
+            async (_, _) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
             name: "before_invoke");
 
         // The chained invoke forces a suspend/resume cycle. After the resume,
@@ -44,7 +44,7 @@ public class Function
             name: "echo_invoke");
 
         var afterInvoke = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return $"final:{invokeResult}"; },
+            async (_, _) => { await Task.CompletedTask; return $"final:{invokeResult}"; },
             name: "after_invoke");
 
         return new TestResult { Status = "completed", Data = afterInvoke };

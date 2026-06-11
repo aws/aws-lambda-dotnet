@@ -31,7 +31,7 @@ public class Function
         try
         {
             await context.WaitForConditionAsync<int>(
-                check: async (state, ctx) =>
+                check: async (state, ctx, _) =>
                 {
                     await Task.CompletedTask;
                     if (ctx.AttemptNumber == 2)

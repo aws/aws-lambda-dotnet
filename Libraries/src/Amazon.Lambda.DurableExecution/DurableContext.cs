@@ -16,6 +16,7 @@ internal sealed class DurableContext : IDurableContext
 {
     private readonly ExecutionState _state;
     private readonly TerminationManager _terminationManager;
+    private readonly WorkflowCancellation _workflowCancellation;
     private readonly OperationIdGenerator _idGenerator;
     private readonly string _durableExecutionArn;
     private readonly CheckpointBatcher? _batcher;
@@ -24,6 +25,7 @@ internal sealed class DurableContext : IDurableContext
     public DurableContext(
         ExecutionState state,
         TerminationManager terminationManager,
+        WorkflowCancellation workflowCancellation,
         OperationIdGenerator idGenerator,
         string durableExecutionArn,
         ILambdaContext lambdaContext,
@@ -31,6 +33,7 @@ internal sealed class DurableContext : IDurableContext
     {
         _state = state;
         _terminationManager = terminationManager;
+        _workflowCancellation = workflowCancellation;
         _idGenerator = idGenerator;
         _durableExecutionArn = durableExecutionArn;
         _batcher = batcher;
@@ -55,14 +58,14 @@ internal sealed class DurableContext : IDurableContext
     }
 
     public Task<T> StepAsync<T>(
-        Func<IStepContext, Task<T>> func,
+        Func<IStepContext, CancellationToken, Task<T>> func,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default)
         => RunStep(func, name, config, cancellationToken);
 
     public async Task StepAsync(
-        Func<IStepContext, Task> func,
+        Func<IStepContext, CancellationToken, Task> func,
         string? name = null,
         StepConfig? config = null,
         CancellationToken cancellationToken = default)
@@ -71,12 +74,12 @@ internal sealed class DurableContext : IDurableContext
         // step that always returns null. The serializer isn't actually invoked
         // with a non-null value, so any registered ILambdaSerializer suffices.
         await RunStep<object?>(
-            async (ctx) => { await func(ctx); return null; },
+            async (ctx, ct) => { await func(ctx, ct); return null; },
             name, config, cancellationToken);
     }
 
     private Task<T> RunStep<T>(
-        Func<IStepContext, Task<T>> func,
+        Func<IStepContext, CancellationToken, Task<T>> func,
         string? name,
         StepConfig? config,
         CancellationToken cancellationToken)
@@ -86,7 +89,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
             operationId, name, _idGenerator.ParentId, func, config, serializer, Logger,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -114,14 +117,14 @@ internal sealed class DurableContext : IDurableContext
     }
 
     public Task<T> RunInChildContextAsync<T>(
-        Func<IDurableContext, Task<T>> func,
+        Func<IDurableContext, CancellationToken, Task<T>> func,
         string? name = null,
         ChildContextConfig? config = null,
         CancellationToken cancellationToken = default)
         => RunChildContext(func, name, config, cancellationToken);
 
     public async Task RunInChildContextAsync(
-        Func<IDurableContext, Task> func,
+        Func<IDurableContext, CancellationToken, Task> func,
         string? name = null,
         ChildContextConfig? config = null,
         CancellationToken cancellationToken = default)
@@ -130,12 +133,12 @@ internal sealed class DurableContext : IDurableContext
         // returns null so the registered ILambdaSerializer is never asked to
         // serialize a real value.
         await RunChildContext<object?>(
-            async (ctx) => { await func(ctx); return null; },
+            async (ctx, ct) => { await func(ctx, ct); return null; },
             name, config, cancellationToken);
     }
 
     public Task<TState> WaitForConditionAsync<TState>(
-        Func<TState, IConditionCheckContext, Task<TState>> check,
+        Func<TState, IConditionCheckContext, CancellationToken, Task<TState>> check,
         WaitForConditionConfig<TState> config,
         string? name = null,
         CancellationToken cancellationToken = default)
@@ -148,12 +151,12 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
 
     private Task<T> RunChildContext<T>(
-        Func<IDurableContext, Task<T>> func,
+        Func<IDurableContext, CancellationToken, Task<T>> func,
         string? name,
         ChildContextConfig? config,
         CancellationToken cancellationToken)
@@ -163,16 +166,16 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
 
         // Capture this DurableContext's collaborators; the child shares state,
-        // termination, batcher, ARN, and Lambda context — but uses a child
-        // OperationIdGenerator so its operation IDs are deterministically
-        // namespaced under the parent op ID.
+        // termination, workflow cancellation, batcher, ARN, and Lambda context —
+        // but uses a child OperationIdGenerator so its operation IDs are
+        // deterministically namespaced under the parent op ID.
         IDurableContext ChildFactory(string parentOpId) => new DurableContext(
-            _state, _terminationManager, _idGenerator.CreateChild(parentOpId),
+            _state, _terminationManager, _workflowCancellation, _idGenerator.CreateChild(parentOpId),
             _durableExecutionArn, LambdaContext, _batcher);
 
         var op = new ChildContextOperation<T>(
             operationId, name, _idGenerator.ParentId, func, config, serializer, ChildFactory,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -197,7 +200,7 @@ internal sealed class DurableContext : IDurableContext
     }
 
     public Task<T> WaitForCallbackAsync<T>(
-        Func<string, IWaitForCallbackContext, Task> submitter,
+        Func<string, IWaitForCallbackContext, CancellationToken, Task> submitter,
         string? name = null,
         WaitForCallbackConfig? config = null,
         CancellationToken cancellationToken = default)
@@ -218,7 +221,7 @@ internal sealed class DurableContext : IDurableContext
     /// </para>
     /// </remarks>
     private Task<T> RunWaitForCallback<T>(
-        Func<string, IWaitForCallbackContext, Task> submitter,
+        Func<string, IWaitForCallbackContext, CancellationToken, Task> submitter,
         string? name,
         WaitForCallbackConfig? config,
         CancellationToken cancellationToken)
@@ -240,8 +243,18 @@ internal sealed class DurableContext : IDurableContext
         // StepAsync calls each pull the registered ILambdaSerializer from
         // ILambdaContext.Serializer, so AOT and reflection-based scenarios share
         // the same code path.
+        //
+        // Pass the OUTER cancellationToken (not childCtx's linked token) into the
+        // inner operations. Each inner operation will re-link the caller's token
+        // with the workflow-shutdown CTS itself when it invokes its user Func, so
+        // the submitter still observes both signals. Threading the already-linked
+        // childToken through here would propagate the workflow-shutdown signal
+        // into the inner operations' checkpoint writes (EnqueueAsync uses the
+        // cancellationToken parameter directly), which would risk lost START /
+        // SUCCEED checkpoints when termination fires mid-flush. See §7 of
+        // docs/design/cancellation-design.md.
         return RunInChildContextAsync<T>(
-            async childCtx =>
+            async (childCtx, _) =>
             {
                 var callback = await childCtx.CreateCallbackAsync<T>(
                     name: callbackName,
@@ -249,10 +262,10 @@ internal sealed class DurableContext : IDurableContext
                     cancellationToken: cancellationToken);
 
                 await childCtx.StepAsync(
-                    async (stepCtx) =>
+                    async (stepCtx, stepToken) =>
                     {
                         var submitterCtx = new WaitForCallbackContext(stepCtx.Logger);
-                        await submitter(callback.CallbackId, submitterCtx);
+                        await submitter(callback.CallbackId, submitterCtx, stepToken);
                     },
                     name: submitterName,
                     config: stepConfig,

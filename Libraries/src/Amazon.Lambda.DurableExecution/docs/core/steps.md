@@ -6,34 +6,34 @@
 
 ```csharp
 Task<T> StepAsync<T>(
-    Func<IStepContext, Task<T>> func,
+    Func<IStepContext, CancellationToken, Task<T>> func,
     string? name = null,
     StepConfig? config = null,
     CancellationToken cancellationToken = default);
 
 Task StepAsync(
-    Func<IStepContext, Task> func,
+    Func<IStepContext, CancellationToken, Task> func,
     string? name = null,
     StepConfig? config = null,
     CancellationToken cancellationToken = default);
 ```
 
-The `IStepContext` parameter exposes the current `AttemptNumber`, the deterministic `OperationId`, and a scoped `Logger`. Returned values are serialized via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`.
+The `IStepContext` parameter exposes the current `AttemptNumber`, the deterministic `OperationId`, and a scoped `Logger`. The `CancellationToken` parameter is a linked token combining the caller-supplied token with the SDK's workflow-shutdown signal — pass it to cancellation-aware APIs (`HttpClient.SendAsync`, `Task.Delay`, AWS SDK calls) so the step body unwinds cleanly when the workflow is being torn down. Returned values are serialized via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`.
 
 ## Basic step
 
 ```csharp
 var user = await ctx.StepAsync(
-    async _ => await userService.GetUserAsync(userId),
+    async (_, ct) => await userService.GetUserAsync(userId, ct),
     name: "fetch-user");
 ```
 
 ## Multiple steps
 
 ```csharp
-var a = await ctx.StepAsync(async _ => $"a-{input.OrderId}", name: "step_1");
-var b = await ctx.StepAsync(async _ => $"{a}-b", name: "step_2");
-var c = await ctx.StepAsync(async _ => $"{b}-c", name: "step_3");
+var a = await ctx.StepAsync(async (_, _) => $"a-{input.OrderId}", name: "step_1");
+var b = await ctx.StepAsync(async (_, _) => $"{a}-b", name: "step_2");
+var c = await ctx.StepAsync(async (_, _) => $"{b}-c", name: "step_3");
 ```
 
 ## Step configuration
@@ -99,7 +99,7 @@ When `retryableExceptions` and `retryableMessagePatterns` are both null (default
 
 ```csharp
 var result = await ctx.StepAsync<string>(
-    async stepCtx =>
+    async (stepCtx, _) =>
     {
         if (stepCtx.AttemptNumber < 3)
             throw new InvalidOperationException($"flake on attempt {stepCtx.AttemptNumber}");
@@ -138,7 +138,7 @@ These semantics apply *per retry attempt*, not per overall execution. To achieve
 
 ```csharp
 var result = await ctx.StepAsync(
-    async _ => await paymentService.ChargeAsync(amount),
+    async (_, ct) => await paymentService.ChargeAsync(amount, ct),
     name: "charge-payment",
     config: new StepConfig
     {

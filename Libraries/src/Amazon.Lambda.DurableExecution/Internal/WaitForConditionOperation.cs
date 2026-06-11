@@ -51,21 +51,23 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// </remarks>
 internal sealed class WaitForConditionOperation<TState> : DurableOperation<TState>
 {
-    private readonly Func<TState, IConditionCheckContext, Task<TState>> _check;
+    private readonly Func<TState, IConditionCheckContext, CancellationToken, Task<TState>> _check;
     private readonly WaitForConditionConfig<TState> _config;
     private readonly ILambdaSerializer _serializer;
     private readonly ILogger _logger;
+    private readonly WorkflowCancellation _workflowCancellation;
 
     public WaitForConditionOperation(
         string operationId,
         string? name,
         string? parentId,
-        Func<TState, IConditionCheckContext, Task<TState>> check,
+        Func<TState, IConditionCheckContext, CancellationToken, Task<TState>> check,
         WaitForConditionConfig<TState> config,
         ILambdaSerializer serializer,
         ILogger logger,
         ExecutionState state,
         TerminationManager termination,
+        WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
@@ -74,6 +76,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         _config = config;
         _serializer = serializer;
         _logger = logger;
+        _workflowCancellation = workflowCancellation;
     }
 
     protected override string OperationType => OperationTypes.Step;
@@ -167,14 +170,23 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             }, cancellationToken);
         }
 
+        // Link the caller's token with the workflow-shutdown token. The check
+        // function observes both signals; the SDK's RETRY/SUCCEED/FAIL
+        // checkpoint writes still use the caller's token only.
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _workflowCancellation.Token);
+
         TState newState;
         try
         {
             var checkContext = new ConditionCheckContext(attemptNumber, _logger);
-            newState = await _check(currentState, checkContext);
+            newState = await _check(currentState, checkContext, linked.Token);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
+            // Cancellation owned by the linked source — caller cancel or workflow
+            // shutdown. Do NOT checkpoint FAIL: the termination signal (or
+            // upstream cancel) owns the outcome.
             throw;
         }
         catch (Exception ex)

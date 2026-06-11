@@ -161,7 +161,7 @@ public class DurableFunctionTests
         var output = await DurableFunction.WrapAsync<OrderEvent>(
             async (evt, ctx) =>
             {
-                await ctx.StepAsync(async (_) => { await Task.CompletedTask; executed = true; }, name: "do_work");
+                await ctx.StepAsync(async (_, _) => { await Task.CompletedTask; executed = true; }, name: "do_work");
             },
             input,
             CreateLambdaContext(),
@@ -387,11 +387,11 @@ public class DurableFunctionTests
                 // without re-executing — if the loop missed a page, the corresponding step
                 // would run fresh and append a different value to `observed`.
                 observed.Add(await ctx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step1"));
+                    async (_, _) => { await Task.CompletedTask; return "fresh"; }, name: "step1"));
                 observed.Add(await ctx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step2"));
+                    async (_, _) => { await Task.CompletedTask; return "fresh"; }, name: "step2"));
                 observed.Add(await ctx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return "fresh"; }, name: "step3"));
+                    async (_, _) => { await Task.CompletedTask; return "fresh"; }, name: "step3"));
                 return new OrderResult { Status = "ok", OrderId = evt.OrderId };
             },
             input,
@@ -573,7 +573,7 @@ public class DurableFunctionTests
     private static async Task<OrderResult> SingleStepWorkflow(OrderEvent input, IDurableContext context)
     {
         // One step succeed → forces a checkpoint flush, which the mock fails.
-        await context.StepAsync(async (_) => { await Task.CompletedTask; return "ok"; }, name: "s1");
+        await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "ok"; }, name: "s1");
         return new OrderResult { Status = "done" };
     }
 
@@ -757,7 +757,7 @@ public class DurableFunctionTests
     private static async Task<OrderResult> MyWorkflow(OrderEvent input, IDurableContext context)
     {
         var validation = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return new ValidationResult { IsValid = true }; },
+            async (_, _) => { await Task.CompletedTask; return new ValidationResult { IsValid = true }; },
             name: "validate");
 
         await context.WaitAsync(TimeSpan.FromSeconds(30), name: "delay");

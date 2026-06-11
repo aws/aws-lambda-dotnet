@@ -33,7 +33,7 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
 
-        return new DurableContext(state, tm, idGen, "arn:aws:lambda:us-east-1:123:durable-execution:test", lambdaContext);
+        return new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:aws:lambda:us-east-1:123:durable-execution:test", lambdaContext);
     }
 
     #region StepAsync Tests
@@ -44,7 +44,7 @@ public class DurableContextTests
         var context = CreateContext();
         var executed = false;
 
-        var result = await context.StepAsync(async (_) =>
+        var result = await context.StepAsync(async (_, _) =>
         {
             executed = true;
             await Task.CompletedTask;
@@ -73,7 +73,7 @@ public class DurableContextTests
         });
 
         var executed = false;
-        var result = await context.StepAsync(async (_) =>
+        var result = await context.StepAsync(async (_, _) =>
         {
             executed = true;
             await Task.CompletedTask;
@@ -111,7 +111,7 @@ public class DurableContextTests
         });
 
         var ex = await Assert.ThrowsAsync<StepException>(() =>
-            context.StepAsync(async (_) => { await Task.CompletedTask; return "x"; }, name: "bad_step"));
+            context.StepAsync(async (_, _) => { await Task.CompletedTask; return "x"; }, name: "bad_step"));
 
         Assert.Equal("System.TimeoutException", ex.ErrorType);
         Assert.Equal("timed out", ex.Message);
@@ -127,7 +127,7 @@ public class DurableContextTests
         var attempts = 0;
 
         await Assert.ThrowsAsync<StepException>(() =>
-            context.StepAsync<string>(async (_) =>
+            context.StepAsync<string>(async (_, _) =>
             {
                 attempts++;
                 await Task.CompletedTask;
@@ -146,7 +146,7 @@ public class DurableContextTests
         int receivedAttempt = 0;
         Microsoft.Extensions.Logging.ILogger? receivedLogger = null;
 
-        await context.StepAsync(async (step) =>
+        await context.StepAsync(async (step, _) =>
         {
             receivedOpId = step.OperationId;
             receivedAttempt = step.AttemptNumber;
@@ -166,7 +166,7 @@ public class DurableContextTests
         var context = CreateContext();
         var executed = false;
 
-        await context.StepAsync(async (_) =>
+        await context.StepAsync(async (_, _) =>
         {
             executed = true;
             await Task.CompletedTask;
@@ -180,9 +180,9 @@ public class DurableContextTests
     {
         var context = CreateContext();
 
-        var r1 = await context.StepAsync(async (_) => { await Task.CompletedTask; return "a"; }, name: "first");
-        var r2 = await context.StepAsync(async (_) => { await Task.CompletedTask; return "b"; }, name: "second");
-        var r3 = await context.StepAsync(async (_) => { await Task.CompletedTask; return "c"; });
+        var r1 = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "a"; }, name: "first");
+        var r2 = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "b"; }, name: "second");
+        var r3 = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "c"; });
 
         Assert.Equal("a", r1);
         Assert.Equal("b", r2);
@@ -207,7 +207,7 @@ public class DurableContextTests
         });
 
         var result = await context.StepAsync(
-            async (_) => { await Task.CompletedTask; return new TestPerson { Name = "Bob", Age = 25 }; },
+            async (_, _) => { await Task.CompletedTask; return new TestPerson { Name = "Bob", Age = 25 }; },
             name: "fetch");
 
         Assert.Equal("Alice", result.Name);
@@ -224,10 +224,10 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = new TestLambdaContext(); // no Serializer set
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            context.StepAsync(async (_) => { await Task.CompletedTask; return "x"; }, name: "no_serializer"));
+            context.StepAsync(async (_, _) => { await Task.CompletedTask; return "x"; }, name: "no_serializer"));
 
         Assert.Contains("ILambdaSerializer", ex.Message);
     }
@@ -322,7 +322,7 @@ public class DurableContextTests
         });
 
         var result = await context.StepAsync<string?>(
-            async (_) => { await Task.CompletedTask; return "fresh"; },
+            async (_, _) => { await Task.CompletedTask; return "fresh"; },
             name: "no_result");
 
         Assert.Null(result);
@@ -337,7 +337,7 @@ public class DurableContextTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             context.StepAsync(
-                async (_) =>
+                async (_, _) =>
                 {
                     cts.Token.ThrowIfCancellationRequested();
                     await Task.CompletedTask;
@@ -429,7 +429,7 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         var waitTask = context.WaitAsync(TimeSpan.FromSeconds(30), name: "pending_wait");
 
@@ -495,15 +495,15 @@ public class DurableContextTests
         state.LoadFromCheckpoint(null);
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var result = await DurableExecutionHandler.RunAsync<string>(
             state, tm,
             async () =>
             {
-                await context.StepAsync(async (_) => { await Task.CompletedTask; return "fetched"; }, name: "fetch");
+                await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "fetched"; }, name: "fetch");
                 await context.WaitAsync(TimeSpan.FromSeconds(30), name: "delay");
-                var final = await context.StepAsync(async (_) => { await Task.CompletedTask; return "processed"; }, name: "process");
+                var final = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "processed"; }, name: "process");
                 return final;
             });
 
@@ -539,20 +539,20 @@ public class DurableContextTests
 
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
         var processExecuted = false;
 
         var result = await DurableExecutionHandler.RunAsync<string>(
             state, tm,
             async () =>
             {
-                var fetched = await context.StepAsync(async (_) => { await Task.CompletedTask; return "fresh_fetch"; }, name: "fetch");
+                var fetched = await context.StepAsync(async (_, _) => { await Task.CompletedTask; return "fresh_fetch"; }, name: "fetch");
                 Assert.Equal("fetched", fetched); // cached from replay
 
                 await context.WaitAsync(TimeSpan.FromSeconds(30), name: "delay");
                 // wait is elapsed, continues
 
-                var final = await context.StepAsync(async (_) =>
+                var final = await context.StepAsync(async (_, _) =>
                 {
                     processExecuted = true;
                     await Task.CompletedTask;
@@ -589,11 +589,11 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
             await context.StepAsync<string>(
-                async (_) => { await Task.CompletedTask; return "should not run"; },
+                async (_, _) => { await Task.CompletedTask; return "should not run"; },
                 name: "my_op"));
 
         Assert.Contains("expected type 'STEP'", ex.Message);
@@ -620,7 +620,7 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
             await context.WaitAsync(TimeSpan.FromSeconds(10), name: "my_op"));
@@ -652,11 +652,11 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var ex = await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () =>
             await context.StepAsync<string>(
-                async (_) => { await Task.CompletedTask; return "new"; },
+                async (_, _) => { await Task.CompletedTask; return "new"; },
                 name: "my_step"));
 
         Assert.Contains("expected name 'my_step'", ex.Message);
@@ -669,7 +669,7 @@ public class DurableContextTests
         var context = CreateContext();
 
         var result = await context.StepAsync<string>(
-            async (_) => { await Task.CompletedTask; return "ok"; },
+            async (_, _) => { await Task.CompletedTask; return "ok"; },
             name: "anything");
 
         Assert.Equal("ok", result);
@@ -694,10 +694,10 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         var stepTask = context.StepAsync<string>(
-            async (_) => { await Task.CompletedTask; throw new InvalidOperationException("transient"); },
+            async (_, _) => { await Task.CompletedTask; throw new InvalidOperationException("transient"); },
             name: "flaky_step",
             config: new StepConfig
             {
@@ -730,7 +730,7 @@ public class DurableContextTests
 
         var ex = await Assert.ThrowsAsync<StepException>(() =>
             context.StepAsync<string>(
-                async (_) => { await Task.CompletedTask; throw new InvalidOperationException("permanent"); },
+                async (_, _) => { await Task.CompletedTask; throw new InvalidOperationException("permanent"); },
                 name: "fail_step"));
 
         Assert.Equal("permanent", ex.Message);
@@ -761,12 +761,12 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         // Attempt 3 (last one) — should fail after this
         var ex = await Assert.ThrowsAsync<StepException>(() =>
             context.StepAsync<string>(
-                async (_) => { await Task.CompletedTask; throw new InvalidOperationException("still failing"); },
+                async (_, _) => { await Task.CompletedTask; throw new InvalidOperationException("still failing"); },
                 name: "exhaust_step",
                 config: new StepConfig
                 {
@@ -809,10 +809,10 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         var stepTask = context.StepAsync<string>(
-            async (_) => { await Task.CompletedTask; return "should not run"; },
+            async (_, _) => { await Task.CompletedTask; return "should not run"; },
             name: "pending_step",
             config: new StepConfig { RetryStrategy = RetryStrategy.Default });
 
@@ -848,10 +848,10 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var result = await context.StepAsync<string>(
-            async (ctx) =>
+            async (ctx, _) =>
             {
                 await Task.CompletedTask;
                 Assert.Equal(2, ctx.AttemptNumber);
@@ -886,11 +886,11 @@ public class DurableContextTests
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext);
 
         var executed = false;
         var result = await context.StepAsync<string>(
-            async (ctx) =>
+            async (ctx, _) =>
             {
                 executed = true;
                 Assert.Equal(3, ctx.AttemptNumber);
@@ -915,12 +915,12 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         IReadOnlyList<string>? flushedAtFuncEntry = null;
 
         var result = await context.StepAsync<string>(
-            async (_) =>
+            async (_, _) =>
             {
                 flushedAtFuncEntry = recorder.Flushed.Select(o => o.Action.ToString()).ToArray();
                 await Task.CompletedTask;
@@ -960,11 +960,11 @@ public class DurableContextTests
         var idGen = new OperationIdGenerator();
         var lambdaContext = CreateLambdaContext();
         var recorder = new RecordingBatcher();
-        var context = new DurableContext(state, tm, idGen, "arn:test", lambdaContext, recorder.Batcher);
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
 
         var executed = false;
         var stepTask = context.StepAsync<string>(
-            async (_) => { executed = true; await Task.CompletedTask; return "should not run"; },
+            async (_, _) => { executed = true; await Task.CompletedTask; return "should not run"; },
             name: "amo_replay",
             config: new StepConfig
             {

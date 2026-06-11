@@ -6,27 +6,29 @@
 
 ```csharp
 Task<T> RunInChildContextAsync<T>(
-    Func<IDurableContext, Task<T>> func,
+    Func<IDurableContext, CancellationToken, Task<T>> func,
     string? name = null,
     ChildContextConfig? config = null,
     CancellationToken cancellationToken = default);
 
 Task RunInChildContextAsync(
-    Func<IDurableContext, Task> func,
+    Func<IDurableContext, CancellationToken, Task> func,
     string? name = null,
     ChildContextConfig? config = null,
     CancellationToken cancellationToken = default);
 ```
 
+The `CancellationToken` parameter is a linked token combining the caller-supplied token with the SDK's workflow-shutdown signal — forward it to `StepAsync` and other operations inside the child so cancellation propagates uniformly.
+
 ## Example
 
 ```csharp
 var phaseResult = await ctx.RunInChildContextAsync<string>(
-    async childCtx =>
+    async (childCtx, ct) =>
     {
-        var validated = await childCtx.StepAsync(async _ => Validate(input), name: "validate");
-        await childCtx.WaitAsync(TimeSpan.FromSeconds(2), name: "short_wait");
-        var processed = await childCtx.StepAsync(async _ => Process(validated), name: "process");
+        var validated = await childCtx.StepAsync(async (_, c) => Validate(input, c), name: "validate", cancellationToken: ct);
+        await childCtx.WaitAsync(TimeSpan.FromSeconds(2), name: "short_wait", cancellationToken: ct);
+        var processed = await childCtx.StepAsync(async (_, c) => Process(validated, c), name: "process", cancellationToken: ct);
         return processed;
     },
     name: "phase",
