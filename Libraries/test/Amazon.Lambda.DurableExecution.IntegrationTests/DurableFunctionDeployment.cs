@@ -626,7 +626,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         if (Directory.Exists(binDir)) Directory.Delete(binDir, true);
 
         await RunProcess("dotnet",
-            $"publish -c Release -r linux-x64 --self-contained true -o \"{publishDir}\"",
+            $"publish -c Release -r linux-x64 --self-contained false -o \"{publishDir}\"",
             testFunctionDir);
 
         var imageTag = $"{repositoryUri}:latest";
