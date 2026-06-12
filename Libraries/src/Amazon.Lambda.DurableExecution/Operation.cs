@@ -204,6 +204,12 @@ public static class OperationSubTypes
 
     /// <summary>Parallel branch (per-branch child-context) sub-type.</summary>
     public const string ParallelBranch = "ParallelBranch";
+
+    /// <summary>Map parent sub-type.</summary>
+    public const string Map = "Map";
+
+    /// <summary>Map item (per-item child-context) sub-type.</summary>
+    public const string MapItem = "MapItem";
 }
 
 /// <summary>

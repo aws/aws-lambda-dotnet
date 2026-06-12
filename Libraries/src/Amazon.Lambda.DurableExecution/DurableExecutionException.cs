@@ -131,3 +131,36 @@ public class ParallelException : DurableExecutionException
     /// <summary>Creates a <see cref="ParallelException"/> wrapping an inner exception.</summary>
     public ParallelException(string message, Exception innerException) : base(message, innerException) { }
 }
+
+/// <summary>
+/// Thrown when a map operation resolves with
+/// <see cref="CompletionReason.FailureToleranceExceeded"/>. The aggregate
+/// <see cref="IBatchResult"/> is preserved on <see cref="Result"/> so callers
+/// can inspect per-item outcomes.
+/// </summary>
+/// <remarks>
+/// This is the base type for map failures. Subclasses may be added in future
+/// releases; catching <see cref="MapException"/> remains forward-compatible.
+/// A dedicated type (rather than reusing <see cref="ParallelException"/>) lets
+/// callers pattern-match which concurrent operation failed.
+/// </remarks>
+public class MapException : DurableExecutionException
+{
+    /// <summary>
+    /// The aggregate result of the map operation. Type-erased — cast to
+    /// <c>IBatchResult&lt;T&gt;</c> if the per-item result type is known.
+    /// </summary>
+    public IBatchResult? Result { get; init; }
+
+    /// <summary>
+    /// Why the map operation resolved.
+    /// </summary>
+    public CompletionReason CompletionReason { get; init; }
+
+    /// <summary>Creates an empty <see cref="MapException"/>.</summary>
+    public MapException() { }
+    /// <summary>Creates a <see cref="MapException"/> with the given message.</summary>
+    public MapException(string message) : base(message) { }
+    /// <summary>Creates a <see cref="MapException"/> wrapping an inner exception.</summary>
+    public MapException(string message, Exception innerException) : base(message, innerException) { }
+}

@@ -588,7 +588,7 @@ public class ParallelOperationTests
         var b1 = ChildIdAt(parentOpId, 2);
 
         var summaryJson = """
-            {"CompletionReason":"ALL_COMPLETED","Branches":[
+            {"CompletionReason":"ALL_COMPLETED","Units":[
                 {"Index":0,"Name":"0","Status":"SUCCEEDED","OperationId":"placeholder0"},
                 {"Index":1,"Name":"1","Status":"SUCCEEDED","OperationId":"placeholder1"}
             ]}
@@ -653,7 +653,7 @@ public class ParallelOperationTests
         var b1 = ChildIdAt(parentOpId, 2);
 
         var summaryJson = """
-            {"CompletionReason":"FAILURE_TOLERANCE_EXCEEDED","Branches":[
+            {"CompletionReason":"FAILURE_TOLERANCE_EXCEEDED","Units":[
                 {"Index":0,"Name":"0","Status":"FAILED","OperationId":"placeholder0"},
                 {"Index":1,"Name":"1","Status":"FAILED","OperationId":"placeholder1"}
             ]}
@@ -1115,7 +1115,7 @@ public class ParallelOperationTests
         var b1 = ChildIdAt(parentOpId, 2);
 
         var summaryJson = """
-            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Branches":[
+            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Units":[
                 {"Index":0,"Name":"0","Status":"SUCCEEDED"},
                 {"Index":1,"Name":"1","Status":"SUCCEEDED"},
                 {"Index":2,"Name":"2","Status":"STARTED"}
@@ -1268,7 +1268,7 @@ public class ParallelOperationTests
         var b0 = ChildIdAt(parentOpId, 1);
 
         var summaryJson = """
-            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Branches":[
+            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Units":[
                 {"Index":0,"Name":"alpha","Status":"SUCCEEDED"},
                 {"Index":1,"Name":"beta","Status":"STARTED"}
             ]}
@@ -1322,7 +1322,7 @@ public class ParallelOperationTests
         var b0 = ChildIdAt(parentOpId, 1);
 
         var summaryJson = """
-            {"CompletionReason":"ALL_COMPLETED","Branches":[
+            {"CompletionReason":"ALL_COMPLETED","Units":[
                 {"Index":0,"Name":"alpha","Status":"SUCCEEDED"}
             ]}
             """;

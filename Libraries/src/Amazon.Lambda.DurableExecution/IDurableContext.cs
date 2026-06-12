@@ -444,6 +444,38 @@ public interface IDurableContext
         string? name = null,
         ParallelConfig? config = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Process a collection of items concurrently, running <paramref name="func"/>
+    /// once per item. Each item runs inside its own child context; per-item
+    /// results are aggregated into an <see cref="IBatchResult{TResult}"/>. Items
+    /// are dispatched up to <see cref="MapConfig.MaxConcurrency"/>; the aggregate
+    /// resolves according to <see cref="MapConfig.CompletionConfig"/>.
+    /// </summary>
+    /// <remarks>
+    /// The per-item function receives the durable context, the item, its
+    /// zero-based index, the full source list, and a
+    /// <see cref="CancellationToken"/> linking the
+    /// caller-supplied token with the SDK's workflow-shutdown signal (it is also
+    /// tripped cooperatively when a sibling item satisfies the
+    /// <see cref="MapConfig.CompletionConfig"/> and the map short-circuits). On
+    /// per-item failure (the user function throws), the failure is captured on
+    /// the corresponding <see cref="IBatchItem{TResult}"/> instead of aborting
+    /// the map. By default (<see cref="CompletionConfig.AllCompleted"/>) every
+    /// item runs and failures surface via <see cref="IBatchResult{TResult}.Failed"/>;
+    /// the map throws <see cref="MapException"/> only when
+    /// <see cref="CompletionConfig"/> criteria are violated. Use
+    /// <see cref="IBatchResult{TResult}.ThrowIfError"/> for explicit
+    /// strict-success semantics. Per-item results are serialized to checkpoints
+    /// using the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>.
+    /// </remarks>
+    Task<IBatchResult<TResult>> MapAsync<TItem, TResult>(
+        IReadOnlyList<TItem> items,
+        Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
+        string? name = null,
+        MapConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
