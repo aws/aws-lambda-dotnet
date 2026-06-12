@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
@@ -45,6 +44,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
 {
     private readonly IReadOnlyList<DurableBranch<T>> _branches;
     private readonly ParallelConfig _config;
+    private readonly CompletionPolicy _policy;
     private readonly ILambdaSerializer _serializer;
     private readonly Func<string, IDurableContext> _childContextFactory;
     private readonly WorkflowCancellation _workflowCancellation;
@@ -66,6 +66,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
     {
         _branches = branches;
         _config = config;
+        _policy = new CompletionPolicy(config.CompletionConfig);
         _serializer = serializer;
         _childContextFactory = childContextFactory;
         _workflowCancellation = workflowCancellation;
@@ -140,24 +141,19 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         // entirely. Behaviour is identical, allocations are lower.
         var semaphore = (maxConcurrency >= branchCount) ? null : new SemaphoreSlim(maxConcurrency, maxConcurrency);
 
-        var minSuccessful = _config.CompletionConfig.MinSuccessful;
-        var toleratedFailureCount = _config.CompletionConfig.ToleratedFailureCount;
-        var toleratedFailurePercentage = _config.CompletionConfig.ToleratedFailurePercentage;
-
         var succeeded = 0;
         var failed = 0;
 
         var inFlight = new List<Task>(branchCount);
 
-        // Reads the live counters and decides whether the completion config is
-        // already satisfied. Volatile reads pair with the Interlocked.Increment
+        // Reads the live counters and asks the completion policy whether the run
+        // is already decided. Volatile reads pair with the Interlocked.Increment
         // writes in the onComplete callback. Reads are non-atomic across the two
         // counters: at worst we observe slightly stale values and dispatch one
         // extra branch before the next completion forces a re-check. That's
-        // acceptable — the post-loop ComputeCompletionReason is the source of truth.
-        bool ShouldStopDispatchingNow() => ShouldStopDispatching(
-            Volatile.Read(ref succeeded), Volatile.Read(ref failed), branchCount,
-            minSuccessful, toleratedFailureCount, toleratedFailurePercentage);
+        // acceptable — the post-loop _policy.Evaluate is the source of truth.
+        bool ShouldStopDispatchingNow() => _policy.ShouldStopDispatching(
+            Volatile.Read(ref succeeded), Volatile.Read(ref failed), branchCount);
 
         // Branches run with the caller's token (re-linked to workflow-shutdown
         // inside ChildContextOperation) so cooperative cancellation still
@@ -289,7 +285,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             }
         }
 
-        var completionReason = ComputeCompletionReason(items, branchCount);
+        var completionReason = EvaluateCompletion(items, branchCount);
         var result = new BatchResult<T>(items, completionReason);
 
         await CheckpointParentResultAsync(result, completionReason, cancellationToken);
@@ -403,35 +399,10 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         }
     }
 
-    private static bool ShouldStopDispatching(
-        int succeeded,
-        int failed,
-        int totalBranches,
-        int? minSuccessful,
-        int? toleratedFailureCount,
-        double? toleratedFailurePercentage)
+    private CompletionReason EvaluateCompletion(IReadOnlyList<IBatchItem<T>> items, int totalCount)
     {
-        // Min-successful: short-circuit the moment we have enough wins.
-        if (minSuccessful is { } min && succeeded >= min)
-            return true;
-
-        // Failure thresholds short-circuit on too many losses.
-        if (toleratedFailureCount is { } tfc && failed > tfc)
-            return true;
-
-        if (toleratedFailurePercentage is { } tfp && totalBranches > 0)
-        {
-            var ratio = (double)failed / totalBranches;
-            if (ratio > tfp) return true;
-        }
-
-        return false;
-    }
-
-    private CompletionReason ComputeCompletionReason(IReadOnlyList<IBatchItem<T>> items, int totalCount)
-    {
-        var failed = 0;
         var succeeded = 0;
+        var failed = 0;
         var started = 0;
 
         foreach (var item in items)
@@ -444,28 +415,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             }
         }
 
-        // Failure tolerance: only short-circuit-by-failure when at least one
-        // failure threshold is explicitly set. The factory CompletionConfig.AllSuccessful()
-        // sets ToleratedFailureCount = 0 to opt into fail-fast; an "empty"
-        // CompletionConfig (all properties null) is permissive.
-        if (_config.CompletionConfig.ToleratedFailureCount is { } tfc && failed > tfc)
-            return CompletionReason.FailureToleranceExceeded;
-
-        if (_config.CompletionConfig.ToleratedFailurePercentage is { } tfp && totalCount > 0)
-        {
-            var ratio = (double)failed / totalCount;
-            if (ratio > tfp) return CompletionReason.FailureToleranceExceeded;
-        }
-
-        // Min-successful satisfied (and we didn't run all branches): MinSuccessfulReached.
-        if (_config.CompletionConfig.MinSuccessful is { } min && succeeded >= min && started > 0)
-        {
-            return CompletionReason.MinSuccessfulReached;
-        }
-
-        // Every dispatched branch finished one way or the other (or all-completed
-        // without any failure criteria).
-        return CompletionReason.AllCompleted;
+        return _policy.Evaluate(succeeded, failed, started, totalCount);
     }
 
     private async Task CheckpointParentResultAsync(
@@ -473,23 +423,8 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         CompletionReason completionReason,
         CancellationToken cancellationToken)
     {
-        var summary = new ParallelSummary
-        {
-            CompletionReason = SerializeCompletionReason(completionReason),
-            Branches = new List<ParallelBranchSummary>(result.All.Count)
-        };
-        for (var i = 0; i < result.All.Count; i++)
-        {
-            var item = result.All[i];
-            summary.Branches.Add(new ParallelBranchSummary
-            {
-                Index = item.Index,
-                Name = item.Name,
-                Status = SerializeStatus(item.Status)
-            });
-        }
-
-        var payload = JsonSerializer.Serialize(summary, ParallelJsonContext.Default.ParallelSummary);
+        var summary = ParallelSummaryCodec.Build(result.All, completionReason);
+        var payload = ParallelSummaryCodec.ToPayload(summary);
         var failed = completionReason == CompletionReason.FailureToleranceExceeded;
 
         await EnqueueAsync(new SdkOperationUpdate
@@ -506,7 +441,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
 
     private IBatchResult<T> ReconstructFromCheckpoints(Operation parent, bool throwOnFailure)
     {
-        var summary = ParseSummary(parent.ContextDetails?.Result);
+        var summary = ParallelSummaryCodec.FromPayload(parent.ContextDetails?.Result);
 
         var items = new List<IBatchItem<T>>(_branches.Count);
         for (var i = 0; i < _branches.Count; i++)
@@ -516,7 +451,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             var summaryEntry = summary?.Branches.FirstOrDefault(b => b.Index == i);
 
             BatchItemStatus status = summaryEntry != null
-                ? DeserializeStatus(summaryEntry.Status)
+                ? ParallelSummaryCodec.ReadStatus(summaryEntry.Status)
                 : InferStatusFromBranchOp(branchOp);
 
             // Prefer the name that was checkpointed at the moment the batch
@@ -565,8 +500,8 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         }
 
         var completionReason = summary != null
-            ? DeserializeCompletionReason(summary.CompletionReason)
-            : ComputeCompletionReason(items, _branches.Count);
+            ? ParallelSummaryCodec.ReadCompletionReason(summary.CompletionReason)
+            : EvaluateCompletion(items, _branches.Count);
 
         var result = new BatchResult<T>(items, completionReason);
 
@@ -607,53 +542,6 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             ErrorMessage = $"Parallel operation failed: {result.FailureCount} of {result.TotalCount} branches failed."
         };
     }
-
-    private static ParallelSummary? ParseSummary(string? payload)
-    {
-        if (string.IsNullOrEmpty(payload)) return null;
-        try
-        {
-            return JsonSerializer.Deserialize(payload, ParallelJsonContext.Default.ParallelSummary);
-        }
-        catch (JsonException)
-        {
-            // Tolerate older / corrupted payloads — fall back to inferring status
-            // from per-branch checkpoints.
-            return null;
-        }
-    }
-
-    private static string SerializeStatus(BatchItemStatus status) => status switch
-    {
-        BatchItemStatus.Succeeded => "SUCCEEDED",
-        BatchItemStatus.Failed    => "FAILED",
-        BatchItemStatus.Started   => "STARTED",
-        _ => throw new ArgumentOutOfRangeException(nameof(status))
-    };
-
-    private static BatchItemStatus DeserializeStatus(string? wire) => wire switch
-    {
-        "SUCCEEDED" => BatchItemStatus.Succeeded,
-        "FAILED"    => BatchItemStatus.Failed,
-        "STARTED"   => BatchItemStatus.Started,
-        _           => BatchItemStatus.Started
-    };
-
-    private static string SerializeCompletionReason(CompletionReason reason) => reason switch
-    {
-        CompletionReason.AllCompleted             => "ALL_COMPLETED",
-        CompletionReason.MinSuccessfulReached     => "MIN_SUCCESSFUL_REACHED",
-        CompletionReason.FailureToleranceExceeded => "FAILURE_TOLERANCE_EXCEEDED",
-        _ => throw new ArgumentOutOfRangeException(nameof(reason))
-    };
-
-    private static CompletionReason DeserializeCompletionReason(string? wire) => wire switch
-    {
-        "ALL_COMPLETED"              => CompletionReason.AllCompleted,
-        "MIN_SUCCESSFUL_REACHED"     => CompletionReason.MinSuccessfulReached,
-        "FAILURE_TOLERANCE_EXCEEDED" => CompletionReason.FailureToleranceExceeded,
-        _                            => CompletionReason.AllCompleted
-    };
 
     private T DeserializeBranchResult(string serialized)
     {
