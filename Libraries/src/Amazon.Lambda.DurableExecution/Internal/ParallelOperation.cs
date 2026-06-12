@@ -116,7 +116,20 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
 
     private async Task<IBatchResult<T>> ExecuteBranchesAsync(CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        // Combine the caller's token with the workflow-shutdown token for the
+        // parallel's OWN control flow: the dispatch loop's semaphore waits, the
+        // post-settle re-throw, and each branch's OCE classification.
+        //
+        // CRITICAL: childOp.ExecuteAsync below still receives the *caller* token
+        // only. ChildContextOperation re-links workflow-shutdown itself for the
+        // user Func, and its checkpoint writes (CONTEXT FAIL/SUCCEED) must NOT
+        // observe shutdown, otherwise teardown could abort a branch's successful
+        // checkpoint mid-flush.
+        using var controlCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _workflowCancellation.Token);
+        var controlToken = controlCts.Token;
+
+        controlToken.ThrowIfCancellationRequested();
 
         var branchCount = _branches.Count;
         var slots = new BranchOutcome[branchCount];
@@ -136,96 +149,88 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
 
         var inFlight = new List<Task>(branchCount);
 
-        // Branches run with the parent's token so cooperative cancellation
-        // still propagates into user code, but we must NOT abandon already-
-        // dispatched branches while they're still writing checkpoints — that
-        // would diverge between the original run and replay. The dispatch
-        // loop and Task.WhenAll below therefore await every in-flight task
-        // even when cancellation fires; the semaphore is disposed only after
-        // those branches have settled (success, failure, or cooperative OCE).
+        // Reads the live counters and decides whether the completion config is
+        // already satisfied. Volatile reads pair with the Interlocked.Increment
+        // writes in the onComplete callback. Reads are non-atomic across the two
+        // counters: at worst we observe slightly stale values and dispatch one
+        // extra branch before the next completion forces a re-check. That's
+        // acceptable — the post-loop ComputeCompletionReason is the source of truth.
+        bool ShouldStopDispatchingNow() => ShouldStopDispatching(
+            Volatile.Read(ref succeeded), Volatile.Read(ref failed), branchCount,
+            minSuccessful, toleratedFailureCount, toleratedFailurePercentage);
+
+        // Branches run with the caller's token (re-linked to workflow-shutdown
+        // inside ChildContextOperation) so cooperative cancellation still
+        // propagates into user code, but we must NOT abandon already-dispatched
+        // branches while they're still writing checkpoints — that would diverge
+        // between the original run and replay. The finally block therefore awaits
+        // every in-flight task even when cancellation fires, and only then
+        // disposes the semaphore (after branches have settled — success, failure,
+        // or cooperative OCE).
         try
         {
-            try
+            for (var i = 0; i < branchCount; i++)
             {
-                for (var i = 0; i < branchCount; i++)
+                if (ShouldStopDispatchingNow())
+                    break;
+
+                if (semaphore != null)
                 {
-                    // Volatile reads pair with the Interlocked.Increment writes
-                    // in the onComplete callback. Reads are non-atomic across
-                    // the two counters: at worst we observe slightly stale
-                    // values and dispatch one extra branch before the next
-                    // completion forces a re-check. That's acceptable — the
-                    // post-loop ComputeCompletionReason is the source of truth.
-                    var succSnap = Volatile.Read(ref succeeded);
-                    var failSnap = Volatile.Read(ref failed);
-                    if (ShouldStopDispatching(succSnap, failSnap, branchCount,
-                            minSuccessful, toleratedFailureCount, toleratedFailurePercentage))
+                    await semaphore.WaitAsync(controlToken).ConfigureAwait(false);
+                    // Re-check after acquiring: the wait may have unblocked
+                    // because earlier branches finished and short-circuited
+                    // the operation.
+                    if (ShouldStopDispatchingNow())
                     {
+                        semaphore.Release();
                         break;
                     }
-
-                    if (semaphore != null)
-                    {
-                        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                        // Re-check after acquiring: the wait may have unblocked
-                        // because earlier branches finished and short-circuited
-                        // the operation.
-                        succSnap = Volatile.Read(ref succeeded);
-                        failSnap = Volatile.Read(ref failed);
-                        if (ShouldStopDispatching(succSnap, failSnap, branchCount,
-                                minSuccessful, toleratedFailureCount, toleratedFailurePercentage))
-                        {
-                            semaphore.Release();
-                            break;
-                        }
-                    }
-
-                    var index = i;
-                    dispatched[index] = true;
-                    inFlight.Add(RunBranchAsync(index, slots, semaphore, cancellationToken,
-                        onComplete: outcome =>
-                        {
-                            if (outcome.Status == BatchItemStatus.Succeeded)
-                                Interlocked.Increment(ref succeeded);
-                            else if (outcome.Status == BatchItemStatus.Failed)
-                                Interlocked.Increment(ref failed);
-                        }));
                 }
-            }
-            finally
-            {
-                // CRITICAL: wait for every dispatched branch — even on the
-                // exceptional path (parent-token cancellation mid-dispatch, or
-                // a synchronous throw out of the loop) — before the semaphore
-                // is disposed. Otherwise surviving branches' Release() calls
-                // hit ObjectDisposedException, the tasks become unobserved,
-                // and they keep writing checkpoints out from under us.
-                //
-                // We deliberately DO NOT cancel already-running branches when
-                // a short-circuit fires — orphan branches that continue
-                // writing checkpoints would diverge between the original run
-                // and replay. Letting them finish guarantees determinism: all
-                // dispatched branches end up Succeeded or Failed. Only
-                // un-dispatched branches surface as Started.
-                if (inFlight.Count > 0)
-                {
-                    try
+
+                var index = i;
+                dispatched[index] = true;
+                inFlight.Add(RunBranchAsync(index, slots, semaphore, cancellationToken, controlToken,
+                    onComplete: outcome =>
                     {
-                        await Task.WhenAll(inFlight).ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        // Swallow here — Task.WhenAll only surfaces the first
-                        // exception, but every branch task is now in a terminal
-                        // state and we want to inspect each one individually
-                        // below to decide whether to surface a workflow-level
-                        // error. The Task objects themselves still carry their
-                        // exceptions, so this swallow does not orphan them.
-                    }
-                }
+                        if (outcome.Status == BatchItemStatus.Succeeded)
+                            Interlocked.Increment(ref succeeded);
+                        else if (outcome.Status == BatchItemStatus.Failed)
+                            Interlocked.Increment(ref failed);
+                    }));
             }
         }
         finally
         {
+            // CRITICAL: wait for every dispatched branch — even on the
+            // exceptional path (control-token cancellation mid-dispatch, or a
+            // synchronous throw out of the loop) — before the semaphore is
+            // disposed. Otherwise surviving branches' Release() calls hit
+            // ObjectDisposedException, the tasks become unobserved, and they
+            // keep writing checkpoints out from under us.
+            //
+            // We deliberately DO NOT cancel already-running branches when a
+            // short-circuit fires — orphan branches that continue writing
+            // checkpoints would diverge between the original run and replay.
+            // Letting them finish guarantees determinism: all dispatched
+            // branches end up Succeeded or Failed. Only un-dispatched branches
+            // surface as Started.
+            if (inFlight.Count > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(inFlight).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Swallow here — Task.WhenAll only surfaces the first
+                    // exception, but every branch task is now in a terminal
+                    // state and we want to inspect each one individually below
+                    // to decide whether to surface a workflow-level error. The
+                    // Task objects themselves still carry their exceptions, so
+                    // this swallow does not orphan them.
+                }
+            }
+
             semaphore?.Dispose();
         }
 
@@ -248,9 +253,12 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             }
         }
 
-        // Re-throw any pending parent-token cancellation now that branches
-        // have settled and the semaphore has been disposed cleanly.
-        cancellationToken.ThrowIfCancellationRequested();
+        // Re-throw any pending cancellation (caller-cancel or workflow shutdown)
+        // now that branches have settled and the semaphore has been disposed
+        // cleanly. Surfacing it here means a torn-down parallel propagates an
+        // OperationCanceledException instead of synthesizing a spurious
+        // FailureToleranceExceeded verdict from branches that merely unwound.
+        controlToken.ThrowIfCancellationRequested();
 
         // Build BatchItems for every branch in original order.
         var items = new List<IBatchItem<T>>(branchCount);
@@ -299,6 +307,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         BranchOutcome[] slots,
         SemaphoreSlim? semaphore,
         CancellationToken cancellationToken,
+        CancellationToken controlToken,
         Action<BranchOutcome> onComplete)
     {
         try
@@ -337,16 +346,22 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
                 // a slot (the orchestrator's outer flow handles it).
                 throw;
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (controlToken.IsCancellationRequested)
             {
-                // Parent-token cancellation: per cross-cutting decision Q10,
-                // OCE escapes unwrapped. Don't write a slot — Task.WhenAll
-                // observes this and the orchestrator re-throws after settling.
+                // Control-token cancellation — caller-cancel OR workflow
+                // shutdown (a sibling op suspended, a checkpoint failed). Per
+                // cross-cutting decision Q10 and cancellation.md, OCE escapes
+                // unwrapped: don't write a slot — Task.WhenAll observes this and
+                // the orchestrator re-throws after branches settle. Classifying
+                // off controlToken (not the raw caller token) keeps the parallel
+                // consistent with Step/WaitForCondition/ChildContext, which all
+                // treat workflow-shutdown unwind as cancellation rather than a
+                // graceful per-branch failure.
                 throw;
             }
             catch (OperationCanceledException ex)
             {
-                // Branch-internal cancellation that is NOT tied to the parent
+                // Branch-internal cancellation that is NOT tied to the control
                 // token (e.g. the branch's own CancellationTokenSource fired).
                 // Treat it as a normal per-branch failure rather than killing
                 // the parallel as cancelled.
