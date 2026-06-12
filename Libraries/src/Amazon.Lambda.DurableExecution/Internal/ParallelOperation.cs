@@ -345,14 +345,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             catch (OperationCanceledException) when (controlToken.IsCancellationRequested)
             {
                 // Control-token cancellation — caller-cancel OR workflow
-                // shutdown (a sibling op suspended, a checkpoint failed). Per
-                // cross-cutting decision Q10 and cancellation.md, OCE escapes
-                // unwrapped: don't write a slot — Task.WhenAll observes this and
-                // the orchestrator re-throws after branches settle. Classifying
-                // off controlToken (not the raw caller token) keeps the parallel
-                // consistent with Step/WaitForCondition/ChildContext, which all
-                // treat workflow-shutdown unwind as cancellation rather than a
-                // graceful per-branch failure.
+                // shutdown (a sibling op suspended, a checkpoint failed)
                 throw;
             }
             catch (OperationCanceledException ex)
