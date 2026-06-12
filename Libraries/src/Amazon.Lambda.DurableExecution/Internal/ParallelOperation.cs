@@ -132,6 +132,17 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
 
         controlToken.ThrowIfCancellationRequested();
 
+        // Cooperative-bail signal: tripped the moment a CompletionConfig
+        // short-circuit is decided. It flows into each branch's user Func only
+        // (via ChildContextOperation's linked token), NOT into the branches'
+        // checkpoint writes — a branch that honors the token unwinds with an
+        // OperationCanceledException we record as Started, while a branch
+        // mid-flush of a successful checkpoint still completes. Branches that
+        // ignore the token simply run to their natural terminal state, exactly
+        // as before. We never abandon a dispatched branch, so replay stays
+        // deterministic.
+        using var shortCircuitCts = new CancellationTokenSource();
+
         var branchCount = _branches.Count;
         var slots = new BranchOutcome[branchCount];
         var dispatched = new bool[branchCount];
@@ -155,6 +166,15 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         bool ShouldStopDispatchingNow() => _policy.ShouldStopDispatching(
             Volatile.Read(ref succeeded), Volatile.Read(ref failed), branchCount);
 
+        // Signal still-running branches to bail. Idempotent: the first Cancel
+        // wins, racing callbacks are harmless. Tolerate a late call after the
+        // CTS is disposed at end-of-scope (a branch completing during teardown).
+        void SignalShortCircuit()
+        {
+            try { shortCircuitCts.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+
         // Branches run with the caller's token (re-linked to workflow-shutdown
         // inside ChildContextOperation) so cooperative cancellation still
         // propagates into user code, but we must NOT abandon already-dispatched
@@ -168,7 +188,10 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             for (var i = 0; i < branchCount; i++)
             {
                 if (ShouldStopDispatchingNow())
+                {
+                    SignalShortCircuit();
                     break;
+                }
 
                 if (semaphore != null)
                 {
@@ -179,6 +202,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
                     if (ShouldStopDispatchingNow())
                     {
                         semaphore.Release();
+                        SignalShortCircuit();
                         break;
                     }
                 }
@@ -186,12 +210,20 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
                 var index = i;
                 dispatched[index] = true;
                 inFlight.Add(RunBranchAsync(index, slots, semaphore, cancellationToken, controlToken,
+                    shortCircuitCts.Token,
                     onComplete: outcome =>
                     {
                         if (outcome.Status == BatchItemStatus.Succeeded)
                             Interlocked.Increment(ref succeeded);
                         else if (outcome.Status == BatchItemStatus.Failed)
                             Interlocked.Increment(ref failed);
+
+                        // The deciding completion typically lands AFTER every
+                        // branch has been dispatched, so the loop is no longer
+                        // sitting at a break point. Re-check here and signal
+                        // any still-running branches to bail.
+                        if (ShouldStopDispatchingNow())
+                            SignalShortCircuit();
                     }));
             }
         }
@@ -304,6 +336,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         SemaphoreSlim? semaphore,
         CancellationToken cancellationToken,
         CancellationToken controlToken,
+        CancellationToken shortCircuitToken,
         Action<BranchOutcome> onComplete)
     {
         try
@@ -323,7 +356,8 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
                 Termination,
                 _workflowCancellation,
                 DurableExecutionArn,
-                Batcher);
+                Batcher,
+                shortCircuitToken);
 
             try
             {
@@ -341,6 +375,21 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
                 // Surface them: re-throw out of the parallel without writing
                 // a slot (the orchestrator's outer flow handles it).
                 throw;
+            }
+            catch (OperationCanceledException) when (
+                shortCircuitToken.IsCancellationRequested && !controlToken.IsCancellationRequested)
+            {
+                // Cooperative bail: this branch honored the short-circuit signal
+                // raised when a sibling satisfied the CompletionConfig. It is
+                // neither a failure nor a parallel-wide cancel — record it as
+                // Started so the verdict math treats it like an un-dispatched
+                // branch (and so it can never trip a failure threshold). The
+                // branch wrote no terminal checkpoint, so replay reconstructs
+                // it identically from the parent summary.
+                //
+                // Ordered BEFORE the control-token clause: a genuine
+                // caller-cancel / workflow-shutdown still takes precedence.
+                slots[index] = new BranchOutcome { Status = BatchItemStatus.Started };
             }
             catch (OperationCanceledException) when (controlToken.IsCancellationRequested)
             {

@@ -388,6 +388,113 @@ public class ParallelOperationTests
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // CompletionConfig — short-circuit signals in-flight branches to bail
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParallelAsync_ShortCircuit_SignalsInFlightBranchesToBail()
+    {
+        // FirstSuccessful with unlimited concurrency: all three branches are
+        // dispatched at once. Branch 0 succeeds only after branches 1 and 2
+        // are confirmed in-flight and parked on their cancellation token.
+        // Branch 0's success satisfies MinSuccessful=1 and short-circuits the
+        // run. The two in-flight branches honor their token, so they must be
+        // SIGNALLED to bail — observing OperationCanceledException — and be
+        // recorded as Started (they never reached a terminal checkpoint).
+        //
+        // Before the change nothing signals a dispatched-but-running branch on
+        // short-circuit: branches 1 and 2 stay parked on Timeout.Infinite and
+        // the run never settles (the 5s WaitAsync guard trips).
+        var (context, _, _, _) = CreateContext();
+
+        var branch1Started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var branch2Started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var branch1Cancelled = false;
+        var branch2Cancelled = false;
+
+        var branches = new Func<IDurableContext, CancellationToken, Task<int>>[]
+        {
+            async (_, _) =>
+            {
+                // Gate success on the siblings being parked, so the
+                // short-circuit reliably races against in-flight branches.
+                await Task.WhenAll(branch1Started.Task, branch2Started.Task);
+                return 1;
+            },
+            async (_, token) =>
+            {
+                branch1Started.TrySetResult();
+                try { await Task.Delay(Timeout.InfiniteTimeSpan, token); }
+                catch (OperationCanceledException) { branch1Cancelled = true; throw; }
+                return 2;
+            },
+            async (_, token) =>
+            {
+                branch2Started.TrySetResult();
+                try { await Task.Delay(Timeout.InfiniteTimeSpan, token); }
+                catch (OperationCanceledException) { branch2Cancelled = true; throw; }
+                return 3;
+            },
+        };
+
+        var result = await context.ParallelAsync(
+                branches,
+                config: new ParallelConfig { CompletionConfig = CompletionConfig.FirstSuccessful() })
+            .WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
+        Assert.Equal(1, result.SuccessCount);
+        Assert.Equal(0, result.FailureCount);
+        Assert.Equal(2, result.StartedCount);
+
+        Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
+        Assert.Equal(BatchItemStatus.Started, result.All[1].Status);
+        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
+
+        // The signal actually reached the running branches' tokens.
+        Assert.True(branch1Cancelled, "branch 1 was not signalled to bail on short-circuit");
+        Assert.True(branch2Cancelled, "branch 2 was not signalled to bail on short-circuit");
+    }
+
+    [Fact]
+    public async Task ParallelAsync_ShortCircuit_BailedBranchIsNotCountedAsFailure()
+    {
+        // A branch that bails on the short-circuit signal must NOT be recorded
+        // as Failed — otherwise it could spuriously trip a failure-tolerance
+        // threshold. Here MinSuccessful=1 with ToleratedFailureCount=0: branch
+        // 0 succeeds, the bailed branch must land in Started (not Failed) so
+        // the run resolves as MinSuccessfulReached rather than throwing.
+        var (context, _, _, _) = CreateContext();
+
+        var branchStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var branches = new Func<IDurableContext, CancellationToken, Task<int>>[]
+        {
+            async (_, _) => { await branchStarted.Task; return 1; },
+            async (_, token) =>
+            {
+                branchStarted.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, token);
+                return 2;
+            },
+        };
+
+        var result = await context.ParallelAsync(
+                branches,
+                config: new ParallelConfig
+                {
+                    CompletionConfig = new CompletionConfig { MinSuccessful = 1, ToleratedFailureCount = 0 }
+                })
+            .WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
+        Assert.Equal(1, result.SuccessCount);
+        Assert.Equal(0, result.FailureCount);
+        Assert.Equal(1, result.StartedCount);
+        Assert.Equal(BatchItemStatus.Started, result.All[1].Status);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // MaxConcurrency
     // ──────────────────────────────────────────────────────────────────────
 
@@ -1054,6 +1161,84 @@ public class ParallelOperationTests
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
         Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
         Assert.Equal(new[] { 10, 20 }, result.GetResults());
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed);
+    }
+
+    [Fact]
+    public async Task ParallelAsync_ReplayBailedBranch_ReconstructsAsStartedWithoutReExecuting()
+    {
+        // Determinism contract for the cooperative-bail path: a branch that was
+        // SIGNALLED to bail on a live short-circuit dispatched (so it wrote a
+        // CONTEXT START checkpoint, status STARTED) but never reached a terminal
+        // record. On replay the parent is SUCCEEDED, so the branch must be
+        // reconstructed as Started from its START-only checkpoint — NOT
+        // re-executed — exactly as it resolved on the original run. This is why
+        // signaling (vs. abandoning the task) preserves determinism.
+        var parentOpId = IdAt(1);
+        var b0 = ChildIdAt(parentOpId, 1);
+        var b1 = ChildIdAt(parentOpId, 2);
+
+        var summaryJson = """
+            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Branches":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED"},
+                {"Index":1,"Name":"1","Status":"STARTED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                },
+                new()
+                {
+                    Id = b0,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "0",
+                    ContextDetails = new ContextDetails { Result = "10" }
+                },
+                new()
+                {
+                    // Bailed branch: dispatched (START flushed) but no terminal
+                    // record — it unwound on the short-circuit signal.
+                    Id = b1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Started,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "1"
+                }
+            }
+        });
+
+        var calls = 0;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { calls++; await Task.Yield(); return 999; },
+                async (_, _) => { calls++; await Task.Yield(); return 999; },
+            },
+            name: "fanout");
+
+        Assert.Equal(0, calls);
+        Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
+        Assert.Equal(1, result.SuccessCount);
+        Assert.Equal(0, result.FailureCount);
+        Assert.Equal(1, result.StartedCount);
+        Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
+        Assert.Equal(BatchItemStatus.Started, result.All[1].Status);
+        Assert.Equal(new[] { 10 }, result.GetResults());
 
         await recorder.Batcher.DrainAsync();
         Assert.Empty(recorder.Flushed);
