@@ -165,16 +165,8 @@ internal sealed class DurableContext : IDurableContext
 
         var operationId = _idGenerator.NextId();
 
-        // Capture this DurableContext's collaborators; the child shares state,
-        // termination, workflow cancellation, batcher, ARN, and Lambda context —
-        // but uses a child OperationIdGenerator so its operation IDs are
-        // deterministically namespaced under the parent op ID.
-        IDurableContext ChildFactory(string parentOpId) => new DurableContext(
-            _state, _terminationManager, _workflowCancellation, _idGenerator.CreateChild(parentOpId),
-            _durableExecutionArn, LambdaContext, _batcher);
-
         var op = new ChildContextOperation<T>(
-            operationId, name, _idGenerator.ParentId, func, config, serializer, ChildFactory,
+            operationId, name, _idGenerator.ParentId, func, config, serializer, MakeChildFactory(),
             _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
@@ -196,6 +188,75 @@ internal sealed class DurableContext : IDurableContext
         var op = new CallbackOperation<T>(
             operationId, name, _idGenerator.ParentId, config, serializer,
             _state, _terminationManager, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
+
+    public Task<IBatchResult<T>> ParallelAsync<T>(
+        IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches,
+        string? name = null,
+        ParallelConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunParallel(WrapToDurableBranches(branches), name, config, cancellationToken);
+
+    public Task<IBatchResult<T>> ParallelAsync<T>(
+        IReadOnlyList<DurableBranch<T>> branches,
+        string? name = null,
+        ParallelConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunParallel(branches, name, config, cancellationToken);
+
+    private static IReadOnlyList<DurableBranch<T>> WrapToDurableBranches<T>(
+        IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches)
+    {
+        if (branches == null) throw new ArgumentNullException(nameof(branches));
+
+        var result = new DurableBranch<T>[branches.Count];
+        for (var i = 0; i < branches.Count; i++)
+        {
+            var func = branches[i];
+            if (func == null)
+                throw new ArgumentException($"Branch at index {i} is null.", nameof(branches));
+            // Default name is the index — surfaces in execution traces and on
+            // IBatchItem<T>.Name. Users wanting custom names use the
+            // DurableBranch<T> overload.
+            result[i] = new DurableBranch<T>(i.ToString(System.Globalization.CultureInfo.InvariantCulture), func);
+        }
+        return result;
+    }
+
+    private Task<IBatchResult<T>> RunParallel<T>(
+        IReadOnlyList<DurableBranch<T>> branches,
+        string? name,
+        ParallelConfig? config,
+        CancellationToken cancellationToken)
+    {
+        if (branches == null) throw new ArgumentNullException(nameof(branches));
+        for (var i = 0; i < branches.Count; i++)
+        {
+            if (branches[i] == null)
+                throw new ArgumentException($"Branch at index {i} is null.", nameof(branches));
+            if (branches[i].Func == null)
+                throw new ArgumentException($"Branch at index {i} has a null Func.", nameof(branches));
+        }
+
+        var effectiveConfig = config ?? new ParallelConfig();
+        if (effectiveConfig.NestingType == NestingType.Flat)
+        {
+            throw new NotSupportedException(
+                "NestingType.Flat is not yet supported in the .NET Durable Execution SDK. " +
+                "Use NestingType.Nested (the default) for now.");
+        }
+
+        var serializer = LambdaContext.Serializer
+            ?? throw new InvalidOperationException(
+                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
+                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
+                "(or in tests, set TestLambdaContext.Serializer).");
+
+        var operationId = _idGenerator.NextId();
+        var op = new Internal.ParallelOperation<T>(
+            operationId, name, _idGenerator.ParentId, branches, effectiveConfig, serializer, MakeChildFactory(),
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -420,6 +481,21 @@ internal sealed class DurableContext : IDurableContext
             serializer,
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Builds the factory used by <see cref="ChildContextOperation{T}"/> (and
+    /// each <see cref="Internal.ParallelOperation{T}"/> branch) to construct
+    /// the inner <see cref="IDurableContext"/>. The child shares state,
+    /// termination, workflow cancellation, batcher, ARN, and Lambda context —
+    /// but uses a child <see cref="OperationIdGenerator"/> so its operation IDs
+    /// are deterministically namespaced under the parent op ID.
+    /// </summary>
+    private Func<string, IDurableContext> MakeChildFactory()
+    {
+        return parentOpId => new DurableContext(
+            _state, _terminationManager, _workflowCancellation, _idGenerator.CreateChild(parentOpId),
+            _durableExecutionArn, LambdaContext, _batcher);
     }
 }
 

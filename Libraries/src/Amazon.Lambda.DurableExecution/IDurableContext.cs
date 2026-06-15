@@ -366,6 +366,84 @@ public interface IDurableContext
         WaitForConditionConfig<TState> config,
         string? name = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Execute multiple branches concurrently. Each branch runs inside its own
+    /// child context; per-branch results are aggregated into an
+    /// <see cref="IBatchResult{T}"/>. Branches are dispatched up to
+    /// <see cref="ParallelConfig.MaxConcurrency"/>; the aggregate resolves
+    /// according to <see cref="ParallelConfig.CompletionConfig"/>.
+    /// </summary>
+    /// <remarks>
+    /// On per-branch failure (a branch's user function throws), the failure is
+    /// captured on the corresponding <see cref="IBatchItem{T}"/> instead of
+    /// aborting the parallel. The parallel only throws
+    /// <see cref="ParallelException"/> when <see cref="CompletionConfig"/>
+    /// criteria are violated. Use
+    /// <see cref="IBatchResult{T}.ThrowIfError"/> for explicit strict-success
+    /// semantics. Per-branch results are serialized to checkpoints using the
+    /// <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/> (typically configured via
+    /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>).
+    /// </remarks>
+    /// <typeparam name="T">The type of the result produced by each branch.</typeparam>
+    /// <param name="branches">
+    /// The branches to execute concurrently. Each branch receives its own
+    /// <see cref="IDurableContext"/> and a <see cref="CancellationToken"/>
+    /// linking the caller-supplied token with the SDK's workflow-shutdown
+    /// signal, and returns a result of type <typeparamref name="T"/>.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the parallel operation, used for observability and to derive
+    /// the deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional parallel configuration (e.g. <see cref="ParallelConfig.MaxConcurrency"/>
+    /// and <see cref="ParallelConfig.CompletionConfig"/>). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>
+    /// An <see cref="IBatchResult{T}"/> aggregating the per-branch results, resolved
+    /// according to <see cref="ParallelConfig.CompletionConfig"/>.
+    /// </returns>
+    Task<IBatchResult<T>> ParallelAsync<T>(
+        IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches,
+        string? name = null,
+        ParallelConfig? config = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Execute multiple named branches concurrently. Names appear in execution
+    /// traces and on <see cref="IBatchItem{T}.Name"/>.
+    /// </summary>
+    /// <remarks>
+    /// Per-branch results are serialized to checkpoints using the
+    /// <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>.
+    /// </remarks>
+    /// <typeparam name="T">The type of the result produced by each branch.</typeparam>
+    /// <param name="branches">
+    /// The named branches to execute concurrently. Each <see cref="DurableBranch{T}"/>
+    /// carries a name (surfaced on <see cref="IBatchItem{T}.Name"/>) and the function to run.
+    /// </param>
+    /// <param name="name">
+    /// An optional name for the parallel operation, used for observability and to derive
+    /// the deterministic operation ID. Defaults to a name inferred from the call site.
+    /// </param>
+    /// <param name="config">
+    /// Optional parallel configuration (e.g. <see cref="ParallelConfig.MaxConcurrency"/>
+    /// and <see cref="ParallelConfig.CompletionConfig"/>). Defaults are used when null.
+    /// </param>
+    /// <param name="cancellationToken">A token to observe for cancellation.</param>
+    /// <returns>
+    /// An <see cref="IBatchResult{T}"/> aggregating the per-branch results, resolved
+    /// according to <see cref="ParallelConfig.CompletionConfig"/>.
+    /// </returns>
+    Task<IBatchResult<T>> ParallelAsync<T>(
+        IReadOnlyList<DurableBranch<T>> branches,
+        string? name = null,
+        ParallelConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

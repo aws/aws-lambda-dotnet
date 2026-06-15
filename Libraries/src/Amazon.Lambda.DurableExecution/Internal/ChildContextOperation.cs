@@ -43,6 +43,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     private readonly ILambdaSerializer _serializer;
     private readonly Func<string, IDurableContext> _childContextFactory;
     private readonly WorkflowCancellation _workflowCancellation;
+    private readonly CancellationToken _cooperativeBailToken;
 
     public ChildContextOperation(
         string operationId,
@@ -56,7 +57,8 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
-        CheckpointBatcher? batcher = null)
+        CheckpointBatcher? batcher = null,
+        CancellationToken cooperativeBailToken = default)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _func = func;
@@ -64,6 +66,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         _serializer = serializer;
         _childContextFactory = childContextFactory;
         _workflowCancellation = workflowCancellation;
+        _cooperativeBailToken = cooperativeBailToken;
     }
 
     protected override string OperationType => OperationTypes.Context;
@@ -119,11 +122,15 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
 
         var childContext = _childContextFactory(OperationId);
 
-        // Link the caller's token with the workflow-shutdown token. The user
-        // func observes both signals; the SDK's checkpoint writes (CONTEXT
-        // FAIL / SUCCEED below) continue to use the caller's token only.
+        // Link the caller's token with the workflow-shutdown token, plus the
+        // optional cooperative-bail token (a parallel parent signals this when
+        // a CompletionConfig short-circuit fires, asking still-running branches
+        // to unwind early). The user func observes all three signals; the SDK's
+        // checkpoint writes (CONTEXT FAIL / SUCCEED below) continue to use the
+        // caller's token only, so a bail or shutdown can never abort a branch
+        // that is mid-flush of a successful checkpoint.
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, _workflowCancellation.Token);
+            cancellationToken, _workflowCancellation.Token, _cooperativeBailToken);
 
         T result;
         try

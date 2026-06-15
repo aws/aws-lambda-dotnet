@@ -22,6 +22,7 @@ Your handler delegates to `DurableFunction.WrapAsync`, which gives your workflow
 - `ctx.WaitForConditionAsync` — poll a check function until a condition is met, suspending between polls. ([docs](docs/core/wait-for-condition.md))
 - `ctx.CreateCallbackAsync` / `ctx.WaitForCallbackAsync` — wait for external events (approvals, webhooks). ([docs](docs/core/callbacks.md))
 - `ctx.RunInChildContextAsync` — run an isolated child context with its own checkpoint log. ([docs](docs/core/child-contexts.md))
+- `ctx.ParallelAsync` — run independent branches concurrently and aggregate their results. ([docs](docs/core/parallel.md))
 - Every user `Func` receives a `CancellationToken` linking the caller's token with the SDK's workflow-shutdown signal. ([docs](docs/core/cancellation.md))
 
 ## Quick Start
@@ -97,6 +98,7 @@ For AOT or trim-friendly serialization, swap `DefaultLambdaJsonSerializer` for `
 - [Wait For Condition](docs/core/wait-for-condition.md) — poll until a condition is met, suspending between polls with a configurable wait strategy.
 - [Callbacks](docs/core/callbacks.md) — wait for external systems to respond.
 - [Child Contexts](docs/core/child-contexts.md) — group related operations into isolated, checkpointed units.
+- [Parallel](docs/core/parallel.md) — fan out independent branches concurrently with configurable concurrency and completion policies.
 
 **Examples**
 
