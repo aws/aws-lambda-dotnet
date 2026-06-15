@@ -184,12 +184,26 @@ public class ParallelOperationTests
     {
         var (context, _, _, _) = CreateContext();
 
+        // Gate the failing branch's throw on both successful branches having
+        // completed. With unlimited concurrency the dispatch loop re-checks
+        // ShouldStopDispatchingNow() at the top of every iteration; if the
+        // single failure (tolerance 0) registered before branch 2 was
+        // dispatched, branch 2 would stay Started and SuccessCount would be 1.
+        // Sequencing success-before-failure makes all three branches dispatch
+        // and both successes count deterministically, regardless of scheduling.
+        var branch0Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var branch2Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
         var ex = await Assert.ThrowsAsync<ParallelException>(() =>
             context.ParallelAsync(new Func<IDurableContext, CancellationToken, Task<int>>[]
             {
-                async (_, _) => { await Task.Yield(); return 1; },
-                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("branch boom"); },
-                async (_, _) => { await Task.Yield(); return 3; },
+                async (_, _) => { await Task.Yield(); branch0Done.SetResult(); return 1; },
+                async (_, _) =>
+                {
+                    await Task.WhenAll(branch0Done.Task, branch2Done.Task);
+                    throw new InvalidOperationException("branch boom");
+                },
+                async (_, _) => { await Task.Yield(); branch2Done.SetResult(); return 3; },
             }));
 
         Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);

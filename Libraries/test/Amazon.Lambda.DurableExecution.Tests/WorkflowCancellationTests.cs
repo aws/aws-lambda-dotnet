@@ -328,8 +328,19 @@ public class WorkflowCancellationTests
 
         var tm = new TerminationManager();
         var wfc = new WorkflowCancellation(tm);
-        tm.Terminate(TerminationReason.WaitScheduled);  // cancel before invocation
-        await Task.Yield();
+
+        // WorkflowCancellation trips its token via an async continuation on
+        // TerminationTask (a RunContinuationsAsynchronously TCS), so a single
+        // Task.Yield after Terminate() is not a reliable barrier — under load
+        // the continuation may not have run yet. Register a callback (fires
+        // immediately if the token is already cancelled, so it's race-free) and
+        // wait on it deterministically instead of guessing at a yield/delay.
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (wfc.Token.Register(() => cancelled.TrySetResult()))
+        {
+            tm.Terminate(TerminationReason.WaitScheduled);  // cancel before invocation
+            await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
         Assert.True(wfc.Token.IsCancellationRequested);
 
         var idGen = new OperationIdGenerator();

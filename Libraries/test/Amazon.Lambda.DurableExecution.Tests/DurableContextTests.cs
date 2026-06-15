@@ -707,7 +707,13 @@ public class DurableContextTests
                     jitter: JitterStrategy.None)
             });
 
-        await Task.Delay(50);
+        // Deterministic wait: the step suspends by calling Terminate() only
+        // AFTER it has awaited the RETRY checkpoint flush (see StepOperation.
+        // HandleStepFailureAsync). When TerminationTask completes, both the
+        // fire-and-forget START and the RETRY have been flushed (they share the
+        // batcher's single-reader FIFO channel) and IsTerminated is set. A fixed
+        // Task.Delay here was flaky under CI thread-pool pressure.
+        await tm.TerminationTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.True(tm.IsTerminated);
         Assert.False(stepTask.IsCompleted);
@@ -816,7 +822,11 @@ public class DurableContextTests
             name: "pending_step",
             config: new StepConfig { RetryStrategy = RetryStrategy.Default });
 
-        await Task.Delay(50);
+        // Deterministic wait: a PENDING step whose retry timer hasn't fired
+        // re-suspends via SuspendAndAwait -> Terminate(). TerminationTask
+        // completing is the precise signal that suspension has happened, with
+        // no wall-clock dependency. Replaces a flaky fixed Task.Delay.
+        await tm.TerminationTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.True(tm.IsTerminated);
         Assert.False(stepTask.IsCompleted);
@@ -972,7 +982,12 @@ public class DurableContextTests
                 RetryStrategy = RetryStrategy.Exponential(maxAttempts: 3, jitter: JitterStrategy.None)
             });
 
-        await Task.Delay(50);
+        // Deterministic wait: AtMostOncePerRetry replay of a STARTED record
+        // routes the lost attempt through HandleStepFailureAsync, which awaits
+        // the RETRY checkpoint flush and then suspends via Terminate(). When
+        // TerminationTask completes, the RETRY is flushed and IsTerminated is
+        // set. Replaces a flaky fixed Task.Delay.
+        await tm.TerminationTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.False(executed);
         Assert.True(tm.IsTerminated);
