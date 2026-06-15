@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.DurableExecution",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Add `ParallelAsync` to `IDurableContext` for running multiple workflow branches concurrently with automatic checkpointing. Supports configurable max concurrency, failure tolerance, and first-successful completion via `ParallelConfig`, returning an `IBatchResult<T>`.",
+        "Add `ParallelAsync` to `IDurableContext` for running multiple workflow branches concurrently with automatic checkpointing."
       ]
     }
   ]
