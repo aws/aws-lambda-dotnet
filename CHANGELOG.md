@@ -1,3 +1,8 @@
+## Release 2026-06-15
+
+### Amazon.Lambda.DurableExecution (0.0.2-preview)
+* Add `ParallelAsync` to `IDurableContext` for running multiple workflow branches concurrently with automatic checkpointing.
+
 ## Release 2026-06-11
 
 ### Amazon.Lambda.DurableExecution (0.0.1-preview)
