@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
+    <Description>Testing utilities for Amazon Lambda Durable Execution - test durable workflows locally without deploying to AWS.</Description>
+    <AssemblyTitle>Amazon.Lambda.DurableExecution.Testing</AssemblyTitle>
+    <Version>0.0.1-preview</Version>
+    <AssemblyName>Amazon.Lambda.DurableExecution.Testing</AssemblyName>
+    <PackageId>Amazon.Lambda.DurableExecution.Testing</PackageId>
+    <PackageTags>AWS;Amazon;Lambda;Durable;Workflow;Testing</PackageTags>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.DurableExecution.Testing.Tests, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+  </ItemGroup>
+
+</Project>
