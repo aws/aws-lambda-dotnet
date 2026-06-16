@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Align parallel parent checkpoint with other SDKs: always emit SUCCEED with summary in Payload, throw ParallelException SDK-side based on CompletionReason."
+      ]
+    }
+  ]
+}
