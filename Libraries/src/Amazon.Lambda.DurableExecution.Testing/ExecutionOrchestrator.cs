@@ -36,6 +36,45 @@ internal sealed class ExecutionOrchestrator<TInput, TOutput>
         _serializer = serializer;
     }
 
+    public async Task<TestResult<TOutput>?> DriveUntilSuspendedAsync(
+        string arn,
+        TInput input,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
+
+        SeedExecutionOperation(arn, input);
+
+        var invocationCount = 0;
+        DurableExecutionInvocationOutput output;
+
+        while (true)
+        {
+            timeoutCts.Token.ThrowIfCancellationRequested();
+
+            if (invocationCount >= _options.MaxInvocations)
+            {
+                throw new TestExecutionLimitException(
+                    _options.MaxInvocations, _store.OperationCount(arn));
+            }
+
+            var invocationInput = BuildInvocationInput(arn);
+
+            output = await DurableFunction.WrapAsync<TInput, TOutput>(
+                _handler, invocationInput, _lambdaContext, _serviceClient);
+
+            invocationCount++;
+
+            if (output.Status == InvocationStatus.Pending)
+                return null; // Suspended — test code drives callbacks
+
+            if (output.Status != InvocationStatus.Pending)
+                return BuildResult(arn, output, invocationCount);
+        }
+    }
+
     public async Task<TestResult<TOutput>> DriveToTerminalAsync(
         string arn,
         TInput input,

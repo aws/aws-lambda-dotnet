@@ -21,6 +21,10 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
     private readonly CheckpointProcessor _processor;
     private readonly InMemoryDurableServiceClient _serviceClient;
     private readonly FunctionRegistry _registry;
+    private readonly Dictionary<string, TestResult<TOutput>> _completedResults = new();
+    private readonly HashSet<string> _consumedCallbackIds = new();
+    private ExecutionOrchestrator<TInput, TOutput>? _lastOrchestrator;
+    private TInput? _lastStartInput;
 
     /// <summary>
     /// Creates a new local test runner for the given workflow handler.
@@ -76,13 +80,23 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
     }
 
     /// <inheritdoc />
-    public Task<string> StartAsync(
+    public async Task<string> StartAsync(
         TInput input,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        // Callback support implemented in commit 5
-        throw new NotImplementedException("StartAsync will be implemented with callback support.");
+        var arn = _options.DurableExecutionArn;
+        var orchestrator = CreateOrchestrator();
+        _lastStartInput = input;
+        _lastOrchestrator = orchestrator;
+
+        var result = await orchestrator.DriveUntilSuspendedAsync(
+            arn, input, timeout ?? _options.DefaultTimeout, cancellationToken);
+
+        if (result is not null)
+            _completedResults[arn] = result;
+
+        return arn;
     }
 
     /// <inheritdoc />
@@ -92,7 +106,37 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("WaitForCallbackAsync will be implemented with callback support.");
+        var ops = _store.GetAllOperations(durableExecutionArn);
+        foreach (var op in ops)
+        {
+            if (op.Type == OperationTypes.Callback
+                && op.Status == OperationStatuses.Started
+                && op.CallbackDetails?.CallbackId is { } cbId)
+            {
+                if (name is null || MatchesCallbackName(op.Name, name))
+                {
+                    if (!_consumedCallbackIds.Contains(cbId))
+                    {
+                        _consumedCallbackIds.Add(cbId);
+                        return Task.FromResult(cbId);
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"No pending callback found{(name is not null ? $" with name '{name}'" : "")} for execution '{durableExecutionArn}'. " +
+            "Ensure the workflow has reached a WaitForCallbackAsync point before calling this method.");
+    }
+
+    private static bool MatchesCallbackName(string? opName, string name)
+    {
+        if (opName is null) return false;
+        // Exact match
+        if (string.Equals(opName, name, StringComparison.Ordinal)) return true;
+        // The runtime names inner callback ops as "{name}-callback"
+        if (string.Equals(opName, $"{name}-callback", StringComparison.Ordinal)) return true;
+        return false;
     }
 
     /// <inheritdoc />
@@ -101,7 +145,15 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
         TResult result,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("SendCallbackSuccessAsync will be implemented with callback support.");
+        var (arn, op) = FindCallbackOperation(callbackId);
+        var serialized = SerializeToString(result);
+
+        op.Status = OperationStatuses.Succeeded;
+        op.EndTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        op.CallbackDetails!.Result = serialized;
+        _store.Upsert(arn, op);
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -110,7 +162,14 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
         ErrorObject? error = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("SendCallbackFailureAsync will be implemented with callback support.");
+        var (arn, op) = FindCallbackOperation(callbackId);
+
+        op.Status = OperationStatuses.Failed;
+        op.EndTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        op.CallbackDetails!.Error = error;
+        _store.Upsert(arn, op);
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -118,22 +177,59 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
         string callbackId,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("SendCallbackHeartbeatAsync will be implemented with callback support.");
+        // Heartbeats are a no-op for local testing — just validate the callback exists
+        FindCallbackOperation(callbackId);
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task<TestResult<TOutput>> WaitForResultAsync(
+    public async Task<TestResult<TOutput>> WaitForResultAsync(
         string durableExecutionArn,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException("WaitForResultAsync will be implemented with callback support.");
+        if (_completedResults.TryGetValue(durableExecutionArn, out var cached))
+            return cached;
+
+        var orchestrator = _lastOrchestrator ?? CreateOrchestrator();
+        var result = await orchestrator.DriveToTerminalAsync(
+            durableExecutionArn,
+            _lastStartInput!,
+            timeout ?? _options.DefaultTimeout,
+            cancellationToken);
+
+        _completedResults[durableExecutionArn] = result;
+        return result;
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
         return ValueTask.CompletedTask;
+    }
+
+    private (string Arn, Operation Op) FindCallbackOperation(string callbackId)
+    {
+        var arn = _options.DurableExecutionArn;
+        var ops = _store.GetAllOperations(arn);
+        foreach (var op in ops)
+        {
+            if (op.Type == OperationTypes.Callback
+                && op.CallbackDetails?.CallbackId == callbackId)
+            {
+                return (arn, op);
+            }
+        }
+        throw new InvalidOperationException(
+            $"No callback operation found with ID '{callbackId}'.");
+    }
+
+    private string? SerializeToString<T>(T value)
+    {
+        if (value is null) return null;
+        using var stream = new MemoryStream();
+        _serializer.Serialize(value, stream);
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 
     private ExecutionOrchestrator<TInput, TOutput> CreateOrchestrator()
