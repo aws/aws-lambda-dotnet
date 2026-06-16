@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.DurableExecution",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Add `MapAsync` to `IDurableContext` for processing a collection in parallel with one child context per item and automatic checkpointing. Supports configurable max concurrency, completion policy, and per-item naming via `MapConfig`, returning an `IBatchResult<T>`."
+        "Add `MapAsync` to `IDurableContext` for processing a collection in parallel with one child context per item and automatic checkpointing."
       ]
     }
   ]
