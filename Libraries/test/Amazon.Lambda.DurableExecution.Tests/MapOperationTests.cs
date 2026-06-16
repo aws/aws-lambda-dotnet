@@ -576,7 +576,7 @@ public class MapOperationTests
                 {
                     Id = parentOpId,
                     Type = OperationTypes.Context,
-                    Status = OperationStatuses.Failed,
+                    Status = OperationStatuses.Succeeded,
                     SubType = OperationSubTypes.Map,
                     Name = "m",
                     ContextDetails = new ContextDetails { Result = summaryJson }

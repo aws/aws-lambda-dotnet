@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.Json;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
-using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -31,9 +30,9 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       SUCCEED with summary payload (<see cref="BatchSummary"/>).</item>
 ///   <item><b>SUCCEEDED</b>: parent payload supplies the snapshot of per-unit
 ///       statuses + completion reason; per-unit results are deserialised from the
-///       children's own CONTEXT checkpoints.</item>
-///   <item><b>FAILED</b>: same reconstruction; throws the subclass exception
-///       carrying the rebuilt <see cref="IBatchResult{T}"/>.</item>
+///       children's own CONTEXT checkpoints. If the completion reason is
+///       <see cref="CompletionReason.FailureToleranceExceeded"/>, throws the
+///       subclass exception carrying the rebuilt <see cref="IBatchResult{T}"/>.</item>
 ///   <item><b>STARTED</b> / <b>PENDING</b>: re-execute (children replay from their
 ///       own checkpoints).</item>
 /// </list>
@@ -132,13 +131,13 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         switch (existing.Status)
         {
             case OperationStatuses.Succeeded:
-                return Task.FromResult(ReconstructFromCheckpoints(existing, throwOnFailure: false));
-
-            case OperationStatuses.Failed:
-                // Reconstruct so the caller (and the exception's Result) sees the
-                // per-unit outcomes; then throw.
-                var failed = ReconstructFromCheckpoints(existing, throwOnFailure: false);
-                throw BuildException(failed);
+                // The parent always checkpoints as SUCCEED — even when
+                // CompletionReason is FailureToleranceExceeded. Reconstruct
+                // the BatchResult and throw if it was a tolerance failure.
+                var result = ReconstructFromCheckpoints(existing);
+                if (result.CompletionReason == CompletionReason.FailureToleranceExceeded)
+                    throw BuildException(result);
+                return Task.FromResult(result);
 
             case OperationStatuses.Started:
             case OperationStatuses.Pending:
@@ -533,21 +532,23 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         }
 
         var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
-        var failed = failureException != null;
 
+        // Always checkpoint as SUCCEED — even when FailureToleranceExceeded.
+        // The completion reason lives inside the payload, matching the wire
+        // format of the Python/JS/Java SDKs. The exception is thrown SDK-side
+        // after this checkpoint.
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
             Type = OperationTypes.Context,
-            Action = failed ? OperationAction.FAIL : OperationAction.SUCCEED,
+            Action = OperationAction.SUCCEED,
             SubType = ParentSubType,
             Name = Name,
-            Payload = failed ? null : payload,
-            Error = failed ? BuildAggregateError(result, failureException!) : null
+            Payload = payload
         }, cancellationToken);
     }
 
-    private IBatchResult<T> ReconstructFromCheckpoints(Operation parent, bool throwOnFailure)
+    private IBatchResult<T> ReconstructFromCheckpoints(Operation parent)
     {
         var summary = ParseSummary(parent.ContextDetails?.Result);
 
@@ -611,14 +612,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             ? DeserializeCompletionReason(summary.CompletionReason)
             : ComputeCompletionReason(items, UnitCount);
 
-        var result = new BatchResult<T>(items, completionReason);
-
-        if (throwOnFailure && completionReason == CompletionReason.FailureToleranceExceeded)
-        {
-            throw BuildException(result);
-        }
-
-        return result;
+        return new BatchResult<T>(items, completionReason);
     }
 
     private static BatchItemStatus InferStatusFromChildOp(Operation? childOp)
@@ -629,16 +623,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             OperationStatuses.Succeeded => BatchItemStatus.Succeeded,
             OperationStatuses.Failed    => BatchItemStatus.Failed,
             _                           => BatchItemStatus.Started
-        };
-    }
-
-    private SdkErrorObject BuildAggregateError(IBatchResult<T> result, DurableExecutionException failureException)
-    {
-        return new SdkErrorObject
-        {
-            ErrorType = failureException.GetType().FullName,
-            ErrorMessage =
-                $"{OperationNoun} operation failed: {result.FailureCount} of {result.TotalCount} {UnitNounPlural} failed."
         };
     }
 
