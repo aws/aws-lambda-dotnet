@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Rename the durable execution logging scope key from `durableExecutionArn` to `executionArn` so the AWS Lambda console correctly surfaces an execution's logs."
+      ]
+    }
+  ]
+}
