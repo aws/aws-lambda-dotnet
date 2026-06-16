@@ -667,7 +667,7 @@ public class ParallelOperationTests
                 {
                     Id = parentOpId,
                     Type = OperationTypes.Context,
-                    Status = OperationStatuses.Failed,
+                    Status = OperationStatuses.Succeeded,
                     SubType = OperationSubTypes.Parallel,
                     Name = "fanout",
                     ContextDetails = new ContextDetails { Result = summaryJson }

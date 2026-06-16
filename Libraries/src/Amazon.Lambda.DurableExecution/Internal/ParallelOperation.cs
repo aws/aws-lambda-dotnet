@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
-using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -25,9 +24,9 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       SUCCEED with summary payload (<see cref="ParallelSummary"/>).</item>
 ///   <item><b>SUCCEEDED</b>: parent payload supplies the snapshot of per-
 ///       branch statuses + completion reason; per-branch results are
-///       deserialised from the children's own CONTEXT checkpoints.</item>
-///   <item><b>FAILED</b>: same reconstruction; throws
-///       <see cref="ParallelException"/> carrying the rebuilt
+///       deserialised from the children's own CONTEXT checkpoints. If the
+///       completion reason is <see cref="CompletionReason.FailureToleranceExceeded"/>,
+///       throws <see cref="ParallelException"/> carrying the rebuilt
 ///       <see cref="IBatchResult{T}"/>.</item>
 ///   <item><b>STARTED</b> / <b>PENDING</b>: re-execute (children replay from
 ///       their own checkpoints).</item>
@@ -96,13 +95,13 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         switch (existing.Status)
         {
             case OperationStatuses.Succeeded:
-                return Task.FromResult(ReconstructFromCheckpoints(existing, throwOnFailure: false));
-
-            case OperationStatuses.Failed:
-                // Reconstruct so the caller (and ParallelException.Result) sees
-                // the per-branch outcomes; then throw.
-                var failed = ReconstructFromCheckpoints(existing, throwOnFailure: false);
-                throw BuildParallelException(failed);
+                // The parent always checkpoints as SUCCEED — even when
+                // CompletionReason is FailureToleranceExceeded. Reconstruct
+                // the BatchResult and throw if it was a tolerance failure.
+                var result = ReconstructFromCheckpoints(existing);
+                if (result.CompletionReason == CompletionReason.FailureToleranceExceeded)
+                    throw BuildParallelException(result);
+                return Task.FromResult(result);
 
             case OperationStatuses.Started:
             case OperationStatuses.Pending:
@@ -467,21 +466,23 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
     {
         var summary = ParallelSummaryCodec.Build(result.All, completionReason);
         var payload = ParallelSummaryCodec.ToPayload(summary);
-        var failed = completionReason == CompletionReason.FailureToleranceExceeded;
 
+        // Always checkpoint as SUCCEED — even when FailureToleranceExceeded.
+        // The completion reason lives inside the payload, matching the wire
+        // format of the Python/JS/Java SDKs. The ParallelException is thrown
+        // SDK-side after this checkpoint.
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
             Type = OperationTypes.Context,
-            Action = failed ? OperationAction.FAIL : OperationAction.SUCCEED,
+            Action = OperationAction.SUCCEED,
             SubType = OperationSubTypes.Parallel,
             Name = Name,
-            Payload = failed ? null : payload,
-            Error = failed ? BuildAggregateError(result) : null
+            Payload = payload
         }, cancellationToken);
     }
 
-    private IBatchResult<T> ReconstructFromCheckpoints(Operation parent, bool throwOnFailure)
+    private IBatchResult<T> ReconstructFromCheckpoints(Operation parent)
     {
         var summary = ParallelSummaryCodec.FromPayload(parent.ContextDetails?.Result);
 
@@ -545,14 +546,7 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
             ? ParallelSummaryCodec.ReadCompletionReason(summary.CompletionReason)
             : EvaluateCompletion(items, _branches.Count);
 
-        var result = new BatchResult<T>(items, completionReason);
-
-        if (throwOnFailure && completionReason == CompletionReason.FailureToleranceExceeded)
-        {
-            throw BuildParallelException(result);
-        }
-
-        return result;
+        return new BatchResult<T>(items, completionReason);
     }
 
     private static BatchItemStatus InferStatusFromBranchOp(Operation? branchOp)
@@ -573,15 +567,6 @@ internal sealed class ParallelOperation<T> : DurableOperation<IBatchResult<T>>
         {
             Result = result,
             CompletionReason = result.CompletionReason
-        };
-    }
-
-    private static SdkErrorObject BuildAggregateError(IBatchResult<T> result)
-    {
-        return new SdkErrorObject
-        {
-            ErrorType = typeof(ParallelException).FullName,
-            ErrorMessage = $"Parallel operation failed: {result.FailureCount} of {result.TotalCount} branches failed."
         };
     }
 
