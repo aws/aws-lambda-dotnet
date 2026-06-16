@@ -136,7 +136,7 @@ public class LambdaCoreLoggerTests : IDisposable
 
         using (logger.BeginScope(new Dictionary<string, object>
         {
-            ["durableExecutionArn"] = "arn-outer",
+            ["executionArn"] = "arn-outer",
             ["awsRequestId"] = "req-1",
         }))
         using (logger.BeginScope(new Dictionary<string, object>
@@ -151,7 +151,7 @@ public class LambdaCoreLoggerTests : IDisposable
         var entry = Assert.Single(_captured);
         // Inner scope keys appear before outer; the inner awsRequestId wins.
         Assert.Equal(
-            "hello {Name} {operationId} {awsRequestId} {durableExecutionArn}",
+            "hello {Name} {operationId} {awsRequestId} {executionArn}",
             entry.Template);
         Assert.Equal(
             new object[] { "world", "op-1", "req-INNER-WINS", "arn-outer" },
