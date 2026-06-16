@@ -98,3 +98,36 @@ public class ChildContextException : DurableExecutionException
     /// <summary>Creates a <see cref="ChildContextException"/> wrapping an inner exception.</summary>
     public ChildContextException(string message, Exception innerException) : base(message, innerException) { }
 }
+
+/// <summary>
+/// Thrown when a parallel operation resolves with
+/// <see cref="CompletionReason.FailureToleranceExceeded"/>. The aggregate
+/// <see cref="IBatchResult"/> is preserved on <see cref="Result"/> so callers
+/// can inspect per-branch outcomes.
+/// </summary>
+/// <remarks>
+/// This is the base type for parallel failures. Subclasses may be added in
+/// future releases (for example, a dedicated
+/// <c>ParallelFailureToleranceExceededException</c>); catching
+/// <see cref="ParallelException"/> remains forward-compatible.
+/// </remarks>
+public class ParallelException : DurableExecutionException
+{
+    /// <summary>
+    /// The aggregate result of the parallel operation. Type-erased — cast to
+    /// <c>IBatchResult&lt;T&gt;</c> if the per-branch result type is known.
+    /// </summary>
+    public IBatchResult? Result { get; init; }
+
+    /// <summary>
+    /// Why the parallel operation resolved.
+    /// </summary>
+    public CompletionReason CompletionReason { get; init; }
+
+    /// <summary>Creates an empty <see cref="ParallelException"/>.</summary>
+    public ParallelException() { }
+    /// <summary>Creates a <see cref="ParallelException"/> with the given message.</summary>
+    public ParallelException(string message) : base(message) { }
+    /// <summary>Creates a <see cref="ParallelException"/> wrapping an inner exception.</summary>
+    public ParallelException(string message, Exception innerException) : base(message, innerException) { }
+}

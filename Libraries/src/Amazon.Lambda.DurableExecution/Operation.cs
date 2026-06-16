@@ -198,6 +198,12 @@ public static class OperationSubTypes
 
     /// <summary>Wait-for-condition (polling) sub-type.</summary>
     public const string WaitForCondition = "WaitForCondition";
+
+    /// <summary>Parallel parent sub-type.</summary>
+    public const string Parallel = "Parallel";
+
+    /// <summary>Parallel branch (per-branch child-context) sub-type.</summary>
+    public const string ParallelBranch = "ParallelBranch";
 }
 
 /// <summary>

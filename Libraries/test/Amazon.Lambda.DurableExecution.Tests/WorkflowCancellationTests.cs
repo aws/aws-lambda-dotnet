@@ -198,6 +198,80 @@ public class WorkflowCancellationTests
         Assert.True(stepToken.IsCancellationRequested);
     }
 
+    // ── ParallelAsync propagation ───────────────────────────────────────
+
+    [Fact]
+    public async Task ParallelAsync_BranchesReceiveLinkedToken_FireOnWorkflowCancel()
+    {
+        // Each parallel branch runs inside a ChildContextOperation, which links
+        // the caller token with WorkflowCancellation.Token. When the workflow
+        // terminates, every in-flight branch's token must transition to
+        // cancelled so cancellation-aware work inside the branch unwinds.
+        var harness = CreateHarness();
+        var allEntered = new CountdownEvent(3);
+        var tokens = new CancellationToken[3];
+
+        var branches = new Func<IDurableContext, CancellationToken, Task<int>>[3];
+        for (var i = 0; i < 3; i++)
+        {
+            var index = i;
+            branches[i] = async (_, ct) =>
+            {
+                tokens[index] = ct;
+                allEntered.Signal();
+                await Task.Delay(Timeout.Infinite, ct);
+                return index;
+            };
+        }
+
+        var run = harness.Context.ParallelAsync(branches, name: "fanout");
+
+        Assert.True(allEntered.Wait(TimeSpan.FromSeconds(5)));
+        harness.Termination.Terminate(TerminationReason.WaitScheduled);
+
+        // The parallel itself surfaces cancellation (see companion test); here
+        // we only care that the per-branch tokens fired.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
+        Assert.All(tokens, t => Assert.True(t.IsCancellationRequested));
+    }
+
+    [Fact]
+    public async Task ParallelAsync_WorkflowCancel_PropagatesAsCancellation_NotBranchFailure()
+    {
+        // A branch unwinding because the workflow is being torn down is NOT a
+        // graceful per-branch failure. Per cancellation.md the OCE propagates
+        // and NO parent CONTEXT FAIL is checkpointed — otherwise teardown would
+        // freeze a spurious failure into history and diverge on replay.
+        var harness = CreateHarness();
+        var allEntered = new CountdownEvent(3);
+
+        var branches = new Func<IDurableContext, CancellationToken, Task<int>>[3];
+        for (var i = 0; i < 3; i++)
+        {
+            var index = i;
+            branches[i] = async (_, ct) =>
+            {
+                allEntered.Signal();
+                await Task.Delay(Timeout.Infinite, ct);
+                return index;
+            };
+        }
+
+        var run = harness.Context.ParallelAsync(branches, name: "fanout");
+
+        Assert.True(allEntered.Wait(TimeSpan.FromSeconds(5)));
+        harness.Termination.Terminate(TerminationReason.WaitScheduled);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
+
+        // No parent CONTEXT FAIL / SUCCEED — the workflow-shutdown signal owns
+        // the outcome, not a synthesized failure-tolerance verdict.
+        Assert.DoesNotContain(harness.Recorder.Flushed,
+            u => u.Type == OperationTypes.Context
+                 && u.SubType == OperationSubTypes.Parallel
+                 && (u.Action == OperationAction.FAIL || u.Action == OperationAction.SUCCEED));
+    }
+
     // ── WaitForConditionAsync ───────────────────────────────────────────
 
     [Fact]
@@ -254,8 +328,19 @@ public class WorkflowCancellationTests
 
         var tm = new TerminationManager();
         var wfc = new WorkflowCancellation(tm);
-        tm.Terminate(TerminationReason.WaitScheduled);  // cancel before invocation
-        await Task.Yield();
+
+        // WorkflowCancellation trips its token via an async continuation on
+        // TerminationTask (a RunContinuationsAsynchronously TCS), so a single
+        // Task.Yield after Terminate() is not a reliable barrier — under load
+        // the continuation may not have run yet. Register a callback (fires
+        // immediately if the token is already cancelled, so it's race-free) and
+        // wait on it deterministically instead of guessing at a yield/delay.
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (wfc.Token.Register(() => cancelled.TrySetResult()))
+        {
+            tm.Terminate(TerminationReason.WaitScheduled);  // cancel before invocation
+            await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
         Assert.True(wfc.Token.IsCancellationRequested);
 
         var idGen = new OperationIdGenerator();
