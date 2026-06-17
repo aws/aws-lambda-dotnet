@@ -359,7 +359,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             ? BuildException(result)
             : null;
 
-        await CheckpointParentResultAsync(result, completionReason, failureException, cancellationToken);
+        await CheckpointParentResultAsync(result, completionReason, cancellationToken);
 
         if (failureException != null)
         {
@@ -512,7 +512,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     private async Task CheckpointParentResultAsync(
         BatchResult<T> result,
         CompletionReason completionReason,
-        DurableExecutionException? failureException,
         CancellationToken cancellationToken)
     {
         var summary = new BatchSummary
