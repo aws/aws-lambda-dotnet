@@ -25,7 +25,7 @@ internal sealed class ParallelOperation<T> : ConcurrentOperation<T>
         IReadOnlyList<DurableBranch<T>> branches,
         ParallelConfig config,
         ILambdaSerializer serializer,
-        Func<string, IDurableContext> childContextFactory,
+        Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
@@ -33,7 +33,8 @@ internal sealed class ParallelOperation<T> : ConcurrentOperation<T>
         CheckpointBatcher? batcher = null)
         : base(operationId, name, parentId, config.CompletionConfig, config.MaxConcurrency,
             serializer, childContextFactory, state, termination, workflowCancellation,
-            durableExecutionArn, batcher)
+            durableExecutionArn, batcher,
+            isVirtual: config.NestingType == NestingType.Flat)
     {
         _branches = branches;
     }

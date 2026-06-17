@@ -385,15 +385,104 @@ public class MapOperationTests
     // ──────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task MapAsync_NestingTypeFlat_ThrowsNotSupported()
+    public async Task MapAsync_NestingTypeFlat_SuppressesPerItemContextOps()
     {
-        var (context, _, _, _) = CreateContext();
+        var (context, recorder, _, _) = CreateContext();
 
-        await Assert.ThrowsAsync<NotSupportedException>(() =>
-            context.MapAsync(
-                new[] { 1 },
-                async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
-                config: new MapConfig { NestingType = NestingType.Flat }));
+        var result = await context.MapAsync(
+            new[] { 1, 2, 3 },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return item * 10; },
+            name: "doubler",
+            config: new MapConfig { NestingType = NestingType.Flat });
+
+        Assert.Equal(new[] { 10, 20, 30 }, result.GetResults());
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+
+        // Parent Map CONTEXT ops still emitted; no per-item CONTEXT ops under Flat.
+        var parentActions = recorder.Flushed
+            .Where(o => o.Type == "CONTEXT" && o.SubType == "Map")
+            .Select(o => $"{o.Action}").ToArray();
+        Assert.Equal(new[] { "START", "SUCCEED" }, parentActions);
+
+        Assert.Empty(recorder.Flushed.Where(o =>
+            o.Type == "CONTEXT" && o.SubType == "MapItem"));
+    }
+
+    [Fact]
+    public async Task MapAsync_NestingTypeFlat_InnerOpsReparentToMapOp()
+    {
+        var (context, recorder, _, _) = CreateContext();
+
+        await context.MapAsync(
+            new[] { 1, 2 },
+            async (ctx, item, index, all, _) =>
+                await ctx.StepAsync(async (_, _) => { await Task.Yield(); return item * 10; }),
+            name: "doubler",
+            config: new MapConfig { NestingType = NestingType.Flat });
+
+        await recorder.Batcher.DrainAsync();
+
+        var parentOpId = IdAt(1);
+        var item0Id = ChildIdAt(parentOpId, 1);
+        var item1Id = ChildIdAt(parentOpId, 2);
+        var step0Id = ChildIdAt(item0Id, 1);
+        var step1Id = ChildIdAt(item1Id, 1);
+
+        // A step emits both START and SUCCEED under the same Id; scope to START
+        // so we assert on exactly one record per step.
+        var steps = recorder.Flushed
+            .Where(o => o.Type == "STEP" && $"{o.Action}" == "START").ToArray();
+        var step0 = Assert.Single(steps, o => o.Id == step0Id);
+        var step1 = Assert.Single(steps, o => o.Id == step1Id);
+
+        // Inner steps re-parent to the MAP op (nearest non-virtual ancestor).
+        Assert.Equal(parentOpId, step0.ParentId);
+        Assert.Equal(parentOpId, step1.ParentId);
+    }
+
+    [Fact]
+    public async Task MapAsync_NestingTypeFlat_ReplaySucceeded_RebuildsFromInlinePayload()
+    {
+        var parentOpId = IdAt(1);
+
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED","Result":"10"},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED","Result":"20"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "doubler",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+            }
+        });
+
+        var executed = false;
+        var result = await context.MapAsync(
+            new[] { 1, 2 },
+            async (ctx, item, index, all, _) => { executed = true; await Task.Yield(); return item * 999; },
+            name: "doubler",
+            config: new MapConfig { NestingType = NestingType.Flat });
+
+        Assert.False(executed);
+        Assert.Equal(new[] { 10, 20 }, result.GetResults());
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed);
     }
 
     // ──────────────────────────────────────────────────────────────────────
