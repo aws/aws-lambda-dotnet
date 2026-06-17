@@ -53,6 +53,10 @@
       "PrereleaseLabel": "preview"
     },
     {
+      "Name": "Amazon.Lambda.DurableExecution.Testing",
+      "Path": "Libraries/src/Amazon.Lambda.DurableExecution.Testing/Amazon.Lambda.DurableExecution.Testing.csproj"
+    },
+    {
       "Name": "Amazon.Lambda.DynamoDBEvents",
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
     },
