@@ -34,10 +34,10 @@ public class Function
 
         var batch = await context.MapAsync(
             items,
-            async (ctx, item, index, all) =>
+            async (ctx, item, index, all, ct) =>
             {
                 var generatedId = await ctx.StepAsync(
-                    async (_) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
+                    async (_, _) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
                     name: "generate");
 
                 // Force a suspend/resume cycle to trigger replay of the map.

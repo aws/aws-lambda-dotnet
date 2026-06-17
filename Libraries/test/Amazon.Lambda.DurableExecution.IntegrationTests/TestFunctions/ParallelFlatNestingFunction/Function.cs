@@ -44,10 +44,10 @@ public class Function
         return new TestResult { Status = "completed", Data = joined };
     }
 
-    private static async Task<string> BranchAsync(IDurableContext ctx)
+    private static async Task<string> BranchAsync(IDurableContext ctx, CancellationToken ct)
     {
         var generatedId = await ctx.StepAsync(
-            async (_) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
+            async (_, _) => { await Task.CompletedTask; return Guid.NewGuid().ToString(); },
             name: "generate");
 
         // Force a suspend/resume cycle to trigger replay of the parallel.
