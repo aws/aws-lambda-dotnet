@@ -118,10 +118,13 @@ public static class DurableFunction
             // Push execution-level metadata into a logging scope so structured
             // providers (the runtime's JSON formatter, Serilog, Powertools,
             // etc.) tag every log line emitted by user code with the
-            // execution ARN and request id.
+            // execution ARN and request id. The key is "executionArn" because
+            // that is the field the Lambda console filters on when rendering an
+            // execution's logs; "durableExecutionArn" caused logs to be dropped
+            // from the console view (issue #2423).
             using (context.Logger.BeginScope(new Dictionary<string, object>
             {
-                ["durableExecutionArn"] = invocationInput.DurableExecutionArn,
+                ["executionArn"] = invocationInput.DurableExecutionArn,
                 ["awsRequestId"] = lambdaContext.AwsRequestId ?? string.Empty,
             }))
             {

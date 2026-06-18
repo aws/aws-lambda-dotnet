@@ -27,7 +27,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <see cref="BeginScope"/> maintains an <see cref="AsyncLocal{T}"/> chain of
 /// scope state. Scopes whose state is a key/value collection have each entry
 /// appended to the outgoing template/args, so structured scope metadata
-/// (<c>durableExecutionArn</c>, <c>operationId</c>, etc.) shows up as
+/// (<c>executionArn</c>, <c>operationId</c>, etc.) shows up as
 /// top-level JSON fields without callers having to swap in a third-party
 /// logger. Inner scopes win on key collision; explicit message arguments
 /// always win over scope keys.

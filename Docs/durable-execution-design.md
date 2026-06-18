@@ -1162,7 +1162,7 @@ public interface IDurableContext
     /// </summary>
     Task<IBatchResult<TResult>> MapAsync<TItem, TResult>(
         IReadOnlyList<TItem> items,
-        Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, Task<TResult>> func,
+        Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
         string? name = null,
         MapConfig? config = null,
         CancellationToken cancellationToken = default);
@@ -1443,9 +1443,15 @@ public class MapConfig
     public int? MaxConcurrency { get; set; }
 
     /// <summary>
-    /// When to consider the operation complete.
+    /// When to consider the operation complete. Defaults to AllCompleted() —
+    /// every item runs regardless of per-item failures, which surface via
+    /// IBatchResult&lt;T&gt;.Failed rather than throwing. This permissive default
+    /// matches the Python and Java SDKs' map operation. It differs intentionally
+    /// from ParallelConfig.CompletionConfig, which defaults to AllSuccessful()
+    /// (fail-fast). For fail-fast map behavior, set this to
+    /// CompletionConfig.AllSuccessful() or call IBatchResult&lt;T&gt;.ThrowIfError().
     /// </summary>
-    public CompletionConfig CompletionConfig { get; set; } = CompletionConfig.AllSuccessful();
+    public CompletionConfig CompletionConfig { get; set; } = CompletionConfig.AllCompleted();
 
     /// <summary>
     /// How item branches are represented in the checkpoint graph.
@@ -1453,35 +1459,11 @@ public class MapConfig
     public NestingType NestingType { get; set; } = NestingType.Nested;
 
     /// <summary>
-    /// Optional batching configuration for grouping items before processing.
-    /// When set, items are grouped into batches and each batch is processed as a unit.
-    /// Reduces checkpoint overhead for large collections.
-    /// </summary>
-    public ItemBatcher? Batcher { get; set; }
-
-    /// <summary>
     /// Optional function to generate a custom name for each item's branch.
     /// Improves observability in execution traces. Receives the item and its index.
     /// If null, branches are named by index (e.g., "0", "1", "2").
     /// </summary>
     public Func<object, int, string>? ItemNamer { get; set; }
-}
-
-/// <summary>
-/// Groups items into batches for map operations to reduce checkpoint overhead.
-/// At least one of MaxItemsPerBatch or MaxBytesPerBatch must be set.
-/// </summary>
-public class ItemBatcher
-{
-    /// <summary>
-    /// Maximum number of items per batch. Null = no count limit.
-    /// </summary>
-    public int? MaxItemsPerBatch { get; set; }
-
-    /// <summary>
-    /// Maximum serialized size (bytes) per batch. Null = no size limit.
-    /// </summary>
-    public int? MaxBytesPerBatch { get; set; }
 }
 
 /// <summary>
@@ -2222,7 +2204,6 @@ All four SDKs expose the same core operations. The differences are naming conven
 | Jitter strategy | `JitterStrategy` enum on `Exponential()` | `jitter_strategy` on `RetryStrategyConfig` | `jitter` on `createRetryStrategy()` |
 | Retry presets | `RetryStrategy.None/Default/Transient` | `RetryPresets.none()/default()/transient()` | `retryPresets.default/linear/noRetry` |
 | Nesting type | `NestingType` on `ParallelConfig`/`MapConfig` | `NestingType` on parallel/map config | `NestingType` on parallel/map config |
-| Item batching | `ItemBatcher` on `MapConfig` | `ItemBatcher` on `MapConfig` | *(checkpoint manager handles batching)* |
 | Item namer | `ItemNamer` on `MapConfig` | Item naming function on `MapConfig` | `itemNamer` on `MapConfig` |
 | Error mapping | `ErrorMapping` on `ChildContextConfig` | *(typed exception wrapping)* | `errorMapping` on child context config |
 | Message-based retry filter | `retryableMessagePatterns` (regex) | `retryable_errors` (regex) | `retryableErrors` (RegExp[]) |

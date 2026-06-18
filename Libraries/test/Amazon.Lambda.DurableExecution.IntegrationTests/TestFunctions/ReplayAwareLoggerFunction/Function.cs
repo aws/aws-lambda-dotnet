@@ -39,7 +39,7 @@ public class Function
             async (_, _) =>
             {
                 // Emitted inside the step's BeginScope, so the line carries
-                // both execution-level scope (durableExecutionArn, awsRequestId)
+                // both execution-level scope (executionArn, awsRequestId)
                 // AND step-level scope (operationId, operationName, attempt).
                 context.Logger.LogInformation("LOG_REPLAY_TEST inside_step1 order={OrderId}", input.OrderId);
                 await Task.CompletedTask;

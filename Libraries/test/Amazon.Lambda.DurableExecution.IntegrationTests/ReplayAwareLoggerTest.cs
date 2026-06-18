@@ -120,8 +120,8 @@ public class ReplayAwareLoggerTest
 
         if (requireExecutionScope)
         {
-            Assert.True(root.TryGetProperty("durableExecutionArn", out _),
-                $"durableExecutionArn missing on record: {record}");
+            Assert.True(root.TryGetProperty("executionArn", out _),
+                $"executionArn missing on record: {record}");
             Assert.True(root.TryGetProperty("awsRequestId", out _),
                 $"awsRequestId missing on record: {record}");
         }

@@ -260,6 +260,41 @@ internal sealed class DurableContext : IDurableContext
         return op.ExecuteAsync(cancellationToken);
     }
 
+    public Task<IBatchResult<TResult>> MapAsync<TItem, TResult>(
+        IReadOnlyList<TItem> items,
+        Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
+        string? name = null,
+        MapConfig? config = null,
+        CancellationToken cancellationToken = default)
+        => RunMap(items, func, name, config, cancellationToken);
+
+    private Task<IBatchResult<TResult>> RunMap<TItem, TResult>(
+        IReadOnlyList<TItem> items,
+        Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
+        string? name,
+        MapConfig? config,
+        CancellationToken cancellationToken)
+    {
+        if (items == null) throw new ArgumentNullException(nameof(items));
+        if (func == null) throw new ArgumentNullException(nameof(func));
+
+        var effectiveConfig = config ?? new MapConfig();
+        if (effectiveConfig.NestingType == NestingType.Flat)
+        {
+            throw new NotSupportedException(
+                "NestingType.Flat is not yet supported in the .NET Durable Execution SDK. " +
+                "Use NestingType.Nested (the default) for now.");
+        }
+
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+
+        var operationId = _idGenerator.NextId();
+        var op = new Internal.MapOperation<TItem, TResult>(
+            operationId, name, _idGenerator.ParentId, items, func, effectiveConfig, serializer, MakeChildFactory(),
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+        return op.ExecuteAsync(cancellationToken);
+    }
+
     public Task<T> WaitForCallbackAsync<T>(
         Func<string, IWaitForCallbackContext, CancellationToken, Task> submitter,
         string? name = null,

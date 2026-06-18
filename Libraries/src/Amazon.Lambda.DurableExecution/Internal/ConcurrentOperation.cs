@@ -1,0 +1,693 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using Amazon.Lambda;
+using Amazon.Lambda.Core;
+using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
+
+namespace Amazon.Lambda.DurableExecution.Internal;
+
+/// <summary>
+/// Shared orchestration base for the concurrent durable operations
+/// (<see cref="ParallelOperation{T}"/> and <see cref="MapOperation{TItem, TResult}"/>).
+/// Runs N user-supplied units concurrently (each as a
+/// <see cref="ChildContextOperation{T}"/>) under a shared
+/// <see cref="CompletionConfig"/> and concurrency limit, persisting the
+/// aggregate result so subsequent invocations replay it without re-executing.
+/// </summary>
+/// <remarks>
+/// Subclasses supply only what differs between Parallel and Map — the unit count,
+/// how to obtain a unit's <c>(name, func)</c>, the parent/child sub-type labels,
+/// and the failure-exception factory. All concurrency, completion, checkpoint, and
+/// replay logic lives here.
+/// <list type="bullet">
+///   <item><b>Fresh</b>: no prior state → sync-flush parent CONTEXT START →
+///       dispatch units respecting MaxConcurrency → wait for in-flight to
+///       complete after CompletionConfig short-circuit → emit parent CONTEXT
+///       SUCCEED with summary payload (<see cref="BatchSummary"/>).</item>
+///   <item><b>SUCCEEDED</b>: parent payload supplies the snapshot of per-unit
+///       statuses + completion reason; per-unit results are deserialised from the
+///       children's own CONTEXT checkpoints. If the completion reason is
+///       <see cref="CompletionReason.FailureToleranceExceeded"/>, throws the
+///       subclass exception carrying the rebuilt <see cref="IBatchResult{T}"/>.</item>
+///   <item><b>STARTED</b> / <b>PENDING</b>: re-execute (children replay from their
+///       own checkpoints).</item>
+/// </list>
+/// Per-unit errors do NOT abort the operation directly — the orchestrator catches
+/// each unit's <see cref="ChildContextException"/>, records it as a failed
+/// <see cref="IBatchItem{T}"/>, and consults the <see cref="CompletionConfig"/>
+/// after every completion. Only when the completion config marks the run as
+/// <see cref="CompletionReason.FailureToleranceExceeded"/> does it throw.
+/// </remarks>
+internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T>>
+{
+    private readonly CompletionPolicy _policy;
+    private readonly int? _maxConcurrency;
+    private readonly WorkflowCancellation _workflowCancellation;
+
+    /// <summary>Serializer used to deserialize per-unit child results on replay.</summary>
+    protected readonly ILambdaSerializer Serializer;
+
+    /// <summary>Factory used to build each unit's inner child context.</summary>
+    protected readonly Func<string, IDurableContext> ChildContextFactory;
+
+    protected ConcurrentOperation(
+        string operationId,
+        string? name,
+        string? parentId,
+        CompletionConfig completionConfig,
+        int? maxConcurrency,
+        ILambdaSerializer serializer,
+        Func<string, IDurableContext> childContextFactory,
+        ExecutionState state,
+        TerminationManager termination,
+        WorkflowCancellation workflowCancellation,
+        string durableExecutionArn,
+        CheckpointBatcher? batcher = null)
+        : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
+    {
+        _policy = new CompletionPolicy(completionConfig);
+        _maxConcurrency = maxConcurrency;
+        _workflowCancellation = workflowCancellation;
+        Serializer = serializer;
+        ChildContextFactory = childContextFactory;
+    }
+
+    protected override string OperationType => OperationTypes.Context;
+
+    // ── Subclass hooks ──────────────────────────────────────────────────
+
+    /// <summary>The number of units (branches or items) to execute.</summary>
+    protected abstract int UnitCount { get; }
+
+    /// <summary>Parent CONTEXT sub-type label (e.g. Parallel / Map).</summary>
+    protected abstract string ParentSubType { get; }
+
+    /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapItem).</summary>
+    protected abstract string ChildSubType { get; }
+
+    /// <summary>Singular operation noun used in messages (e.g. "Parallel" / "Map").</summary>
+    protected abstract string OperationNoun { get; }
+
+    /// <summary>Plural unit noun used in messages (e.g. "branches" / "items").</summary>
+    protected abstract string UnitNounPlural { get; }
+
+    /// <summary>
+    /// Resolves the unit at <paramref name="index"/> into its display name and the
+    /// function to run inside the unit's child context.
+    /// </summary>
+    protected abstract (string? Name, Func<IDurableContext, CancellationToken, Task<T>> Func) GetUnit(int index);
+
+    /// <summary>
+    /// Builds the subclass-specific exception thrown when the operation resolves
+    /// with <see cref="CompletionReason.FailureToleranceExceeded"/>.
+    /// </summary>
+    protected abstract DurableExecutionException CreateException(string message, IBatchResult<T> result);
+
+    // ── Orchestration ───────────────────────────────────────────────────
+
+    protected override async Task<IBatchResult<T>> StartAsync(CancellationToken cancellationToken)
+    {
+        // Sync-flush parent CONTEXT START. Mirrors ChildContextOperation: if a
+        // unit suspends (e.g., a Wait inside it), the service needs to know the
+        // parent existed.
+        await EnqueueAsync(new SdkOperationUpdate
+        {
+            Id = OperationId,
+            Type = OperationTypes.Context,
+            Action = OperationAction.START,
+            SubType = ParentSubType,
+            Name = Name
+        }, cancellationToken);
+
+        return await ExecuteUnitsAsync(cancellationToken);
+    }
+
+    protected override Task<IBatchResult<T>> ReplayAsync(Operation existing, CancellationToken cancellationToken)
+    {
+        switch (existing.Status)
+        {
+            case OperationStatuses.Succeeded:
+                // The parent always checkpoints as SUCCEED — even when
+                // CompletionReason is FailureToleranceExceeded. Reconstruct
+                // the BatchResult and throw if it was a tolerance failure.
+                var result = ReconstructFromCheckpoints(existing);
+                if (result.CompletionReason == CompletionReason.FailureToleranceExceeded)
+                    throw BuildException(result);
+                return Task.FromResult(result);
+
+            case OperationStatuses.Started:
+            case OperationStatuses.Pending:
+                // Re-run: units replay from their own checkpoints.
+                return ExecuteUnitsAsync(cancellationToken);
+
+            default:
+                throw new NonDeterministicExecutionException(
+                    $"{OperationNoun} operation '{Name ?? OperationId}' has unexpected status '{existing.Status}' on replay.");
+        }
+    }
+
+    private async Task<IBatchResult<T>> ExecuteUnitsAsync(CancellationToken cancellationToken)
+    {
+        // Combine the caller's token with the workflow-shutdown token for the
+        // operation's OWN control flow: the dispatch loop's semaphore waits, the
+        // post-settle re-throw, and each unit's OCE classification.
+        //
+        // CRITICAL: childOp.ExecuteAsync below still receives the *caller* token
+        // only. ChildContextOperation re-links workflow-shutdown itself for the
+        // user func, and its checkpoint writes (CONTEXT FAIL/SUCCEED) must NOT
+        // observe shutdown, otherwise teardown could abort a unit's successful
+        // checkpoint mid-flush.
+        using var controlCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _workflowCancellation.Token);
+        var controlToken = controlCts.Token;
+
+        controlToken.ThrowIfCancellationRequested();
+
+        // Cooperative-bail signal: tripped the moment a CompletionConfig
+        // short-circuit is decided. It flows into each unit's user func only
+        // (via ChildContextOperation's cooperative-bail token), NOT into the
+        // units' checkpoint writes — a unit that honors the token unwinds with an
+        // OperationCanceledException we record as Started, while a unit mid-flush
+        // of a successful checkpoint still completes. Units that ignore the token
+        // simply run to their natural terminal state, exactly as before. We never
+        // abandon a dispatched unit, so replay stays deterministic.
+        using var shortCircuitCts = new CancellationTokenSource();
+
+        var unitCount = UnitCount;
+        var slots = new UnitOutcome[unitCount];
+        var dispatched = new bool[unitCount];
+
+        var maxConcurrency = _maxConcurrency ?? unitCount;
+        // Optimisation: when MaxConcurrency >= unitCount, skip the semaphore
+        // entirely. Behaviour is identical, allocations are lower. (Also covers
+        // the empty-collection case, where unitCount == 0 and no unit runs.)
+        var semaphore = (maxConcurrency >= unitCount || unitCount == 0)
+            ? null
+            : new SemaphoreSlim(maxConcurrency, maxConcurrency);
+
+        var succeeded = 0;
+        var failed = 0;
+
+        var inFlight = new List<Task>(unitCount);
+
+        // Reads the live counters and asks the completion policy whether the run
+        // is already decided. Volatile reads pair with the Interlocked.Increment
+        // writes in the onComplete callback. Reads are non-atomic across the two
+        // counters: at worst we observe slightly stale values and dispatch one
+        // extra unit before the next completion forces a re-check. That's
+        // acceptable — the post-loop ComputeCompletionReason is the source of truth.
+        bool ShouldStopDispatchingNow() => _policy.ShouldStopDispatching(
+            Volatile.Read(ref succeeded), Volatile.Read(ref failed), unitCount);
+
+        // Signal still-running units to bail. Idempotent: the first Cancel wins,
+        // racing callbacks are harmless. Tolerate a late call after the CTS is
+        // disposed at end-of-scope (a unit completing during teardown).
+        void SignalShortCircuit()
+        {
+            try { shortCircuitCts.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+
+        // Units run with the caller's token (re-linked to workflow-shutdown inside
+        // ChildContextOperation) so cooperative cancellation still propagates into
+        // user code, but we must NOT abandon already-dispatched units while they're
+        // still writing checkpoints — that would diverge between the original run
+        // and replay. The finally block therefore awaits every in-flight task even
+        // when cancellation fires, and only then disposes the semaphore (after units
+        // have settled — success, failure, or cooperative OCE).
+        try
+        {
+            for (var i = 0; i < unitCount; i++)
+            {
+                if (ShouldStopDispatchingNow())
+                {
+                    SignalShortCircuit();
+                    break;
+                }
+
+                if (semaphore != null)
+                {
+                    await semaphore.WaitAsync(controlToken).ConfigureAwait(false);
+                    // Re-check after acquiring: the wait may have unblocked because
+                    // earlier units finished and short-circuited the operation.
+                    if (ShouldStopDispatchingNow())
+                    {
+                        semaphore.Release();
+                        SignalShortCircuit();
+                        break;
+                    }
+                }
+
+                var index = i;
+                dispatched[index] = true;
+                inFlight.Add(RunUnitAsync(index, slots, semaphore, cancellationToken, controlToken,
+                    shortCircuitCts.Token,
+                    onComplete: outcome =>
+                    {
+                        if (outcome.Status == BatchItemStatus.Succeeded)
+                            Interlocked.Increment(ref succeeded);
+                        else if (outcome.Status == BatchItemStatus.Failed)
+                            Interlocked.Increment(ref failed);
+
+                        // The deciding completion typically lands AFTER every unit
+                        // has been dispatched, so the loop is no longer sitting at a
+                        // break point. Re-check here and signal any still-running
+                        // units to bail.
+                        if (ShouldStopDispatchingNow())
+                            SignalShortCircuit();
+                    }));
+            }
+        }
+        finally
+        {
+            // CRITICAL: wait for every dispatched unit — even on the exceptional
+            // path (control-token cancellation mid-dispatch, or a synchronous throw
+            // out of the loop) — before the semaphore is disposed. Otherwise
+            // surviving units' Release() calls hit ObjectDisposedException, the
+            // tasks become unobserved, and they keep writing checkpoints out from
+            // under us.
+            //
+            // We deliberately DO NOT cancel already-running units when a
+            // short-circuit fires — orphan units that continue writing checkpoints
+            // would diverge between the original run and replay. Letting them finish
+            // guarantees determinism: all dispatched units end up Succeeded or
+            // Failed. Only un-dispatched units surface as Started.
+            if (inFlight.Count > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(inFlight).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Swallow here — Task.WhenAll only surfaces the first exception,
+                    // but every unit task is now in a terminal state and we want to
+                    // inspect each one individually below to decide whether to
+                    // surface a workflow-level error. The Task objects themselves
+                    // still carry their exceptions, so this swallow does not orphan
+                    // them.
+                }
+            }
+
+            semaphore?.Dispose();
+        }
+
+        // Surface any workflow-level exception (e.g. NonDeterministicExecutionException)
+        // raised inside a unit. RunUnitAsync re-throws DurableExecutionException
+        // (other than ChildContextException which is captured into the slot) so the
+        // task faults with that exception. Take the first such failure: these are
+        // structural errors, not "unit failed gracefully" outcomes.
+        foreach (var t in inFlight)
+        {
+            if (t.IsFaulted && t.Exception is { } agg)
+            {
+                foreach (var inner in agg.InnerExceptions)
+                {
+                    if (inner is DurableExecutionException dex && inner is not ChildContextException)
+                    {
+                        throw dex;
+                    }
+                }
+            }
+        }
+
+        // Re-throw any pending cancellation (caller-cancel or workflow shutdown) now
+        // that units have settled and the semaphore has been disposed cleanly.
+        // Surfacing it here means a torn-down operation propagates an
+        // OperationCanceledException instead of synthesizing a spurious
+        // FailureToleranceExceeded verdict from units that merely unwound.
+        controlToken.ThrowIfCancellationRequested();
+
+        // Build BatchItems for every unit in original order.
+        var items = new List<IBatchItem<T>>(unitCount);
+        for (var i = 0; i < unitCount; i++)
+        {
+            var (unitName, _) = GetUnit(i);
+            if (dispatched[i])
+            {
+                var outcome = slots[i];
+                items.Add(new BatchItem<T>
+                {
+                    Index = i,
+                    Name = unitName,
+                    Status = outcome.Status,
+                    Result = outcome.Status == BatchItemStatus.Succeeded ? outcome.Result : default,
+                    Error = outcome.Status == BatchItemStatus.Failed ? outcome.Error : null
+                });
+            }
+            else
+            {
+                items.Add(new BatchItem<T>
+                {
+                    Index = i,
+                    Name = unitName,
+                    Status = BatchItemStatus.Started,
+                    Result = default,
+                    Error = null
+                });
+            }
+        }
+
+        var completionReason = ComputeCompletionReason(items, unitCount);
+        var result = new BatchResult<T>(items, completionReason);
+
+        var failureException = completionReason == CompletionReason.FailureToleranceExceeded
+            ? BuildException(result)
+            : null;
+
+        await CheckpointParentResultAsync(result, completionReason, cancellationToken);
+
+        if (failureException != null)
+        {
+            throw failureException;
+        }
+
+        return result;
+    }
+
+    private async Task RunUnitAsync(
+        int index,
+        UnitOutcome[] slots,
+        SemaphoreSlim? semaphore,
+        CancellationToken cancellationToken,
+        CancellationToken controlToken,
+        CancellationToken shortCircuitToken,
+        Action<UnitOutcome> onComplete)
+    {
+        try
+        {
+            var (unitName, unitFunc) = GetUnit(index);
+            var childOpId = OperationIdGenerator.HashOperationId($"{OperationId}-{index + 1}");
+
+            var childOp = new ChildContextOperation<T>(
+                childOpId,
+                unitName,
+                OperationId,
+                unitFunc,
+                new ChildContextConfig { SubType = ChildSubType },
+                Serializer,
+                ChildContextFactory,
+                State,
+                Termination,
+                _workflowCancellation,
+                DurableExecutionArn,
+                Batcher,
+                shortCircuitToken);
+
+            try
+            {
+                var result = await childOp.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+                slots[index] = new UnitOutcome { Status = BatchItemStatus.Succeeded, Result = result };
+            }
+            catch (ChildContextException ex)
+            {
+                slots[index] = new UnitOutcome { Status = BatchItemStatus.Failed, Error = ex };
+            }
+            catch (DurableExecutionException)
+            {
+                // E.g. NonDeterministicExecutionException — these are not "unit
+                // failed gracefully" but workflow-level problems. Surface them:
+                // re-throw out of the operation without writing a slot (the
+                // orchestrator's outer flow handles it).
+                throw;
+            }
+            catch (OperationCanceledException) when (
+                shortCircuitToken.IsCancellationRequested && !controlToken.IsCancellationRequested)
+            {
+                // Cooperative bail: this unit honored the short-circuit signal raised
+                // when a sibling satisfied the CompletionConfig. It is neither a
+                // failure nor an operation-wide cancel — record it as Started so the
+                // verdict math treats it like an un-dispatched unit (and so it can
+                // never trip a failure threshold). The unit wrote no terminal
+                // checkpoint, so replay reconstructs it identically from the parent
+                // summary.
+                //
+                // Ordered BEFORE the control-token clause: a genuine caller-cancel /
+                // workflow-shutdown still takes precedence.
+                slots[index] = new UnitOutcome { Status = BatchItemStatus.Started };
+            }
+            catch (OperationCanceledException) when (controlToken.IsCancellationRequested)
+            {
+                // Control-token cancellation — caller-cancel OR workflow shutdown (a
+                // sibling op suspended, a checkpoint failed). Don't write a slot —
+                // Task.WhenAll observes this and the orchestrator re-throws after
+                // settling.
+                throw;
+            }
+            catch (OperationCanceledException ex)
+            {
+                // Unit-internal cancellation that is NOT tied to the control token
+                // (e.g. the unit's own CancellationTokenSource fired). Treat it as a
+                // normal per-unit failure rather than killing the operation as
+                // cancelled.
+                var wrapped = new ChildContextException(ex.Message, ex)
+                {
+                    SubType = ChildSubType,
+                    ErrorType = ex.GetType().FullName
+                };
+                slots[index] = new UnitOutcome { Status = BatchItemStatus.Failed, Error = wrapped };
+            }
+            catch (Exception ex)
+            {
+                // Wrap unexpected exceptions as ChildContextException — they're
+                // per-unit failures from the user's POV.
+                var wrapped = new ChildContextException(ex.Message, ex)
+                {
+                    SubType = ChildSubType,
+                    ErrorType = ex.GetType().FullName
+                };
+                slots[index] = new UnitOutcome { Status = BatchItemStatus.Failed, Error = wrapped };
+            }
+
+            onComplete(slots[index]);
+        }
+        finally
+        {
+            // Defensive: with this structure the semaphore is only disposed after
+            // Task.WhenAll(inFlight) has settled, so this Release should always
+            // succeed. ObjectDisposedException would indicate a bug elsewhere, but
+            // we tolerate it here so the task doesn't fault with a noise exception
+            // that masks the real one.
+            try
+            {
+                semaphore?.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
+
+    private CompletionReason ComputeCompletionReason(IReadOnlyList<IBatchItem<T>> items, int totalCount)
+    {
+        var succeeded = 0;
+        var failed = 0;
+        var started = 0;
+
+        foreach (var item in items)
+        {
+            switch (item.Status)
+            {
+                case BatchItemStatus.Succeeded: succeeded++; break;
+                case BatchItemStatus.Failed:    failed++;    break;
+                case BatchItemStatus.Started:   started++;   break;
+            }
+        }
+
+        return _policy.Evaluate(succeeded, failed, started, totalCount);
+    }
+
+    private DurableExecutionException BuildException(IBatchResult<T> result)
+    {
+        var message =
+            $"{OperationNoun} operation failed: failure tolerance exceeded " +
+            $"({result.FailureCount} of {result.TotalCount} {UnitNounPlural} failed).";
+        return CreateException(message, result);
+    }
+
+    private async Task CheckpointParentResultAsync(
+        BatchResult<T> result,
+        CompletionReason completionReason,
+        CancellationToken cancellationToken)
+    {
+        var summary = new BatchSummary
+        {
+            CompletionReason = SerializeCompletionReason(completionReason),
+            Units = new List<BatchUnitSummary>(result.All.Count)
+        };
+        for (var i = 0; i < result.All.Count; i++)
+        {
+            var item = result.All[i];
+            summary.Units.Add(new BatchUnitSummary
+            {
+                Index = item.Index,
+                Name = item.Name,
+                Status = SerializeStatus(item.Status)
+            });
+        }
+
+        var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+
+        // Always checkpoint as SUCCEED — even when FailureToleranceExceeded.
+        // The completion reason lives inside the payload, matching the wire
+        // format of the Python/JS/Java SDKs. The exception is thrown SDK-side
+        // after this checkpoint.
+        await EnqueueAsync(new SdkOperationUpdate
+        {
+            Id = OperationId,
+            Type = OperationTypes.Context,
+            Action = OperationAction.SUCCEED,
+            SubType = ParentSubType,
+            Name = Name,
+            Payload = payload
+        }, cancellationToken);
+    }
+
+    private IBatchResult<T> ReconstructFromCheckpoints(Operation parent)
+    {
+        var summary = ParseSummary(parent.ContextDetails?.Result);
+
+        var items = new List<IBatchItem<T>>(UnitCount);
+        for (var i = 0; i < UnitCount; i++)
+        {
+            var (unitName, _) = GetUnit(i);
+            var childOpId = OperationIdGenerator.HashOperationId($"{OperationId}-{i + 1}");
+            var childOp = State.GetOperation(childOpId);
+            var summaryEntry = summary?.Units.FirstOrDefault(b => b.Index == i);
+
+            BatchItemStatus status = summaryEntry != null
+                ? DeserializeStatus(summaryEntry.Status)
+                : InferStatusFromChildOp(childOp);
+
+            // Prefer the name that was checkpointed at the moment the batch
+            // resolved. This is the only authoritative source for units reported
+            // as Started (no per-unit checkpoint exists to consult), and it lets
+            // us detect unit-name drift between deployments.
+            var checkpointedName = summaryEntry?.Name;
+            if (checkpointedName != null && unitName != null && checkpointedName != unitName)
+            {
+                throw new NonDeterministicExecutionException(
+                    $"Non-deterministic execution detected for {OperationNoun.ToLowerInvariant()} unit {i} of operation " +
+                    $"'{Name ?? OperationId}': expected name '{unitName}' but found '{checkpointedName}' " +
+                    $"from a previous invocation. Code must not change the order or name of concurrent " +
+                    $"units between deployments.");
+            }
+            var resolvedName = checkpointedName ?? unitName;
+
+            T? unitResult = default;
+            DurableExecutionException? unitError = null;
+
+            if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
+            {
+                unitResult = DeserializeResult(childOp.ContextDetails.Result);
+            }
+            else if (status == BatchItemStatus.Failed && childOp?.ContextDetails?.Error != null)
+            {
+                var err = childOp.ContextDetails.Error;
+                unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
+                {
+                    SubType = childOp.SubType ?? ChildSubType,
+                    ErrorType = err.ErrorType,
+                    ErrorData = err.ErrorData,
+                    OriginalStackTrace = err.StackTrace
+                };
+            }
+
+            items.Add(new BatchItem<T>
+            {
+                Index = i,
+                Name = resolvedName,
+                Status = status,
+                Result = unitResult,
+                Error = unitError
+            });
+        }
+
+        var completionReason = summary != null
+            ? DeserializeCompletionReason(summary.CompletionReason)
+            : ComputeCompletionReason(items, UnitCount);
+
+        return new BatchResult<T>(items, completionReason);
+    }
+
+    private static BatchItemStatus InferStatusFromChildOp(Operation? childOp)
+    {
+        if (childOp == null) return BatchItemStatus.Started;
+        return childOp.Status switch
+        {
+            OperationStatuses.Succeeded => BatchItemStatus.Succeeded,
+            OperationStatuses.Failed    => BatchItemStatus.Failed,
+            _                           => BatchItemStatus.Started
+        };
+    }
+
+    private static BatchSummary? ParseSummary(string? payload)
+    {
+        if (string.IsNullOrEmpty(payload)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize(payload, BatchJsonContext.Default.BatchSummary);
+        }
+        catch (JsonException)
+        {
+            // Tolerate older / corrupted payloads — fall back to inferring status
+            // from per-unit checkpoints.
+            return null;
+        }
+    }
+
+    private static string SerializeStatus(BatchItemStatus status) => status switch
+    {
+        BatchItemStatus.Succeeded => "SUCCEEDED",
+        BatchItemStatus.Failed    => "FAILED",
+        BatchItemStatus.Started   => "STARTED",
+        _ => throw new ArgumentOutOfRangeException(nameof(status))
+    };
+
+    private static BatchItemStatus DeserializeStatus(string? wire) => wire switch
+    {
+        "SUCCEEDED" => BatchItemStatus.Succeeded,
+        "FAILED"    => BatchItemStatus.Failed,
+        "STARTED"   => BatchItemStatus.Started,
+        _           => BatchItemStatus.Started
+    };
+
+    private static string SerializeCompletionReason(CompletionReason reason) => reason switch
+    {
+        CompletionReason.AllCompleted             => "ALL_COMPLETED",
+        CompletionReason.MinSuccessfulReached     => "MIN_SUCCESSFUL_REACHED",
+        CompletionReason.FailureToleranceExceeded => "FAILURE_TOLERANCE_EXCEEDED",
+        _ => throw new ArgumentOutOfRangeException(nameof(reason))
+    };
+
+    private static CompletionReason DeserializeCompletionReason(string? wire) => wire switch
+    {
+        "ALL_COMPLETED"              => CompletionReason.AllCompleted,
+        "MIN_SUCCESSFUL_REACHED"     => CompletionReason.MinSuccessfulReached,
+        "FAILURE_TOLERANCE_EXCEEDED" => CompletionReason.FailureToleranceExceeded,
+        _                            => CompletionReason.AllCompleted
+    };
+
+    private T DeserializeResult(string serialized)
+    {
+        var bytes = Encoding.UTF8.GetBytes(serialized);
+        using var ms = new MemoryStream(bytes);
+        return Serializer.Deserialize<T>(ms);
+    }
+
+    /// <summary>
+    /// Internal scratch space tracking each unit's outcome as it lands in the
+    /// executor; copied into the user-facing <see cref="BatchItem{T}"/> once every
+    /// dispatched unit has settled.
+    /// </summary>
+    private struct UnitOutcome
+    {
+        public BatchItemStatus Status;
+        public T? Result;
+        public DurableExecutionException? Error;
+    }
+}
