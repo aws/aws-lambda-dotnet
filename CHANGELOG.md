@@ -1,3 +1,10 @@
+## Release 2026-06-17
+
+### Amazon.Lambda.DurableExecution (0.0.3-preview)
+* Rename the durable execution logging scope key from `durableExecutionArn` to `executionArn` so the AWS Lambda console correctly surfaces an execution's logs.
+* Add `MapAsync` to `IDurableContext` for processing a collection in parallel with one child context per item and automatic checkpointing.
+* Breaking: renamed the concurrent-operation parent checkpoint payload field from `Branches` (shipped `ParallelAsync` format) to `Units`. The deserializer only binds `Units`, so durable executions checkpointed by earlier SDK versions will deserialize with an empty unit list and lose their per-unit names/statuses (including drift detection) on replay. In-flight workflows started on an earlier version should be drained before upgrading.
+
 ## Release 2026-06-15
 
 ### Amazon.Lambda.DurableExecution (0.0.2-preview)
