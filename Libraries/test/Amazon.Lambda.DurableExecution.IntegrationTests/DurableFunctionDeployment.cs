@@ -30,9 +30,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private const string ManagedRuntime = "dotnet10";
     private const string BootstrapHandler = "bootstrap";
 
-    // TODO: temporarily ca-central-1 (YUL) — the durable-capable dotnet10 managed runtime
-    // is rolled out here. Switch back to us-east-1 once it's available there for CI.
-    private static readonly RegionEndpoint DeploymentRegion = RegionEndpoint.CACentral1;
+    private static readonly RegionEndpoint DeploymentRegion = RegionEndpoint.USEast1;
 
     private readonly ITestOutputHelper _output;
     private readonly IAmazonLambda _lambdaClient;
@@ -88,6 +86,8 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         _externalRoleName = $"durable-integ-{suffix}-ext-{ShortId()}";
     }
 
+    // The optional `handler` defaults to `bootstrap` (executable model). Pass an
+    // `Assembly::Type::Method` string to deploy the class-library model instead.
     public static async Task<DurableFunctionDeployment> CreateAsync(
         string testFunctionDir,
         string scenarioSuffix,
@@ -95,12 +95,13 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         string? externalFunctionDir = null,
         IDictionary<string, string>? environment = null,
         IReadOnlyList<string>? invokeAllowedFunctionArns = null,
-        bool enableTenancy = false)
+        bool enableTenancy = false,
+        string? handler = null)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy);
+            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy, handler);
         }
         catch
         {
@@ -193,7 +194,8 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         string? externalFunctionDir,
         IDictionary<string, string>? environment,
         IReadOnlyList<string>? invokeAllowedFunctionArns,
-        bool enableTenancy)
+        bool enableTenancy,
+        string? handler)
     {
         // 1. Create the workflow's IAM role.
         _output.WriteLine($"Creating IAM role: {_roleName}");
@@ -356,7 +358,9 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         {
             FunctionName = _functionName,
             Runtime = ManagedRuntime,
-            Handler = BootstrapHandler,
+            // Defaults to the executable model (bootstrap); a non-null handler deploys
+            // the class-library model via an Assembly::Type::Method string.
+            Handler = handler ?? BootstrapHandler,
             Role = _roleArn,
             Code = new FunctionCode { ZipFile = new MemoryStream(zipBytes) },
             Timeout = 30,

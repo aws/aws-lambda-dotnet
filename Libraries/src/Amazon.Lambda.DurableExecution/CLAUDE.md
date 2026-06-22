@@ -39,10 +39,13 @@ set `TestLambdaContext.Serializer` so `LambdaSerializerHelper.GetRequired` finds
 ### Integration tests (expensive, real AWS)
 
 `Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests` deploys real Lambdas. Each test builds a
-`TestFunctions/<X>/` project into a container image via **`dotnet publish` + `docker build`**, pushes to ECR,
-creates an IAM role + Lambda (`DurableFunctionDeployment`), invokes it, and tears everything down on dispose.
-Requires Docker, AWS creds (us-east-1), and is slow. Every behavior in `docs/` should have a paired
-integration test under that project. Prefix AWS commands with `unset AWS_PROFILE` to use `[default]` creds.
+`TestFunctions/<X>/` project with **`dotnet publish` (framework-dependent, linux-x64)**, zips the publish
+output, and deploys it as a **zip package on the managed `dotnet10` runtime** (executable model,
+`Handler=bootstrap`) — no Docker or ECR. `DurableFunctionDeployment` creates an IAM role + Lambda (with
+`DurableConfig` and JSON `LoggingConfig`), invokes it, and tears everything down on dispose.
+Requires only the .NET SDK + AWS creds (us-east-1); no Docker. Slow, but no container build. Every behavior
+in `docs/` should have a paired integration test under that project. Prefix AWS commands with
+`unset AWS_PROFILE` to use `[default]` creds.
 
 **Run integration tests against `net10.0`.** The project multi-targets `net8.0;net10.0`; `dotnet test`
 without a framework spins up one testhost per TFW and runs them concurrently, which races two processes on
@@ -134,8 +137,11 @@ intentionally avoid collision with `AWSSDK.Lambda` model enums.
 
 ## Conventions
 
-- **Programming model:** preview supports only the *executable* model — `Main` builds a `LambdaBootstrap`
-  with a handler wrapper and an `ILambdaSerializer`. The serializer is read off `ILambdaContext.Serializer`
+- **Programming model:** both the *executable* model (`Main` builds a `LambdaBootstrap` with a handler
+  wrapper and an `ILambdaSerializer`) and the *class-library* model on the managed `dotnet10` runtime (a
+  plain `Handler` method, serializer via `[assembly: LambdaSerializer(...)]`, deployed with an
+  `Assembly::Type::Method` handler string) are supported and have integration coverage (`ClassLibraryTest`
+  + `TestFunctions/ClassLibraryFunction`). The serializer is read off `ILambdaContext.Serializer`
   (a preview API; the project-wide `AWSLAMBDA001` suppression in the `.csproj` is intentional for that
   reason). All step/result/payload (de)serialization flows through that one registered serializer, so AOT
   and reflection callers share a single code path — there is no per-call `JsonSerializerContext` argument.
