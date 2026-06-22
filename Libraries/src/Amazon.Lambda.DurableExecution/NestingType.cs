@@ -13,10 +13,9 @@ namespace Amazon.Lambda.DurableExecution;
 /// operation visible in execution traces.
 /// </para>
 /// <para>
-/// <see cref="Flat"/> is reserved for a forthcoming optimisation that uses
-/// virtual contexts to reduce checkpoint volume by ~30%. The .NET SDK currently
-/// throws <see cref="System.NotSupportedException"/> when <see cref="Flat"/> is
-/// supplied; the enum value is kept stable so opting in becomes non-breaking.
+/// <see cref="Flat"/> uses virtual contexts to reduce checkpoint volume (no
+/// per-branch <c>CONTEXT</c> operation): each branch's result or error is
+/// recorded inline on the parent parallel/map operation's payload instead.
 /// </para>
 /// </remarks>
 public enum NestingType
@@ -29,12 +28,12 @@ public enum NestingType
     Nested,
 
     /// <summary>
-    /// Branches use virtual contexts sharing the parent. Reduces checkpoint
-    /// cost at the expense of less granular execution traces.
+    /// Branches run in virtual contexts that emit no <c>CONTEXT</c> checkpoint
+    /// of their own — per-branch results/errors are recorded inline on the
+    /// parent operation's payload. Reduces checkpoint cost at the expense of
+    /// less granular execution traces. Branch operations inside a flat branch
+    /// (steps, waits) still checkpoint, re-parented to the parallel/map
+    /// operation.
     /// </summary>
-    /// <remarks>
-    /// Not yet implemented in the .NET SDK; passing this value throws
-    /// <see cref="System.NotSupportedException"/>.
-    /// </remarks>
     Flat
 }

@@ -41,9 +41,10 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     private readonly Func<IDurableContext, CancellationToken, Task<T>> _func;
     private readonly ChildContextConfig? _config;
     private readonly ILambdaSerializer _serializer;
-    private readonly Func<string, IDurableContext> _childContextFactory;
+    private readonly Func<string, string?, bool, IDurableContext> _childContextFactory;
     private readonly WorkflowCancellation _workflowCancellation;
     private readonly CancellationToken _cooperativeBailToken;
+    private readonly bool _isVirtual;
 
     public ChildContextOperation(
         string operationId,
@@ -52,13 +53,14 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         Func<IDurableContext, CancellationToken, Task<T>> func,
         ChildContextConfig? config,
         ILambdaSerializer serializer,
-        Func<string, IDurableContext> childContextFactory,
+        Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null,
-        CancellationToken cooperativeBailToken = default)
+        CancellationToken cooperativeBailToken = default,
+        bool isVirtual = false)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _func = func;
@@ -67,24 +69,33 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         _childContextFactory = childContextFactory;
         _workflowCancellation = workflowCancellation;
         _cooperativeBailToken = cooperativeBailToken;
+        _isVirtual = isVirtual;
     }
 
     protected override string OperationType => OperationTypes.Context;
 
     protected override async Task<T> StartAsync(CancellationToken cancellationToken)
     {
-        // Sync-flush CONTEXT START before user code so the service has a record
-        // of the parent context if the inner func suspends (e.g. a Wait inside
-        // the child terminates the workflow before SUCCEED is reached).
-        await EnqueueAsync(new SdkOperationUpdate
+        // Virtual (NestingType.Flat) branches emit no CONTEXT checkpoint of their
+        // own — the parallel/map orchestrator records their outcome inline on the
+        // parent payload. Inner operations still checkpoint (re-parented to the
+        // non-virtual ancestor via the virtual child generator's reported
+        // ParentId), so a suspend inside a virtual branch is still recoverable.
+        if (!_isVirtual)
         {
-            Id = OperationId,
-            ParentId = ParentId,
-            Type = OperationTypes.Context,
-            Action = OperationAction.START,
-            SubType = _config?.SubType,
-            Name = Name
-        }, cancellationToken);
+            // Sync-flush CONTEXT START before user code so the service has a record
+            // of the parent context if the inner func suspends (e.g. a Wait inside
+            // the child terminates the workflow before SUCCEED is reached).
+            await EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = OperationId,
+                ParentId = ParentId,
+                Type = OperationTypes.Context,
+                Action = OperationAction.START,
+                SubType = _config?.SubType,
+                Name = Name
+            }, cancellationToken);
+        }
 
         return await ExecuteFunc(cancellationToken);
     }
@@ -120,7 +131,11 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var childContext = _childContextFactory(OperationId);
+        // For a virtual (Flat) branch, inner operations report this branch's own
+        // ParentId — the non-virtual parallel/map ancestor — since the branch
+        // itself emits no CONTEXT checkpoint to reference. For a normal child
+        // context the reported parent is ignored (it roots at OperationId).
+        var childContext = _childContextFactory(OperationId, ParentId, _isVirtual);
 
         // Link the caller's token with the workflow-shutdown token, plus the
         // optional cooperative-bail token (a parallel parent signals this when
@@ -163,16 +178,22 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         }
         catch (Exception ex)
         {
-            await EnqueueAsync(new SdkOperationUpdate
+            // Virtual branches suppress the FAIL checkpoint but still propagate
+            // the exception — the orchestrator records the failure inline on the
+            // parent payload.
+            if (!_isVirtual)
             {
-                Id = OperationId,
-                ParentId = ParentId,
-                Type = OperationTypes.Context,
-                Action = OperationAction.FAIL,
-                SubType = _config?.SubType,
-                Name = Name,
-                Error = ToSdkError(ex)
-            }, cancellationToken);
+                await EnqueueAsync(new SdkOperationUpdate
+                {
+                    Id = OperationId,
+                    ParentId = ParentId,
+                    Type = OperationTypes.Context,
+                    Action = OperationAction.FAIL,
+                    SubType = _config?.SubType,
+                    Name = Name,
+                    Error = ToSdkError(ex)
+                }, cancellationToken);
+            }
 
             throw MapFailureException(new ChildContextException(ex.Message, ex)
             {
@@ -182,16 +203,21 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             });
         }
 
-        await EnqueueAsync(new SdkOperationUpdate
+        // Virtual branches suppress the SUCCEED checkpoint; the orchestrator
+        // serializes the result inline on the parent payload instead.
+        if (!_isVirtual)
         {
-            Id = OperationId,
-            ParentId = ParentId,
-            Type = OperationTypes.Context,
-            Action = OperationAction.SUCCEED,
-            SubType = _config?.SubType,
-            Name = Name,
-            Payload = SerializeResult(result)
-        }, cancellationToken);
+            await EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = OperationId,
+                ParentId = ParentId,
+                Type = OperationTypes.Context,
+                Action = OperationAction.SUCCEED,
+                SubType = _config?.SubType,
+                Name = Name,
+                Payload = SerializeResult(result)
+            }, cancellationToken);
+        }
 
         return result;
     }

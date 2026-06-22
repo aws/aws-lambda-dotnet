@@ -57,9 +57,9 @@ public sealed class MapConfig
     /// <see cref="NestingType.Nested"/>.
     /// </summary>
     /// <remarks>
-    /// <see cref="NestingType.Flat"/> is not yet supported in the .NET SDK and
-    /// will throw <see cref="System.NotSupportedException"/> when the map
-    /// operation is invoked.
+    /// Under <see cref="NestingType.Flat"/> each item runs in a virtual context
+    /// that emits no per-item <c>CONTEXT</c> checkpoint; per-item results and
+    /// errors are recorded inline on the map operation's payload instead.
     /// </remarks>
     public NestingType NestingType { get; set; } = NestingType.Nested;
 

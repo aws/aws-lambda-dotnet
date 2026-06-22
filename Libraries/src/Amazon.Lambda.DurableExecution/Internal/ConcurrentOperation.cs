@@ -48,11 +48,20 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     private readonly int? _maxConcurrency;
     private readonly WorkflowCancellation _workflowCancellation;
 
+    /// <summary>
+    /// True for <see cref="NestingType.Flat"/>: per-unit child contexts emit no
+    /// CONTEXT checkpoint, so their results/errors are recorded inline on this
+    /// parent operation's <see cref="BatchSummary"/> payload and read back from
+    /// there on replay.
+    /// </summary>
+    private readonly bool _isVirtual;
+
     /// <summary>Serializer used to deserialize per-unit child results on replay.</summary>
     protected readonly ILambdaSerializer Serializer;
 
-    /// <summary>Factory used to build each unit's inner child context.</summary>
-    protected readonly Func<string, IDurableContext> ChildContextFactory;
+    /// <summary>Factory used to build each unit's inner child context. Takes
+    /// <c>(operationId, reportedParentId, isVirtual)</c>.</summary>
+    protected readonly Func<string, string?, bool, IDurableContext> ChildContextFactory;
 
     protected ConcurrentOperation(
         string operationId,
@@ -61,12 +70,13 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         CompletionConfig completionConfig,
         int? maxConcurrency,
         ILambdaSerializer serializer,
-        Func<string, IDurableContext> childContextFactory,
+        Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
-        CheckpointBatcher? batcher = null)
+        CheckpointBatcher? batcher = null,
+        bool isVirtual = false)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _policy = new CompletionPolicy(completionConfig);
@@ -74,6 +84,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         _workflowCancellation = workflowCancellation;
         Serializer = serializer;
         ChildContextFactory = childContextFactory;
+        _isVirtual = isVirtual;
     }
 
     protected override string OperationType => OperationTypes.Context;
@@ -396,7 +407,8 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                 _workflowCancellation,
                 DurableExecutionArn,
                 Batcher,
-                shortCircuitToken);
+                shortCircuitToken,
+                isVirtual: _isVirtual);
 
             try
             {
@@ -522,12 +534,30 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         for (var i = 0; i < result.All.Count; i++)
         {
             var item = result.All[i];
-            summary.Units.Add(new BatchUnitSummary
+            var unit = new BatchUnitSummary
             {
                 Index = item.Index,
                 Name = item.Name,
                 Status = SerializeStatus(item.Status)
-            });
+            };
+
+            // Flat (virtual) units emit no child checkpoint, so their per-unit
+            // result/error has nowhere to live except inline on this summary.
+            // Nested units leave these null — they're read from each child's own
+            // CONTEXT checkpoint on replay.
+            if (_isVirtual)
+            {
+                if (item.Status == BatchItemStatus.Succeeded)
+                {
+                    unit.Result = SerializeResult(item.Result);
+                }
+                else if (item.Status == BatchItemStatus.Failed && item.Error != null)
+                {
+                    unit.Error = ErrorObject.FromException(item.Error);
+                }
+            }
+
+            summary.Units.Add(unit);
         }
 
         var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
@@ -581,7 +611,29 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             T? unitResult = default;
             DurableExecutionException? unitError = null;
 
-            if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
+            // Flat (virtual) units have no child checkpoint — their result/error
+            // was recorded inline on this summary. Nested units read from the
+            // child's own CONTEXT checkpoint. A unit is "inline" when the summary
+            // entry carries a Result/Error, which only Flat writes.
+            if (_isVirtual && summaryEntry != null)
+            {
+                if (status == BatchItemStatus.Succeeded && summaryEntry.Result != null)
+                {
+                    unitResult = DeserializeResult(summaryEntry.Result);
+                }
+                else if (status == BatchItemStatus.Failed && summaryEntry.Error != null)
+                {
+                    var err = summaryEntry.Error;
+                    unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
+                    {
+                        SubType = ChildSubType,
+                        ErrorType = err.ErrorType,
+                        ErrorData = err.ErrorData,
+                        OriginalStackTrace = err.StackTrace
+                    };
+                }
+            }
+            else if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
             {
                 unitResult = DeserializeResult(childOp.ContextDetails.Result);
             }
@@ -677,6 +729,19 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
         return Serializer.Deserialize<T>(ms);
+    }
+
+    /// <summary>
+    /// Serializes a per-unit result for inline storage in the
+    /// <see cref="BatchSummary"/> (Flat units only). Mirrors the SUCCEED-payload
+    /// serialization a Nested unit's <see cref="ChildContextOperation{T}"/> would
+    /// have written to its own checkpoint.
+    /// </summary>
+    private string SerializeResult(T? value)
+    {
+        using var ms = new MemoryStream();
+        Serializer.Serialize(value!, ms);
+        return Encoding.UTF8.GetString(ms.ToArray());
     }
 
     /// <summary>

@@ -240,12 +240,6 @@ internal sealed class DurableContext : IDurableContext
         }
 
         var effectiveConfig = config ?? new ParallelConfig();
-        if (effectiveConfig.NestingType == NestingType.Flat)
-        {
-            throw new NotSupportedException(
-                "NestingType.Flat is not yet supported in the .NET Durable Execution SDK. " +
-                "Use NestingType.Nested (the default) for now.");
-        }
 
         var serializer = LambdaContext.Serializer
             ?? throw new InvalidOperationException(
@@ -279,12 +273,6 @@ internal sealed class DurableContext : IDurableContext
         if (func == null) throw new ArgumentNullException(nameof(func));
 
         var effectiveConfig = config ?? new MapConfig();
-        if (effectiveConfig.NestingType == NestingType.Flat)
-        {
-            throw new NotSupportedException(
-                "NestingType.Flat is not yet supported in the .NET Durable Execution SDK. " +
-                "Use NestingType.Nested (the default) for now.");
-        }
 
         var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
 
@@ -526,10 +514,31 @@ internal sealed class DurableContext : IDurableContext
     /// but uses a child <see cref="OperationIdGenerator"/> so its operation IDs
     /// are deterministically namespaced under the parent op ID.
     /// </summary>
-    private Func<string, IDurableContext> MakeChildFactory()
+    /// <summary>
+    /// Builds the factory each operation uses to create the inner
+    /// <see cref="DurableContext"/> its user function runs against.
+    /// </summary>
+    /// <remarks>
+    /// The delegate takes <c>(operationId, reportedParentId, isVirtual)</c>:
+    /// <list type="bullet">
+    ///   <item><c>isVirtual == false</c> (the default child-context case): the
+    ///       inner context's ID space and reported parent both root at
+    ///       <c>operationId</c> via <see cref="OperationIdGenerator.CreateChild"/>;
+    ///       <c>reportedParentId</c> is ignored.</item>
+    ///   <item><c>isVirtual == true</c> (a <see cref="NestingType.Flat"/> branch):
+    ///       inner-op IDs still root at <c>operationId</c> (so sibling branches
+    ///       never collide), but inner ops report <c>reportedParentId</c> — the
+    ///       parallel/map operation — as their parent, since the virtual branch
+    ///       emits no CONTEXT checkpoint to reference.</item>
+    /// </list>
+    /// </remarks>
+    private Func<string, string?, bool, IDurableContext> MakeChildFactory()
     {
-        return parentOpId => new DurableContext(
-            _state, _terminationManager, _workflowCancellation, _idGenerator.CreateChild(parentOpId),
+        return (operationId, reportedParentId, isVirtual) => new DurableContext(
+            _state, _terminationManager, _workflowCancellation,
+            isVirtual
+                ? _idGenerator.CreateVirtualChild(operationId, reportedParentId)
+                : _idGenerator.CreateChild(operationId),
             _durableExecutionArn, LambdaContext, _batcher);
     }
 }
