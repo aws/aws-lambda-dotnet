@@ -35,7 +35,7 @@ dotnet add package Amazon.Lambda.DurableExecution
 
 ### Your first durable function
 
-> **Programming model:** durable functions support both the **executable programming model** (shown below — your function is an executable assembly that hosts its own bootstrap loop and passes the serializer to the runtime in code) and the **class-library programming model** on the managed `dotnet10` runtime (a plain `Handler` method deployed via an `Assembly::Type::Method` handler string, with the serializer declared by a `[assembly: LambdaSerializer(...)]` attribute — no `Main`/`LambdaBootstrap`). See [the class-library variant](#class-library-programming-model) below.
+> **Programming model:** durable functions support both the **executable programming model** (shown below) and the **class-library programming model** on the managed `dotnet10` runtime. See [the class-library variant](#class-library-programming-model) below.
 
 A complete order-processing workflow with two steps and a wait, deployed as an executable assembly on the `dotnet10` runtime. `Main` builds a `LambdaBootstrap` with your handler and an `ILambdaSerializer`, and `DurableFunction.WrapAsync` uses that serializer to checkpoint step inputs and outputs.
 
@@ -115,7 +115,7 @@ public class OrderProcessor
 }
 ```
 
-The project is a normal Lambda class library (no `<OutputType>Exe</OutputType>`, no `Amazon.Lambda.RuntimeSupport` reference); the managed runtime supplies the bootstrap loop and invokes `Handler` directly.
+The project is a normal Lambda class library; the managed runtime supplies the bootstrap loop and invokes `Handler` directly.
 
 ## Documentation
 
