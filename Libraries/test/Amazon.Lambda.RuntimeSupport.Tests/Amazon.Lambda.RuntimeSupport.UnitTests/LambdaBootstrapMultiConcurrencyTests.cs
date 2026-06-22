@@ -152,8 +152,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 var testRuntimeApiClient = new TestMultiConcurrencyRuntimeApiClient(environmentVariables, invocationEvents);
 
-                // Use a thread-safe counter to track dequeued invocations
-                int dequeuedCount = 0;
                 var allDequeuedEvent = new ManualResetEventSlim(false);
 
                 // Wrap the test client to track dequeue operations in a thread-safe manner

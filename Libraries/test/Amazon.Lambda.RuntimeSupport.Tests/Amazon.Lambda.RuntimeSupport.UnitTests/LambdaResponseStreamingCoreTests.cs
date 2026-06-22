@@ -167,7 +167,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = new MemoryStream();
             await inner.SetHttpOutputStreamAsync(output);
 
-            var implStream = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var implStream = Common.ConvertToImplLambdaResponseStream(inner);
             var lambdaStream = new LambdaResponseStream(implStream);
             return (lambdaStream, output);
         }
@@ -176,7 +176,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void LambdaResponseStream_IsStreamSubclass()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.IsAssignableFrom<Stream>(stream);
@@ -186,7 +186,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void CanWrite_IsTrue()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.True(stream.CanWrite);
@@ -196,7 +196,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void CanRead_IsFalse()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.False(stream.CanRead);
@@ -206,7 +206,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void CanSeek_IsFalse()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.False(stream.CanSeek);
@@ -216,7 +216,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void Read_ThrowsNotImplementedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.Throws<NotImplementedException>(() => stream.Read(new byte[1], 0, 1));
@@ -226,7 +226,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void ReadAsync_ThrowsNotImplementedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             // ReadAsync throws synchronously (not async) — capture the thrown task
@@ -239,7 +239,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void Seek_ThrowsNotImplementedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.Throws<NotImplementedException>(() => stream.Seek(0, SeekOrigin.Begin));
@@ -249,7 +249,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void Position_Get_ThrowsNotSupportedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.Throws<NotSupportedException>(() => _ = stream.Position);
@@ -259,7 +259,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void Position_Set_ThrowsNotSupportedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.Throws<NotSupportedException>(() => stream.Position = 0);
@@ -269,7 +269,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void SetLength_ThrowsNotSupportedException()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var stream = new LambdaResponseStream(impl);
 
             Assert.Throws<NotSupportedException>(() => stream.SetLength(100));
@@ -342,7 +342,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = new MemoryStream();
             await inner.SetHttpOutputStreamAsync(output);
 
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             var data = new byte[] { 1, 2, 3 };
 
             await impl.WriteAsync(data, 0, data.Length);
@@ -357,7 +357,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = new MemoryStream();
             await inner.SetHttpOutputStreamAsync(output);
 
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
             await impl.WriteAsync(new byte[7], 0, 7);
 
             Assert.Equal(7, impl.BytesWritten);
@@ -367,7 +367,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void HasError_InitiallyFalse()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
 
             Assert.False(impl.HasError);
         }
@@ -378,7 +378,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var inner = new ResponseStream(Array.Empty<byte>());
             inner.ReportError(new Exception("test"));
 
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
 
             Assert.True(impl.HasError);
         }
@@ -387,7 +387,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void Dispose_DisposesInnerStream()
         {
             var inner = new ResponseStream(Array.Empty<byte>());
-            var impl = new ResponseStreamLambdaCoreInitializerIsolated.ImplLambdaResponseStream(inner);
+            var impl = Common.ConvertToImplLambdaResponseStream(inner);
 
             // Should not throw
             impl.Dispose();

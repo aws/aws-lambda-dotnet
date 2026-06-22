@@ -16,6 +16,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Amazon.Lambda.Core.ResponseStreaming;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
@@ -87,6 +89,19 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 return writer.ToString();
             }
+        }
+
+        internal static ImplLambdaResponseStream ConvertToImplLambdaResponseStream(ResponseStream responseStream)
+        {
+            var implStream = new ImplLambdaResponseStream(new ImplLambdaResponseStream.Delegates
+            {
+                BytesWritten = () => responseStream.BytesWritten,
+                HasError = () => responseStream.HasError,
+                Dispose = () => responseStream.Dispose(),
+                WriteAsync = responseStream.WriteAsync
+            });
+
+            return implStream;
         }
     }
 }
