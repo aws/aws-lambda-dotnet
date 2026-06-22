@@ -1,3 +1,10 @@
+## Release 2026-06-22
+
+### Amazon.Lambda.DurableExecution (0.1.0-preview)
+* Implement NestingType.Flat for ParallelAsync and MapAsync (previously threw NotSupportedException). Under Flat, each branch/item runs in a virtual context that emits no per-branch CONTEXT checkpoint; per-branch results and errors are recorded inline on the parent operation's payload, reducing checkpoint volume. Operations inside a flat branch (steps, waits) still checkpoint, re-parented to the parallel/map operation. NestingType.Nested remains the default.
+* Handle large results (over the 256 KB per-operation checkpoint limit) for `ParallelAsync`, `MapAsync`, and `RunInChildContextAsync`. When a Flat concurrent operation's summary or a child context's result exceeds the limit, the inline result is stripped from the checkpoint and the operation is flagged with `ReplayChildren`; on a later replay the unit/child bodies are re-executed to recover the stripped values without re-checkpointing the already-terminal parent. Plain `StepAsync` and `InvokeAsync` results are unaffected, matching the Python/Java/JS SDKs.
+* Enforce the `CheckpointBatcher` request byte limit: the batcher pre-flushes before an operation update would push a batch over the byte (or count) cap, and sends an oversized update on its own.
+
 ## Release 2026-06-17
 
 ### Amazon.Lambda.DurableExecution (0.0.3-preview)
