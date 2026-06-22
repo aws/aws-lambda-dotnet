@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed ReflectionTypeLoadException when customer bundles Amazon.Lambda.Core \u003C 3.0.0 and runtime scans types. Replaced direct ILambdaResponseStream implementation with DispatchProxy to avoid exposing the type in assembly metadata."
+      ]
+    }
+  ]
+}
