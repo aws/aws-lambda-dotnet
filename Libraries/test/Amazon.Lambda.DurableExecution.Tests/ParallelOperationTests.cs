@@ -672,6 +672,232 @@ public class ParallelOperationTests
     }
 
     [Fact]
+    public async Task ParallelAsync_Flat_ResultOverThreshold_StripsInlineResultsAndSetsReplayChildren()
+    {
+        var (context, recorder, _, _) = CreateContext();
+
+        // Each branch returns a ~200 KB string; the summary with both inline
+        // exceeds the 256 KB checkpoint threshold.
+        var big = new string('x', 200 * 1024);
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<string>>[]
+            {
+                async (_, _) => { await Task.Yield(); return big; },
+                async (_, _) => { await Task.Yield(); return big; },
+            },
+            name: "fanout",
+            config: new ParallelConfig { NestingType = NestingType.Flat });
+
+        // In-memory result for the current invoke still carries the full values.
+        Assert.Equal(2, result.SuccessCount);
+        Assert.All(result.GetResults(), r => Assert.Equal(big, r));
+
+        await recorder.Batcher.DrainAsync();
+
+        var parentSucceed = recorder.Flushed.Single(o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel" && o.Action == "SUCCEED");
+
+        // Overflow: ReplayChildren flag set, payload stripped under the threshold.
+        Assert.NotNull(parentSucceed.ContextOptions);
+        Assert.True(parentSucceed.ContextOptions.ReplayChildren);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(parentSucceed.Payload)
+            <= Amazon.Lambda.DurableExecution.Internal.DurableConstants.MaxOperationCheckpointBytes);
+        // Stripped summary keeps statuses but not the big inline results.
+        Assert.DoesNotContain(big, parentSucceed.Payload);
+        Assert.Contains("SUCCEEDED", parentSucceed.Payload);
+    }
+
+    [Fact]
+    public async Task ParallelAsync_Flat_ReplayChildren_ReExecutesBodiesWithoutRecheckpointing()
+    {
+        var parentOpId = IdAt(1);
+
+        // Stripped summary: statuses present, NO inline Result values.
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED"},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails
+                    {
+                        Result = summaryJson,
+                        ReplayChildren = true
+                    }
+                }
+            }
+        });
+
+        var executions = 0;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); return 100; },
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); return 200; },
+            },
+            name: "fanout",
+            config: new ParallelConfig { NestingType = NestingType.Flat });
+
+        // Bodies re-executed (values recovered), statuses/reason from frozen summary.
+        Assert.Equal(2, executions);
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+
+        // The parent is already terminal in state — replay must NOT re-emit a
+        // parent CONTEXT SUCCEED/FAIL.
+        Assert.DoesNotContain(recorder.Flushed, o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel");
+    }
+
+    [Fact]
+    public async Task ParallelAsync_Flat_ReplayChildren_SkipsStartedUnits_ReExecutesCompletedOnly()
+    {
+        var parentOpId = IdAt(1);
+
+        // Stripped summary: two units short-circuited the run with MinSuccessful=2
+        // (SUCCEEDED, SUCCEEDED), the third was never dispatched (STARTED). On
+        // overflow replay only the two completed units re-execute; the started
+        // unit's body must NOT run.
+        var summaryJson = """
+            {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED"},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED"},
+                {"Index":2,"Name":"2","Status":"STARTED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails
+                    {
+                        Result = summaryJson,
+                        ReplayChildren = true
+                    }
+                }
+            }
+        });
+
+        var executions = 0;
+        var startedBodyRan = false;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); return 100; },
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); return 200; },
+                async (_, _) => { startedBodyRan = true; Interlocked.Increment(ref executions); await Task.Yield(); return 300; },
+            },
+            name: "fanout",
+            config: new ParallelConfig
+            {
+                NestingType = NestingType.Flat,
+                CompletionConfig = new CompletionConfig { MinSuccessful = 2 }
+            });
+
+        // Only the two SUCCEEDED unit bodies re-execute; the STARTED unit is skipped.
+        Assert.Equal(2, executions);
+        Assert.False(startedBodyRan);
+
+        // Per-item statuses come from the frozen summary.
+        Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
+        Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
+        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
+
+        // Recovered values for the two succeeded units.
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+        Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel");
+    }
+
+    [Fact]
+    public async Task ParallelAsync_Flat_ReplayChildren_ReExecutesFailedUnit_RecoversError()
+    {
+        var parentOpId = IdAt(1);
+
+        // Stripped summary: one SUCCEEDED, one FAILED. Errors were stripped on
+        // overflow, so re-execution recovers them. Tolerated-failure config keeps
+        // the run from throwing.
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED"},
+                {"Index":1,"Name":"1","Status":"FAILED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails
+                    {
+                        Result = summaryJson,
+                        ReplayChildren = true
+                    }
+                }
+            }
+        });
+
+        var executions = 0;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); return 100; },
+                async (_, _) => { Interlocked.Increment(ref executions); await Task.Yield(); throw new InvalidOperationException("flat boom"); },
+            },
+            name: "fanout",
+            config: new ParallelConfig
+            {
+                NestingType = NestingType.Flat,
+                CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
+            });
+
+        // Both bodies re-execute to recover the value and the error.
+        Assert.Equal(2, executions);
+        Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
+        Assert.Equal(BatchItemStatus.Failed, result.All[1].Status);
+        Assert.Equal(100, result.All[0].Result);
+        Assert.NotNull(result.All[1].Error);
+        Assert.Contains("flat boom", result.All[1].Error!.Message);
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel");
+    }
+
+    [Fact]
     public async Task ParallelAsync_NestingTypeFlat_ReplaySucceeded_RebuildsFromInlinePayload()
     {
         var parentOpId = IdAt(1);

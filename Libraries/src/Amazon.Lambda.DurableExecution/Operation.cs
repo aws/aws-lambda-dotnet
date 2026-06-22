@@ -143,6 +143,14 @@ public sealed class ContextDetails
     /// <summary>Error from the child context, if any.</summary>
     [JsonPropertyName("Error")]
     public ErrorObject? Error { get; set; }
+
+    /// <summary>
+    /// When <c>true</c> on a completed CONTEXT operation, the operation's result
+    /// was too large to checkpoint inline; per-unit/child state is reconstructed
+    /// on replay by re-executing the children rather than read from this payload.
+    /// </summary>
+    [JsonPropertyName("ReplayChildren")]
+    public bool? ReplayChildren { get; set; }
 }
 
 /// <summary>

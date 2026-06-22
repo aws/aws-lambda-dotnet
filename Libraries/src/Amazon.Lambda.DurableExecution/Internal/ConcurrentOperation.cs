@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
+using SdkContextOptions = Amazon.Lambda.Model.ContextOptions;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -139,8 +140,23 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
     protected override Task<IBatchResult<T>> ReplayAsync(Operation existing, CancellationToken cancellationToken)
     {
+        // Overflow replay: the parent was checkpointed with a stripped summary and
+        // ReplayChildren=true because the inline results exceeded the checkpoint
+        // limit. Re-execute ONLY the units the frozen summary marks SUCCEEDED or
+        // FAILED to recover their stripped result VALUE / Error; units marked
+        // STARTED (short-circuited, never dispatched) are skipped. Per-unit status
+        // and completion reason stay authoritative from the frozen summary, and the
+        // parent — already terminal — is NOT re-checkpointed.
+        var replayChildren = existing.ContextDetails?.ReplayChildren == true
+            && (existing.Status == OperationStatuses.Succeeded
+                || existing.Status == OperationStatuses.Failed);
+
         switch (existing.Status)
         {
+            case OperationStatuses.Succeeded when replayChildren:
+            case OperationStatuses.Failed when replayChildren:
+                return ReplayChildrenAsync(existing, cancellationToken);
+
             case OperationStatuses.Succeeded:
                 // The parent always checkpoints as SUCCEED — even when
                 // CompletionReason is FailureToleranceExceeded. Reconstruct
@@ -380,6 +396,97 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         return result;
     }
 
+    /// <summary>
+    /// Overflow-replay path. The parent was checkpointed with a stripped summary
+    /// (per-unit Index/Name/Status retained; Result/Error dropped) and
+    /// <c>ReplayChildren=true</c>. Re-executes ONLY the units the frozen summary
+    /// marks SUCCEEDED or FAILED — to recover their stripped result value / error
+    /// — and skips units marked STARTED so their bodies do not re-run. Per-unit
+    /// status and the completion reason come from the frozen summary (authoritative),
+    /// not from this run's outcomes; the parent is NOT re-checkpointed.
+    /// </summary>
+    private async Task<IBatchResult<T>> ReplayChildrenAsync(Operation frozen, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var summary = ParseSummary(frozen.ContextDetails?.Result);
+        var unitCount = UnitCount;
+
+        var items = new List<IBatchItem<T>>(unitCount);
+        for (var i = 0; i < unitCount; i++)
+        {
+            var (unitName, _) = GetUnit(i);
+            var summaryEntry = summary?.Units.FirstOrDefault(b => b.Index == i);
+
+            // Frozen per-unit status is authoritative.
+            var status = summaryEntry != null
+                ? DeserializeStatus(summaryEntry.Status)
+                : BatchItemStatus.Started;
+
+            // Same unit-name drift check as ReconstructFromCheckpoints: code must
+            // not change the order or name of concurrent units between deployments.
+            var checkpointedName = summaryEntry?.Name;
+            if (checkpointedName != null && unitName != null && checkpointedName != unitName)
+            {
+                throw new NonDeterministicExecutionException(
+                    $"Non-deterministic execution detected for {OperationNoun.ToLowerInvariant()} unit {i} of operation " +
+                    $"'{Name ?? OperationId}': expected name '{unitName}' but found '{checkpointedName}' " +
+                    $"from a previous invocation. Code must not change the order or name of concurrent " +
+                    $"units between deployments.");
+            }
+            var resolvedName = checkpointedName ?? unitName;
+
+            T? unitResult = default;
+            DurableExecutionException? unitError = null;
+
+            // Re-execute only completed units to recover the stripped value/error.
+            // STARTED units were short-circuited (never dispatched) originally —
+            // do NOT run their bodies, so there are no spurious side effects.
+            if (status == BatchItemStatus.Succeeded || status == BatchItemStatus.Failed)
+            {
+                var outcome = await RunSingleUnitAsync(i, cancellationToken).ConfigureAwait(false);
+                if (status == BatchItemStatus.Succeeded)
+                {
+                    unitResult = outcome.Result;
+                }
+                else
+                {
+                    // Frozen status is authoritative. If a unit frozen as Failed
+                    // re-executes to success here (non-deterministic body), it stays
+                    // Failed but Error stays null — the original error was stripped on
+                    // overflow and only returns if the body re-throws. Recovering a
+                    // frozen-Succeeded unit's value is the common, supported case.
+                    unitError = outcome.Error;
+                }
+            }
+
+            items.Add(new BatchItem<T>
+            {
+                Index = i,
+                Name = resolvedName,
+                Status = status,
+                Result = unitResult,
+                Error = unitError
+            });
+        }
+
+        // Completion reason is pinned from the frozen summary; fall back to
+        // recomputing only if the summary is absent/corrupt.
+        var completionReason = summary != null
+            ? DeserializeCompletionReason(summary.CompletionReason)
+            : ComputeCompletionReason(items, unitCount);
+
+        var result = new BatchResult<T>(items, completionReason);
+
+        // No re-checkpoint: the parent is already terminal in state.
+        if (completionReason == CompletionReason.FailureToleranceExceeded)
+        {
+            throw BuildException(result);
+        }
+
+        return result;
+    }
+
     private async Task RunUnitAsync(
         int index,
         UnitOutcome[] slots,
@@ -494,6 +601,84 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         }
     }
 
+    /// <summary>
+    /// Builds and runs a single unit's <see cref="ChildContextOperation{T}"/> and
+    /// maps the result/exception to a <see cref="UnitOutcome"/>. Shared by the
+    /// concurrent dispatch loop (<see cref="RunUnitAsync"/>) and the overflow
+    /// ReplayChildren path (<see cref="ReplayChildrenAsync"/>). Per-unit graceful
+    /// failures are captured as <see cref="ChildContextException"/>; workflow-level
+    /// and parent-token-cancellation exceptions propagate.
+    /// </summary>
+    private async Task<UnitOutcome> RunSingleUnitAsync(int index, CancellationToken cancellationToken)
+    {
+        var (unitName, unitFunc) = GetUnit(index);
+        var childOpId = OperationIdGenerator.HashOperationId($"{OperationId}-{index + 1}");
+
+        var childOp = new ChildContextOperation<T>(
+            childOpId,
+            unitName,
+            OperationId,
+            unitFunc,
+            new ChildContextConfig { SubType = ChildSubType },
+            Serializer,
+            ChildContextFactory,
+            State,
+            Termination,
+            _workflowCancellation,
+            DurableExecutionArn,
+            Batcher,
+            isVirtual: _isVirtual);
+
+        try
+        {
+            var result = await childOp.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            return new UnitOutcome { Status = BatchItemStatus.Succeeded, Result = result };
+        }
+        catch (ChildContextException ex)
+        {
+            return new UnitOutcome { Status = BatchItemStatus.Failed, Error = ex };
+        }
+        catch (DurableExecutionException)
+        {
+            // E.g. NonDeterministicExecutionException — these are not "unit
+            // failed gracefully" but workflow-level problems. Surface them:
+            // re-throw out of the operation (the orchestrator's outer flow
+            // handles it).
+            throw;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Parent-token cancellation: per cross-cutting decision Q10, OCE
+            // escapes unwrapped. Don't write a slot — Task.WhenAll observes
+            // this and the orchestrator re-throws after settling.
+            throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            // Unit-internal cancellation that is NOT tied to the parent token
+            // (e.g. the unit's own CancellationTokenSource fired). Treat it as
+            // a normal per-unit failure rather than killing the operation as
+            // cancelled.
+            var wrapped = new ChildContextException(ex.Message, ex)
+            {
+                SubType = ChildSubType,
+                ErrorType = ex.GetType().FullName
+            };
+            return new UnitOutcome { Status = BatchItemStatus.Failed, Error = wrapped };
+        }
+        catch (Exception ex)
+        {
+            // Wrap unexpected exceptions as ChildContextException — they're
+            // per-unit failures from the user's POV.
+            var wrapped = new ChildContextException(ex.Message, ex)
+            {
+                SubType = ChildSubType,
+                ErrorType = ex.GetType().FullName
+            };
+            return new UnitOutcome { Status = BatchItemStatus.Failed, Error = wrapped };
+        }
+    }
+
     private CompletionReason ComputeCompletionReason(IReadOnlyList<IBatchItem<T>> items, int totalCount)
     {
         var succeeded = 0;
@@ -526,41 +711,50 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         CompletionReason completionReason,
         CancellationToken cancellationToken)
     {
-        var summary = new BatchSummary
+        // Local builder: includeInline=true writes per-unit Result/Error inline
+        // (Flat only); includeInline=false writes the minimal index/name/status
+        // map (the shape Nested always uses, and the Flat overflow fallback).
+        BatchSummary BuildSummary(bool includeInline)
         {
-            CompletionReason = SerializeCompletionReason(completionReason),
-            Units = new List<BatchUnitSummary>(result.All.Count)
-        };
-        for (var i = 0; i < result.All.Count; i++)
-        {
-            var item = result.All[i];
-            var unit = new BatchUnitSummary
+            var s = new BatchSummary
             {
-                Index = item.Index,
-                Name = item.Name,
-                Status = SerializeStatus(item.Status)
+                CompletionReason = SerializeCompletionReason(completionReason),
+                Units = new List<BatchUnitSummary>(result.All.Count)
             };
-
-            // Flat (virtual) units emit no child checkpoint, so their per-unit
-            // result/error has nowhere to live except inline on this summary.
-            // Nested units leave these null — they're read from each child's own
-            // CONTEXT checkpoint on replay.
-            if (_isVirtual)
+            for (var i = 0; i < result.All.Count; i++)
             {
-                if (item.Status == BatchItemStatus.Succeeded)
+                var item = result.All[i];
+                var unit = new BatchUnitSummary
                 {
-                    unit.Result = SerializeResult(item.Result);
-                }
-                else if (item.Status == BatchItemStatus.Failed && item.Error != null)
+                    Index = item.Index,
+                    Name = item.Name,
+                    Status = SerializeStatus(item.Status)
+                };
+                if (includeInline && _isVirtual)
                 {
-                    unit.Error = ErrorObject.FromException(item.Error);
+                    if (item.Status == BatchItemStatus.Succeeded)
+                        unit.Result = SerializeResult(item.Result);
+                    else if (item.Status == BatchItemStatus.Failed && item.Error != null)
+                        unit.Error = ErrorObject.FromException(item.Error);
                 }
+                s.Units.Add(unit);
             }
-
-            summary.Units.Add(unit);
+            return s;
         }
 
+        var summary = BuildSummary(includeInline: true);
         var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+
+        // Flat overflow: the inline per-unit results pushed the summary over the
+        // checkpoint limit. Re-emit a stripped summary (statuses only) and flag
+        // ReplayChildren so replay reconstructs the values by re-executing units.
+        var overflow = _isVirtual
+            && Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+        if (overflow)
+        {
+            summary = BuildSummary(includeInline: false);
+            payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+        }
 
         // Always checkpoint as SUCCEED — even when FailureToleranceExceeded.
         // The completion reason lives inside the payload, matching the wire
@@ -573,7 +767,10 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             Action = OperationAction.SUCCEED,
             SubType = ParentSubType,
             Name = Name,
-            Payload = payload
+            Payload = payload,
+            ContextOptions = overflow
+                ? new SdkContextOptions { ReplayChildren = true }
+                : null
         }, cancellationToken);
     }
 

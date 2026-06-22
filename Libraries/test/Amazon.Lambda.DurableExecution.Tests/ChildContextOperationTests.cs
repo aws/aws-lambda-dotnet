@@ -502,6 +502,94 @@ public class ChildContextOperationTests
     }
 
     [Fact]
+    public async Task RunInChildContextAsync_ResultOverThreshold_EmitsEmptyPayloadAndReplayChildren()
+    {
+        var (context, recorder, _, _) = CreateContext();
+        var big = new string('y', 300 * 1024);
+
+        var result = await context.RunInChildContextAsync(
+            async (_, _) => { await Task.Yield(); return big; },
+            name: "phase");
+
+        Assert.Equal(big, result); // in-memory value intact for this invoke
+
+        await recorder.Batcher.DrainAsync();
+
+        var succeed = recorder.Flushed.Single(o =>
+            o.Type == "CONTEXT" && o.Action == "SUCCEED");
+        Assert.Equal(string.Empty, succeed.Payload);
+        Assert.NotNull(succeed.ContextOptions);
+        Assert.True(succeed.ContextOptions.ReplayChildren);
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_ReplayChildren_ReExecutesBodyWithoutRecheckpoint()
+    {
+        var childOpId = IdAt(1); // first root-level op
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = childOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    Name = "phase",
+                    // Result == "" matches the overflow emission (string.Empty).
+                    ContextDetails = new ContextDetails { Result = "", ReplayChildren = true }
+                }
+            }
+        });
+
+        var executed = false;
+        var result = await context.RunInChildContextAsync(
+            async (_, _) => { executed = true; await Task.Yield(); return "rebuilt"; },
+            name: "phase");
+
+        Assert.True(executed);
+        Assert.Equal("rebuilt", result);
+
+        await recorder.Batcher.DrainAsync();
+        // Already-terminal child must not be re-checkpointed.
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT" && o.Action == "SUCCEED");
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_ReplayChildren_BodyThrows_DoesNotEmitFailCheckpoint()
+    {
+        var childOpId = IdAt(1); // first root-level op
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = childOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    Name = "phase",
+                    // Result == "" matches the overflow emission (string.Empty).
+                    ContextDetails = new ContextDetails { Result = "", ReplayChildren = true }
+                }
+            }
+        });
+
+        // The op is already terminal (SUCCEEDED). If the overflow re-run body
+        // throws, the recovery path must NOT re-checkpoint a CONTEXT FAIL over
+        // the already-SUCCEEDED record — but the exception still propagates.
+        await Assert.ThrowsAsync<ChildContextException>(() =>
+            context.RunInChildContextAsync<string>(
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("nondeterministic re-run"); },
+                name: "phase"));
+
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT" && o.Action == "FAIL");
+    }
+
+    [Fact]
     public async Task RunInChildContextAsync_SubTypeAndName_PropagateToCheckpoint()
     {
         var (context, recorder, _, _) = CreateContext();
