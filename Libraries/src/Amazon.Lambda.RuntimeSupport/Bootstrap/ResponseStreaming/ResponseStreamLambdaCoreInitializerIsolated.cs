@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Amazon.Lambda.Core.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 #pragma warning disable CA2252
