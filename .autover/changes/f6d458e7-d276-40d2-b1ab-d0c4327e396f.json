@@ -13,6 +13,6 @@
       "ChangelogMessages": [
         "Fix type load issue due to Lambda Response Streaming. https://github.com/aws/aws-lambda-dotnet/issues/2430"
       ]
-    }	
+    }
   ]
 }
