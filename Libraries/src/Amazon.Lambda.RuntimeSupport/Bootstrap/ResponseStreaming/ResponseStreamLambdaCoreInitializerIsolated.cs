@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Amazon.Lambda.Core.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 #pragma warning disable CA2252
@@ -26,34 +24,22 @@ namespace Amazon.Lambda.RuntimeSupport
         internal static void InitializeCore()
         {
 #if !ANALYZER_UNIT_TESTS // This precompiler directive is used to avoid the unit tests from needing a dependency on Amazon.Lambda.Core.
-            Func<byte[], ILambdaResponseStream> factory = (byte[] prelude) => new ImplLambdaResponseStream(ResponseStreamFactory.CreateStream(prelude));
+            Func<byte[], ILambdaResponseStream> factory = (byte[] prelude) =>
+            {
+                var responseStream = ResponseStreamFactory.CreateStream(prelude);
+                var delegates = new ImplLambdaResponseStream.Delegates
+                {
+                    WriteAsync = responseStream.WriteAsync,
+                    BytesWritten = () => responseStream.BytesWritten,
+                    HasError = () => responseStream.HasError,
+                    Dispose = () => responseStream.Dispose()
+                };
+
+                return new ImplLambdaResponseStream(delegates);
+            };
+
             LambdaResponseStreamFactory.SetLambdaResponseStream(factory);
 #endif
-        }
-
-        /// <summary>
-        /// Implements the <see cref="ILambdaResponseStream"/> interface by wrapping a <see cref="ResponseStream"/>. This is used to connect the internal response streaming implementation to the public interfaces in Amazon.Lambda.Core.
-        /// </summary>
-        internal class ImplLambdaResponseStream : ILambdaResponseStream
-        {
-            private readonly ResponseStream _innerStream;
-
-            internal ImplLambdaResponseStream(ResponseStream innerStream)
-            {
-                _innerStream = innerStream;
-            }
-
-            /// <inheritdoc/>
-            public long BytesWritten => _innerStream.BytesWritten;
-
-            /// <inheritdoc/>
-            public bool HasError => _innerStream.HasError;
-
-            /// <inheritdoc/>
-            public void Dispose() => _innerStream.Dispose();
-
-            /// <inheritdoc/>
-            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
     }
 }
