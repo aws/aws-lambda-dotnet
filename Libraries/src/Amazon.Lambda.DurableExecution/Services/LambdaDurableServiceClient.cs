@@ -56,6 +56,7 @@ internal sealed class LambdaDurableServiceClient
             CheckpointToken = checkpointToken ?? "",
             Updates = pendingOperations is List<SdkOperationUpdate> list ? list : pendingOperations.ToList()
         };
+        DurableUserAgent.Apply(request);
 
         CheckpointDurableExecutionResponse response;
         try
@@ -104,6 +105,7 @@ internal sealed class LambdaDurableServiceClient
             CheckpointToken = checkpointToken ?? "",
             Marker = marker
         };
+        DurableUserAgent.Apply(request);
 
         GetDurableExecutionStateResponse response;
         try

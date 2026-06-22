@@ -1,8 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.DurableExecution.Services;
 using Amazon.Lambda.Model;
+using Amazon.Runtime.Internal;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using Xunit;
 
@@ -400,6 +402,49 @@ public class LambdaDurableServiceClientTests
         var mapped = LambdaDurableServiceClient.MapFromSdkOperationForTest(sdkOp);
 
         Assert.True(mapped.ContextDetails!.ReplayChildren);
+    }
+
+    [Fact]
+    public void UserAgentString_IdentifiesTheDotnetDurableSdk()
+    {
+        // The service tracks SDK usage off this prefix; the version suffix is the
+        // package $(Version) injected by the _GenerateDurableUserAgentVersion target.
+        Assert.StartsWith("aws-durable-execution-sdk-dotnet/", DurableUserAgent.UserAgentString);
+        Assert.NotEqual("aws-durable-execution-sdk-dotnet/", DurableUserAgent.UserAgentString);
+    }
+
+    [Fact]
+    public async Task CheckpointAsync_TagsRequestWithSdkUserAgent()
+    {
+        var mockClient = new MockLambdaClient();
+        var client = new LambdaDurableServiceClient(mockClient);
+
+        await client.CheckpointAsync(
+            "arn",
+            "tok",
+            new[]
+            {
+                new OperationUpdate { Id = "0-x", Type = "STEP", Action = "SUCCEED" }
+            });
+
+        var request = (IAmazonWebServiceRequest)Assert.Single(mockClient.CheckpointCalls);
+        Assert.Contains(
+            DurableUserAgent.UserAgentString,
+            request.UserAgentDetails.GetCustomUserAgentComponents());
+    }
+
+    [Fact]
+    public async Task GetExecutionStateAsync_TagsRequestWithSdkUserAgent()
+    {
+        var mockClient = new MockLambdaClient();
+        var client = new LambdaDurableServiceClient(mockClient);
+
+        await client.GetExecutionStateAsync("arn", "tok", "marker");
+
+        var request = (IAmazonWebServiceRequest)Assert.Single(mockClient.GetExecutionStateCalls);
+        Assert.Contains(
+            DurableUserAgent.UserAgentString,
+            request.UserAgentDetails.GetCustomUserAgentComponents());
     }
 
     [Fact]

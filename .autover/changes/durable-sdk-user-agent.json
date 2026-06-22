@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Identify durable-execution requests with an `aws-durable-execution-sdk-dotnet/<version>` user-agent component so the service can track .NET SDK usage at runtime, matching the sibling Python/Java/JS SDKs."
+      ]
+    }
+  ]
+}
