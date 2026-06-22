@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Amazon Lambda .NET SDK for Durable Execution - write multi-step workflows that persist state automatically.</Description>
     <AssemblyTitle>Amazon.Lambda.DurableExecution</AssemblyTitle>
-    <Version>0.1.0-preview</Version>
+    <Version>0.1.1-preview</Version>
     <AssemblyName>Amazon.Lambda.DurableExecution</AssemblyName>
     <PackageId>Amazon.Lambda.DurableExecution</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Durable;Workflow</PackageTags>
@@ -44,9 +44,7 @@
     <PropertyGroup>
       <_DurableUserAgentVersionFile>$(IntermediateOutputPath)DurableUserAgentVersion.g.cs</_DurableUserAgentVersionFile>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_DurableUserAgentVersionFile)"
-      Lines="namespace Amazon.Lambda.DurableExecution.Internal { internal static partial class DurableUserAgent { internal const string AssemblyVersion = &quot;$(Version)&quot;%3B } }"
-      Overwrite="true" />
+    <WriteLinesToFile File="$(_DurableUserAgentVersionFile)" Lines="namespace Amazon.Lambda.DurableExecution.Internal { internal static partial class DurableUserAgent { internal const string AssemblyVersion = &quot;$(Version)&quot;%3B } }" Overwrite="true" />
     <ItemGroup>
       <Compile Include="$(_DurableUserAgentVersionFile)" />
     </ItemGroup>
