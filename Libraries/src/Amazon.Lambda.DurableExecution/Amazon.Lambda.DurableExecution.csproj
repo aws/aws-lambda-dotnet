@@ -37,4 +37,19 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- Emits the package version as a compile-time constant so DurableUserAgent can
+       build the "aws-durable-execution-sdk-dotnet/<version>" user-agent component
+       without a runtime assembly-version reflection lookup (trim/AOT-safe). -->
+  <Target Name="_GenerateDurableUserAgentVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_DurableUserAgentVersionFile>$(IntermediateOutputPath)DurableUserAgentVersion.g.cs</_DurableUserAgentVersionFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_DurableUserAgentVersionFile)"
+      Lines="namespace Amazon.Lambda.DurableExecution.Internal { internal static partial class DurableUserAgent { internal const string AssemblyVersion = &quot;$(Version)&quot;%3B } }"
+      Overwrite="true" />
+    <ItemGroup>
+      <Compile Include="$(_DurableUserAgentVersionFile)" />
+    </ItemGroup>
+  </Target>
+
 </Project>
