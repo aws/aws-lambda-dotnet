@@ -15,10 +15,10 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         internal ImplLambdaResponseStream(Delegates innerDelegates)
         {
             _innerDelegates = innerDelegates ?? throw new ArgumentNullException(nameof(innerDelegates));
-            _innerDelegates.WriteAsync ??= throw new ArgumentNullException(nameof(innerDelegates.WriteAsync));
-            _innerDelegates.BytesWritten ??= throw new ArgumentNullException(nameof(innerDelegates.BytesWritten));
-            _innerDelegates.HasError ??= throw new ArgumentNullException(nameof(innerDelegates.HasError));
-            _innerDelegates.Dispose ??= throw new ArgumentNullException(nameof(innerDelegates.Dispose));
+            _innerDelegates.WriteAsync = innerDelegates.WriteAsync ?? throw new ArgumentNullException(nameof(innerDelegates.WriteAsync));
+            _innerDelegates.BytesWritten = innerDelegates.BytesWritten ?? throw new ArgumentNullException(nameof(innerDelegates.BytesWritten));
+            _innerDelegates.HasError = innerDelegates.HasError ?? throw new ArgumentNullException(nameof(innerDelegates.HasError));
+            _innerDelegates.Dispose = innerDelegates.Dispose ?? throw new ArgumentNullException(nameof(innerDelegates.Dispose));
         }
 
         /// <inheritdoc/>
