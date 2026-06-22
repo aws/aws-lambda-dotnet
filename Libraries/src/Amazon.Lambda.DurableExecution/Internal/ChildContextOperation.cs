@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
+using SdkContextOptions = Amazon.Lambda.Model.ContextOptions;
 using SdkErrorObject = Amazon.Lambda.Model.ErrorObject;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
@@ -24,6 +25,10 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       and throw <see cref="ChildContextException"/>.</item>
 ///   <item><b>SUCCEEDED</b>: return cached deserialized result; user func is
 ///       NOT re-executed.</item>
+///   <item><b>SUCCEEDED (overflow)</b>: <c>ReplayChildren=true</c> + empty
+///       payload (the result was too large to checkpoint inline) → re-run the
+///       user func to recover the large result value; terminal checkpoints
+///       (SUCCEED/FAIL) are suppressed since the op is already terminal.</item>
 ///   <item><b>FAILED</b>: throw <see cref="ChildContextException"/> with the
 ///       recorded error; if <see cref="ChildContextConfig.ErrorMapping"/> is
 ///       set, the mapped exception is thrown instead.</item>
@@ -41,9 +46,12 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     private readonly Func<IDurableContext, CancellationToken, Task<T>> _func;
     private readonly ChildContextConfig? _config;
     private readonly ILambdaSerializer _serializer;
-    private readonly Func<string, IDurableContext> _childContextFactory;
+    private readonly Func<string, string?, bool, IDurableContext> _childContextFactory;
     private readonly WorkflowCancellation _workflowCancellation;
     private readonly CancellationToken _cooperativeBailToken;
+    private readonly bool _isVirtual;
+    // Set once on overflow-replay re-execution; never reset.
+    private bool _suppressTerminalCheckpoint;
 
     public ChildContextOperation(
         string operationId,
@@ -52,13 +60,14 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         Func<IDurableContext, CancellationToken, Task<T>> func,
         ChildContextConfig? config,
         ILambdaSerializer serializer,
-        Func<string, IDurableContext> childContextFactory,
+        Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
         CheckpointBatcher? batcher = null,
-        CancellationToken cooperativeBailToken = default)
+        CancellationToken cooperativeBailToken = default,
+        bool isVirtual = false)
         : base(operationId, name, parentId, state, termination, durableExecutionArn, batcher)
     {
         _func = func;
@@ -67,24 +76,33 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         _childContextFactory = childContextFactory;
         _workflowCancellation = workflowCancellation;
         _cooperativeBailToken = cooperativeBailToken;
+        _isVirtual = isVirtual;
     }
 
     protected override string OperationType => OperationTypes.Context;
 
     protected override async Task<T> StartAsync(CancellationToken cancellationToken)
     {
-        // Sync-flush CONTEXT START before user code so the service has a record
-        // of the parent context if the inner func suspends (e.g. a Wait inside
-        // the child terminates the workflow before SUCCEED is reached).
-        await EnqueueAsync(new SdkOperationUpdate
+        // Virtual (NestingType.Flat) branches emit no CONTEXT checkpoint of their
+        // own — the parallel/map orchestrator records their outcome inline on the
+        // parent payload. Inner operations still checkpoint (re-parented to the
+        // non-virtual ancestor via the virtual child generator's reported
+        // ParentId), so a suspend inside a virtual branch is still recoverable.
+        if (!_isVirtual)
         {
-            Id = OperationId,
-            ParentId = ParentId,
-            Type = OperationTypes.Context,
-            Action = OperationAction.START,
-            SubType = _config?.SubType,
-            Name = Name
-        }, cancellationToken);
+            // Sync-flush CONTEXT START before user code so the service has a record
+            // of the parent context if the inner func suspends (e.g. a Wait inside
+            // the child terminates the workflow before SUCCEED is reached).
+            await EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = OperationId,
+                ParentId = ParentId,
+                Type = OperationTypes.Context,
+                Action = OperationAction.START,
+                SubType = _config?.SubType,
+                Name = Name
+            }, cancellationToken);
+        }
 
         return await ExecuteFunc(cancellationToken);
     }
@@ -94,6 +112,14 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         switch (existing.Status)
         {
             case OperationStatuses.Succeeded:
+                // Overflow: the result was too large to checkpoint inline
+                // (ReplayChildren=true, empty payload). Re-run the body to recover
+                // the value; the body's inner ops replay from their own
+                // checkpoints. Do NOT re-emit the (already terminal) SUCCEED.
+                if (existing.ContextDetails?.ReplayChildren == true)
+                {
+                    return ExecuteFuncNoCheckpoint(cancellationToken);
+                }
                 // Side-effecting code runs at most once: replay returns the
                 // cached result without invoking the user func.
                 return Task.FromResult(DeserializeResult(existing.ContextDetails?.Result));
@@ -116,11 +142,21 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         }
     }
 
+    private Task<T> ExecuteFuncNoCheckpoint(CancellationToken cancellationToken)
+    {
+        _suppressTerminalCheckpoint = true;
+        return ExecuteFunc(cancellationToken);
+    }
+
     private async Task<T> ExecuteFunc(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var childContext = _childContextFactory(OperationId);
+        // For a virtual (Flat) branch, inner operations report this branch's own
+        // ParentId — the non-virtual parallel/map ancestor — since the branch
+        // itself emits no CONTEXT checkpoint to reference. For a normal child
+        // context the reported parent is ignored (it roots at OperationId).
+        var childContext = _childContextFactory(OperationId, ParentId, _isVirtual);
 
         // Link the caller's token with the workflow-shutdown token, plus the
         // optional cooperative-bail token (a parallel parent signals this when
@@ -163,16 +199,25 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         }
         catch (Exception ex)
         {
-            await EnqueueAsync(new SdkOperationUpdate
+            // Virtual branches suppress the FAIL checkpoint but still propagate
+            // the exception — the orchestrator records the failure inline on the
+            // parent payload. Overflow-replay re-execution also suppresses it: the
+            // op is already terminal (SUCCEEDED) in the store, so re-emitting a
+            // FAIL would corrupt that record (mirrors ReplayChildrenAsync, which
+            // never re-checkpoints). The exception still propagates below.
+            if (!_isVirtual && !_suppressTerminalCheckpoint)
             {
-                Id = OperationId,
-                ParentId = ParentId,
-                Type = OperationTypes.Context,
-                Action = OperationAction.FAIL,
-                SubType = _config?.SubType,
-                Name = Name,
-                Error = ToSdkError(ex)
-            }, cancellationToken);
+                await EnqueueAsync(new SdkOperationUpdate
+                {
+                    Id = OperationId,
+                    ParentId = ParentId,
+                    Type = OperationTypes.Context,
+                    Action = OperationAction.FAIL,
+                    SubType = _config?.SubType,
+                    Name = Name,
+                    Error = ToSdkError(ex)
+                }, cancellationToken);
+            }
 
             throw MapFailureException(new ChildContextException(ex.Message, ex)
             {
@@ -182,16 +227,33 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             });
         }
 
-        await EnqueueAsync(new SdkOperationUpdate
+        // Virtual branches suppress the SUCCEED checkpoint; the orchestrator
+        // serializes the result inline on the parent payload instead.
+        // _suppressTerminalCheckpoint is set on overflow replay re-execution: the
+        // child is already terminal in the store, so we re-run only to recover the
+        // in-memory value and must NOT re-emit a SUCCEED.
+        if (!_isVirtual && !_suppressTerminalCheckpoint)
         {
-            Id = OperationId,
-            ParentId = ParentId,
-            Type = OperationTypes.Context,
-            Action = OperationAction.SUCCEED,
-            SubType = _config?.SubType,
-            Name = Name,
-            Payload = SerializeResult(result)
-        }, cancellationToken);
+            var serialized = SerializeResult(result);
+            // Overflow: result too large to checkpoint inline. Emit an empty
+            // payload + ReplayChildren so replay re-executes this body to recover
+            // the value (mirrors the concurrent-operation overflow strategy).
+            var overflow = Encoding.UTF8.GetByteCount(serialized) > DurableConstants.MaxOperationCheckpointBytes;
+
+            await EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = OperationId,
+                ParentId = ParentId,
+                Type = OperationTypes.Context,
+                Action = OperationAction.SUCCEED,
+                SubType = _config?.SubType,
+                Name = Name,
+                Payload = overflow ? string.Empty : serialized,
+                ContextOptions = overflow
+                    ? new SdkContextOptions { ReplayChildren = true }
+                    : null
+            }, cancellationToken);
+        }
 
         return result;
     }

@@ -52,9 +52,10 @@ public sealed class ParallelConfig
     /// <see cref="NestingType.Nested"/>.
     /// </summary>
     /// <remarks>
-    /// <see cref="NestingType.Flat"/> is not yet supported in the .NET SDK and
-    /// will throw <see cref="System.NotSupportedException"/> when the parallel
-    /// operation is invoked.
+    /// Under <see cref="NestingType.Flat"/> each branch runs in a virtual
+    /// context that emits no per-branch <c>CONTEXT</c> checkpoint; per-branch
+    /// results and errors are recorded inline on the parallel operation's
+    /// payload instead.
     /// </remarks>
     public NestingType NestingType { get; set; } = NestingType.Nested;
 }

@@ -22,15 +22,13 @@ internal sealed class CheckpointBatcherConfig
     public int MaxBatchOperations { get; init; } = 200;
 
     /// <summary>
-    /// Maximum batch size in bytes. Service-side limit is ~750 KB.
+    /// Maximum batch size in bytes. Service-side request limit is ~750 KB.
     /// </summary>
     /// <remarks>
-    /// TODO: not enforced today. The worker only checks <see cref="MaxBatchOperations"/>;
-    /// a single oversized item (or a batch whose serialized size exceeds 750 KB)
-    /// will be sent to the service and rejected there. Wire this in alongside
-    /// the async-flush operations (Map / Parallel / child-context) since those
-    /// are the scenarios that can actually fill a batch — today every batch is
-    /// 1 item with <see cref="FlushInterval"/> = Zero, so the gap is latent.
+    /// Enforced by the worker: it flushes the current batch before adding an item
+    /// that would push the estimated request size over this cap, and sends a lone
+    /// item that already exceeds the cap by itself. The per-update estimate plus a
+    /// fixed request-prefix reserve approximate the real wire size conservatively.
     /// </remarks>
-    internal int MaxBatchBytes { get; init; } = 750 * 1024;
+    public int MaxBatchBytes { get; init; } = 750 * 1024;
 }

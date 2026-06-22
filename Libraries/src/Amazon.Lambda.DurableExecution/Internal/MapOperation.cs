@@ -31,7 +31,7 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
         Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
         MapConfig config,
         ILambdaSerializer serializer,
-        Func<string, IDurableContext> childContextFactory,
+        Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
@@ -39,7 +39,8 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
         CheckpointBatcher? batcher = null)
         : base(operationId, name, parentId, config.CompletionConfig, config.MaxConcurrency,
             serializer, childContextFactory, state, termination, workflowCancellation,
-            durableExecutionArn, batcher)
+            durableExecutionArn, batcher,
+            isVirtual: config.NestingType == NestingType.Flat)
     {
         _items = items;
         _func = func;

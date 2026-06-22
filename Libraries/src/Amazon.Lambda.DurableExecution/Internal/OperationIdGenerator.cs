@@ -35,10 +35,33 @@ internal sealed class OperationIdGenerator
     /// <c>hash("&lt;parentHash&gt;-1")</c>, <c>hash("&lt;parentHash&gt;-2")</c>, etc.
     /// </summary>
     public OperationIdGenerator(string? parentId)
+        : this(idPrefix: parentId, reportedParentId: parentId)
+    {
+    }
+
+    /// <summary>
+    /// Creates a child generator that decouples the hash prefix used to derive
+    /// inner-operation IDs from the <see cref="ParentId"/> reported on those
+    /// operations' wire <c>OperationUpdate.ParentId</c>.
+    /// </summary>
+    /// <param name="idPrefix">
+    /// Prefix hashed into inner-operation IDs (<c>hash("&lt;idPrefix&gt;-1")</c>, ...).
+    /// Always the owning context's own operation ID, so two sibling branches
+    /// never collide on inner IDs.
+    /// </param>
+    /// <param name="reportedParentId">
+    /// The parent operation ID stamped on inner operations. For a normal
+    /// (non-virtual) context this equals <paramref name="idPrefix"/>. For a
+    /// <see cref="NestingType.Flat"/> branch — a "virtual" context that emits no
+    /// CONTEXT checkpoint of its own — this is the nearest non-virtual ancestor
+    /// (the parallel/map operation), so inner operations re-parent past the
+    /// branch to an operation that actually exists in the checkpoint store.
+    /// </param>
+    private OperationIdGenerator(string? idPrefix, string? reportedParentId)
     {
         _counter = 0;
-        ParentId = parentId;
-        _prefix = parentId != null ? parentId + "-" : string.Empty;
+        ParentId = reportedParentId;
+        _prefix = idPrefix != null ? idPrefix + "-" : string.Empty;
     }
 
     /// <summary>
@@ -83,6 +106,19 @@ internal sealed class OperationIdGenerator
     public OperationIdGenerator CreateChild(string operationId)
     {
         return new OperationIdGenerator(operationId);
+    }
+
+    /// <summary>
+    /// Creates a child generator for a <see cref="NestingType.Flat"/> branch — a
+    /// "virtual" context. Inner-operation IDs are still derived from
+    /// <paramref name="operationId"/> (so sibling branches don't collide), but
+    /// the IDs are reported under <paramref name="reportedParentId"/> (the
+    /// nearest non-virtual ancestor) because the virtual branch emits no CONTEXT
+    /// checkpoint that inner operations could reference as their parent.
+    /// </summary>
+    public OperationIdGenerator CreateVirtualChild(string operationId, string? reportedParentId)
+    {
+        return new OperationIdGenerator(idPrefix: operationId, reportedParentId: reportedParentId);
     }
 
     /// <summary>

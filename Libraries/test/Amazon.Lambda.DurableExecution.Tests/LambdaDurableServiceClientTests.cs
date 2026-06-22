@@ -383,6 +383,26 @@ public class LambdaDurableServiceClientTests
     }
 
     [Fact]
+    public void MapFromSdkOperation_CopiesReplayChildren()
+    {
+        var sdkOp = new Amazon.Lambda.Model.Operation
+        {
+            Id = "ctx-1",
+            Type = "CONTEXT",
+            Status = "SUCCEEDED",
+            ContextDetails = new Amazon.Lambda.Model.ContextDetails
+            {
+                Result = "{}",
+                ReplayChildren = true
+            }
+        };
+
+        var mapped = LambdaDurableServiceClient.MapFromSdkOperationForTest(sdkOp);
+
+        Assert.True(mapped.ContextDetails!.ReplayChildren);
+    }
+
+    [Fact]
     public async Task CheckpointAsync_ReturnsNewToken()
     {
         var mockClient = new MockLambdaClient();

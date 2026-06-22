@@ -161,7 +161,8 @@ internal sealed class LambdaDurableServiceClient
             ContextDetails = sdkOp.ContextDetails != null ? new ContextDetails
             {
                 Result = sdkOp.ContextDetails.Result,
-                Error = MapError(sdkOp.ContextDetails.Error)
+                Error = MapError(sdkOp.ContextDetails.Error),
+                ReplayChildren = sdkOp.ContextDetails.ReplayChildren
             } : null,
             CallbackDetails = sdkOp.CallbackDetails != null ? new CallbackDetails
             {
@@ -176,6 +177,9 @@ internal sealed class LambdaDurableServiceClient
             } : null
         };
     }
+
+    /// <summary>Test-only access to <see cref="MapFromSdkOperation"/>.</summary>
+    internal static Operation MapFromSdkOperationForTest(SdkOperation sdkOp) => MapFromSdkOperation(sdkOp);
 
     /// <summary>
     /// Maps an SDK <see cref="Amazon.Lambda.Model.ErrorObject"/> into the

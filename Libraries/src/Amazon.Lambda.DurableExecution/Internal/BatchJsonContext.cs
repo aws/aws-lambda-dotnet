@@ -10,6 +10,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// </summary>
 [JsonSerializable(typeof(BatchSummary))]
 [JsonSerializable(typeof(BatchUnitSummary))]
+[JsonSerializable(typeof(ErrorObject))]
 internal sealed partial class BatchJsonContext : JsonSerializerContext
 {
 }
