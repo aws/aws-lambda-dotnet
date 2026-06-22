@@ -1,3 +1,12 @@
+## Release 2026-06-22 #3
+
+### Amazon.Lambda.DurableExecution (0.1.1-preview)
+* Identify durable-execution requests with an `aws-durable-execution-sdk-dotnet/<version>` user-agent component so the service can track .NET SDK usage at runtime, matching the sibling Python/Java/JS SDKs.
+### Amazon.Lambda.Core (3.1.1)
+* Fix type load issue due to Lambda Response Streaming. https://github.com/aws/aws-lambda-dotnet/issues/2430
+### Amazon.Lambda.RuntimeSupport (2.1.2)
+* Fix type load issue due to Lambda Response Streaming. https://github.com/aws/aws-lambda-dotnet/issues/2430
+
 ## Release 2026-06-22
 
 ### Amazon.Lambda.DurableExecution (0.1.0-preview)
