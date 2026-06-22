@@ -1,3 +1,10 @@
+## Release 2026-06-22 #2
+
+### Amazon.Lambda.Core (3.1.1)
+* Fix type load issue due to Lambda Response Streaming. https://github.com/aws/aws-lambda-dotnet/issues/2430
+### Amazon.Lambda.RuntimeSupport (2.1.2)
+* Fix type load issue due to Lambda Response Streaming. https://github.com/aws/aws-lambda-dotnet/issues/2430
+
 ## Release 2026-06-22
 
 ### Amazon.Lambda.DurableExecution (0.1.0-preview)
