@@ -54,7 +54,7 @@ public class ReplayAwareLoggerTest
         // expected count of every marker so the test never short-circuits with
         // a still-arriving "after_step1" record (which is emitted at a
         // different timestamp than workflow_start and indexes independently).
-        using var logs = new AmazonCloudWatchLogsClient(RegionEndpoint.USEast1);
+        using var logs = new AmazonCloudWatchLogsClient(deployment.Region);
         var logGroup = $"/aws/lambda/{deployment.FunctionName}";
 
         var allEvents = await PollForLogEvents(

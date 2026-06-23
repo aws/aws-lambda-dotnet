@@ -28,7 +28,6 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.9.22" />
-    <PackageReference Include="AWSSDK.ECR" Version="4.0.7" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6.3" />
     <PackageReference Include="AWSSDK.CloudWatchLogs" Version="4.0.20" />

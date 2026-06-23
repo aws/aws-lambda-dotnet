@@ -1,11 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using Amazon;
-using Amazon.ECR;
-using Amazon.ECR.Model;
 using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda;
@@ -16,35 +15,41 @@ namespace Amazon.Lambda.DurableExecution.IntegrationTests;
 
 /// <summary>
 /// Builds, deploys, and invokes a single durable Lambda function for an integration test.
-/// Manages the full lifecycle: IAM role, ECR repo, Docker image, Lambda function.
+/// Manages the full lifecycle: IAM role, zip package, managed-runtime Lambda function.
 /// All resources are torn down on DisposeAsync.
 /// </summary>
+/// <remarks>
+/// Durable functions deploy as a plain zip package on the managed <c>dotnet10</c> runtime
+/// (executable model, <c>Handler=bootstrap</c>) — no container image or ECR repository
+/// required. Each test function is published framework-dependent for linux-x64 and zipped.
+/// </remarks>
 internal sealed class DurableFunctionDeployment : IAsyncDisposable
 {
+    // The managed dotnet runtime that supports durable configuration. Executable model:
+    // `dotnet publish` emits a native `bootstrap` shim and the runtime execs it.
+    private const string ManagedRuntime = "dotnet10";
+    private const string BootstrapHandler = "bootstrap";
+
+    private static readonly RegionEndpoint DeploymentRegion = RegionEndpoint.USEast1;
+
     private readonly ITestOutputHelper _output;
     private readonly IAmazonLambda _lambdaClient;
-    private readonly IAmazonECR _ecrClient;
     private readonly IAmazonIdentityManagementService _iamClient;
 
     private readonly string _functionName;
-    private readonly string _repoName;
     private readonly string _roleName;
     private string? _roleArn;
-    private string? _imageUri;
     private string? _functionArn;
     private bool _functionCreated;
-    private bool _ecrRepoCreated;
     private readonly List<string> _inlinePolicyNames = new();
 
     // Optional paired "external system" Lambda — a plain (non-durable) function
     // that the workflow's submitter invokes. Models a real-world callback flow
     // where an out-of-band service resolves the durable execution.
     private readonly string _externalFunctionName;
-    private readonly string _externalRepoName;
     private readonly string _externalRoleName;
     private string? _externalRoleArn;
     private bool _externalFunctionCreated;
-    private bool _externalEcrRepoCreated;
 
     public string FunctionName => _functionName;
     public string? ExternalFunctionName => _externalFunctionCreated ? _externalFunctionName : null;
@@ -59,24 +64,30 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
     public IAmazonLambda LambdaClient => _lambdaClient;
 
+    /// <summary>
+    /// The region all resources for this deployment are created in. Tests that build
+    /// their own AWS clients (e.g. CloudWatch Logs) must use this so they target the
+    /// same region the functions actually deploy to.
+    /// </summary>
+    public RegionEndpoint Region => DeploymentRegion;
+
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
     {
         _output = output;
-        _lambdaClient = new AmazonLambdaClient(RegionEndpoint.USEast1);
-        _ecrClient = new AmazonECRClient(RegionEndpoint.USEast1);
-        _iamClient = new AmazonIdentityManagementServiceClient(RegionEndpoint.USEast1);
+        _lambdaClient = new AmazonLambdaClient(DeploymentRegion);
+        _iamClient = new AmazonIdentityManagementServiceClient(DeploymentRegion);
 
         // Truncate the GUID (not the suffix) so CloudTrail entries stay readable.
         // Keep the GUID short enough that the total stays well under 40 chars even for long suffixes.
         static string ShortId() => Guid.NewGuid().ToString("N")[..Math.Min(8, 32)];
         _functionName = $"durable-integ-{suffix}-{ShortId()}";
-        _repoName = $"durable-integ-{suffix}-{ShortId()}";
         _roleName = $"durable-integ-{suffix}-{ShortId()}";
         _externalFunctionName = $"durable-integ-{suffix}-ext-{ShortId()}";
-        _externalRepoName = $"durable-integ-{suffix}-ext-{ShortId()}";
         _externalRoleName = $"durable-integ-{suffix}-ext-{ShortId()}";
     }
 
+    // The optional `handler` defaults to `bootstrap` (executable model). Pass an
+    // `Assembly::Type::Method` string to deploy the class-library model instead.
     public static async Task<DurableFunctionDeployment> CreateAsync(
         string testFunctionDir,
         string scenarioSuffix,
@@ -84,16 +95,17 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         string? externalFunctionDir = null,
         IDictionary<string, string>? environment = null,
         IReadOnlyList<string>? invokeAllowedFunctionArns = null,
-        bool enableTenancy = false)
+        bool enableTenancy = false,
+        string? handler = null)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy);
+            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy, handler);
         }
         catch
         {
-            // Tear down anything that did get created (IAM role, ECR repo) so we
+            // Tear down anything that did get created (IAM role) so we
             // don't leak resources when init fails part-way through.
             await deployment.DisposeAsync();
             throw;
@@ -182,7 +194,8 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         string? externalFunctionDir,
         IDictionary<string, string>? environment,
         IReadOnlyList<string>? invokeAllowedFunctionArns,
-        bool enableTenancy)
+        bool enableTenancy,
+        string? handler)
     {
         // 1. Create the workflow's IAM role.
         _output.WriteLine($"Creating IAM role: {_roleName}");
@@ -307,45 +320,30 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         // Wait for IAM propagation.
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        // 3. Create the workflow ECR repo + image.
-        _output.WriteLine($"Creating ECR repository: {_repoName}");
-        var createRepoResponse = await _ecrClient.CreateRepositoryAsync(new CreateRepositoryRequest
-        {
-            RepositoryName = _repoName
-        });
-        _ecrRepoCreated = true;
-        var repositoryUri = createRepoResponse.Repository.RepositoryUri;
+        // 3. Build + zip the workflow function package.
+        _output.WriteLine($"Building and zipping function package from {testFunctionDir}...");
+        var zipBytes = await BuildAndZipAsync(testFunctionDir);
+        _output.WriteLine($"Package built: {zipBytes.Length} bytes");
 
-        _output.WriteLine($"Building and pushing Docker image from {testFunctionDir}...");
-        _imageUri = await BuildAndPushImage(testFunctionDir, repositoryUri);
-        _output.WriteLine($"Image pushed: {_imageUri}");
-
-        // 4. (optional) Create + push the external function image and create the Lambda.
-        //    Done before the workflow Lambda so the workflow function's environment can
-        //    reference the external function name (which is already known from the ctor).
+        // 4. (optional) Build + deploy the external function. Done before the workflow
+        //    Lambda so the workflow function's environment can reference the external
+        //    function name (which is already known from the ctor).
         if (externalFunctionDir != null)
         {
-            _output.WriteLine($"Creating external ECR repository: {_externalRepoName}");
-            var extRepoResponse = await _ecrClient.CreateRepositoryAsync(new CreateRepositoryRequest
-            {
-                RepositoryName = _externalRepoName
-            });
-            _externalEcrRepoCreated = true;
-            var extRepositoryUri = extRepoResponse.Repository.RepositoryUri;
-
-            _output.WriteLine($"Building external Docker image from {externalFunctionDir}...");
-            var extImageUri = await BuildAndPushImage(externalFunctionDir, extRepositoryUri);
-            _output.WriteLine($"External image pushed: {extImageUri}");
+            _output.WriteLine($"Building external function package from {externalFunctionDir}...");
+            var extZipBytes = await BuildAndZipAsync(externalFunctionDir);
 
             _output.WriteLine($"Creating external Lambda function: {_externalFunctionName}");
             await _lambdaClient.CreateFunctionAsync(new CreateFunctionRequest
             {
                 FunctionName = _externalFunctionName,
-                PackageType = PackageType.Image,
+                Runtime = ManagedRuntime,
+                Handler = BootstrapHandler,
                 Role = _externalRoleArn,
-                Code = new FunctionCode { ImageUri = extImageUri },
+                Code = new FunctionCode { ZipFile = new MemoryStream(extZipBytes) },
                 Timeout = 30,
-                MemorySize = 256
+                MemorySize = 256,
+                LoggingConfig = new LoggingConfig { LogFormat = LogFormat.JSON }
                 // No DurableConfig — this is a plain function.
             });
             _externalFunctionCreated = true;
@@ -359,12 +357,18 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         var createFunctionRequest = new CreateFunctionRequest
         {
             FunctionName = _functionName,
-            PackageType = PackageType.Image,
+            Runtime = ManagedRuntime,
+            // Defaults to the executable model (bootstrap); a non-null handler deploys
+            // the class-library model via an Assembly::Type::Method string.
+            Handler = handler ?? BootstrapHandler,
             Role = _roleArn,
-            Code = new FunctionCode { ImageUri = _imageUri },
+            Code = new FunctionCode { ZipFile = new MemoryStream(zipBytes) },
             Timeout = 30,
             MemorySize = 256,
-            DurableConfig = new DurableConfig { ExecutionTimeout = 60 }
+            DurableConfig = new DurableConfig { ExecutionTimeout = 60 },
+            // Emit structured JSON logs so tests that parse log records (e.g.
+            // ReplayAwareLoggerTest) can assert on durable-execution scope keys.
+            LoggingConfig = new LoggingConfig { LogFormat = LogFormat.JSON }
         };
 
         // Tenant isolation must be set at function-creation time (Lambda rejects
@@ -596,7 +600,12 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         throw new TimeoutException($"Function '{functionName}' did not become Active within 120 seconds");
     }
 
-    private async Task<string> BuildAndPushImage(string testFunctionDir, string repositoryUri)
+    /// <summary>
+    /// Publishes a test function (framework-dependent, linux-x64) and zips the publish
+    /// output for upload as a managed-runtime Lambda package. The zip contains the native
+    /// <c>bootstrap</c> shim that the dotnet managed runtime execs (executable model).
+    /// </summary>
+    private async Task<byte[]> BuildAndZipAsync(string testFunctionDir)
     {
         // `dotnet test` spins up one testhost per TargetFramework (net8.0 + net10.0) and
         // runs them concurrently. Both testhosts invoke the same test classes, which means
@@ -617,9 +626,9 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
         // MSBuild's up-to-date check leaves stale .Up2Date markers under obj/ that
         // make `dotnet publish` skip the copy-to-output step on a second run after
-        // we've wiped bin/publish/. Result: empty publish dir → empty Docker build
-        // context → "COPY bin/publish/ … not found". Nuking obj/ guarantees a real
-        // publish each time the helper is invoked. Cheap (each test function is small).
+        // we've wiped bin/publish/. Result: empty publish dir → empty zip package.
+        // Nuking obj/ guarantees a real publish each time the helper is invoked.
+        // Cheap (each test function is small).
         var objDir = Path.Combine(testFunctionDir, "obj");
         if (Directory.Exists(objDir)) Directory.Delete(objDir, true);
         var binDir = Path.Combine(testFunctionDir, "bin");
@@ -629,25 +638,13 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             $"publish -c Release -r linux-x64 --self-contained false -o \"{publishDir}\"",
             testFunctionDir);
 
-        var imageTag = $"{repositoryUri}:latest";
-        await RunProcess("docker",
-            $"build --platform linux/amd64 --provenance=false -t {imageTag} .",
-            testFunctionDir);
+        // Zip the publish output. On Linux (CI) ZipFile preserves the bootstrap exec bit;
+        // on Windows the managed runtime tolerates the missing bit.
+        var zipPath = Path.Combine(testFunctionDir, "bin", "function.zip");
+        if (File.Exists(zipPath)) File.Delete(zipPath);
+        ZipFile.CreateFromDirectory(publishDir, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false);
 
-        var authResponse = await _ecrClient.GetAuthorizationTokenAsync(new GetAuthorizationTokenRequest());
-        var authData = authResponse.AuthorizationData[0];
-        var token = Encoding.UTF8.GetString(Convert.FromBase64String(authData.AuthorizationToken));
-        var parts = token.Split(':');
-        var registryUrl = authData.ProxyEndpoint;
-
-        await RunProcess("docker",
-            $"login --username {parts[0]} --password-stdin {registryUrl}",
-            testFunctionDir,
-            stdin: parts[1]);
-
-        await RunProcess("docker", $"push {imageTag}", testFunctionDir);
-
-        return imageTag;
+        return await File.ReadAllBytesAsync(zipPath);
     }
 
     private static async Task<FileStream> AcquireExclusiveFileLockAsync(string lockPath, TimeSpan timeout)
@@ -740,34 +737,6 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
                 await _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _externalFunctionName });
             }
             catch (Exception ex) { _output.WriteLine($"Cleanup error (external function): {ex.Message}"); }
-        }
-
-        if (_ecrRepoCreated)
-        {
-            try
-            {
-                _output.WriteLine($"Deleting ECR repository: {_repoName}");
-                await _ecrClient.DeleteRepositoryAsync(new DeleteRepositoryRequest
-                {
-                    RepositoryName = _repoName,
-                    Force = true
-                });
-            }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (ECR): {ex.Message}"); }
-        }
-
-        if (_externalEcrRepoCreated)
-        {
-            try
-            {
-                _output.WriteLine($"Deleting external ECR repository: {_externalRepoName}");
-                await _ecrClient.DeleteRepositoryAsync(new DeleteRepositoryRequest
-                {
-                    RepositoryName = _externalRepoName,
-                    Force = true
-                });
-            }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (external ECR): {ex.Message}"); }
         }
 
         if (_roleArn != null)
