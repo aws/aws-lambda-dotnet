@@ -66,7 +66,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
-        public void DurableExecution_InjectsCheckpointPolicy_AsMixedArray(CloudFormationTemplateFormat templateFormat)
+        public void DurableExecution_AddsManagedCheckpointPolicy(CloudFormationTemplateFormat templateFormat)
         {
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 30, 512, null, "AWSLambdaBasicExecutionRole");
@@ -77,14 +77,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             cloudFormationWriter.ApplyReport(report);
 
-            // The mixed string/object Policies array must round-trip through both writers.
+            // The Policies array is all strings: the pre-existing managed policy plus the durable-execution one.
             var content = mockFileManager.ReadAllText(ServerlessTemplateFilePath);
             templateWriter.Parse(content);
             Assert.True(templateWriter.GetToken<bool>("Resources.TestMethod.Metadata.SyncedDurablePolicy", false));
-            // The managed policy string is preserved alongside the injected statement object.
-            Assert.Contains("AWSLambdaBasicExecutionRole", content);
-            Assert.Contains("lambda:CheckpointDurableExecution", content);
-            Assert.Contains("lambda:GetDurableExecutionState", content);
+            var policies = templateWriter.GetToken<List<object>>("Resources.TestMethod.Properties.Policies");
+            Assert.Contains("AWSLambdaBasicExecutionRole", policies.Select(p => p?.ToString()));
+            Assert.Contains("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy", policies.Select(p => p?.ToString()));
         }
 
         [Theory]
@@ -104,8 +103,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter).ApplyReport(report2);
 
             var content = mockFileManager.ReadAllText(ServerlessTemplateFilePath);
-            // The checkpoint action should appear once, not duplicated across passes.
-            var occurrences = content.Split(new[] { "lambda:CheckpointDurableExecution" }, System.StringSplitOptions.None).Length - 1;
+            // The managed checkpoint policy should appear once, not duplicated across passes.
+            var occurrences = content.Split(new[] { "AWSLambdaBasicDurableExecutionRolePolicy" }, System.StringSplitOptions.None).Length - 1;
             Assert.Equal(1, occurrences);
         }
 
@@ -134,7 +133,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.DurableConfig"));
             Assert.False(templateWriter.Exists("Resources.TestMethod.Metadata.SyncedDurableConfig"));
-            Assert.DoesNotContain("lambda:CheckpointDurableExecution", content);
+            Assert.DoesNotContain("AWSLambdaBasicDurableExecutionRolePolicy", content);
             // The managed policy that pre-existed must remain.
             Assert.Contains("AWSLambdaBasicExecutionRole", content);
         }
@@ -160,7 +159,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.True(templateWriter.Exists("Resources.TestMethod.Properties.DurableConfig"));
             Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.Policies"));
             Assert.False(templateWriter.GetToken<bool>("Resources.TestMethod.Metadata.SyncedDurablePolicy", false));
-            Assert.DoesNotContain("lambda:CheckpointDurableExecution", content);
+            Assert.DoesNotContain("AWSLambdaBasicDurableExecutionRolePolicy", content);
         }
     }
 }

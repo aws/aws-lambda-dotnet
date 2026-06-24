@@ -2,15 +2,15 @@
 
 > Status: **Ready with must-fixes.** This plan folds in every adversarial-reviewer blocker. Items that depend on undefined infrastructure (the runtime string, the IAM-shape decision) are flagged inline and gated behind explicit pre-merge confirmations rather than buried.
 
-> **SUPERSEDED — executable-only gate dropped (`AWSLambda0140` never allocated).** This document predates the decision to support BOTH the executable and class-library programming models on the managed runtime. The shipped implementation has **no `OutputKind`/executable gate** and **no `DurableExecutionRequiresExecutable` diagnostic** — the diagnostic id `AWSLambda0140` was intentionally never allocated, so the durable descriptors run `AWSLambda0141`–`AWSLambda0144`. Any mention below of "executable-only", "`OutputType=Exe`", `isExecutable`/`OutputKind` gating, or `DurableExecutionRequiresExecutable`/`AWSLambda0140` is historical and does not reflect the merged code; see `LambdaFunctionValidator.ValidateDurableExecution` for the actual behavior.
+> **Note on history.** An early draft of this plan gated `[DurableExecution]` to the *executable* programming model only, behind an `OutputKind`/`isExecutable` check and a `DurableExecutionRequiresExecutable` diagnostic (`AWSLambda0140`). That gate was **dropped** before merge: the shipped implementation supports **both** the executable and class-library programming models on the managed runtime, with no `OutputKind`/executable check and no executable-only diagnostic. `AWSLambda0140` and `AWSLambda0141` were never allocated, so the durable descriptors are `AWSLambda0142`–`AWSLambda0144`. This document has been updated to describe the merged behavior; see `LambdaFunctionValidator.ValidateDurableExecution` for the source of truth.
 
 ## Verified ground truth
 
 All load-bearing claims confirmed against the codebase:
 
 - IAM action names `lambda:CheckpointDurableExecution` and `lambda:GetDurableExecutionState` verified in the reference template (lines 52-53). Note the reference uses an inline `PolicyName: DurableExecutionPolicy` role-attached policy, not a SAM `Policies` array entry — relevant to the IAM section.
-- README line 35 states the executable-only constraint is a preview limitation pending RuntimeSupport changes (resolves the "temporary vs permanent" contradiction).
-- README line 37 shows `dotnet10` in its example, but durable functions run on **either `dotnet8` or `dotnet10`** (user-confirmed 2026-06-08) — the generator does not force a runtime. Line 53 confirms the `HandlerWrapper.GetHandlerWrapper<DurableExecutionInvocationInput, DurableExecutionInvocationOutput>` typed contract.
+- Durable functions support **both** the executable and class-library programming models on the managed runtime; the generator does not gate on `OutputKind`/`isExecutable`. The same wrapper is emitted for both — only the deployed `Handler` string differs (assembly name vs. `Assembly::Type::Method`), which `LambdaFunctionModel.Handler` already derives from `IsExecutable`.
+- Durable functions run on **either `dotnet8` or `dotnet10`** (user-confirmed 2026-06-08) — the generator does not force a runtime. The README confirms the `HandlerWrapper.GetHandlerWrapper<DurableExecutionInvocationInput, DurableExecutionInvocationOutput>` typed contract.
 - Package multi-targets net8.0 + net10.0.
 
 ---
@@ -33,11 +33,12 @@ Let a developer annotate a method with `[DurableExecution]` (alongside `[LambdaF
 - Changes to `Amazon.Lambda.DurableExecution` runtime behavior (`DurableFunction`, `DurableContext`, the wire format). These ship independently; this work consumes them.
 - Scoped (least-privilege) checkpoint ARNs — deferred until the service publishes a scopable ARN format (see Risks).
 
-### The executable-only constraint (VERIFIED, and its sharp edge)
-`Amazon.Lambda.DurableExecution/README.md` line 35 states the preview **only supports the executable programming model** — the function is an executable assembly hosting its own bootstrap loop and passing the serializer to the runtime in code. Class-library/managed-runtime support lands only after RuntimeSupport changes are deployed. So the constraint is **temporary-but-real for preview**: `[DurableExecution]` requires `OutputType=Exe` today.
+### Programming model: both executable and class-library are supported (no gate)
+Durable functions work on the managed runtime under **both** programming models, and the generator emits the **same** wrapper for each:
+- **Executable model** — the function is an executable assembly hosting its own bootstrap loop; the generated wrapper delegates to `DurableFunction.WrapAsync`, which reads the serializer off the `ILambdaContext` the bootstrap populates.
+- **Class-library model** — the managed `dotnet10` runtime hosts its own bootstrap, resolves `[assembly: LambdaSerializer]`, and populates `ILambdaContext.Serializer` the same way, so `WrapAsync` finds the serializer there too.
 
-**MUST-FIX (reviewer blocker — enforcement is post-hoc, not preventive).** `LambdaFunctionModelBuilder.BuildAndValidate` (verified line 17) receives `isExecutable` as a **caller-supplied parameter** from the generator driver; it is not derived from the attribute. A diagnostic can *report* `[DurableExecution]` on a non-executable project, but the framework does not abort generation on diagnostic severity alone. Therefore the plan must make `IsValid=false` the gate:
-- `LambdaFunctionValidator.ValidateFunction` (called at line 26) returns the model's `IsValid`. When `[DurableExecution]` is present and `isExecutable == false`, emit `DurableExecutionRequiresExecutable` (Error) **and** force `IsValid=false` so no wrapper is generated. This is the only mechanism in the existing framework that actually halts emission for a function.
+Only the deployed `Handler` string differs (assembly name vs. `Assembly::Type::Method`), which `LambdaFunctionModel.Handler` already derives from `IsExecutable`. There is therefore **no `OutputKind`/`isExecutable` gate and no executable-only diagnostic** in the shipped code — see `LambdaFunctionValidator.ValidateDurableExecution`.
 
 ---
 
@@ -196,7 +197,7 @@ YAML equivalent under `Properties: DurableConfig:`.
 
 **Runtime:** NOT set here. Forced at model-build time (Section 7), because `ProcessPackageTypeProperty` line 185 (`SetToken …Runtime = lambdaFunction.Runtime`) would clobber any writer-side injection in the Zip branch.
 
-**PackageType:** durable functions are Zip/executable only. The `Image` branch (verified lines 190-196) strips `Handler`/`Runtime`, so `PackageType.Image` is structurally unsupported → `DurableExecutionZipOnly` (Error, `IsValid=false`) at model-build. **MUST-FIX: this diagnostic must be Error and gate `IsValid`, not a warning** — otherwise the Image branch silently produces a broken template.
+**PackageType:** durable functions deploy as Zip. The earlier draft proposed a `DurableExecutionZipOnly` (`AWSLambda0141`) error to reject `PackageType.Image`; that diagnostic was **not shipped** (`AWSLambda0141` was never allocated). The generated wrapper and `DurableConfig`/IAM emission key off the `[DurableExecution]` attribute regardless of package type.
 
 **Tool guard:** the existing `Metadata.Tool = Amazon.Lambda.Annotations` guard is preserved (DurableConfig only written/refreshed for generator-owned functions).
 
@@ -230,28 +231,22 @@ So the two checkpoint actions are confirmed: `lambda:CheckpointDurableExecution`
 **FLAGGED — the reference IAM pattern diverges MORE than first assumed (corrected 2026-06-08 after reading the full reference template):**
 - The reference does **not** put any IAM on the function resources at all. It defines a **single shared standalone `AWS::IAM::Role`** (`DurableFunctionRole`, lines 25-62) carrying `ManagedPolicyArns: [AWSLambdaBasicExecutionRole]` **plus** the inline `PolicyName: DurableExecutionPolicy` above, and **every `AWS::Serverless::Function` sets `Role: {Fn::GetAtt: [DurableFunctionRole, Arn]}`** (e.g. lines 69-74) — no function uses a SAM `Policies` array.
 - **Consequence for this plan's design:** under the plan's own rule "when `lambdaFunction.Role` IS set, do NOT touch IAM," the reference pattern would never trigger the plan's injection — because in the reference, every function *does* set `Role`. The generator's auto-IAM path (no explicit `Role` → emit a SAM `Policies`-array inline statement) is therefore **a distinct, generator-idiomatic adaptation, not a reproduction of the reference**. The SAM transform expands a per-function `Policies` array into a generated per-function role, so it is functionally equivalent (each function gets the two actions), but the resulting template shape (N generated roles vs. one shared role) differs from the reference.
-- **DECISION MADE (2026-06-08): Option 1 — per-function SAM `Policies` array.** Rationale (user): follow the same mechanism the generator already uses for IAM (it appends to the per-function `Policies` list it already manages for `AWSLambdaBasicExecutionRole`), rather than introducing standalone-role emission the writer does not do today. The two options considered were:
-  1. **Per-function SAM `Policies` array** (CHOSEN): idiomatic to how the generator already emits `AWSLambdaBasicExecutionRole`; produces one role per function via the SAM transform. Mixed string/object array — see the round-trip risk below.
-  2. ~~Shared standalone role (matches reference exactly): generator emits one `DurableFunctionRole` resource and points every durable function's `Role` at it. Larger change to the writer (it does not emit standalone roles today) and interacts with user-specified `Role`.~~ Not chosen.
-- `Resource: "*"` is used because the DurableExecutionArn is allocated at runtime and is not knowable at template-synth time (matches the reference, line 55). Whether a scopable ARN will ever exist is **undefined** — flagged as a follow-up, not promised.
+- **DECISION (2026-06-08, REVISED): append the AWS-managed policy ARN to the per-function SAM `Policies` array** — `arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy`. This is the mechanism the generator already uses for `AWSLambdaBasicExecutionRole` (append a string to the `Policies` list), so it stays generator-idiomatic, but it references the AWS-published managed policy instead of injecting a hand-rolled inline statement. The managed policy bundles the basic-execution Logs actions **plus** `lambda:CheckpointDurableExecution` / `lambda:GetDurableExecutionState`. This is exactly what the durable integration tests attach to their function roles (`DurableFunctionDeployment.cs` — `AttachRolePolicyAsync(..., AWSLambdaBasicDurableExecutionRolePolicy)`).
+  - **Why not an inline `Resource: "*"` statement** (the original draft, now superseded): the per-execution `DurableExecutionArn` is allocated at runtime and is unknowable at template-synth time, so an inline statement could only ever use `Resource: "*"`. Referencing the managed policy hands resource scoping to AWS — if/when the service publishes resource-level conditions, the managed policy updates with no template change required. It also avoids the heterogeneous string/object `Policies` array entirely (the array stays all-strings), removing the round-trip risk the inline approach carried.
+  - ~~Shared standalone role (matches the Python reference exactly): generator emits one `DurableFunctionRole` resource and points every durable function's `Role` at it. Larger change to the writer (it does not emit standalone roles today) and interacts with user-specified `Role`.~~ Not chosen.
 
-When `[DurableExecution]` is present AND `lambdaFunction.Role` is NOT set, after `ProcessLambdaFunctionProperties` has run (so the `Policies` array exists from the line 161-166 split), read-modify-write `Properties.Policies` via `GetToken`/`SetToken(TokenType.List)`, appending one inline statement object:
+When `[DurableExecution]` is present AND `lambdaFunction.Role` is NOT set, after `ProcessLambdaFunctionProperties` has run (so the `Policies` array exists from the line 161-166 split), read-modify-write `Properties.Policies` via `GetToken`/`SetToken(TokenType.List)`, appending the managed-policy ARN string:
 ```json
-{
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["lambda:CheckpointDurableExecution", "lambda:GetDurableExecutionState"],
-      "Resource": "*"
-    }
-  ]
-}
+"Policies": [
+  "AWSLambdaBasicExecutionRole",
+  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
+]
 ```
-Producing a mixed string/object array, e.g. `["AWSLambdaBasicExecutionRole", { "Statement": [ … ] }]`. Track via `Metadata.SyncedDurablePolicy = true` for idempotent regeneration; remove the injected statement + marker on orphan removal.
+The array stays all-strings. Track via `Metadata.SyncedDurablePolicy = true` for idempotent regeneration; remove the managed-policy entry + marker on orphan removal. Idempotency/orphan-removal recognize the entry by exact ARN match (no Sid bookkeeping needed).
 
 **When `lambdaFunction.Role` IS set** (Role/Policies mutually exclusive — verified lines 155-166): do NOT touch IAM. Emit `DurableExecutionExplicitRoleNeedsCheckpointPolicy` (Info) instructing the user to attach the two actions manually. The diagnostic fires whenever both `[DurableExecution]` and `Role` are present at generation time.
 
-**MUST-FIX (highest regression risk):** the mixed string/object `Policies` array must round-trip through both `JsonWriter` and `YamlWriter`. A dedicated JSON+YAML round-trip snapshot test is mandatory (Section 8, Test G). If `SetToken(TokenType.List)` cannot preserve heterogeneous types, this approach is not viable and must be revisited before merge.
+**Note (was the highest regression risk under the inline-statement design):** the managed-policy approach keeps the `Policies` array all-strings, so the heterogeneous string/object round-trip concern no longer applies. A JSON+YAML test still asserts the managed-policy ARN appears alongside `AWSLambdaBasicExecutionRole` and survives re-parse (Section 8, Test G).
 
 ---
 
@@ -281,34 +276,33 @@ All paths are absolute. `.tt` template changes require regenerating the correspo
 
 **Runtime: NO forcing (DECISION 2026-06-08).** Durable functions run on **either `dotnet8` or `dotnet10`**, so the generator does **not** force or override the runtime — the caller-supplied/default `runtime` flows through unchanged exactly like every other function. No `DurableRuntime` constant, no `model.Runtime` override. (This removes the former "MUST-FIX runtime contradiction" and BLOCKING risk #1 entirely.)
 
-- Run the durable validation pass (executable-only, Zip-only, exclusive-event, signature) and force `IsValid=false` on any Error-severity finding. This is the substance of Component D now that runtime forcing is gone.
+- Run the durable validation pass (attribute-value bounds, signature, explicit-role check) and force `IsValid=false` on any Error-severity finding. This is the substance of Component D now that runtime forcing is gone.
 
-**IMPLEMENTED (2026-06-08, Components D+E):** added a `ValidateDurableExecution` method to `LambdaFunctionValidator` (called alongside the other `ValidateXxxEvents`), which adds Error diagnostics to the list — `ReportDiagnostics` already returns `IsValid=false` whenever any Error is present, so no separate gating wiring is needed. Checks: `OutputKind != ConsoleApplication` → 0140; `PackageType == Image` → 0141; signature (param count, second param `== IDurableContext`, return classified via the model's existing `ReturnsVoidOrGenericTask`) → 0142; explicit `Role` set → 0143 (Info). Added `TypeFullNames.IDurableContext`. Two build-system findings: (1) **RS1032** — a `messageFormat` ending in a `{0}` placeholder must use `: {0}` not `. {0}` (trailing-period rule); (2) the SourceGenerators.Tests project **cannot reference the DurableExecution package** (its AWSSDK.Core 4.x downgrades the test project's pinned 3.7.x → NU1605), so diagnostic tests supply minimal durable **stub types as source** (`IDurableContext` / the two envelopes) — the generator only needs them resolvable by metadata name. Diagnostic tests use the `VerifyCS.Test` harness with exact `WithSpan`/`WithArguments` (the framework demands precise locations and prints the expected `DiagnosticResult` on mismatch).
+**IMPLEMENTED (2026-06-08, Components D+E):** added a `ValidateDurableExecution` method to `LambdaFunctionValidator` (called alongside the other `ValidateXxxEvents`), which adds Error diagnostics to the list — `ReportDiagnostics` already returns `IsValid=false` whenever any Error is present, so no separate gating wiring is needed. Checks: attribute property bounds (`RetentionPeriodInDays`/`ExecutionTimeout`) → `InvalidDurableExecutionAttribute` (0144); signature (param count, second param `== IDurableContext`, return classified via the model's existing `ReturnsVoidOrGenericTask`) → `DurableExecutionInvalidSignature` (0142); explicit `Role` set → `DurableExecutionExplicitRoleNeedsCheckpointPolicy` (0143, Info). **No `OutputKind`/executable gate and no Zip-only check** — both programming models are supported (see Component E). Added `TypeFullNames.IDurableContext`. Two build-system findings: (1) **RS1032** — a `messageFormat` ending in a `{0}` placeholder must use `: {0}` not `. {0}` (trailing-period rule); (2) the SourceGenerators.Tests project **cannot reference the DurableExecution package** (its AWSSDK.Core 4.x downgrades the test project's pinned 3.7.x → NU1605), so diagnostic tests supply minimal durable **stub types as source** (`IDurableContext` / the two envelopes) — the generator only needs them resolvable by metadata name. Diagnostic tests use the `VerifyCS.Test` harness with exact `WithSpan`/`WithArguments` (the framework demands precise locations and prints the expected `DiagnosticResult` on mismatch).
 
 ### Component E — Diagnostics set
 - `C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Diagnostics\DiagnosticDescriptors.cs`.
 
-**RESOLVED (2026-06-08): concrete IDs allocated.** Verified against `DiagnosticDescriptors.cs`: the highest allocated id is `AWSLambda0139` (`InvalidScheduleEventAttribute`). (Note: `AWSLambda0126` is skipped in the existing file — 0125 jumps to 0127 — but the durable IDs continue cleanly from the top.) All descriptors use `category: "AWSLambdaCSharpGenerator"` and `isEnabledByDefault: true`, matching the file's convention.
+**RESOLVED (2026-06-08): concrete IDs allocated.** Verified against `DiagnosticDescriptors.cs`: the highest pre-existing id was `AWSLambda0139` (`InvalidScheduleEventAttribute`). (Note: `AWSLambda0126` is skipped in the existing file — 0125 jumps to 0127.) The durable descriptors are `AWSLambda0142`–`AWSLambda0144`; **`AWSLambda0140` and `AWSLambda0141` were never allocated** because the executable-only and Zip-only gates they were reserved for were dropped before merge (both programming models are supported — see Component D). All descriptors use `category: "AWSLambdaCSharpGenerator"` and `isEnabledByDefault: true`, matching the file's convention.
 
-**REVISED (2026-06-08): only THREE new descriptors — `DurableExecutionExclusiveEvent` dropped (redundant).** Code verification: `LambdaFunctionValidator.ValidateFunction` (line 58) already emits `MultipleEventsNotSupported` (AWSLambda0102) and returns early with `IsValid=false` whenever `Events.Count > 1`. Component B added `DurableExecutionAttribute` to `TypeFullNames.Events` and `EventType.DurableExecution`, so `[DurableExecution] + [RestApi]` already produces `Events.Count == 2` → fires AWSLambda0102 → halts generation. No new exclusive-event diagnostic is needed; just add a **test** asserting the combination triggers AWSLambda0102 (locks in the dispatch-order behavior). The durable descriptors take **`AWSLambda0140`–`AWSLambda0143`**:
+**Only THREE new descriptors.** The exclusive-event case is covered by the existing `MultipleEventsNotSupported` (AWSLambda0102): `LambdaFunctionValidator.ValidateFunction` already emits it and returns early with `IsValid=false` whenever `Events.Count > 1`. Component B added `DurableExecutionAttribute` to `TypeFullNames.Events` and `EventType.DurableExecution`, so `[DurableExecution] + [RestApi]` produces `Events.Count == 2` → fires AWSLambda0102 → halts generation. No new exclusive-event diagnostic is needed; just a **test** asserting the combination triggers AWSLambda0102. The durable descriptors:
 
 | Name | Id | Severity | Gates generation? | Message (summary) |
 |---|---|---|---|---|
-| `DurableExecutionRequiresExecutable` | `AWSLambda0140` | Error | Yes (`IsValid=false`) | `[DurableExecution]` requires an executable (OutputType=Exe) project; class-library handlers are not supported in preview. |
-| `DurableExecutionZipOnly` | `AWSLambda0141` | Error | Yes | `[DurableExecution]` requires PackageType=Zip; Image packaging is not supported. |
-| `DurableExecutionInvalidSignature` | `AWSLambda0142` | Error | Yes | A `[DurableExecution]` method must be `(TInput, IDurableContext) -> Task` or `-> Task<T>`. |
+| `DurableExecutionInvalidSignature` | `AWSLambda0142` | Error | Yes (`IsValid=false`) | A `[DurableExecution]` method must be `(TInput, IDurableContext) -> Task` or `-> Task<T>`. |
 | `DurableExecutionExplicitRoleNeedsCheckpointPolicy` | `AWSLambda0143` | Info | No | Function uses an explicit Role; attach `lambda:CheckpointDurableExecution` and `lambda:GetDurableExecutionState` manually. |
+| `InvalidDurableExecutionAttribute` | `AWSLambda0144` | Error | Yes | `RetentionPeriodInDays`/`ExecutionTimeout` must be positive integers. |
 
-**Exclusive-event enforcement (RESOLVED):** handled by the existing `MultipleEventsNotSupported` (AWSLambda0102) — see above. No new diagnostic.
+**Exclusive-event enforcement:** handled by the existing `MultipleEventsNotSupported` (AWSLambda0102) — see above. No new diagnostic.
 
-**Executable detection (RESOLVED 2026-06-08 — gate kept, but key off `OutputKind`):** the generator's `isExecutable` flag (Generator.cs:129) is derived from the `GenerateMain` named arg on `[assembly: LambdaGlobalProperties]` — i.e. "generator should synthesize `Main`." That is the WRONG signal for the durable gate, because the README's quick-start uses the **manual** bootstrap model (`GenerateMain` is false, user writes their own `Main` + `LambdaBootstrap`) yet is still a valid executable. `DurableExecutionRequiresExecutable` must therefore gate on **`context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication`** ("is this an executable project at all"), NOT on `isExecutable`. This correctly allows both the manual-bootstrap model (today) and a future generated-`Main` model, and only rejects true class-library projects.
+**No executable gate (decision changed before merge):** an earlier draft kept an executable-only gate keyed off `context.Compilation.Options.OutputKind`. That gate was removed: durable functions are valid as both class libraries and executables on the managed runtime, and the generated wrapper is identical for both (only the deployed `Handler` string differs, which the model already derives from `IsExecutable`). The generator therefore performs **no `OutputKind`/`isExecutable` check** for durable functions.
 
 ### Component F — CFN `DurableConfig` writer (IMPLEMENTED 2026-06-08)
 - `CloudFormationWriter.cs` — added a `case AttributeModel<DurableExecutionAttribute>` to the event-attribute switch that calls `ProcessDurableExecutionAttribute` and sets `hasDurableExecution = true` (and does NOT add to `currentSyncedEvents` — durable is a Properties/IAM concern, not an event). `ProcessDurableExecutionAttribute` clears any prior `DurableConfig`, re-emits `RetentionPeriodInDays`/`ExecutionTimeout` only when their `IsXxxSet` flags are true (creating an empty `DurableConfig` object via `TokenType.Object` when neither is set so the function is still marked durable), and sets the `Metadata.SyncedDurableConfig` marker. Orphan removal mirrors the verified `FunctionUrl` block.
 
-### Component G — CFN checkpoint IAM writer (IMPLEMENTED 2026-06-08)
-- `CloudFormationWriter.cs` — kept inline (no separate writer class), matching `ProcessFunctionUrlAttribute` style. When `Role` is empty, `AddDurableCheckpointPolicy` reads the existing `Policies` via `GetToken<List<object>>`, appends one inline statement object (`{Statement:[{Effect,Action:[2 actions],Resource:"*"}]}` built as nested `Dictionary`/`List`), and re-sets with `TokenType.List` — producing the mixed string/object array (`["AWSLambdaBasicExecutionRole", {Statement…}]`). Idempotency + orphan removal use `IsDurableCheckpointStatement` (recognizes the statement by its action names via JSON serialization). When `Role` is set, IAM is left untouched and `AWSLambda0143` (Info) is emitted in the validator.
-- **HIGHEST-RISK ITEM RESOLVED:** the mixed string/object `Policies` array round-trips cleanly through **both** `JsonWriter` (JSON.NET `JToken`) and `YamlWriter` (`TokenType.List` → `YamlSequenceNode`). Verified by `DurableExecution_InjectsCheckpointPolicy_AsMixedArray` (JSON + YAML) plus idempotency and orphan-removal tests. `SetToken(TokenType.List)` handles heterogeneous types fine — the approach is viable.
+### Component G — CFN checkpoint IAM writer (IMPLEMENTED 2026-06-08; REVISED to managed policy)
+- `CloudFormationWriter.cs` — kept inline (no separate writer class), matching `ProcessFunctionUrlAttribute` style. When `Role` is empty, `AddDurableCheckpointPolicy` reads the existing `Policies` via `GetToken<List<object>>`, appends the managed-policy ARN string `arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy` (constant `DurableCheckpointManagedPolicy`), and re-sets with `TokenType.List` — producing an all-strings array (`["AWSLambdaBasicExecutionRole", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"]`). Idempotency + orphan removal use `IsDurableCheckpointPolicy` (exact ARN string match). When `Role` is set, IAM is left untouched and `AWSLambda0143` (Info) is emitted in the validator.
+- **No heterogeneous-array risk:** because the entry is a managed-policy ARN string (not an inline statement object), the `Policies` array stays all-strings and round-trips trivially through both `JsonWriter` and `YamlWriter`. The earlier inline-statement design's mixed string/object round-trip concern is moot. Verified by `DurableExecution_AddsManagedCheckpointPolicy` (JSON + YAML) plus idempotency and orphan-removal tests.
 
 ### Component H — End-to-end / compile tests (IMPLEMENTED 2026-06-08)
 - `DurableExecutionWrapperCompilesTests.cs` — compiles the exact generated wrapper shape against realistic `WrapAsync` overloads. **This layer found a real bug:** the planned no-explicit-generics call fails with `CS0411` (see Section 4 correction). Tests assert the typed (`WrapAsync<TInput,TOutput>`) and void (`WrapAsync<TInput>`) forms bind, and a guard test asserts the inference-free form fails with `CS0411`.
@@ -318,7 +312,7 @@ All paths are absolute. `.tt` template changes require regenerating the correspo
 - `.autover/changes/durable-execution-annotations-integration.json` — single `Amazon.Lambda.Annotations` Minor entry (that autover project spans both the attributes csproj and the SourceGenerator csproj, so it covers everything added here).
 - `Amazon.Lambda.DurableExecution/README.md` — added a "Using Lambda Annotations" subsection showing the `[LambdaFunction]` + `[DurableExecution]` model that removes the manual handler/`WrapAsync` boilerplate.
 - **NEW** `C:\dev\repos\aws-lambda-dotnet\.autover\changes\<guid>.json` — increment **Minor**, projects `Amazon.Lambda.Annotations.SourceGenerator` + `Amazon.Lambda.DurableExecution`. Create via `autover change`.
-- Update `C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.DurableExecution\README.md` to note that `[DurableExecution]` generates the bootstrap wiring for the executable model.
+- Update `C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.DurableExecution\README.md` to note that `[DurableExecution]` generates the handler wiring for both the executable and class-library models.
 
 ---
 
@@ -335,13 +329,13 @@ Snapshot harness: `CSharpGeneratorDriver` against files in `Libraries\test\Amazo
 - D. **Branch-ordering test:** one file with both a durable method and a `[RestApi]` method → durable method gets the durable wrapper.
 - E. `ExecutableAssembly.tt` regression → executable assembly snapshot unchanged in shape for durable return types.
 
-**Diagnostics (Component E):** one test each for `DurableExecutionRequiresExecutable` (non-exe / class library), `DurableExecutionZipOnly` (Image), `DurableExecutionInvalidSignature` (ValueTask / wrong params), and `DurableExecutionExplicitRoleNeedsCheckpointPolicy` (explicit Role). Plus a test that `[DurableExecution]` + `[RestApi]` triggers the **existing** `MultipleEventsNotSupported` (AWSLambda0102). For the three durable Errors (and AWSLambda0102), also assert no wrapper is generated (`IsValid=false`).
+**Diagnostics (Component E):** one test each for `DurableExecutionInvalidSignature` (ValueTask / wrong params), `InvalidDurableExecutionAttribute` (non-positive `RetentionPeriodInDays`/`ExecutionTimeout`), and `DurableExecutionExplicitRoleNeedsCheckpointPolicy` (explicit Role). Plus a test that `[DurableExecution]` + `[RestApi]` triggers the **existing** `MultipleEventsNotSupported` (AWSLambda0102). For the durable Errors (and AWSLambda0102), also assert no wrapper is generated (`IsValid=false`).
 
 **CFN (Components F/G)** — `Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests\WriterTests\DurableExecutionTests.cs` (NEW):
 - F1. `DurableConfig` with both props set (JSON + YAML); `Metadata.SyncedDurableConfig == true`.
 - F2. Partial emit — only `RetentionPeriodInDays` set → `ExecutionTimeout` absent.
 - F3. Orphan removal — attribute dropped → `DurableConfig` + marker removed.
-- G. **Highest-risk:** mixed string/object `Policies` array round-trip (JSON + YAML), asserting `["AWSLambdaBasicExecutionRole", { "Statement": [ … checkpoint … ] }]` order preserved after write and re-parse.
+- G. Managed-policy injection (JSON + YAML), asserting the `Policies` array is `["AWSLambdaBasicExecutionRole", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"]` after write and re-parse.
 - G2. Idempotency — regeneration does not duplicate the policy statement.
 - G3. Role suppression — `Role` set → `Policies` untouched, Info diagnostic emitted.
 
@@ -354,26 +348,25 @@ Snapshot fixtures with the exact JSON/YAML shapes (Sections 5 and 6) must be aut
 ### BLOCKING (resolve before implementation starts)
 1. ~~**Runtime string is undefined infra.**~~ **DROPPED (2026-06-08): not an issue.** Durable functions run on either `dotnet8` or `dotnet10`, so the generator does **not** force a runtime — it lets the user's normal runtime selection flow through. No `DurableRuntime` constant, no override. (Component D no longer touches runtime at all.)
 2. ~~**IAM emission shape — role shape still a DECISION.**~~ **RESOLVED (2026-06-08): Option 1 — per-function SAM `Policies`-array inline statement**, matching how the generator already emits `AWSLambdaBasicExecutionRole`. Action names verified against the reference snapshot (`lambda:CheckpointDurableExecution`, `lambda:GetDurableExecutionState`; lines 51-54). The remaining risk here is purely mechanical — the mixed string/object `Policies` array round-trip (see item 7), not a shape decision.
-3. ~~**Diagnostic IDs.**~~ **RESOLVED (2026-06-08): `AWSLambda0140`–`AWSLambda0143`** (highest existing is `AWSLambda0139`; `0126` is skipped in the file but the durable IDs continue cleanly from the top). Only three new descriptors — the exclusive-event case reuses the existing `AWSLambda0102`. See the Section 7 / Component E table.
+3. ~~**Diagnostic IDs.**~~ **RESOLVED (2026-06-08): `AWSLambda0142`–`AWSLambda0144`** (highest pre-existing is `AWSLambda0139`; `0126` is skipped in the file). `AWSLambda0140`/`AWSLambda0141` were never allocated (the executable-only and Zip-only gates were dropped). Three new descriptors — the exclusive-event case reuses the existing `AWSLambda0102`. See the Section 7 / Component E table.
 
 ### REQUIRED-BEFORE-CODING (artifacts that gate the rest)
 4. Author `DurableExecutionInvoke.tt` first — snapshots cannot exist without it.
 5. Create `DurableExecutionAttributeBuilder.cs` by copying the real `ScheduleEventAttributeBuilder.cs`, not from prose.
-6. Author the exact JSON/YAML snapshot fixtures for `DurableConfig` and the mixed `Policies` array.
+6. Author the exact JSON/YAML snapshot fixtures for `DurableConfig` and the all-strings `Policies` array (managed-policy ARN).
 
-### Highest regression risk
-7. **Mixed string/object `Policies` array** round-trip via `SetToken(TokenType.List)` through both `JsonWriter` and `YamlWriter`. Dedicated round-trip test mandatory; if `SetToken` cannot preserve heterogeneous types, the inline-policy approach is not viable and must be reconsidered.
+### Resolved (was a regression risk under the inline-statement design)
+7. ~~**Mixed string/object `Policies` array** round-trip.~~ **RESOLVED by switching to the managed-policy ARN** (`AWSLambdaBasicDurableExecutionRolePolicy`): the `Policies` array stays all-strings, so there is no heterogeneous-type round-trip concern. See Section 6 / Component G.
 
 ### Correctness gates (enforced via `IsValid=false`, not severity alone)
-8. **Validation gates must set `IsValid=false`** (diagnostic severity alone does not halt generation). Applies to `DurableExecutionRequiresExecutable` (gate on `OutputKind != ConsoleApplication`), `DurableExecutionZipOnly`, and `DurableExecutionInvalidSignature`. The exclusive-event case is already handled by the existing `MultipleEventsNotSupported` (AWSLambda0102), which returns early with `IsValid=false`.
+8. **Validation gates must set `IsValid=false`** (diagnostic severity alone does not halt generation). Applies to `DurableExecutionInvalidSignature` and `InvalidDurableExecutionAttribute`; `ReportDiagnostics` returns `IsValid=false` whenever any Error diagnostic is present, so adding them to the list is sufficient. The exclusive-event case is already handled by the existing `MultipleEventsNotSupported` (AWSLambda0102), which returns early with `IsValid=false`. (There is no executable-only or Zip-only gate — both programming models are supported.)
 9. **Branch ordering** is load-bearing in two files (`GeneratedMethodModelBuilder` and `LambdaFunctionTemplate.tt`) — durable must be checked before API/HttpApi/ALB. Covered by Test D.
 10. **Signature constraint** — `ValueTask`/non-`(TInput, IDurableContext)` returns produce generated-code compile errors. `ValidateFunction` must reject them.
 11. **Runtime serializer contract** — `WrapAsyncCore` reads the serializer off `__context__` (verified line 79); the generated wrapper assumes the bootstrap populated it. Not testable in snapshots; covered by Component A's round-trip unit test + a template comment.
 
 ### Accepted-for-preview (documented follow-ups, not promises)
-12. `Resource: "*"` on the checkpoint statement is broad. Acceptable for preview per the reference; tightening depends on the service defining a scopable durable-execution ARN — **existence of such an ARN is undefined**, so this is flagged, not committed.
-13. **Executable-only is a sharp edge** until managed-runtime support lands in RuntimeSupport (README line 35). Temporary-for-preview, not architectural.
-14. **TypeFullNames must exactly match** `Amazon.Lambda.DurableExecution.DurableExecutionAttribute` or the attribute is silently skipped → routed to `NoEventMethodBody`. Covered by the discovery test.
+12. ~~`Resource: "*"` on the inline checkpoint statement is broad.~~ **RESOLVED** by referencing the AWS-managed `AWSLambdaBasicDurableExecutionRolePolicy` instead of a hand-rolled inline statement (Section 6). Resource scoping is now AWS's responsibility — the per-execution durable ARN is allocated at runtime and is unknowable at synth time, so an inline statement could only ever use `"*"` anyway. If/when the service publishes resource-level conditions, the managed policy updates with no template change.
+13. **TypeFullNames must exactly match** `Amazon.Lambda.Annotations.DurableExecutionAttribute` or the attribute is silently skipped → routed to `NoEventMethodBody`. Covered by the discovery test.
 
 ### Open questions deferred (non-blocking)
 15. Upper bounds for `RetentionPeriodInDays`/`ExecutionTimeout` — `Validate()` only rejects `<= 0` now; tighten once service limits are published.

@@ -411,17 +411,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
         }
 
-        // IAM actions a durable function needs to call the checkpoint APIs.
-        private static readonly List<string> DurableCheckpointActions = new List<string>
-        {
-            "lambda:CheckpointDurableExecution",
-            "lambda:GetDurableExecutionState"
-        };
-
-        // Statement identifier (Sid) stamped on the inline checkpoint statement Annotations injects, so
-        // regeneration and orphan removal can recognize exactly the statement the generator owns rather than
-        // any user-authored statement that happens to mention the same actions.
-        private const string DurableCheckpointStatementSid = "AmazonLambdaAnnotationsDurableCheckpoint";
+        // AWS-managed policy granting a durable function the permissions it needs (the basic-execution Logs
+        // actions plus lambda:CheckpointDurableExecution and lambda:GetDurableExecutionState). Referencing the
+        // managed policy — rather than injecting an inline statement on "*" — keeps resource scoping AWS's
+        // responsibility (the per-execution durable ARN is allocated at runtime and is not knowable at
+        // template-synth time) and matches what the durable integration tests attach to their function roles.
+        private const string DurableCheckpointManagedPolicy =
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy";
 
         /// <summary>
         /// Writes the <see cref="DurableExecutionAttribute"/> configuration to the serverless template.
@@ -469,9 +465,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
-        /// Appends an inline IAM policy statement granting the durable checkpoint actions to the function's
-        /// Policies array. The resulting array mixes the managed-policy string (e.g. "AWSLambdaBasicExecutionRole")
-        /// with an inline statement object, which SAM transforms into the function's generated role.
+        /// Appends the AWS-managed durable-execution policy ARN to the function's Policies array, alongside
+        /// any policies already there (e.g. "AWSLambdaBasicExecutionRole"). SAM expands the Policies array
+        /// into the function's generated role. The array is all strings (managed-policy names/ARNs), so no
+        /// inline statement object is emitted.
         /// </summary>
         private void AddDurableCheckpointPolicy(ILambdaFunctionSerializable lambdaFunction)
         {
@@ -481,16 +478,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 ? _templateWriter.GetToken<List<object>>(policiesPath)
                 : new List<object>();
 
-            if (!policies.Any(p => IsDurableCheckpointStatement(p)))
+            if (!policies.Any(p => IsDurableCheckpointPolicy(p)))
             {
-                policies.Add(BuildDurableCheckpointStatement());
+                policies.Add(DurableCheckpointManagedPolicy);
             }
 
             _templateWriter.SetToken(policiesPath, policies, TokenType.List);
         }
 
         /// <summary>
-        /// Removes the inline durable checkpoint statement from the function's Policies array, leaving any
+        /// Removes the managed durable-execution policy ARN from the function's Policies array, leaving any
         /// other policies (e.g. AWSLambdaBasicExecutionRole) intact.
         /// </summary>
         private void RemoveDurableCheckpointPolicy(ILambdaFunctionSerializable lambdaFunction)
@@ -500,37 +497,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 return;
 
             var policies = _templateWriter.GetToken<List<object>>(policiesPath);
-            var remaining = policies.Where(p => !IsDurableCheckpointStatement(p)).ToList();
+            var remaining = policies.Where(p => !IsDurableCheckpointPolicy(p)).ToList();
             _templateWriter.SetToken(policiesPath, remaining, TokenType.List);
         }
 
-        private static Dictionary<string, object> BuildDurableCheckpointStatement()
+        // Recognizes the managed durable-execution policy entry so regeneration is idempotent and orphan
+        // removal strips exactly the entry the generator added.
+        private static bool IsDurableCheckpointPolicy(object policy)
         {
-            return new Dictionary<string, object>
-            {
-                ["Statement"] = new List<object>
-                {
-                    new Dictionary<string, object>
-                    {
-                        ["Sid"] = DurableCheckpointStatementSid,
-                        ["Effect"] = "Allow",
-                        ["Action"] = new List<string>(DurableCheckpointActions),
-                        // The DurableExecutionArn is allocated at runtime and is not knowable at template-synth
-                        // time, so the checkpoint actions are granted on "*". Scoping this down is a known
-                        // preview follow-up, pending a scopable durable-execution ARN format from the service.
-                        ["Resource"] = "*"
-                    }
-                }
-            };
-        }
-
-        // Recognizes a previously-injected checkpoint statement by the Sid Annotations stamps on it, so
-        // regeneration is idempotent and orphan removal strips exactly the statement the generator added
-        // without touching a user-authored statement that happens to mention the same actions.
-        private static bool IsDurableCheckpointStatement(object policy)
-        {
-            var serialized = Newtonsoft.Json.JsonConvert.SerializeObject(policy);
-            return serialized.Contains(DurableCheckpointStatementSid);
+            return policy is string s && s == DurableCheckpointManagedPolicy;
         }
 
         /// <summary>

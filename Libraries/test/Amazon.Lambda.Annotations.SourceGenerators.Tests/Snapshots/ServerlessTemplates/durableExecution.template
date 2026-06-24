@@ -17,19 +17,7 @@
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole",
-          {
-            "Statement": [
-              {
-                "Sid": "AmazonLambdaAnnotationsDurableCheckpoint",
-                "Effect": "Allow",
-                "Action": [
-                  "lambda:CheckpointDurableExecution",
-                  "lambda:GetDurableExecutionState"
-                ],
-                "Resource": "*"
-              }
-            ]
-          }
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
         ],
         "PackageType": "Zip",
         "Handler": "TestProject",
