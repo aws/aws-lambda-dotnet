@@ -303,13 +303,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static readonly DiagnosticDescriptor DurableExecutionZipOnly = new DiagnosticDescriptor(id: "AWSLambda0141",
-            title: "DurableExecution requires Zip packaging",
-            messageFormat: "A method annotated with [DurableExecution] requires PackageType to be Zip. Image (container) packaging is not supported for durable functions.",
-            category: "AWSLambdaCSharpGenerator",
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
-
         public static readonly DiagnosticDescriptor DurableExecutionInvalidSignature = new DiagnosticDescriptor(id: "AWSLambda0142",
             title: "Invalid DurableExecution method signature",
             messageFormat: "A method annotated with [DurableExecution] must have the signature (TInput, Amazon.Lambda.DurableExecution.IDurableContext) returning Task or Task<TOutput>: {0}",

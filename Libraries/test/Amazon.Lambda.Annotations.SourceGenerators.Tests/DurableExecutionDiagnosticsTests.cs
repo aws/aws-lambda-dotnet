@@ -137,34 +137,6 @@ namespace MyApp
         }
 
         [Fact]
-        public async Task ZipOnly_WhenImagePackaging_ReportsError()
-        {
-            var source = @"
-using System.Threading.Tasks;
-using Amazon.Lambda.Annotations;
-using Amazon.Lambda.DurableExecution;
-
-namespace MyApp
-{
-    public class Workflows
-    {
-        [LambdaFunction(PackageType = LambdaPackageType.Image)]
-        [DurableExecution]
-        public Task<string> Run(string input, IDurableContext ctx) => Task.FromResult(input);
-    }
-}";
-            var test = NewTest(source, OutputKind.ConsoleApplication);
-            await AddAnnotationSourcesAsync(test);
-            // LambdaPackageType must bind for the generator to read PackageType = Image off the attribute.
-            test.TestState.Sources.Add((Path.Combine("Amazon.Lambda.Annotations", "LambdaPackageType.cs"), await AnnotationsSource("LambdaPackageType.cs")));
-            test.TestState.ExpectedDiagnostics.Add(
-                new DiagnosticResult("AWSLambda0141", DiagnosticSeverity.Error)
-                    .WithSpan("Workflow.cs", 10, 9, 12, 94));
-            test.CompilerDiagnostics = CompilerDiagnostics.None;
-            await test.RunAsync();
-        }
-
-        [Fact]
         public async Task InvalidAttribute_WhenRetentionPeriodOutOfRange_ReportsError()
         {
             var source = @"

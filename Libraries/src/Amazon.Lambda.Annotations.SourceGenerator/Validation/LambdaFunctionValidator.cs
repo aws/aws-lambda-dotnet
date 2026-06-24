@@ -93,13 +93,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // Assembly::Type::Method), which LambdaFunctionModel.Handler already derives from IsExecutable. So no
             // OutputKind gate is needed here.
 
-            // Image packaging strips Handler/Runtime from the function resource, which the durable
-            // managed-runtime model depends on. Durable functions must be packaged as Zip.
-            if (lambdaFunctionModel.PackageType == LambdaPackageType.Image)
-            {
-                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionZipOnly, methodLocation));
-            }
-
             // Validate the attribute's property values (RetentionPeriodInDays / ExecutionTimeout bounds) so a
             // misconfiguration surfaces as a build-time diagnostic instead of a deploy-time service rejection,
             // matching how every other event attribute calls its own Validate() above.
