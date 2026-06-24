@@ -222,10 +222,7 @@
         <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
         <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\TestServerlessApp.ALB.IntegrationTests"/>
         <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\TestCustomAuthorizerApp.IntegrationTests"/>
-        <!-- Durable functions only run on the dotnet10 managed runtime; pin the framework so
-             `dotnet test` doesn't spin up a net8.0 testhost (which would race the net10.0 one
-             on the same TestFunctions/ build dirs and deploy unsupported net8.0 functions). -->
-        <Exec Command="dotnet test -c $(Configuration) -f net10.0 --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.IntegrationTests"/>
+        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
