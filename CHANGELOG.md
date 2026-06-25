@@ -1,3 +1,8 @@
+## Release 2026-06-25
+
+### Amazon.Lambda.Annotations (2.1.0)
+* Add [DurableExecution] attribute and source generator support for durable execution functions. A method annotated with [LambdaFunction] and [DurableExecution] generates a handler wrapper that delegates to Amazon.Lambda.DurableExecution.DurableFunction.WrapAsync, and emits a DurableConfig block plus the lambda:CheckpointDurableExecution / lambda:GetDurableExecutionState IAM permissions in the generated CloudFormation/SAM template. Supports both the executable and class-library programming models on the managed runtime. Validates Zip packaging, the (TInput, IDurableContext) -> Task/Task<TOutput> signature, and the RetentionPeriodInDays / ExecutionTimeout bounds (AWSLambda0141-AWSLambda0144). Preview.
+
 ## Release 2026-06-22 #3
 
 ### Amazon.Lambda.DurableExecution (0.1.1-preview)
