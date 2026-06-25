@@ -5,16 +5,21 @@ on:
   schedule:
   - cron: "0 0 * * *"
 
-permissions:
-  issues: write
-  pull-requests: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     name: Stale issue job
+    permissions:
+      issues: write # to mark and close stale issues
+      pull-requests: write # to mark and close stale pull requests
     steps:
-    - uses: aws-actions/stale-issue-cleanup@v7
+    - uses: aws-actions/stale-issue-cleanup@0604f2edf84a3a66bc0dfb4a30eb07814cbdf440 # v7.1.1
       with:
         # Setting messages to an empty string will cause the automation to skip
         # that category

@@ -3,16 +3,21 @@ name: issue-regression-label
 on:
   issues:
     types: [opened, edited]
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
 jobs:
   add-regression-label:
+    name: Add potential-regression label
     runs-on: ubuntu-latest
     permissions:
-      issues: write
+      issues: write # to add or remove the potential-regression label
     steps:
     - name: Fetch template body
       id: check_regression
-      uses: actions/github-script@v8
-      env: 
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TEMPLATE_BODY: ${{ github.event.issue.body }}
       with:
@@ -24,9 +29,11 @@ jobs:
     - name: Manage regression label
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        IS_REGRESSION: ${{ steps.check_regression.outputs.is_regression }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
       run: |
-        if [ "${{ steps.check_regression.outputs.is_regression }}" == "true" ]; then
-          gh issue edit ${{ github.event.issue.number }} --add-label "potential-regression" -R ${{ github.repository }}
+        if [ "$IS_REGRESSION" == "true" ]; then
+          gh issue edit "$ISSUE_NUMBER" --add-label "potential-regression" -R "$GITHUB_REPOSITORY"
         else
-          gh issue edit ${{ github.event.issue.number }} --remove-label "potential-regression" -R ${{ github.repository }}
+          gh issue edit "$ISSUE_NUMBER" --remove-label "potential-regression" -R "$GITHUB_REPOSITORY"
         fi
