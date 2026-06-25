@@ -63,6 +63,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 namespaces.Add("Amazon.Lambda.Annotations.APIGateway");
             }
 
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.DurableExecutionAttribute))
+            {
+                namespaces.Add("Amazon.Lambda.DurableExecution");
+            }
+
             return namespaces;
         }
 
@@ -70,6 +75,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
             var task = context.Compilation.GetTypeByMetadataName(TypeFullNames.Task1);
+
+            // Durable functions always produce Task<DurableExecutionInvocationOutput>; the generated
+            // wrapper delegates to DurableFunction.WrapAsync, which returns that envelope.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.DurableExecutionAttribute))
+            {
+                var outputType = context.Compilation.GetTypeByMetadataName(TypeFullNames.DurableExecutionInvocationOutput);
+                var genericTask = task.Construct(outputType);
+                return TypeModelBuilder.Build(genericTask, context);
+            }
 
             if (lambdaMethodModel.ReturnsIHttpResults)
             {
@@ -217,7 +231,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 Documentation = "The ILambdaContext that provides methods for logging and describing the Lambda environment."
             };
 
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute))
+            // Durable functions receive the service envelope (DurableExecutionInvocationInput); the
+            // generated wrapper passes it straight to DurableFunction.WrapAsync along with the context.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.DurableExecutionAttribute))
+            {
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.DurableExecutionInvocationInput);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The durable execution service envelope that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute))
             {
                 // For HTTP API authorizer functions, the generated handler accepts the authorizer request type
                 var authorizerAttribute = lambdaMethodSymbol.GetAttributeData(context, TypeFullNames.HttpApiAuthorizerAttribute);

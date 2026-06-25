@@ -13,6 +13,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         DynamoDB,
         Schedule,
         Authorizer,
-        ALB
+        ALB,
+        DurableExecution
     }
 }

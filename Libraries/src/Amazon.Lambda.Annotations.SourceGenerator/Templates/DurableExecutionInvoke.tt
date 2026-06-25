@@ -1,0 +1,22 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#
+    // The user's workflow method is (TInput, IDurableContext) -> Task / Task<TOutput>. The generated
+    // wrapper hands that method group to DurableFunction.WrapAsync, which drives the durable engine and
+    // returns a DurableExecutionInvocationOutput. The serializer used to (de)serialize the envelope is
+    // taken from the ILambdaContext by WrapAsync, so the wrapper does not touch a serializer field.
+    //
+    // Explicit generic arguments are REQUIRED: C# cannot infer TInput/TOutput from a method-group argument
+    // bound to a Func<,,> parameter (CS0411), so the wrapper always spells out the type arguments. TInput is
+    // the user method's first parameter; TOutput is the Task<TOutput> argument (omitted for a void Task).
+    var instance = _model.LambdaMethod.ContainingType.Name.ToCamelCase();
+    var inputType = _model.LambdaMethod.Parameters[0].Type.FullName;
+    var typeArguments = _model.LambdaMethod.ReturnsGenericTask
+        ? $"<{inputType}, {_model.LambdaMethod.ReturnType.TaskTypeArgument}>"
+        : $"<{inputType}>";
+#>
+            return await Amazon.Lambda.DurableExecution.DurableFunction.WrapAsync<#= typeArguments #>(<#= instance #>.<#= _model.LambdaMethod.Name #>, __request__, __context__);

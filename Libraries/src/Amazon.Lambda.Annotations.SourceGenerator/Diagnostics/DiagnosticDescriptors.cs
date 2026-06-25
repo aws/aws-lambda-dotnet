@@ -302,5 +302,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DurableExecutionInvalidSignature = new DiagnosticDescriptor(id: "AWSLambda0142",
+            title: "Invalid DurableExecution method signature",
+            messageFormat: "A method annotated with [DurableExecution] must have the signature (TInput, Amazon.Lambda.DurableExecution.IDurableContext) returning Task or Task<TOutput>: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DurableExecutionExplicitRoleNeedsCheckpointPolicy = new DiagnosticDescriptor(id: "AWSLambda0143",
+            title: "DurableExecution function with explicit Role needs checkpoint permissions",
+            messageFormat: "The [DurableExecution] function uses an explicit Role, so the generator will not add the durable checkpoint policy. Attach the 'lambda:CheckpointDurableExecution' and 'lambda:GetDurableExecutionState' actions to the role manually.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidDurableExecutionAttribute = new DiagnosticDescriptor(id: "AWSLambda0144",
+            title: "Invalid DurableExecutionAttribute",
+            messageFormat: "Invalid DurableExecutionAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

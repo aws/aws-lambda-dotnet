@@ -108,6 +108,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>AuthorizerInvoke.cs</LastGenOutput>
     </None>
+    <None Update="Templates\DurableExecutionInvoke.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>DurableExecutionInvoke.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -150,6 +154,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>AuthorizerInvoke.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\DurableExecutionInvoke.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>DurableExecutionInvoke.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

@@ -54,7 +54,11 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
 <#
     }
 
-    if (_model.LambdaMethod.Events.Contains(EventType.Authorizer))
+    if (_model.LambdaMethod.Events.Contains(EventType.DurableExecution))
+    {
+        this.Write(new DurableExecutionInvoke(_model).TransformText());
+    }
+    else if (_model.LambdaMethod.Events.Contains(EventType.Authorizer))
     {
         var authorizerParameters = new AuthorizerSetupParameters(_model);
         this.Write(authorizerParameters.TransformText());

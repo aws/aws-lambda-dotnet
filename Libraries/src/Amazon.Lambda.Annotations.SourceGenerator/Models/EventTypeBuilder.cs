@@ -46,6 +46,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     events.Add(EventType.Schedule);
                 }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.DurableExecutionAttribute)
+                {
+                    events.Add(EventType.DurableExecution);
+                }
                 else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAuthorizerAttribute
                     || attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAuthorizerAttribute)
                 {

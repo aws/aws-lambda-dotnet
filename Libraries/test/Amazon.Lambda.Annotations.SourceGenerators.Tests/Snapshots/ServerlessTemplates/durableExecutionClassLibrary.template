@@ -1,0 +1,31 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "TestServerlessAppDurableExecutionExamplesValidDurableExecutionProcessOrderGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedDurableConfig": true,
+        "SyncedDurablePolicy": true
+      },
+      "Properties": {
+        "Runtime": "dotnet10",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.DurableExecutionExamples.ValidDurableExecution_ProcessOrder_Generated::ProcessOrder",
+        "DurableConfig": {
+          "RetentionPeriodInDays": 7,
+          "ExecutionTimeout": 300
+        }
+      }
+    }
+  }
+}

@@ -216,12 +216,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
             var currentAlbResources = new List<string>();
             var hasFunctionUrl = false;
+            var hasDurableExecution = false;
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
                 string eventName;
                 switch (attributeModel)
                 {
+                    case AttributeModel<DurableExecutionAttribute> durableExecutionAttributeModel:
+                        ProcessDurableExecutionAttribute(lambdaFunction, durableExecutionAttributeModel.Data);
+                        hasDurableExecution = true;
+                        // Durable execution is a function property + IAM concern, not an event source,
+                        // so it is intentionally not added to currentSyncedEvents.
+                        break;
                     case AttributeModel<HttpApiAttribute> httpApiAttributeModel:
                         eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties, authorizerLookup);
                         currentSyncedEvents.Add(eventName);
@@ -271,6 +278,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 {
                     _templateWriter.RemoveToken($"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig");
                     _templateWriter.RemoveToken(syncedFunctionUrlConfigPath);
+                }
+            }
+
+            // Remove DurableConfig and the injected checkpoint policy only if they were previously created by
+            // Annotations (tracked via metadata). This preserves anything manually added by the user.
+            if (!hasDurableExecution)
+            {
+                var syncedDurableConfigPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedDurableConfig";
+                if (_templateWriter.GetToken<bool>(syncedDurableConfigPath, false))
+                {
+                    _templateWriter.RemoveToken($"Resources.{lambdaFunction.ResourceName}.Properties.DurableConfig");
+                    _templateWriter.RemoveToken(syncedDurableConfigPath);
+                }
+
+                var syncedDurablePolicyPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedDurablePolicy";
+                if (_templateWriter.GetToken<bool>(syncedDurablePolicyPath, false))
+                {
+                    RemoveDurableCheckpointPolicy(lambdaFunction);
+                    _templateWriter.RemoveToken(syncedDurablePolicyPath);
                 }
             }
 
@@ -383,6 +409,103 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 if (functionUrlAttribute.MaxAge > 0)
                     _templateWriter.SetToken($"{corsPath}.MaxAge", functionUrlAttribute.MaxAge);
             }
+        }
+
+        // AWS-managed policy granting a durable function the permissions it needs (the basic-execution Logs
+        // actions plus lambda:CheckpointDurableExecution and lambda:GetDurableExecutionState). Referencing the
+        // managed policy — rather than injecting an inline statement on "*" — keeps resource scoping AWS's
+        // responsibility (the per-execution durable ARN is allocated at runtime and is not knowable at
+        // template-synth time) and matches what the durable integration tests attach to their function roles.
+        private const string DurableCheckpointManagedPolicy =
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy";
+
+        /// <summary>
+        /// Writes the <see cref="DurableExecutionAttribute"/> configuration to the serverless template.
+        /// Like FunctionUrl, durable execution is configured as a property on the function resource
+        /// (a DurableConfig block) rather than as an event source. It also injects the checkpoint-API
+        /// IAM permissions the function needs (unless the user supplied an explicit Role).
+        /// </summary>
+        private void ProcessDurableExecutionAttribute(ILambdaFunctionSerializable lambdaFunction, DurableExecutionAttribute durableExecutionAttribute)
+        {
+            var propertiesPath = $"Resources.{lambdaFunction.ResourceName}.Properties";
+            var durableConfigPath = $"{propertiesPath}.DurableConfig";
+
+            // Always clear any previously-synced DurableConfig first, then re-emit only the values currently
+            // set on the attribute, so stale properties from an earlier generation pass do not linger.
+            _templateWriter.RemoveToken(durableConfigPath);
+
+            if (durableExecutionAttribute.IsRetentionPeriodInDaysSet)
+                _templateWriter.SetToken($"{durableConfigPath}.RetentionPeriodInDays", durableExecutionAttribute.RetentionPeriodInDays);
+
+            if (durableExecutionAttribute.IsExecutionTimeoutSet)
+                _templateWriter.SetToken($"{durableConfigPath}.ExecutionTimeout", durableExecutionAttribute.ExecutionTimeout);
+
+            // DurableConfig may have no properties if the user set neither; create an empty block so the
+            // function is still marked as durable in the template.
+            if (!_templateWriter.Exists(durableConfigPath))
+                _templateWriter.SetToken(durableConfigPath, new Dictionary<string, object>(), TokenType.Object);
+
+            _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedDurableConfig", true);
+
+            // When the user supplies an explicit Role, ProcessLambdaFunctionProperties has already removed the
+            // Policies array (Role and Policies are mutually exclusive), so there is nothing to attach the
+            // checkpoint policy to. A diagnostic (AWSLambda0143) tells the user to add the actions manually.
+            var syncedDurablePolicyPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedDurablePolicy";
+            if (string.IsNullOrEmpty(lambdaFunction.Role))
+            {
+                AddDurableCheckpointPolicy(lambdaFunction);
+                _templateWriter.SetToken(syncedDurablePolicyPath, true);
+            }
+            else
+            {
+                // A Role was added after a previous pass injected the policy: the policy is already gone (with
+                // the Policies array), so clear the now-stale marker to keep it an accurate record.
+                _templateWriter.RemoveToken(syncedDurablePolicyPath);
+            }
+        }
+
+        /// <summary>
+        /// Appends the AWS-managed durable-execution policy ARN to the function's Policies array, alongside
+        /// any policies already there (e.g. "AWSLambdaBasicExecutionRole"). SAM expands the Policies array
+        /// into the function's generated role. The array is all strings (managed-policy names/ARNs), so no
+        /// inline statement object is emitted.
+        /// </summary>
+        private void AddDurableCheckpointPolicy(ILambdaFunctionSerializable lambdaFunction)
+        {
+            var policiesPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Policies";
+
+            var policies = _templateWriter.Exists(policiesPath)
+                ? _templateWriter.GetToken<List<object>>(policiesPath)
+                : new List<object>();
+
+            if (!policies.Any(p => IsDurableCheckpointPolicy(p)))
+            {
+                policies.Add(DurableCheckpointManagedPolicy);
+            }
+
+            _templateWriter.SetToken(policiesPath, policies, TokenType.List);
+        }
+
+        /// <summary>
+        /// Removes the managed durable-execution policy ARN from the function's Policies array, leaving any
+        /// other policies (e.g. AWSLambdaBasicExecutionRole) intact.
+        /// </summary>
+        private void RemoveDurableCheckpointPolicy(ILambdaFunctionSerializable lambdaFunction)
+        {
+            var policiesPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Policies";
+            if (!_templateWriter.Exists(policiesPath))
+                return;
+
+            var policies = _templateWriter.GetToken<List<object>>(policiesPath);
+            var remaining = policies.Where(p => !IsDurableCheckpointPolicy(p)).ToList();
+            _templateWriter.SetToken(policiesPath, remaining, TokenType.List);
+        }
+
+        // Recognizes the managed durable-execution policy entry so regeneration is idempotent and orphan
+        // removal strips exactly the entry the generator added.
+        private static bool IsDurableCheckpointPolicy(object policy)
+        {
+            return policy is string s && s == DurableCheckpointManagedPolicy;
         }
 
         /// <summary>

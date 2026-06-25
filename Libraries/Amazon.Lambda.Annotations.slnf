@@ -5,21 +5,23 @@
       "src\\Amazon.Lambda.APIGatewayEvents\\Amazon.Lambda.APIGatewayEvents.csproj",
       "src\\Amazon.Lambda.Annotations.SourceGenerator\\Amazon.Lambda.Annotations.SourceGenerator.csproj",
       "src\\Amazon.Lambda.Annotations\\Amazon.Lambda.Annotations.csproj",
+      "src\\Amazon.Lambda.ApplicationLoadBalancerEvents\\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj",
       "src\\Amazon.Lambda.Core\\Amazon.Lambda.Core.csproj",
+      "src\\Amazon.Lambda.DurableExecution\\Amazon.Lambda.DurableExecution.csproj",
       "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
       "src\\Amazon.Lambda.SQSEvents\\Amazon.Lambda.SQSEvents.csproj",
       "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
       "test\\Amazon.Lambda.Annotations.SourceGenerators.Tests\\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj",
-      "test\\TestExecutableServerlessApp\\TestExecutableServerlessApp.csproj",
+      "test\\Amazon.Lambda.DurableExecution.IntegrationTests\\TestFunctions\\AnnotationsClassLibraryFunction\\AnnotationsClassLibraryFunction.csproj",
       "test\\IntegrationTests.Helpers\\IntegrationTests.Helpers.csproj",
-      "test\\TestCustomAuthorizerApp\\TestCustomAuthorizerApp.csproj",
       "test\\TestCustomAuthorizerApp.IntegrationTests\\TestCustomAuthorizerApp.IntegrationTests.csproj",
+      "test\\TestCustomAuthorizerApp\\TestCustomAuthorizerApp.csproj",
+      "test\\TestExecutableServerlessApp\\TestExecutableServerlessApp.csproj",
+      "test\\TestServerlessApp.ALB.IntegrationTests\\TestServerlessApp.ALB.IntegrationTests.csproj",
+      "test\\TestServerlessApp.ALB\\TestServerlessApp.ALB.csproj",
       "test\\TestServerlessApp.IntegrationTests\\TestServerlessApp.IntegrationTests.csproj",
       "test\\TestServerlessApp.NET8\\TestServerlessApp.NET8.csproj",
-      "src\\Amazon.Lambda.ApplicationLoadBalancerEvents\\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj",
-      "test\\TestServerlessApp\\TestServerlessApp.csproj",
-      "test\\TestServerlessApp.ALB\\TestServerlessApp.ALB.csproj",
-      "test\\TestServerlessApp.ALB.IntegrationTests\\TestServerlessApp.ALB.IntegrationTests.csproj"
+      "test\\TestServerlessApp\\TestServerlessApp.csproj"
     ]
   }
 }

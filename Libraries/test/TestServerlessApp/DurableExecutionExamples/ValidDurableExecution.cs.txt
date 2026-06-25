@@ -1,0 +1,23 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Threading.Tasks;
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.DurableExecution;
+
+namespace TestServerlessApp.DurableExecutionExamples
+{
+    // This file represents valid usage of the DurableExecutionAttribute. It is a .txt file because we do
+    // not want to deploy these functions during integration tests; it is only fed to the source-generator
+    // unit tests. Refer to the VerifyValidDurableExecution unit test.
+
+    public class ValidDurableExecution
+    {
+        [LambdaFunction]
+        [DurableExecution(RetentionPeriodInDays = 7, ExecutionTimeout = 300)]
+        public Task<string> ProcessOrder(string input, IDurableContext context)
+        {
+            return Task.FromResult(input);
+        }
+    }
+}
