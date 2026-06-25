@@ -3,18 +3,24 @@ on:
     issues:
        types: [closed]
 
-permissions:
-  issues: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
     auto_comment:
+        name: Comment on closed issue
         runs-on: ubuntu-latest
+        permissions:
+          issues: write # to comment on the closed issue
         steps:
-        - uses: aws-actions/closed-issue-message@v2
+        - uses: aws-actions/closed-issue-message@10aaf6366131b673a7c8b7742f8b3849f1d44f18 # v2
           with:
             # These inputs are both required
             repo-token: "${{ secrets.GITHUB_TOKEN }}"
             message: |
-                     Comments on closed issues are hard for our team to see. 
-                     If you need more assistance, please either tag a team member or open a new issue that references this one. 
+                     Comments on closed issues are hard for our team to see.
+                     If you need more assistance, please either tag a team member or open a new issue that references this one.
                      If you wish to keep having a conversation with other community members under this issue feel free to do so.

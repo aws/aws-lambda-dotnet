@@ -4,24 +4,36 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   check-files-in-directory:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Release Not Needed') && !contains(github.event.pull_request.labels.*.name, 'Release PR') }}
     name: Change File Included in PR
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # to check out the repository and list changed files
 
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Get List of Changed Files
         id: changed-files
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323  # v47.0.5
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
 
       - name: Check for Change File(s) in .autover/changes/
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           DIRECTORY=".autover/changes/"
-          if echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -q "$DIRECTORY"; then
+          if echo "$ALL_CHANGED_FILES" | grep -q "$DIRECTORY"; then
             echo "✅ One or more change files in '$DIRECTORY' are included in this PR."
           else
             echo "❌ No change files in '$DIRECTORY' are included in this PR."
