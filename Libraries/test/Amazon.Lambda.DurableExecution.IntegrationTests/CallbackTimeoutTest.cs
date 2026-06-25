@@ -47,12 +47,18 @@ public class CallbackTimeoutTest
         var status = await deployment.PollForCompletionAsync(arn!, TimeSpan.FromSeconds(120));
         Assert.Equal("FAILED", status, ignoreCase: true);
 
-        // The execution surfaces the SDK's CallbackTimeoutException to the user.
-        // ErrorObject.FromException records ErrorType as the FullName; verify both
-        // the type and that the recorded message mentions "timed out".
+        // The workflow surfaces CallbackTimeoutException to the user, but the
+        // terminal ErrorObject records the ORIGINAL/underlying error identity —
+        // ErrorObject.FromException deliberately unwraps CallbackException to the
+        // error the service recorded on the timed-out callback (the service's
+        // "Callback.Timeout" code), matching the Java/Python/JS SDKs and the
+        // unwrapping covered by ModelsTests.ErrorObject_FromException_UnwrapsCallbackException.
+        // Sibling failure tests (ChildContextFailsTest, InvokeFailureTest) assert
+        // the same underlying-type contract. Verify the recorded type is the
+        // service timeout code and the message still mentions "timed out".
         var execution = await deployment.GetExecutionAsync(arn!);
         Assert.NotNull(execution.Error);
-        Assert.Equal(typeof(CallbackTimeoutException).FullName, execution.Error.ErrorType);
+        Assert.Equal("Callback.Timeout", execution.Error.ErrorType);
         Assert.Contains("timed out", execution.Error.ErrorMessage, StringComparison.OrdinalIgnoreCase);
 
         // History records both Started and TimedOut for the same callback.
