@@ -1,8 +1,6 @@
 name: Update Lambda Dockerfiles
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 on:
   # Allows to run this workflow manually from the Actions tab
@@ -65,9 +63,17 @@ on:
         type: string
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   build:
+    name: Update Dockerfiles and open PR
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to push the Dockerfile update branch
+      pull-requests: write # to open the update PR and label it
     env:
       NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
       NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
@@ -92,7 +98,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_8_AMD64 == 'true' }}
 
       - name: Update .NET 8 ARM64
@@ -102,7 +108,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_8_ARM64 == 'true' }}
 
       - name: Update .NET 9 AMD64
@@ -112,7 +118,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_9_AMD64 == 'true' }}
 
       - name: Update .NET 9 ARM64
@@ -122,7 +128,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
 
       - name: Update .NET 10 AMD64
@@ -132,7 +138,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_10_AMD64 == 'true' }}
 
       - name: Update .NET 10 ARM64
@@ -142,7 +148,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_10_ARM64 == 'true' }}
 
       - name: Update .NET 11 AMD64
@@ -152,7 +158,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_11_AMD64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_11_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_11_AMD64 == 'true' }}
 
       - name: Update .NET 11 ARM64
@@ -162,7 +168,7 @@ jobs:
           DOCKERFILE_PATH: ${{ env.NET_11_ARM64_Dockerfile }}
           NEXT_VERSION: ${{ github.event.inputs.NET_11_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$env:DOCKERFILE_PATH" -NextVersion "$env:NEXT_VERSION"
         if: ${{ github.event.inputs.NET_11_ARM64 == 'true' }}
 
       # Update Dockerfiles if newer version of ASP.NET Core is available
@@ -184,7 +190,7 @@ jobs:
       - name: Pull Request
         id: pull-request
         if: ${{ steps.commit-push.outputs.BRANCH }}
-        uses: repo-sync/pull-request@v2
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5 # v2
         with:
           source_branch: ${{ steps.commit-push.outputs.BRANCH }}
           destination_branch: "dev"
@@ -211,13 +217,15 @@ jobs:
       # Add "Release Not Needed" label to the PR
       - name: Add Release Not Needed label
         if: ${{ steps.pull-request.outputs.pr_number }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          PR_NUMBER: ${{ steps.pull-request.outputs.pr_number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: ${{ steps.pull-request.outputs.pr_number }},
+              issue_number: Number(process.env.PR_NUMBER),
               labels: ['Release Not Needed']
             })
