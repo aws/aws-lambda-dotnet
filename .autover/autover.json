@@ -49,7 +49,10 @@
     },
     {
       "Name": "Amazon.Lambda.DurableExecution",
-      "Path": "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj",
+      "Paths": [
+        "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj",
+        "Libraries/src/Amazon.Lambda.DurableExecution.Analyzers/Amazon.Lambda.DurableExecution.Analyzers.csproj"
+      ],
       "PrereleaseLabel": "preview"
     },
     {
