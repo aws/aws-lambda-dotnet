@@ -8,9 +8,11 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: write
-  id-token: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   # This job will check if the PR was successfully merged, it's source branch is `releases/next-release` and target branch is `dev`.
@@ -23,6 +25,9 @@ jobs:
       github.event.pull_request.head.ref == 'releases/next-release' &&
       github.event.pull_request.base.ref == 'dev'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to merge dev into master and push the release tag
+      id-token: write # to assume AWS roles via OIDC
     steps:
       # Assume an AWS Role that provides access to the Access Token
       - name: Configure AWS Credentials
@@ -96,8 +101,11 @@ jobs:
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ env.FG_PAT }}
+          TAG: ${{ steps.read-tag-name.outputs.TAG }}
+          VERSION: ${{ steps.read-release-name.outputs.VERSION }}
+          CHANGELOG: ${{ steps.read-changelog.outputs.CHANGELOG }}
         run: |
-          gh release create "${{ steps.read-tag-name.outputs.TAG }}" --title "${{ steps.read-release-name.outputs.VERSION }}" --notes "${{ steps.read-changelog.outputs.CHANGELOG }}"
+          gh release create "$TAG" --title "$VERSION" --notes "$CHANGELOG"
       # Delete the `releases/next-release` branch
       - name: Clean up
         run: |
@@ -118,6 +126,8 @@ jobs:
       github.event.pull_request.head.ref == 'releases/next-release' &&
       github.event.pull_request.base.ref == 'dev'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to delete the release tag and branch
     steps:
       # Checkout a full clone of the repo using the deploy key (push runs over SSH)
       - name: Checkout code
@@ -156,9 +166,11 @@ jobs:
           echo "TAG=$tag" >> $GITHUB_OUTPUT
       # Delete the tag created by AutoVer and the release branch
       - name: Clean up
+        env:
+          TAG: ${{ steps.read-tag-name.outputs.TAG }}
         run: |
           git fetch origin
-          git push --delete origin ${{ steps.read-tag-name.outputs.TAG }}
+          git push --delete origin "$TAG"
           if git ls-remote --exit-code --heads origin releases/next-release > /dev/null; then
             echo "Branch 'releases/next-release' exists on origin. Deleting..."
             git push origin --delete releases/next-release

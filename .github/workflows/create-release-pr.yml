@@ -11,14 +11,19 @@ on:
         type: string
         required: false
 
-permissions:
-  id-token: write
-  repository-projects: read
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   release-pr:
     name: Release PR
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # to assume AWS roles via OIDC
+      repository-projects: read # to read project metadata when creating the release PR
 
     env:
       INPUT_OVERRIDE_VERSION: ${{ github.event.inputs.OVERRIDE_VERSION }}
@@ -97,10 +102,11 @@ jobs:
         run: autover changelog
       # Push the release branch up as well as the created tag
       - name: Push Changes
+        env:
+          BRANCH: ${{ steps.create-release-branch.outputs.BRANCH }}
         run: |
-          branch=${{ steps.create-release-branch.outputs.BRANCH }}
-          git push origin $branch
-          git push origin $branch --tags
+          git push origin "$BRANCH"
+          git push origin "$BRANCH" --tags
       # Get the release name that will be used to create a PR
       - name: Read Release Name
         id: read-release-name
@@ -117,7 +123,10 @@ jobs:
       - name: Create Pull Request
         env:
           GITHUB_TOKEN: ${{ env.FG_PAT }}
+          VERSION: ${{ steps.read-release-name.outputs.VERSION }}
+          CHANGELOG: ${{ steps.read-changelog.outputs.CHANGELOG }}
+          BRANCH: ${{ steps.create-release-branch.outputs.BRANCH }}
         run: |
           gh label create "Release PR" --description "A Release PR that includes versioning and changelog changes" -c "#FF0000" -f
-          pr_url="$(gh pr create --title "${{ steps.read-release-name.outputs.VERSION }}" --label "Release PR" --body "${{ steps.read-changelog.outputs.CHANGELOG }}" --base dev --head ${{ steps.create-release-branch.outputs.BRANCH }})"
+          pr_url="$(gh pr create --title "$VERSION" --label "Release PR" --body "$CHANGELOG" --base dev --head "$BRANCH")"
 
