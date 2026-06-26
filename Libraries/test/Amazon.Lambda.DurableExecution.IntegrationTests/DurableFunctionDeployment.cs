@@ -107,7 +107,12 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
     {
-        _output = output;
+        // xUnit buffers ITestOutputHelper and only flushes it when the test
+        // completes, so a long deploy/poll shows no live progress. When
+        // DURABLE_INTEG_TRACE is set, tee every line to an autoflushed file you
+        // can `tail -f` (DURABLE_INTEG_TRACE=<path>, or "1"/"true" for a default
+        // path under the temp dir). Off by default — no behavior change.
+        _output = FileTracingTestOutputHelper.MaybeWrap(output);
 
         // Truncate the GUID (not the suffix) so CloudTrail entries stay readable.
         // Keep the GUID short enough that the total stays well under 40 chars even for long suffixes.
@@ -141,12 +146,13 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         IDictionary<string, string>? environment = null,
         IReadOnlyList<string>? invokeAllowedFunctionArns = null,
         bool enableTenancy = false,
-        string? handler = null)
+        string? handler = null,
+        int executionTimeoutSeconds = 60)
     {
         var deployment = new DurableFunctionDeployment(output, scenarioSuffix);
         try
         {
-            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy, handler);
+            await deployment.InitializeAsync(testFunctionDir, externalFunctionDir, environment, invokeAllowedFunctionArns, enableTenancy, handler, executionTimeoutSeconds);
         }
         catch
         {
@@ -334,7 +340,8 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         IDictionary<string, string>? environment,
         IReadOnlyList<string>? invokeAllowedFunctionArns,
         bool enableTenancy,
-        string? handler)
+        string? handler,
+        int executionTimeoutSeconds)
     {
         // 1. Acquire the shared IAM role (created once per account, reused across tests and runs).
         //    Both the workflow function and any paired external function run under this single role,
@@ -392,7 +399,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             Code = new FunctionCode { ZipFile = new MemoryStream(zipBytes) },
             Timeout = 30,
             MemorySize = 256,
-            DurableConfig = new DurableConfig { ExecutionTimeout = 60 },
+            DurableConfig = new DurableConfig { ExecutionTimeout = executionTimeoutSeconds },
             // Emit structured JSON logs so tests that parse log records (e.g.
             // ReplayAwareLoggerTest) can assert on durable-execution scope keys.
             LoggingConfig = new LoggingConfig { LogFormat = LogFormat.JSON }

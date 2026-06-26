@@ -15,13 +15,16 @@ public class RetryTest
     public RetryTest(ITestOutputHelper output) => _output = output;
 
     /// <summary>
-    /// End-to-end retry: step throws on attempts 1 and 2, succeeds on attempt 3.
-    /// Validates that the service honors the RETRY checkpoint, schedules the
-    /// requested delay, and re-invokes the Lambda — none of which the unit
-    /// tests can prove (they fake state transitions in-memory).
+    /// Cloud-only half of the retry scenario: validates what only the real
+    /// service can prove — that it honors the RETRY checkpoint, records a failed
+    /// event per attempt with the per-attempt message, schedules the requested
+    /// delay, and re-invokes the Lambda. The behavioral half (final result and
+    /// the step's attempt count) is covered portably on both backends by
+    /// <c>PortableScenarios.RetryAsync</c> and is intentionally not re-asserted
+    /// here.
     /// </summary>
     [Fact]
-    public async Task FlakyStep_RetriesAndSucceedsOnThirdAttempt()
+    public async Task FlakyStep_ServiceHonorsRetryEventsAndTiming()
     {
         await using var deployment = await DurableFunctionDeployment.CreateAsync(
             DurableFunctionDeployment.FindTestFunctionDir("RetryFunction"),

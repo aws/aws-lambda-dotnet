@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="MultipleStepsWorkflow"/>. Workflow body
+/// shared verbatim with the local backend; the cloud-only MultipleStepsTest
+/// additionally verifies the exact StepStarted event count.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,33 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var step1 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"a-{input.OrderId}"; },
-            name: "step_1");
-
-        var step2 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"{step1}-b"; },
-            name: "step_2");
-
-        var step3 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"{step2}-c"; },
-            name: "step_3");
-
-        var step4 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"{step3}-d"; },
-            name: "step_4");
-
-        var step5 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"{step4}-e"; },
-            name: "step_5");
-
-        return new TestResult { Status = "completed", Data = step5 };
-    }
+        => DurableFunction.WrapAsync<StepsRequest, StepsResult>(
+            MultipleStepsWorkflow.RunAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }
