@@ -19,7 +19,7 @@ namespace Amazon.Lambda.DurableExecution.Services;
 /// <summary>
 /// Calls the real AWS Lambda Durable Execution APIs via the AWSSDK.Lambda client.
 /// </summary>
-internal sealed class LambdaDurableServiceClient
+internal sealed class LambdaDurableServiceClient : IDurableServiceClient
 {
     private readonly IAmazonLambda _lambdaClient;
 

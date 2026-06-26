@@ -15,4 +15,9 @@
     <ProjectReference Include="..\..\..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
 
+  <!-- Share the workflow logic verbatim with the local test backend. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Amazon.Lambda.DurableExecution.Testing.Shared\Workflows\DurableWorkflows.cs" Link="Shared\DurableWorkflows.cs" />
+  </ItemGroup>
+
 </Project>

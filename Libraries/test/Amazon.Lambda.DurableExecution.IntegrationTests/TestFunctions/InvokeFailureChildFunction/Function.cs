@@ -3,11 +3,16 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed downstream entry point for <see cref="InvokeFailureWorkflow.DownstreamAsync"/>.
+/// Always fails so the parent's chained invoke surfaces an InvokeException.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,22 +26,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<int, string>(Workflow, input, context);
-
-    private async Task<string> Workflow(int input, IDurableContext context)
-    {
-        // Throw inside a step so the workflow records a step-failed event AND
-        // surfaces a FAILED execution status. The parent's InvokeAsync sees a
-        // FAILED chained invocation and raises InvokeFailedException with the
-        // step's error type (System.InvalidOperationException) attached.
-        await context.StepAsync<string>(
-            async (_, _) =>
-            {
-                await Task.CompletedTask;
-                throw new InvalidOperationException("intentional child failure");
-            },
-            name: "fail_step");
-
-        return "unreachable";
-    }
+        => DurableFunction.WrapAsync<ChildRequest, ChildResult>(
+            InvokeFailureWorkflow.DownstreamAsync, input, context);
 }

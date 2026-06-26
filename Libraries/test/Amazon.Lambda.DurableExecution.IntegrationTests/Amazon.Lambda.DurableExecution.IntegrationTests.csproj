@@ -38,6 +38,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution.Testing\Amazon.Lambda.DurableExecution.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+  </ItemGroup>
+
+  <!-- Run the shared portable scenarios against the deployed cloud backend.
+       The same DurableWorkflows.cs is also compiled into each TestFunctions/<X>
+       project, so the cloud functions execute identical workflow code to the
+       local backend in Amazon.Lambda.DurableExecution.Testing.Tests. The
+       scenarios are reused from the shared dir; the workflow DTOs come in via
+       the Testing.Tests-shared file too, so reference it once here. -->
+  <ItemGroup>
+    <Compile Include="..\Amazon.Lambda.DurableExecution.Testing.Shared\Workflows\DurableWorkflows.cs" Link="Shared\DurableWorkflows.cs" />
+    <Compile Include="..\Amazon.Lambda.DurableExecution.Testing.Shared\Scenarios\PortableScenarios.cs" Link="Shared\PortableScenarios.cs" />
   </ItemGroup>
 
 </Project>

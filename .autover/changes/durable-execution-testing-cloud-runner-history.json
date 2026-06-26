@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution.Testing",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix CloudDurableTestRunner against deployed functions: reconstruct recorded operations from GetDurableExecutionHistory (the token-free, externally-pollable history API) instead of GetDurableExecutionState, which requires a runtime-only CheckpointToken an external poller cannot obtain; and make StartAsync fire-and-forget (Event invocation with a generated DurableExecutionName, ARN resolved via ListDurableExecutionsByFunction) so callback workflows that suspend no longer deadlock against a synchronous invoke. Preview."
+      ]
+    }
+  ]
+}

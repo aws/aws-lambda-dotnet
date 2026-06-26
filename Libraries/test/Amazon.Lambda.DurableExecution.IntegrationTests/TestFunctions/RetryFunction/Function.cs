@@ -3,11 +3,19 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="RetryWorkflow"/>. The workflow body is
+/// shared verbatim with the local backend (see PortableScenariosLocalTests) so
+/// the behavioral half of the retry scenario asserts identically on both, while
+/// this deployed function additionally lets the cloud-only test observe the real
+/// per-attempt retry events and timing.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,32 +29,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var result = await context.StepAsync<string>(
-            async (ctx, _) =>
-            {
-                await Task.CompletedTask;
-                if (ctx.AttemptNumber < 3)
-                    throw new InvalidOperationException($"flake on attempt {ctx.AttemptNumber}");
-                return $"ok on attempt {ctx.AttemptNumber}";
-            },
-            name: "flaky_step",
-            config: new StepConfig
-            {
-                RetryStrategy = RetryStrategy.Exponential(
-                    maxAttempts: 3,
-                    initialDelay: TimeSpan.FromSeconds(2),
-                    maxDelay: TimeSpan.FromSeconds(10),
-                    backoffRate: 2.0,
-                    jitter: JitterStrategy.None)
-            });
-
-        return new TestResult { Status = "completed", Data = result };
-    }
+        => DurableFunction.WrapAsync<RetryRequest, RetryResult>(
+            RetryWorkflow.RunAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }

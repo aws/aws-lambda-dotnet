@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="RetryExhaustionWorkflow"/>. Workflow body
+/// shared verbatim with the local backend; the cloud-only RetryExhaustionTest
+/// additionally verifies the per-attempt StepFailed events and timing.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,30 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var result = await context.StepAsync<string>(
-            async (ctx, _) =>
-            {
-                await Task.CompletedTask;
-                throw new InvalidOperationException($"always-fails attempt {ctx.AttemptNumber}");
-            },
-            name: "always_fails_step",
-            config: new StepConfig
-            {
-                RetryStrategy = RetryStrategy.Exponential(
-                    maxAttempts: 3,
-                    initialDelay: TimeSpan.FromSeconds(2),
-                    maxDelay: TimeSpan.FromSeconds(10),
-                    backoffRate: 2.0,
-                    jitter: JitterStrategy.None)
-            });
-
-        return new TestResult { Status = "completed", Data = result };
-    }
+        => DurableFunction.WrapAsync<StepsRequest, StepsResult>(
+            RetryExhaustionWorkflow.RunAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }

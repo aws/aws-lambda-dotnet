@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="ParallelWorkflows.PartialFailureAsync"/>. Workflow
+/// body shared verbatim with the local backend; the cloud-only test additionally
+/// verifies the event-shape / timing concerns the runner cannot express.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,44 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var batch = await context.ParallelAsync(
-            new[]
-            {
-                new DurableBranch<string>("ok1", async (_, _) => { await Task.CompletedTask; return "first"; }),
-                new DurableBranch<string>("boom", async (_, _) =>
-                {
-                    await Task.CompletedTask;
-                    throw new InvalidOperationException("intentional partial failure");
-                }),
-                new DurableBranch<string>("ok2", async (_, _) => { await Task.CompletedTask; return "third"; }),
-            },
-            name: "partial",
-            // AllCompleted: drive every branch to terminal state regardless of failure.
-            // Without this, the default AllSuccessful() would throw on the first failure.
-            config: new ParallelConfig { CompletionConfig = CompletionConfig.AllCompleted() });
-
-        var errors = batch.GetErrors();
-        var errorSummary = string.Join("|", errors.Select(e => $"{e.GetType().Name}:{e.Message}"));
-
-        return new TestResult
-        {
-            Status = "completed",
-            SuccessCount = batch.SuccessCount,
-            FailureCount = batch.FailureCount,
-            ErrorSummary = errorSummary
-        };
-    }
-}
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult
-{
-    public string? Status { get; set; }
-    public int SuccessCount { get; set; }
-    public int FailureCount { get; set; }
-    public string? ErrorSummary { get; set; }
+        => DurableFunction.WrapAsync<BatchRequest, BatchResult>(
+            ParallelWorkflows.PartialFailureAsync, input, context);
 }

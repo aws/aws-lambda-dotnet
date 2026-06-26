@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="StepWaitStepWorkflow"/>. Workflow body
+/// shared verbatim with the local backend; the cloud-only StepWaitStepTest
+/// additionally verifies the real wait duration and suspend/resume cycle.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,23 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var step1 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"validated-{input.OrderId}"; },
-            name: "validate");
-
-        await context.WaitAsync(TimeSpan.FromSeconds(3), name: "short_wait");
-
-        var step2 = await context.StepAsync(
-            async (_, _) => { await Task.CompletedTask; return $"processed-{step1}"; },
-            name: "process");
-
-        return new TestResult { Status = "completed", Data = step2 };
-    }
+        => DurableFunction.WrapAsync<StepsRequest, StepsResult>(
+            StepWaitStepWorkflow.RunAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }

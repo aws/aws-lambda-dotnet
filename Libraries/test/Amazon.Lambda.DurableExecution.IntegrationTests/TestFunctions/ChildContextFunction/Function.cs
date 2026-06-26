@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="ChildContextWorkflows.HappyAsync"/>. Workflow
+/// body shared verbatim with the local backend; the cloud-only test additionally
+/// verifies the inner ops re-parent under the CONTEXT op and the failure detail.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,34 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        // Run a child context that itself does step + wait + step. The child's
-        // return value is checkpointed at the parent level as a CONTEXT
-        // SUCCEED record, so on replay we'd see it returned from cache.
-        var phaseResult = await context.RunInChildContextAsync<string>(
-            async (childCtx, _) =>
-            {
-                var validated = await childCtx.StepAsync(
-                    async (_, _) => { await Task.CompletedTask; return $"validated-{input.OrderId}"; },
-                    name: "validate");
-
-                await childCtx.WaitAsync(TimeSpan.FromSeconds(2), name: "short_wait");
-
-                var processed = await childCtx.StepAsync(
-                    async (_, _) => { await Task.CompletedTask; return $"processed-{validated}"; },
-                    name: "process");
-
-                return processed;
-            },
-            name: "phase",
-            config: new ChildContextConfig { SubType = "OrderProcessing" });
-
-        return new TestResult { Status = "completed", Data = phaseResult };
-    }
+        => DurableFunction.WrapAsync<StepsRequest, StepsResult>(
+            ChildContextWorkflows.HappyAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }
