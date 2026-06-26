@@ -1,0 +1,13 @@
+{
+  "display-name": "Durable Function",
+  "system-name": "DurableFunction",
+  "description": "A durable execution workflow that checkpoints every step, so it can be suspended during waits and resumed after a crash without re-running completed work.",
+  "sort-order": 130,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Durable"
+  ]
+}
