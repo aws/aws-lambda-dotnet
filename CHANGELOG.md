@@ -1,3 +1,8 @@
+## Release 2026-06-26
+
+### Amazon.Lambda.DurableExecution (0.1.2-preview)
+* Add internal IDurableServiceClient abstraction over the durable execution service RPCs so the testing package can inject an in-memory implementation; route DurableFunction.WrapAsync overloads through it.
+
 ## Release 2026-06-25
 
 ### Amazon.Lambda.Annotations (2.1.0)
