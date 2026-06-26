@@ -19,14 +19,17 @@ namespace Amazon.Lambda.DurableExecution.IntegrationTests;
 /// All resources are torn down on DisposeAsync.
 /// </summary>
 /// <remarks>
-/// Durable functions deploy as a plain zip package on the managed <c>dotnet10</c> runtime
+/// Durable functions deploy as a plain zip package on a managed dotnet runtime
 /// (executable model, <c>Handler=bootstrap</c>) — no container image or ECR repository
 /// required. Each test function is published framework-dependent for linux-x64 and zipped.
+/// This harness pins a single managed runtime (see <see cref="ManagedRuntime"/>) for CI;
+/// durable execution itself is not tied to that specific runtime version.
 /// </remarks>
 internal sealed class DurableFunctionDeployment : IAsyncDisposable
 {
-    // The managed dotnet runtime that supports durable configuration. Executable model:
+    // The managed dotnet runtime this harness deploys against. Executable model:
     // `dotnet publish` emits a native `bootstrap` shim and the runtime execs it.
+    // This is just the runtime CI exercises — durable execution is not tied to it.
     private const string ManagedRuntime = "dotnet10";
     private const string BootstrapHandler = "bootstrap";
 

@@ -60,14 +60,23 @@ public class ParallelFailureToleranceTest
         var events = history.Events ?? new List<Event>();
 
         // At least 2 branches failed (the third may or may not have been
-        // dispatched depending on race; the parent CONTEXT itself also fails).
+        // dispatched depending on race).
         Assert.True(
             events.Count(e => e.EventType == EventType.ContextFailed) >= 2,
             $"Expected >= 2 ContextFailed events; got {events.Count(e => e.EventType == EventType.ContextFailed)}");
 
-        // The parent context (named "tolerance") records the aggregate failure.
-        var parentFailed = events.FirstOrDefault(e =>
+        // The parent context (named "tolerance") is checkpointed ContextSucceeded
+        // even when the failure tolerance is exceeded: ConcurrentOperation always
+        // writes the parent batch summary with action SUCCEED (the completion
+        // reason lives inside the payload), then the SDK throws ParallelException
+        // AFTER the checkpoint. This matches the Python/JS/Java wire format. The
+        // workflow-level failure is asserted above via PollForCompletionAsync ==
+        // FAILED and the ParallelException error type — the parent CONTEXT itself
+        // is NOT recorded as ContextFailed.
+        var parentSucceeded = events.FirstOrDefault(e =>
+            e.EventType == EventType.ContextSucceeded && e.Name == "tolerance");
+        Assert.NotNull(parentSucceeded);
+        Assert.DoesNotContain(events, e =>
             e.EventType == EventType.ContextFailed && e.Name == "tolerance");
-        Assert.NotNull(parentFailed);
     }
 }

@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace Amazon.Lambda.DurableExecution.IntegrationTests;
 
 /// <summary>
-/// Proves a durable function works on the managed <c>dotnet10</c> runtime using the
+/// Proves a durable function works on a managed dotnet runtime using the
 /// <b>class-library programming model</b> — a plain <c>Handler</c> method with no
 /// <c>Main</c>/<c>LambdaBootstrap</c> loop, deployed via an <c>Assembly::Type::Method</c>
 /// handler string. Confirms the RuntimeSupport durable-execution changes are live in

@@ -90,8 +90,42 @@ public class IntegrationTestContextFixture : IAsyncLifetime
 
         await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name!).ToList());
 
-        // Wait an additional 10 seconds for any other eventual consistency state to finish up.
-        await Task.Delay(10000);
+        // CloudFormation reports CREATE_COMPLETE before API Gateway has fully propagated the deployed
+        // stage and the Lambda authorizer invoke permissions to the edge. During that window, requests
+        // on the authorizer "allow" path can transiently return 403. REST APIs (v1) settle slower than
+        // HTTP APIs (v2), so poll a known allow-path endpoint on each API until it serves traffic
+        // correctly rather than relying on a fixed sleep.
+        await WarmUpApisAsync();
+    }
+
+    /// <summary>
+    /// Polls a representative "allow path" endpoint on each deployed API until the custom authorizer
+    /// is fully wired and the request succeeds (or a 401 from the backend), confirming the API is
+    /// serving traffic before the test suite runs.
+    /// </summary>
+    private async Task WarmUpApisAsync()
+    {
+        var timeout = TimeSpan.FromMinutes(2);
+        var pollInterval = TimeSpan.FromSeconds(5);
+
+        // A warmed-up authorizer returns a non-403 response on the allow path: either 200 (context
+        // present) or 401 (backend rejects missing context). A 403 means API Gateway could not yet
+        // invoke/attach the authorizer, so keep waiting.
+        async Task<bool> EndpointIsReady(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "valid-token");
+            var response = await HttpClient.SendAsync(request);
+            return response.StatusCode != System.Net.HttpStatusCode.Forbidden;
+        }
+
+        var restReady = await RetryHelper.WaitForConditionAsync(
+            () => EndpointIsReady($"{RestApiUrl}/api/rest-user-info"), timeout, pollInterval);
+        Console.WriteLine($"[IntegrationTest] REST API warm-up {(restReady ? "succeeded" : "timed out")}.");
+
+        var httpReady = await RetryHelper.WaitForConditionAsync(
+            () => EndpointIsReady($"{HttpApiUrl}/api/user-info"), timeout, pollInterval);
+        Console.WriteLine($"[IntegrationTest] HTTP API warm-up {(httpReady ? "succeeded" : "timed out")}.");
     }
 
     public async Task DisposeAsync()

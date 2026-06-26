@@ -46,13 +46,17 @@ public class CallbackFailedTest
         var status = await deployment.PollForCompletionAsync(arn!, TimeSpan.FromSeconds(120));
         Assert.Equal("FAILED", status, ignoreCase: true);
 
-        // The workflow's surfaced exception is CallbackFailedException — the SDK
-        // wraps the external error message into the exception's Message. Verify
-        // the recorded error type is the SDK's CallbackFailedException and that
-        // the original failure message survives.
+        // The workflow surfaces CallbackFailedException to the user, but the
+        // terminal ErrorObject records the ORIGINAL error identity reported by the
+        // external system — ErrorObject.FromException deliberately unwraps
+        // CallbackException to the underlying error (here the RejecterFunction's
+        // "ApprovalRejected" type), matching the Java/Python/JS SDKs and the
+        // unwrapping covered by ModelsTests.ErrorObject_FromException_UnwrapsCallbackException.
+        // Verify the recorded type is the external error type and the original
+        // failure message survives.
         var execution = await deployment.GetExecutionAsync(arn!);
         Assert.NotNull(execution.Error);
-        Assert.Equal(typeof(CallbackFailedException).FullName, execution.Error.ErrorType);
+        Assert.Equal("ApprovalRejected", execution.Error.ErrorType);
         Assert.Contains("rejected", execution.Error.ErrorMessage);
 
         // History records both Started and Failed for the same callback.

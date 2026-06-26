@@ -37,13 +37,16 @@ public class WaitForCallbackSubmitterFailsTest
         var status = await deployment.PollForCompletionAsync(arn!, TimeSpan.FromSeconds(120));
         Assert.Equal("FAILED", status, ignoreCase: true);
 
-        // The workflow surfaces CallbackSubmitterException — the SDK's wrapper
-        // type around the failed submitter step. Verify both the recorded
-        // ErrorType and that the original "submitter intentional failure"
-        // message survives in the error chain.
+        // The workflow surfaces CallbackSubmitterException to the user, but the
+        // terminal ErrorObject records the ORIGINAL error identity that the
+        // submitter threw. CallbackSubmitterException carries the failed step's
+        // ErrorType (the submitter's InvalidOperationException), and
+        // ErrorObject.FromException deliberately unwraps CallbackException to that
+        // underlying type — matching the Java/Python/JS SDKs and the unwrapping
+        // covered by ModelsTests.ErrorObject_FromException_UnwrapsCallbackException.
         var execution = await deployment.GetExecutionAsync(arn!);
         Assert.NotNull(execution.Error);
-        Assert.Equal(typeof(CallbackSubmitterException).FullName, execution.Error.ErrorType);
+        Assert.Equal(typeof(InvalidOperationException).FullName, execution.Error.ErrorType);
         // ErrorObject.FromException records the outer exception's Message; that
         // message should reference the submitter failure context. Be lenient
         // about exact wording since the SDK may prepend / wrap the inner.
