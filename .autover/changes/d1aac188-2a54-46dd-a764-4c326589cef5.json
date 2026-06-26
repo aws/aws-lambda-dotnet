@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.DurableExecution",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Add internal IDurableServiceClient abstraction over the durable execution service RPCs so the testing package can inject an in-memory implementation; route DurableFunction.WrapAsync overloads through it. Preview."
+        "Add internal IDurableServiceClient abstraction over the durable execution service RPCs so the testing package can inject an in-memory implementation; route DurableFunction.WrapAsync overloads through it."
       ]
     }
   ]
