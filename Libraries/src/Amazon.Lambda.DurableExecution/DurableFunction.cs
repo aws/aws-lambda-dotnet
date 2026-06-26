@@ -37,7 +37,8 @@ public static class DurableFunction
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext)
-        => WrapAsyncCore(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value);
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(_cachedLambdaClient.Value));
 
     /// <summary>
     /// Wrap a workflow (typed input + output) with explicit Lambda client.
@@ -47,7 +48,8 @@ public static class DurableFunction
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
         IAmazonLambda lambdaClient)
-        => WrapAsyncCore(workflow, invocationInput, lambdaContext, lambdaClient);
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(lambdaClient));
 
     /// <summary>
     /// Wrap a void workflow (typed input, no output).
@@ -68,20 +70,32 @@ public static class DurableFunction
         IAmazonLambda lambdaClient)
         => WrapAsyncCore<TInput, object?>(
             async (input, ctx) => { await workflow(input, ctx); return null; },
-            invocationInput, lambdaContext, lambdaClient);
+            invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(lambdaClient));
+
+    /// <summary>
+    /// Internal overload for the testing package — accepts an
+    /// <see cref="IDurableServiceClient"/> directly so the testing SDK can
+    /// inject an in-memory implementation.
+    /// </summary>
+    internal static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IDurableServiceClient serviceClient)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, serviceClient);
 
     private static async Task<DurableExecutionInvocationOutput> WrapAsyncCore<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
-        IAmazonLambda lambdaClient)
+        IDurableServiceClient serviceClient)
     {
         var serializer = LambdaSerializerHelper.GetRequired(lambdaContext);
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
 
-        var serviceClient = new LambdaDurableServiceClient(lambdaClient);
         var checkpointToken = invocationInput.CheckpointToken;
 
         var nextMarker = invocationInput.InitialExecutionState?.NextMarker;
