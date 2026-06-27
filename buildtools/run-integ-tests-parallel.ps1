@@ -3,9 +3,10 @@
 # isolated CloudFormation stack (unique name + S3 bucket), so the projects have no shared state and
 # can run in parallel. Running them serially was the dominant cost of the CI integ-test phase.
 #
-# Output from each project is captured and printed as a labeled block after that project finishes,
-# so the interleaved logs of parallel runs stay readable. The script exits non-zero if any project
-# fails, listing which ones.
+# Each project's output is streamed live, prefixed with the project name so the interleaved logs of
+# the parallel runs stay attributable. Failed projects also get their full output reprinted as one
+# clean block at the end (un-interleaved) for easier diagnosis. The script exits non-zero if any
+# project fails, listing which ones.
 
 param(
     [string]$Configuration = "Release",
@@ -33,24 +34,32 @@ $projects | ForEach-Object { Write-Host "  - $_" }
 $results = $projects | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
     $project = $_
     $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
-    # 2>&1 folds stderr into the captured stream so warnings/errors appear in the labeled block.
-    $output = dotnet test -c $using:Configuration --logger "console;verbosity=detailed" $project 2>&1 | Out-String
+    $lines = [System.Collections.Generic.List[string]]::new()
+    # 2>&1 folds stderr into the stream. Each line is emitted to the host as it arrives, prefixed
+    # with the project name, so progress is visible during the (long) run instead of only at the end.
+    dotnet test -c $using:Configuration --logger "console;verbosity=detailed" $project 2>&1 |
+        ForEach-Object {
+            $line = $_.ToString()
+            $lines.Add($line)
+            Write-Host "[$name] $line"
+        }
     [PSCustomObject]@{
         Name     = $name
         Project  = $project
         ExitCode = $LASTEXITCODE
-        Output   = $output
+        Output   = ($lines -join [System.Environment]::NewLine)
     }
 }
 
-foreach ($result in $results)
+# Reprint each failed project's output as one clean, un-interleaved block for easier diagnosis.
+$failed = $results | Where-Object { $_.ExitCode -ne 0 }
+foreach ($result in $failed)
 {
     Write-Host ""
-    Write-Host "==================== $($result.Name) (exit $($result.ExitCode)) ===================="
+    Write-Host "==================== FAILED: $($result.Name) (exit $($result.ExitCode)) ===================="
     Write-Host $result.Output
 }
 
-$failed = $results | Where-Object { $_.ExitCode -ne 0 }
 if ($failed)
 {
     Write-Host ""
