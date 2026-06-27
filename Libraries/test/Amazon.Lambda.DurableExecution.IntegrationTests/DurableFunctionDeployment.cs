@@ -9,6 +9,7 @@ using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
+using Amazon.Runtime;
 using Xunit.Abstractions;
 
 namespace Amazon.Lambda.DurableExecution.IntegrationTests;
@@ -40,19 +41,35 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private readonly IAmazonIdentityManagementService _iamClient;
 
     private readonly string _functionName;
-    private readonly string _roleName;
     private string? _roleArn;
     private string? _functionArn;
     private bool _functionCreated;
-    private readonly List<string> _inlinePolicyNames = new();
 
     // Optional paired "external system" Lambda — a plain (non-durable) function
     // that the workflow's submitter invokes. Models a real-world callback flow
     // where an out-of-band service resolves the durable execution.
     private readonly string _externalFunctionName;
-    private readonly string _externalRoleName;
     private string? _externalRoleArn;
     private bool _externalFunctionCreated;
+
+    // A single IAM role shared by every test function in the suite. Creating and deleting a role
+    // per deployment burst-throttled IAM ("Rate exceeded") once the suite started running in
+    // parallel — IAM is global, single-bucketed, and throttles mutating calls aggressively. The
+    // shared role is created at most once per account (reused across runs) and gated so concurrent
+    // deployments don't race to create it. No test depends on a role *lacking* a permission, so a
+    // single union-of-permissions role is safe; it is scoped to invoking durable-integ-* functions.
+    private const string SharedRoleName = "durable-integ-shared-execution-role";
+    private static readonly SemaphoreSlim SharedRoleGate = new(1, 1);
+    private static string? _sharedRoleArn;
+
+    // Publishing is done ONCE for all test functions, up front, instead of per-test. The test
+    // functions all reference the same source projects (Amazon.Lambda.DurableExecution etc.);
+    // publishing each function separately (and the old code wiped obj/bin first, forcing a cold
+    // build every time) rebuilt those shared projects dozens of times, and doing it concurrently
+    // thrashed MSBuild. A single up-front pass builds the shared projects once and the publishes
+    // run incrementally; each test then just zips its already-published output.
+    private static readonly SemaphoreSlim PrePublishGate = new(1, 1);
+    private static bool _prePublished;
 
     public string FunctionName => _functionName;
     public string? ExternalFunctionName => _externalFunctionCreated ? _externalFunctionName : null;
@@ -77,16 +94,34 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
     {
         _output = output;
-        _lambdaClient = new AmazonLambdaClient(DeploymentRegion);
-        _iamClient = new AmazonIdentityManagementServiceClient(DeploymentRegion);
+        // The integration suite runs its test classes in parallel, so several deployments hit IAM
+        // (CreateRole/AttachRolePolicy/DeleteRole) at once. IAM has low request-rate limits and
+        // returns "Rate exceeded" under that contention. Adaptive retry adds client-side rate
+        // limiting and backs off on throttling, and a higher retry count rides out longer throttle
+        // windows, instead of failing the test on the first throttle.
+        _lambdaClient = new AmazonLambdaClient(BuildClientConfig<AmazonLambdaConfig>());
+        _iamClient = new AmazonIdentityManagementServiceClient(BuildClientConfig<AmazonIdentityManagementServiceConfig>());
 
         // Truncate the GUID (not the suffix) so CloudTrail entries stay readable.
         // Keep the GUID short enough that the total stays well under 40 chars even for long suffixes.
         static string ShortId() => Guid.NewGuid().ToString("N")[..Math.Min(8, 32)];
         _functionName = $"durable-integ-{suffix}-{ShortId()}";
-        _roleName = $"durable-integ-{suffix}-{ShortId()}";
         _externalFunctionName = $"durable-integ-{suffix}-ext-{ShortId()}";
-        _externalRoleName = $"durable-integ-{suffix}-ext-{ShortId()}";
+    }
+
+    /// <summary>
+    /// Builds a client config tuned to survive throttling when the suite runs in parallel:
+    /// adaptive retry (client-side rate limiting + backoff on throttle) and a generous retry count.
+    /// </summary>
+    private static TConfig BuildClientConfig<TConfig>() where TConfig : ClientConfig, new()
+    {
+        var config = new TConfig
+        {
+            RegionEndpoint = DeploymentRegion,
+            RetryMode = RequestRetryMode.Adaptive,
+            MaxErrorRetry = 10
+        };
+        return config;
     }
 
     // The optional `handler` defaults to `bootstrap` (executable model). Pass an
@@ -192,6 +227,100 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     }
     """;
 
+    // Inline policy granting the permissions every durable-integ scenario needs: invoking any
+    // durable-integ-* function (covers chained invoke and external-function invoke) and sending
+    // durable-execution callbacks. Resource is scoped to the suite's function name prefix.
+    private const string SharedInlinePolicyName = "DurableIntegSharedPermissions";
+    private const string SharedInlinePolicyDocument = """
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "lambda:InvokeFunction",
+                "Resource": [
+                    "arn:aws:lambda:*:*:function:durable-integ-*",
+                    "arn:aws:lambda:*:*:function:durable-integ-*:*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:SendDurableExecutionCallbackSuccess",
+                    "lambda:SendDurableExecutionCallbackFailure"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+    """;
+
+    /// <summary>
+    /// Returns the ARN of the shared execution role, creating it once per account if absent.
+    /// Gated by a semaphore + memoized ARN so concurrent deployments don't race or re-create it.
+    /// In steady state (role already exists from a prior run) this is a single GetRole call for the
+    /// entire suite, which is what keeps the parallel run under IAM's mutating-call rate limits.
+    /// </summary>
+    private async Task<string> GetOrCreateSharedRoleAsync()
+    {
+        if (_sharedRoleArn != null)
+            return _sharedRoleArn;
+
+        await SharedRoleGate.WaitAsync();
+        try
+        {
+            if (_sharedRoleArn != null)
+                return _sharedRoleArn;
+
+            try
+            {
+                var existing = await _iamClient.GetRoleAsync(new GetRoleRequest { RoleName = SharedRoleName });
+                _output.WriteLine($"Reusing shared IAM role: {SharedRoleName}");
+                _sharedRoleArn = existing.Role.Arn;
+                return _sharedRoleArn;
+            }
+            catch (NoSuchEntityException)
+            {
+                // Falls through to create it.
+            }
+
+            _output.WriteLine($"Creating shared IAM role: {SharedRoleName}");
+            var created = await _iamClient.CreateRoleAsync(new CreateRoleRequest
+            {
+                RoleName = SharedRoleName,
+                AssumeRolePolicyDocument = LambdaAssumeRolePolicy
+            });
+
+            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+            {
+                RoleName = SharedRoleName,
+                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            });
+            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+            {
+                RoleName = SharedRoleName,
+                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
+            });
+            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
+            {
+                RoleName = SharedRoleName,
+                PolicyName = SharedInlinePolicyName,
+                PolicyDocument = SharedInlinePolicyDocument
+            });
+
+            // Wait for IAM propagation so the first function create doesn't hit
+            // "The role defined for the function cannot be assumed by Lambda".
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            _sharedRoleArn = created.Role.Arn;
+            return _sharedRoleArn;
+        }
+        finally
+        {
+            SharedRoleGate.Release();
+        }
+    }
+
     private async Task InitializeAsync(
         string testFunctionDir,
         string? externalFunctionDir,
@@ -200,135 +329,23 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         bool enableTenancy,
         string? handler)
     {
-        // 1. Create the workflow's IAM role.
-        _output.WriteLine($"Creating IAM role: {_roleName}");
-        var createRoleResponse = await _iamClient.CreateRoleAsync(new CreateRoleRequest
-        {
-            RoleName = _roleName,
-            AssumeRolePolicyDocument = LambdaAssumeRolePolicy
-        });
-        _roleArn = createRoleResponse.Role.Arn;
-
-        await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
-        {
-            RoleName = _roleName,
-            PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-        });
-
-        await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
-        {
-            RoleName = _roleName,
-            PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
-        });
-
-        // 2. (optional) Create the external function's IAM role up front so its
-        //    sts:AssumeRole and lambda:SendDurableExecutionCallbackSuccess
-        //    permissions propagate alongside the workflow role's permissions
-        //    (single 10-second sleep covers both).
+        // 1. Acquire the shared IAM role (created once per account, reused across tests and runs).
+        //    Both the workflow function and any paired external function run under this single role,
+        //    which carries the union of permissions every scenario needs. The external function's
+        //    callback-send permission and the workflow's invoke permission are all baked into the
+        //    shared role, so per-test PutRolePolicy calls are no longer needed.
+        _roleArn = await GetOrCreateSharedRoleAsync();
         if (externalFunctionDir != null)
         {
-            _output.WriteLine($"Creating external IAM role: {_externalRoleName}");
-            var extRoleResponse = await _iamClient.CreateRoleAsync(new CreateRoleRequest
-            {
-                RoleName = _externalRoleName,
-                AssumeRolePolicyDocument = LambdaAssumeRolePolicy
-            });
-            _externalRoleArn = extRoleResponse.Role.Arn;
-
-            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
-            {
-                RoleName = _externalRoleName,
-                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-            });
-
-            // Inline policy lets the external function call the durable callback API.
-            // Resource "*" because we don't yet know the workflow's ARN at this point —
-            // the external function only resolves callbacks belonging to executions the
-            // workflow created, so the blast radius is bounded by the role's lifetime.
-            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
-            {
-                RoleName = _externalRoleName,
-                PolicyName = "SendDurableExecutionCallback",
-                PolicyDocument = """
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Action": [
-                            "lambda:SendDurableExecutionCallbackSuccess",
-                            "lambda:SendDurableExecutionCallbackFailure"
-                        ],
-                        "Resource": "*"
-                    }]
-                }
-                """
-            });
-
-            // Workflow function will Invoke the external function — grant via inline policy.
-            // Scoped to the external function name we just minted.
-            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
-            {
-                RoleName = _roleName,
-                PolicyName = "InvokeExternalFunction",
-                PolicyDocument = $$"""
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Action": "lambda:InvokeFunction",
-                        "Resource": "arn:aws:lambda:*:*:function:{{_externalFunctionName}}"
-                    }]
-                }
-                """
-            });
-            _inlinePolicyNames.Add("InvokeExternalFunction");
+            _externalRoleArn = _roleArn;
         }
 
-        // Grant cross-Lambda invoke when the parent of a chained-invoke scenario
-        // needs to call out to a downstream function. The durable execution service
-        // is the one that actually drives the chained invocation in production —
-        // attaching this directly to the parent's role keeps the parent role
-        // capable of being used in non-durable contexts (e.g. for diagnostic
-        // direct invokes from the test harness).
-        if (invokeAllowedFunctionArns != null && invokeAllowedFunctionArns.Count > 0)
-        {
-            // Allow both the unqualified ARN and any qualifier (alias/version/$LATEST).
-            var resources = new List<string>(invokeAllowedFunctionArns.Count * 2);
-            foreach (var arn in invokeAllowedFunctionArns)
-            {
-                resources.Add(arn);
-                resources.Add(arn + ":*");
-            }
-            var resourceJson = "[" + string.Join(",", resources.Select(r => $"\"{r}\"")) + "]";
-            var policyDoc = $$"""
-            {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Action": ["lambda:InvokeFunction"],
-                    "Resource": {{resourceJson}}
-                }]
-            }
-            """;
-            const string PolicyName = "AllowChainedInvoke";
-            await _iamClient.PutRolePolicyAsync(new PutRolePolicyRequest
-            {
-                RoleName = _roleName,
-                PolicyName = PolicyName,
-                PolicyDocument = policyDoc
-            });
-            _inlinePolicyNames.Add(PolicyName);
-        }
-
-        // Wait for IAM propagation.
-        await Task.Delay(TimeSpan.FromSeconds(10));
-
-        // 3. Build + zip the workflow function package.
+        // 2. Build + zip the workflow function package.
         _output.WriteLine($"Building and zipping function package from {testFunctionDir}...");
         var zipBytes = await BuildAndZipAsync(testFunctionDir);
         _output.WriteLine($"Package built: {zipBytes.Length} bytes");
 
-        // 4. (optional) Build + deploy the external function. Done before the workflow
+        // 3. (optional) Build + deploy the external function. Done before the workflow
         //    Lambda so the workflow function's environment can reference the external
         //    function name (which is already known from the ctor).
         if (externalFunctionDir != null)
@@ -355,7 +372,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             await WaitForFunctionActive(_externalFunctionName);
         }
 
-        // 5. Create the workflow Lambda.
+        // 4. Create the workflow Lambda.
         _output.WriteLine($"Creating Lambda function: {_functionName}");
         var createFunctionRequest = new CreateFunctionRequest
         {
@@ -604,42 +621,18 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     }
 
     /// <summary>
-    /// Publishes a test function (framework-dependent, linux-x64) and zips the publish
-    /// output for upload as a managed-runtime Lambda package. The zip contains the native
-    /// <c>bootstrap</c> shim that the dotnet managed runtime execs (executable model).
+    /// Returns the zipped, published package for a test function. The actual publishing happens
+    /// once for all functions (see <see cref="EnsureAllFunctionsPublishedAsync"/>); this just zips
+    /// the already-published output. The zip contains the native <c>bootstrap</c> shim that the
+    /// dotnet managed runtime execs (executable model).
     /// </summary>
     private async Task<byte[]> BuildAndZipAsync(string testFunctionDir)
     {
-        // `dotnet test` spins up one testhost per TargetFramework (net8.0 + net10.0) and
-        // runs them concurrently. Both testhosts invoke the same test classes, which means
-        // two processes can race on the same TestFunctions/<X>/ source dir — wiping bin/
-        // and obj/ under each other's feet. Symptom: MSB3030 "Could not copy bootstrap.dll"
-        // because one process deleted obj/ while the other was mid-publish. Serialize the
-        // per-source-dir build with a cross-process file lock so different test functions
-        // can still build in parallel. (A Mutex would have thread-affinity issues across
-        // awaits; an exclusive FileStream avoids that.) Lock file goes under temp — keeping
-        // it out of the source tree avoids polluting git status across worktrees.
-        var lockKey = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-            Encoding.UTF8.GetBytes(testFunctionDir.ToLowerInvariant())))[..16];
-        var lockPath = Path.Combine(Path.GetTempPath(), $"durable-integ-build-{lockKey}.lock");
-        using var lockHandle = await AcquireExclusiveFileLockAsync(lockPath, TimeSpan.FromMinutes(10));
+        await EnsureAllFunctionsPublishedAsync();
 
         var publishDir = Path.Combine(testFunctionDir, "bin", "publish");
-        if (Directory.Exists(publishDir)) Directory.Delete(publishDir, true);
-
-        // MSBuild's up-to-date check leaves stale .Up2Date markers under obj/ that
-        // make `dotnet publish` skip the copy-to-output step on a second run after
-        // we've wiped bin/publish/. Result: empty publish dir → empty zip package.
-        // Nuking obj/ guarantees a real publish each time the helper is invoked.
-        // Cheap (each test function is small).
-        var objDir = Path.Combine(testFunctionDir, "obj");
-        if (Directory.Exists(objDir)) Directory.Delete(objDir, true);
-        var binDir = Path.Combine(testFunctionDir, "bin");
-        if (Directory.Exists(binDir)) Directory.Delete(binDir, true);
-
-        await RunProcess("dotnet",
-            $"publish -c Release -r linux-x64 --self-contained false -o \"{publishDir}\"",
-            testFunctionDir);
+        if (!Directory.Exists(publishDir))
+            throw new DirectoryNotFoundException($"Expected published output at '{publishDir}' but it does not exist.");
 
         // Zip the publish output. On Linux (CI) ZipFile preserves the bootstrap exec bit;
         // on Windows the managed runtime tolerates the missing bit.
@@ -650,21 +643,75 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         return await File.ReadAllBytesAsync(zipPath);
     }
 
-    private static async Task<FileStream> AcquireExclusiveFileLockAsync(string lockPath, TimeSpan timeout)
+    /// <summary>
+    /// Publishes every test function once, up front, in a SINGLE MSBuild invocation. Runs at most
+    /// once per test run (gated + memoized). A generated traversal project references all function
+    /// projects and publishes them with one <c>dotnet build</c>, so MSBuild builds the shared
+    /// dependency projects once and publishes the functions in parallel within that one process —
+    /// avoiding both the per-project CLI/MSBuild startup cost of N separate <c>dotnet publish</c>
+    /// calls and the cross-process thrash that those caused when the suite ran in parallel. Each
+    /// function still lands in its own <c>bin/publish</c>; tests then only zip that output.
+    /// </summary>
+    private async Task EnsureAllFunctionsPublishedAsync()
     {
-        var deadline = DateTime.UtcNow + timeout;
-        while (true)
+        if (_prePublished)
+            return;
+
+        await PrePublishGate.WaitAsync();
+        try
         {
+            if (_prePublished)
+                return;
+
+            var testFunctionsRoot = Path.GetFullPath(
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "TestFunctions"));
+            var projects = Directory.GetFiles(testFunctionsRoot, "*.csproj", SearchOption.AllDirectories)
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .ToList();
+
+            _output.WriteLine($"Pre-publishing {projects.Count} test function(s) in a single MSBuild pass...");
+
+            // Generate a traversal project that publishes every function project to its own
+            // bin/publish (PublishDir relative to each project). BuildInParallel lets MSBuild fan
+            // the publishes out across nodes once the shared dependency projects are built.
+            var itemsXml = string.Concat(projects.Select(p =>
+                $"    <FunctionProject Include=\"{System.Security.SecurityElement.Escape(p)}\" />\n"));
+            var traversalProject = $"""
+                <Project>
+                  <ItemGroup>
+                {itemsXml}  </ItemGroup>
+                  <Target Name="PublishAll">
+                    <!-- Restore then Publish per project: the MSBuild task's targets run against
+                         each referenced project, so each function restores its own packages before
+                         publishing (an outer -restore would only restore this traversal project). -->
+                    <MSBuild
+                      Projects="@(FunctionProject)"
+                      Targets="Restore;Publish"
+                      BuildInParallel="true"
+                      Properties="Configuration=Release;RuntimeIdentifier=linux-x64;SelfContained=false;PublishDir=bin\publish\" />
+                  </Target>
+                </Project>
+                """;
+
+            var traversalPath = Path.Combine(Path.GetTempPath(), $"durable-integ-publish-all-{Guid.NewGuid():N}.proj");
+            await File.WriteAllTextAsync(traversalPath, traversalProject);
             try
             {
-                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                // -maxcpucount lets MSBuild use multiple nodes for the parallel publishes.
+                await RunProcess("dotnet",
+                    $"build \"{traversalPath}\" -t:PublishAll -maxcpucount",
+                    testFunctionsRoot);
             }
-            catch (IOException)
+            finally
             {
-                if (DateTime.UtcNow >= deadline)
-                    throw new TimeoutException($"Timed out waiting for build lock '{lockPath}' after {timeout.TotalSeconds:F0}s");
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                try { File.Delete(traversalPath); } catch { /* best effort */ }
             }
+
+            _prePublished = true;
+        }
+        finally
+        {
+            PrePublishGate.Release();
         }
     }
 
@@ -742,64 +789,9 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             catch (Exception ex) { _output.WriteLine($"Cleanup error (external function): {ex.Message}"); }
         }
 
-        if (_roleArn != null)
-        {
-            // Detach each policy independently — if one detach fails (e.g., the
-            // policy was never attached because init bailed out early) we still
-            // want to attempt the others and the final DeleteRole.
-            await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
-            await TryDetachManaged(_roleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy");
-
-            // Inline policies must be deleted (not detached) before DeleteRole succeeds.
-            foreach (var inline in _inlinePolicyNames)
-            {
-                await TryDeleteInline(_roleName, inline);
-            }
-
-            try
-            {
-                await _iamClient.DeleteRoleAsync(new DeleteRoleRequest { RoleName = _roleName });
-            }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteRole): {ex.Message}"); }
-        }
-
-        if (_externalRoleArn != null)
-        {
-            await TryDetachManaged(_externalRoleName, "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole");
-            await TryDeleteInline(_externalRoleName, "SendDurableExecutionCallback");
-            try
-            {
-                await _iamClient.DeleteRoleAsync(new DeleteRoleRequest { RoleName = _externalRoleName });
-            }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteRole external): {ex.Message}"); }
-        }
-
-        async Task TryDetachManaged(string roleName, string policyArn)
-        {
-            try
-            {
-                await _iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
-                {
-                    RoleName = roleName,
-                    PolicyArn = policyArn
-                });
-            }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM Detach {policyArn}): {ex.Message}"); }
-        }
-
-        async Task TryDeleteInline(string roleName, string policyName)
-        {
-            try
-            {
-                await _iamClient.DeleteRolePolicyAsync(new DeleteRolePolicyRequest
-                {
-                    RoleName = roleName,
-                    PolicyName = policyName
-                });
-            }
-            catch (NoSuchEntityException) { /* policy was never attached — fine */ }
-            catch (Exception ex) { _output.WriteLine($"Cleanup error (IAM DeleteInline {policyName}): {ex.Message}"); }
-        }
+        // The shared IAM role is intentionally NOT deleted here — it is reused by every test and
+        // across runs. Deleting/recreating it per test is exactly what burst-throttled IAM. It is a
+        // single stable role (durable-integ-shared-execution-role) that the test account retains.
     }
 
     public static string FindTestFunctionDir(string functionDirName)
