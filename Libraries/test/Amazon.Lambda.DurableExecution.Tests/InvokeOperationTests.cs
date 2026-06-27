@@ -74,7 +74,7 @@ public class InvokeOperationTests
             payload: "x",
             name: "noversion");
 
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
 
@@ -100,7 +100,7 @@ public class InvokeOperationTests
 
         // Service-side suspend mechanics: TerminationManager fires before the
         // user task completes; the task itself never resolves on the fresh path.
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
 
@@ -130,7 +130,7 @@ public class InvokeOperationTests
 
         var task = context.InvokeAsync<string, string>(FunctionArn, "payload", name: "no_tenant");
 
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
 
@@ -154,7 +154,7 @@ public class InvokeOperationTests
         var (context, recorder, tm, _) = CreateContext();
 
         var task = context.InvokeAsync<string, string>(FunctionArn, "x", name: "sync_flush");
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
@@ -350,7 +350,7 @@ public class InvokeOperationTests
         });
 
         var task = context.InvokeAsync<string, string>(FunctionArn, "x", name: "still_running");
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
@@ -377,7 +377,7 @@ public class InvokeOperationTests
         });
 
         var task = context.InvokeAsync<string, string>(FunctionArn, "x", name: "pending");
-        await Task.Delay(20);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
