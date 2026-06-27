@@ -42,7 +42,32 @@ try
     $json =  Get-Content .\aws-lambda-tools-defaults.json | Out-String | ConvertFrom-Json
     $region = $json.region
 
-    dotnet tool install -g Amazon.Lambda.Tools
+    # Install Amazon.Lambda.Tools idempotently. The integration test projects deploy in parallel,
+    # so several DeploymentScript.ps1 processes may run "dotnet tool install -g" at the same time and
+    # collide on the global tool store ("a file or directory with the same name already exists").
+    # Skip if already present, and tolerate the concurrent-install race by treating an
+    # already-installed/already-exists result as success, with a short retry for the transient case.
+    if (dotnet tool list -g | Select-String -SimpleMatch 'amazon.lambda.tools')
+    {
+        Write-Host "Amazon.Lambda.Tools already installed."
+    }
+    else
+    {
+        for ($i = 1; $i -le 5; $i++)
+        {
+            $output = dotnet tool install -g Amazon.Lambda.Tools 2>&1 | Out-String
+            Write-Host $output
+            if ($LASTEXITCODE -eq 0 -or $output -match 'already installed' -or $output -match 'already exists')
+            {
+                break
+            }
+            if ($i -eq 5)
+            {
+                throw "Failed to install Amazon.Lambda.Tools after $i attempts."
+            }
+            Start-Sleep -Seconds ($i * 3)
+        }
+    }
     Write-Host "Creating S3 Bucket $identifier"
 
     if(![string]::IsNullOrEmpty($region))

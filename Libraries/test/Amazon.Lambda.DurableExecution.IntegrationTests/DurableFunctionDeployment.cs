@@ -662,13 +662,22 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
         if (!Directory.Exists(publishDir))
             throw new DirectoryNotFoundException($"Expected published output at '{publishDir}' but it does not exist.");
 
-        // Zip the publish output. On Linux (CI) ZipFile preserves the bootstrap exec bit;
-        // on Windows the managed runtime tolerates the missing bit.
-        var zipPath = Path.Combine(testFunctionDir, "bin", "function.zip");
-        if (File.Exists(zipPath)) File.Delete(zipPath);
-        ZipFile.CreateFromDirectory(publishDir, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false);
-
-        return await File.ReadAllBytesAsync(zipPath);
+        // Zip the publish output to a UNIQUE temp path. A given function (e.g. ApproverFunction) is
+        // the external function for more than one test, so multiple parallel tests zip the same
+        // published output at once — writing to a shared bin/function.zip raced ("file is being used
+        // by another process"). The publish output itself is read-only and shared safely; only the
+        // zip destination needs to be per-call. On Linux (CI) ZipFile preserves the bootstrap exec
+        // bit; on Windows the managed runtime tolerates the missing bit.
+        var zipPath = Path.Combine(Path.GetTempPath(), $"durable-integ-fn-{Guid.NewGuid():N}.zip");
+        try
+        {
+            ZipFile.CreateFromDirectory(publishDir, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false);
+            return await File.ReadAllBytesAsync(zipPath);
+        }
+        finally
+        {
+            try { File.Delete(zipPath); } catch { /* best effort */ }
+        }
     }
 
     /// <summary>
