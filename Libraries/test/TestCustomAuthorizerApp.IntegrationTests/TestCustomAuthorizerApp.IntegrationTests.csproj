@@ -13,6 +13,9 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="xunit" Version="2.9.3" />
+        <!-- Shares one deployed-stack fixture across the whole assembly (IAssemblyFixture) so the
+             test classes can run in parallel instead of being serialized in a single collection. -->
+        <PackageReference Include="Xunit.Extensions.AssemblyFixture" Version="2.6.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -12,8 +13,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// These tests verify that the source-generated Lambda handler correctly extracts
 /// values from the authorizer context using [FromCustomAuthorizer] attributes.
 /// </summary>
-[Collection("Integration Tests")]
-public class HttpApiV2Tests
+public class HttpApiV2Tests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 

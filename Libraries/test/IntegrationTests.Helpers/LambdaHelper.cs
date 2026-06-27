@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Amazon.CloudFormation;
+using Amazon.CloudFormation.Model;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
 
@@ -10,31 +13,39 @@ namespace IntegrationTests.Helpers
 {
     public class LambdaHelper
     {
-        private readonly IAmazonLambda _lambdaClient;
+        // Resource type that SAM AWS::Serverless::Function resources are transformed into in the deployed stack.
+        private const string LambdaFunctionResourceType = "AWS::Lambda::Function";
 
-        public LambdaHelper(IAmazonLambda lambdaClient)
+        private readonly IAmazonLambda _lambdaClient;
+        private readonly IAmazonCloudFormation _cloudFormationClient;
+
+        public LambdaHelper(IAmazonLambda lambdaClient, IAmazonCloudFormation cloudFormationClient)
         {
             _lambdaClient = lambdaClient;
+            _cloudFormationClient = cloudFormationClient;
         }
 
+        /// <summary>
+        /// Returns the Lambda functions belonging to a CloudFormation stack by listing the stack's
+        /// resources directly. This is O(stack size) and independent of how many functions exist in
+        /// the account, unlike scanning every function and reading its tags one at a time, which is
+        /// slow and prone to throttling in a shared test account.
+        /// </summary>
         public async Task<List<LambdaFunction>> FilterByCloudFormationStackAsync(string stackName)
         {
-            const string stackNameKey = "aws:cloudformation:stack-name";
-            const string logicalIdKey = "aws:cloudformation:logical-id";
             var lambdaFunctions = new List<LambdaFunction>();
-            var paginator = _lambdaClient.Paginators.ListFunctions(new ListFunctionsRequest());
+            var paginator = _cloudFormationClient.Paginators.ListStackResources(
+                new ListStackResourcesRequest { StackName = stackName });
 
-            await foreach (var function in paginator.Functions)
+            await foreach (var resource in paginator.StackResourceSummaries)
             {
-                var tags = (await _lambdaClient.ListTagsAsync(new ListTagsRequest { Resource = function.FunctionArn })).Tags;
-                if (tags.ContainsKey(stackNameKey) && string.Equals(tags[stackNameKey], stackName))
+                if (string.Equals(resource.ResourceType, LambdaFunctionResourceType))
                 {
-                    var lambdaFunction = new LambdaFunction
+                    lambdaFunctions.Add(new LambdaFunction
                     {
-                        LogicalId = tags[logicalIdKey],
-                        Name = function.FunctionName
-                    };
-                    lambdaFunctions.Add(lambdaFunction);
+                        LogicalId = resource.LogicalResourceId,
+                        Name = resource.PhysicalResourceId
+                    });
                 }
             }
 

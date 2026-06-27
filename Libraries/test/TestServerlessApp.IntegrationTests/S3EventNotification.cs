@@ -5,11 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class S3EventNotification
+    public class S3EventNotification : IAssemblyFixture<IntegrationTestContextFixture>
     {
         private readonly IntegrationTestContextFixture _fixture;
 

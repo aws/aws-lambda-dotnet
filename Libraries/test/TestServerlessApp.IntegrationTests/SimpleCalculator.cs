@@ -4,11 +4,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class SimpleCalculator
+    public class SimpleCalculator : IAssemblyFixture<IntegrationTestContextFixture>
     {
         private readonly IntegrationTestContextFixture _fixture;
 

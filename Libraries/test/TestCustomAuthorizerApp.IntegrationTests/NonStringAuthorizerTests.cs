@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -13,8 +14,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// These tests exercise the type conversion logic in the .tt template's generated code
 /// using Convert.ChangeType() to convert authorizer context values to the parameter types.
 /// </summary>
-[Collection("Integration Tests")]
-public class NonStringAuthorizerTests
+public class NonStringAuthorizerTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 

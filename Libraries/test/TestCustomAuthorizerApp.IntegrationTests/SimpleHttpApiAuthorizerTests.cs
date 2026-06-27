@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -13,8 +14,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// The authorizer under test is <see cref="TestCustomAuthorizerApp.AuthorizerFunction.SimpleHttpApiAuthorize"/>
 /// which returns IAuthorizerResult (AuthorizerResults.Allow()/Deny()) instead of raw API Gateway types.
 /// </summary>
-[Collection("Integration Tests")]
-public class SimpleHttpApiAuthorizerTests
+public class SimpleHttpApiAuthorizerTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 

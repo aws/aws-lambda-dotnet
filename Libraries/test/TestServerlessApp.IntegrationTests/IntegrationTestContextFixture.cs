@@ -42,10 +42,11 @@ namespace TestServerlessApp.IntegrationTests
 
         public IntegrationTestContextFixture()
         {
-            _cloudFormationHelper = new CloudFormationHelper(new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2));
+            var cloudFormationClient = new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2);
+            _cloudFormationHelper = new CloudFormationHelper(cloudFormationClient);
             _s3Helper = new S3Helper(new AmazonS3Client(Amazon.RegionEndpoint.USWest2));
             S3HelperInstance = _s3Helper;
-            LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2));
+            LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2), cloudFormationClient);
             CloudWatchHelper = new CloudWatchHelper(new AmazonCloudWatchLogsClient(Amazon.RegionEndpoint.USWest2));
             HttpClient = new HttpClient();
         }

@@ -1,13 +1,13 @@
 using System.Net;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
 /// <summary>
 /// Tests for the health check endpoint which does not require authorization.
 /// </summary>
-[Collection("Integration Tests")]
-public class HealthCheckTests
+public class HealthCheckTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 

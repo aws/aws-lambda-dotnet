@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -14,8 +15,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// which returns IAuthorizerResult (AuthorizerResults.Allow()/Deny()) instead of raw API Gateway types.
 /// The generated handler serializes this to an IAM policy document with the correct MethodArn.
 /// </summary>
-[Collection("Integration Tests")]
-public class SimpleRestApiAuthorizerTests
+public class SimpleRestApiAuthorizerTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 
