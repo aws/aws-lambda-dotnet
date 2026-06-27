@@ -37,8 +37,22 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private static readonly RegionEndpoint DeploymentRegion = RegionEndpoint.USEast1;
 
     private readonly ITestOutputHelper _output;
-    private readonly IAmazonLambda _lambdaClient;
-    private readonly IAmazonIdentityManagementService _iamClient;
+
+    // Clients are shared (static) across all deployments. Each deployment used to construct its
+    // own clients, which defeated adaptive retry: its congestion controller / rate limiter is
+    // per-client, so N independent clients each believed they had capacity, all fired at once, and
+    // collectively blew Lambda's account-wide control-plane limits ("capacity could not be obtained
+    // ... insufficient capacity"). A single shared client per service lets adaptive retry actually
+    // coordinate backoff across the parallel deployments.
+    private static readonly IAmazonLambda _lambdaClient = new AmazonLambdaClient(BuildClientConfig<AmazonLambdaConfig>());
+    private static readonly IAmazonIdentityManagementService _iamClient =
+        new AmazonIdentityManagementServiceClient(BuildClientConfig<AmazonIdentityManagementServiceConfig>());
+
+    // Lambda control-plane calls (CreateFunction/DeleteFunction/GetFunctionConfiguration) are
+    // account-rate-limited and are the next bottleneck once IAM is no longer per-test. Cap how many
+    // run concurrently across the whole suite so the parallel deployments don't collectively exceed
+    // Lambda's limits; data-plane calls (Invoke, durable-execution reads) are not gated.
+    private static readonly SemaphoreSlim LambdaControlPlaneGate = new(2, 2);
 
     private readonly string _functionName;
     private string? _roleArn;
@@ -94,13 +108,6 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
     private DurableFunctionDeployment(ITestOutputHelper output, string suffix)
     {
         _output = output;
-        // The integration suite runs its test classes in parallel, so several deployments hit IAM
-        // (CreateRole/AttachRolePolicy/DeleteRole) at once. IAM has low request-rate limits and
-        // returns "Rate exceeded" under that contention. Adaptive retry adds client-side rate
-        // limiting and backs off on throttling, and a higher retry count rides out longer throttle
-        // windows, instead of failing the test on the first throttle.
-        _lambdaClient = new AmazonLambdaClient(BuildClientConfig<AmazonLambdaConfig>());
-        _iamClient = new AmazonIdentityManagementServiceClient(BuildClientConfig<AmazonIdentityManagementServiceConfig>());
 
         // Truncate the GUID (not the suffix) so CloudTrail entries stay readable.
         // Keep the GUID short enough that the total stays well under 40 chars even for long suffixes.
@@ -354,7 +361,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             var extZipBytes = await BuildAndZipAsync(externalFunctionDir);
 
             _output.WriteLine($"Creating external Lambda function: {_externalFunctionName}");
-            await _lambdaClient.CreateFunctionAsync(new CreateFunctionRequest
+            await RunControlPlaneAsync(() => _lambdaClient.CreateFunctionAsync(new CreateFunctionRequest
             {
                 FunctionName = _externalFunctionName,
                 Runtime = ManagedRuntime,
@@ -365,7 +372,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
                 MemorySize = 256,
                 LoggingConfig = new LoggingConfig { LogFormat = LogFormat.JSON }
                 // No DurableConfig — this is a plain function.
-            });
+            }));
             _externalFunctionCreated = true;
 
             _output.WriteLine("Waiting for external function to become Active...");
@@ -423,7 +430,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             };
         }
 
-        var createFunctionResponse = await _lambdaClient.CreateFunctionAsync(createFunctionRequest);
+        var createFunctionResponse = await RunControlPlaneAsync(() => _lambdaClient.CreateFunctionAsync(createFunctionRequest));
         _functionCreated = true;
         _functionArn = createFunctionResponse.FunctionArn;
 
@@ -604,20 +611,41 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
 
     private async Task WaitForFunctionActive(string functionName)
     {
-        for (int i = 0; i < 60; i++)
+        for (int i = 0; i < 40; i++)
         {
             try
             {
-                var config = await _lambdaClient.GetFunctionConfigurationAsync(
-                    new GetFunctionConfigurationRequest { FunctionName = functionName });
+                // Gate each poll call: GetFunctionConfiguration is control-plane and rate-limited,
+                // and all parallel deployments poll at once.
+                var config = await RunControlPlaneAsync(() => _lambdaClient.GetFunctionConfigurationAsync(
+                    new GetFunctionConfigurationRequest { FunctionName = functionName }));
                 if (config.State == State.Active) return;
                 if (config.State == State.Failed)
                     throw new Exception($"Function '{functionName}' creation failed: {config.StateReasonCode} - {config.StateReason}");
             }
             catch (ResourceNotFoundException) { }
-            await Task.Delay(TimeSpan.FromSeconds(2));
+            await Task.Delay(TimeSpan.FromSeconds(3));
         }
         throw new TimeoutException($"Function '{functionName}' did not become Active within 120 seconds");
+    }
+
+    /// <summary>
+    /// Runs a Lambda control-plane operation under <see cref="LambdaControlPlaneGate"/> so the
+    /// suite's parallel deployments don't collectively exceed Lambda's account-wide
+    /// control-plane request rate. Adaptive retry on the shared client handles brief throttles;
+    /// this gate keeps the offered load low enough that retry doesn't exhaust its capacity.
+    /// </summary>
+    private static async Task<T> RunControlPlaneAsync<T>(Func<Task<T>> operation)
+    {
+        await LambdaControlPlaneGate.WaitAsync();
+        try
+        {
+            return await operation();
+        }
+        finally
+        {
+            LambdaControlPlaneGate.Release();
+        }
     }
 
     /// <summary>
@@ -774,7 +802,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             try
             {
                 _output.WriteLine($"Deleting function: {_functionName}");
-                await _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _functionName });
+                await RunControlPlaneAsync(() => _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _functionName }));
             }
             catch (Exception ex) { _output.WriteLine($"Cleanup error (function): {ex.Message}"); }
         }
@@ -784,7 +812,7 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
             try
             {
                 _output.WriteLine($"Deleting external function: {_externalFunctionName}");
-                await _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _externalFunctionName });
+                await RunControlPlaneAsync(() => _lambdaClient.DeleteFunctionAsync(new DeleteFunctionRequest { FunctionName = _externalFunctionName }));
             }
             catch (Exception ex) { _output.WriteLine($"Cleanup error (external function): {ex.Message}"); }
         }
