@@ -1,3 +1,13 @@
+## Release 2026-04-08
+
+### Amazon.Lambda.Annotations (1.11.0)
+* Added [ALBApi] attribute for configuring Lambda functions as targets behind an Application Load Balancer
+
+## Release 2026-03-27
+
+### Amazon.Lambda.Annotations (1.10.0)
+* Developers can now define Lambda Authorizers and protect API endpoints entirely through C# attributes, eliminating the need for manual CloudFormation configuration.
+
 ## Release 2026-03-19
 
 ### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.2)

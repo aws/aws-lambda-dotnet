@@ -26,6 +26,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     events.Add(EventType.SQS);
                 }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAuthorizerAttribute
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAuthorizerAttribute)
+                {
+                    events.Add(EventType.Authorizer);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.ALBApiAttribute)
+                {
+                    events.Add(EventType.ALB);
+                }
             }
 
             return events;

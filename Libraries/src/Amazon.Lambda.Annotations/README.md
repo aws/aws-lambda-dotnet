@@ -19,6 +19,12 @@ Topics:
   - [Amazon API Gateway example](#amazon-api-gateway-example)
   - [Amazon S3 example](#amazon-s3-example)
   - [SQS Event Example](#sqs-event-example)
+  - [Application Load Balancer (ALB) Example](#application-load-balancer-alb-example)
+  - [Custom Lambda Authorizer Example](#custom-lambda-authorizer-example)
+    - [HTTP API Authorizer](#http-api-authorizer)
+    - [REST API Authorizer](#rest-api-authorizer)
+    - [Authorizer Attribute Properties](#authorizer-attribute-properties)
+    - [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult)
   - [Getting build information](#getting-build-information)
   - [Lambda .NET Attributes Reference](#lambda-net-attributes-reference)
     - [Event Attributes](#event-attributes)
@@ -847,6 +853,535 @@ The following SQS event source mapping will be generated for the `SQSMessageHand
     }
 ```
 
+## Application Load Balancer (ALB) Example
+
+This example shows how to use the `ALBApi` attribute to configure a Lambda function as a target behind an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html). Unlike API Gateway event attributes that map to SAM event types, the ALB integration generates standalone CloudFormation resources — a `TargetGroup`, a `ListenerRule`, and a `Lambda::Permission` — to wire the Lambda function to an existing ALB listener.
+
+The `ALBApi` attribute contains the following properties:
+
+| Property | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `ListenerArn` | `string` | Yes | — | The ARN of the existing ALB listener, or a `@ResourceName` reference to a listener resource defined in the CloudFormation template. |
+| `PathPattern` | `string` | Yes | — | The path pattern condition for the listener rule (e.g., `"/api/orders/*"`). Supports wildcard characters `*` and `?`. |
+| `Priority` | `int` | Yes | — | The listener rule priority (1–50000). Lower numbers are evaluated first. Must be unique per listener. |
+| `MultiValueHeaders` | `bool` | No | `false` | When `true`, enables multi-value headers on the target group. The function should then use `MultiValueHeaders` and `MultiValueQueryStringParameters` on request/response objects. |
+| `HostHeader` | `string` | No | `null` | Optional host header condition (e.g., `"api.example.com"`). |
+| `HttpMethod` | `string` | No | `null` | Optional HTTP method condition (e.g., `"GET"`, `"POST"`). Leave null to match all methods. |
+| `ResourceName` | `string` | No | `"{LambdaResourceName}ALB"` | Custom CloudFormation resource name prefix for the generated resources. Must be alphanumeric. |
+
+The `ALBApi` attribute must be applied to a Lambda method along with the `LambdaFunction` attribute.
+
+The Lambda method must conform to the following rules when tagged with the `ALBApi` attribute:
+
+1. It must have at least 1 argument and can have at most 2 arguments.
+   - The first argument is required and must be of type `ApplicationLoadBalancerRequest` defined in the [Amazon.Lambda.ApplicationLoadBalancerEvents](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.ApplicationLoadBalancerEvents) package.
+   - The second argument is optional and must be of type `ILambdaContext`.
+2. The method return type must be `ApplicationLoadBalancerResponse` or `Task<ApplicationLoadBalancerResponse>`.
+
+### Prerequisites
+
+Your CloudFormation template must include an existing ALB and listener. The `ALBApi` attribute references the listener — it does **not** create the ALB or listener for you. You can define them in the same template or reference one that already exists via its ARN.
+
+### Basic Example
+
+This example creates a simple hello endpoint behind an ALB listener that is defined elsewhere in the template:
+
+```csharp
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.Core;
+using System.Collections.Generic;
+
+public class ALBFunctions
+{
+    [LambdaFunction(ResourceName = "ALBHello", MemorySize = 256, Timeout = 15)]
+    [ALBApi("@ALBTestListener", "/hello", 1)]
+    public ApplicationLoadBalancerResponse Hello(ApplicationLoadBalancerRequest request, ILambdaContext context)
+    {
+        context.Logger.LogInformation($"Hello endpoint hit. Path: {request.Path}");
+
+        return new ApplicationLoadBalancerResponse
+        {
+            StatusCode = 200,
+            StatusDescription = "200 OK",
+            IsBase64Encoded = false,
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
+            Body = $"{{\"message\": \"Hello from ALB Lambda!\", \"path\": \"{request.Path}\"}}"
+        };
+    }
+}
+```
+
+In the example above, `@ALBTestListener` references a listener resource called `ALBTestListener` defined in the same CloudFormation template. The `@` prefix tells the source generator to use a `Ref` intrinsic function instead of a literal ARN string.
+
+### Using a Literal Listener ARN
+
+If you want to reference an ALB listener in a different stack or one that was created outside of CloudFormation, use the full ARN:
+
+```csharp
+[LambdaFunction(ResourceName = "ALBHandler")]
+[ALBApi("arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc123/def456", "/api/*", 10)]
+public ApplicationLoadBalancerResponse HandleRequest(ApplicationLoadBalancerRequest request, ILambdaContext context)
+{
+    return new ApplicationLoadBalancerResponse
+    {
+        StatusCode = 200,
+        Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } },
+        Body = "{\"status\": \"ok\"}"
+    };
+}
+```
+
+### Advanced Example with All Options
+
+This example shows all optional properties including host header filtering, HTTP method filtering, multi-value headers, and a custom resource name:
+
+```csharp
+[LambdaFunction(ResourceName = "ALBOrders")]
+[ALBApi("@MyListener", "/api/orders/*", 5,
+    MultiValueHeaders = true,
+    HostHeader = "api.example.com",
+    HttpMethod = "POST",
+    ResourceName = "OrdersALB")]
+public ApplicationLoadBalancerResponse CreateOrder(ApplicationLoadBalancerRequest request, ILambdaContext context)
+{
+    // When MultiValueHeaders is true, use MultiValueHeaders and MultiValueQueryStringParameters
+    var contentTypes = request.MultiValueHeaders?["content-type"];
+
+    return new ApplicationLoadBalancerResponse
+    {
+        StatusCode = 201,
+        StatusDescription = "201 Created",
+        MultiValueHeaders = new Dictionary<string, IList<string>>
+        {
+            { "Content-Type", new List<string> { "application/json" } },
+            { "X-Custom-Header", new List<string> { "value1", "value2" } }
+        },
+        Body = "{\"orderId\": \"12345\"}"
+    };
+}
+```
+
+### Generated CloudFormation Resources
+
+For each `ALBApi` attribute, the source generator creates three CloudFormation resources. Here is an example of the generated template for the basic hello endpoint:
+
+```json
+"ALBHello": {
+  "Type": "AWS::Serverless::Function",
+  "Metadata": {
+    "Tool": "Amazon.Lambda.Annotations"
+  },
+  "Properties": {
+    "Runtime": "dotnet8",
+    "CodeUri": ".",
+    "MemorySize": 512,
+    "Timeout": 15,
+    "Policies": ["AWSLambdaBasicExecutionRole"],
+    "PackageType": "Zip",
+    "Handler": "MyProject::MyNamespace.ALBFunctions_Hello_Generated::Hello"
+  }
+},
+"ALBHelloALBPermission": {
+  "Type": "AWS::Lambda::Permission",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "Properties": {
+    "FunctionName": { "Fn::GetAtt": ["ALBHello", "Arn"] },
+    "Action": "lambda:InvokeFunction",
+    "Principal": "elasticloadbalancing.amazonaws.com"
+  }
+},
+"ALBHelloALBTargetGroup": {
+  "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "DependsOn": "ALBHelloALBPermission",
+  "Properties": {
+    "TargetType": "lambda",
+    "Targets": [
+      { "Id": { "Fn::GetAtt": ["ALBHello", "Arn"] } }
+    ]
+  }
+},
+"ALBHelloALBListenerRule": {
+  "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+  "Metadata": { "Tool": "Amazon.Lambda.Annotations" },
+  "Properties": {
+    "ListenerArn": { "Ref": "ALBTestListener" },
+    "Priority": 1,
+    "Conditions": [
+      { "Field": "path-pattern", "Values": ["/hello"] }
+    ],
+    "Actions": [
+      { "Type": "forward", "TargetGroupArn": { "Ref": "ALBHelloALBTargetGroup" } }
+    ]
+  }
+}
+```
+
+When `MultiValueHeaders` is set to `true`, the target group will include a `TargetGroupAttributes` section:
+
+```json
+"TargetGroupAttributes": [
+  { "Key": "lambda.multi_value_headers.enabled", "Value": "true" }
+]
+```
+
+When `HostHeader` or `HttpMethod` are specified, additional conditions are added to the listener rule:
+
+```json
+"Conditions": [
+  { "Field": "path-pattern", "Values": ["/api/orders/*"] },
+  { "Field": "host-header", "Values": ["api.example.com"] },
+  { "Field": "http-request-method", "Values": ["POST"] }
+]
+```
+
+### Setting Up the ALB in the Template
+
+The `ALBApi` attribute requires an existing ALB listener. Here is a minimal example of the infrastructure resources you would add to your `serverless.template`:
+
+```json
+{
+  "MyVPC": { "Type": "AWS::EC2::VPC", "Properties": { "CidrBlock": "10.0.0.0/16" } },
+  "MySubnet1": { "Type": "AWS::EC2::Subnet", "Properties": { "VpcId": { "Ref": "MyVPC" }, "CidrBlock": "10.0.1.0/24" } },
+  "MySubnet2": { "Type": "AWS::EC2::Subnet", "Properties": { "VpcId": { "Ref": "MyVPC" }, "CidrBlock": "10.0.2.0/24" } },
+  "MySecurityGroup": { "Type": "AWS::EC2::SecurityGroup", "Properties": { "GroupDescription": "ALB SG", "VpcId": { "Ref": "MyVPC" } } },
+  "MyALB": {
+    "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+    "Properties": {
+      "Type": "application",
+      "Scheme": "internet-facing",
+      "Subnets": [{ "Ref": "MySubnet1" }, { "Ref": "MySubnet2" }],
+      "SecurityGroups": [{ "Ref": "MySecurityGroup" }]
+    }
+  },
+  "MyListener": {
+    "Type": "AWS::ElasticLoadBalancingV2::Listener",
+    "Properties": {
+      "LoadBalancerArn": { "Ref": "MyALB" },
+      "Port": 80,
+      "Protocol": "HTTP",
+      "DefaultActions": [{ "Type": "fixed-response", "FixedResponseConfig": { "StatusCode": "404" } }]
+    }
+  }
+}
+```
+
+Then your Lambda function references `@MyListener` in the `ALBApi` attribute.
+
+## Custom Lambda Authorizer Example
+
+Lambda Annotations supports defining custom Lambda authorizers using attributes. Custom authorizers let you control access to your API Gateway endpoints by running a Lambda function that validates tokens or request parameters before the target function is invoked. The source generator automatically wires up the authorizer resources and references in the CloudFormation template.
+
+Two authorizer attributes are available:
+* **`HttpApiAuthorizer`** — for HTTP API (API Gateway V2) endpoints
+* **`RestApiAuthorizer`** — for REST API (API Gateway V1) endpoints
+
+### HTTP API Authorizer
+
+To create an HTTP API authorizer, decorate a Lambda function with the `[HttpApiAuthorizer]` attribute. The authorizer name is automatically derived from the method name, so other functions can reference it using `nameof()` for compile-time safety.
+
+**Step 1: Define the authorizer function**
+
+The authorizer function receives an `APIGatewayCustomAuthorizerV2Request` and returns an `APIGatewayCustomAuthorizerV2SimpleResponse` (when `EnableSimpleResponses` is true, which is the default). You can set context values that downstream functions can access via `[FromCustomAuthorizer]`.
+
+```csharp
+[LambdaFunction(ResourceName = "HttpApiAuthorizer", PackageType = LambdaPackageType.Image)]
+[HttpApiAuthorizer]
+public APIGatewayCustomAuthorizerV2SimpleResponse AuthorizeHttpApi(
+    APIGatewayCustomAuthorizerV2Request request,
+    ILambdaContext context)
+{
+    var token = request.Headers?.GetValueOrDefault("authorization", "");
+
+    if (IsValidToken(token))
+    {
+        return new APIGatewayCustomAuthorizerV2SimpleResponse
+        {
+            IsAuthorized = true,
+            Context = new Dictionary<string, object>
+            {
+                { "userId", "user-123" },
+                { "email", "user@example.com" },
+                { "role", "admin" }
+            }
+        };
+    }
+
+    return new APIGatewayCustomAuthorizerV2SimpleResponse { IsAuthorized = false };
+}
+```
+
+**Step 2: Protect an endpoint with the authorizer**
+
+Reference the authorizer using `nameof()` in the `Authorizer` property of `[HttpApi]` for compile-time safety. If the authorizer method is renamed, both references update automatically. Use `[FromCustomAuthorizer]` on method parameters to automatically extract values from the authorizer context.
+
+```csharp
+[LambdaFunction(ResourceName = "ProtectedHttpApiFunction", PackageType = LambdaPackageType.Image)]
+[HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = nameof(AuthorizeHttpApi))]
+public object GetProtectedResource(
+    [FromCustomAuthorizer(Name = "userId")] string userId,
+    [FromCustomAuthorizer(Name = "email")] string email)
+{
+    return new { UserId = userId, Email = email, Message = "This is a protected resource" };
+}
+```
+
+Multiple endpoints can share the same authorizer:
+
+```csharp
+[LambdaFunction(ResourceName = "AdminHttpApiFunction", PackageType = LambdaPackageType.Image)]
+[HttpApi(LambdaHttpMethod.Get, "/api/admin", Authorizer = nameof(AuthorizeHttpApi))]
+public object AdminEndpoint(
+    [FromCustomAuthorizer(Name = "userId")] string userId,
+    [FromCustomAuthorizer(Name = "role")] string role)
+{
+    return new { Message = $"Hello admin {userId}!", Role = role };
+}
+```
+
+Endpoints without the `Authorizer` property remain public:
+
+```csharp
+[LambdaFunction(ResourceName = "PublicHttpApiFunction", PackageType = LambdaPackageType.Image)]
+[HttpApi(LambdaHttpMethod.Get, "/api/public")]
+public string PublicEndpoint()
+{
+    return "This is a public endpoint";
+}
+```
+
+The source generator will produce CloudFormation that includes an `Auth` section on the `AnnotationsHttpApi` resource with the authorizer configuration, and each protected function's event will reference the authorizer by name.
+
+### REST API Authorizer
+
+REST API authorizers work similarly but use `[RestApiAuthorizer]` and `[RestApi]`. REST API authorizers support two types:
+* **`RestApiAuthorizerType.Token`** — receives just the authorization token (default)
+* **`RestApiAuthorizerType.Request`** — receives the full request context
+
+**Define a token-based REST API authorizer:**
+
+```csharp
+[LambdaFunction(ResourceName = "RestApiAuthorizer", PackageType = LambdaPackageType.Image)]
+[RestApiAuthorizer(Type = RestApiAuthorizerType.Token)]
+public APIGatewayCustomAuthorizerResponse AuthorizeRestApi(
+    APIGatewayCustomAuthorizerRequest request,
+    ILambdaContext context)
+{
+    var token = request.AuthorizationToken;
+
+    if (IsValidToken(token))
+    {
+        return new APIGatewayCustomAuthorizerResponse
+        {
+            PrincipalID = "user-123",
+            PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+            {
+                Version = "2012-10-17",
+                Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                {
+                    new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                    {
+                        Effect = "Allow",
+                        Action = new HashSet<string> { "execute-api:Invoke" },
+                        Resource = new HashSet<string> { request.MethodArn }
+                    }
+                }
+            },
+            Context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["userId"] = "user-123",
+                ["email"] = "user@example.com"
+            }
+        };
+    }
+
+    return new APIGatewayCustomAuthorizerResponse
+    {
+        PrincipalID = "anonymous",
+        PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+        {
+            Version = "2012-10-17",
+            Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+            {
+                new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                {
+                    Effect = "Deny",
+                    Action = new HashSet<string> { "execute-api:Invoke" },
+                    Resource = new HashSet<string> { request.MethodArn }
+                }
+            }
+        }
+    };
+}
+```
+
+**Protect a REST API endpoint:**
+
+```csharp
+[LambdaFunction(ResourceName = "ProtectedRestApiFunction", PackageType = LambdaPackageType.Image)]
+[RestApi(LambdaHttpMethod.Get, "/api/rest/protected", Authorizer = nameof(AuthorizeRestApi))]
+public object GetRestProtectedResource(
+    [FromCustomAuthorizer(Name = "userId")] string userId)
+{
+    return new { UserId = userId, Source = "REST API" };
+}
+```
+
+### Authorizer Attribute Properties
+
+**`HttpApiAuthorizerAttribute`** properties:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `IdentityHeader` | `string` | `"Authorization"` | Header used as the identity source. Translated to `$request.header.{value}` in CloudFormation. |
+| `EnableSimpleResponses` | `bool` | `true` | When `true`, use simple responses (`IsAuthorized: true/false`). When `false`, use IAM policy responses. |
+| `AuthorizerPayloadFormatVersion` | `AuthorizerPayloadFormatVersion` | `V2` | Authorizer payload format version. Valid values: `V1` (`"1.0"`) or `V2` (`"2.0"`). |
+| `ResultTtlInSeconds` | `int` | `0` | TTL in seconds for caching authorizer results. `0` = no caching. Max = `3600`. |
+
+**`RestApiAuthorizerAttribute`** properties:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `IdentityHeader` | `string` | `"Authorization"` | Header used as the identity source. Translated to `method.request.header.{value}` in CloudFormation. |
+| `Type` | `RestApiAuthorizerType` | `Token` | Type of authorizer: `Token` (receives just the token) or `Request` (receives full request context). |
+| `ResultTtlInSeconds` | `int` | `0` | TTL in seconds for caching authorizer results. `0` = no caching. Max = `3600`. |
+
+**Example with custom header and caching:**
+
+```csharp
+[LambdaFunction(ResourceName = "ApiKeyAuthorizer", PackageType = LambdaPackageType.Image)]
+[HttpApiAuthorizer(
+    IdentityHeader = "X-Api-Key",
+    ResultTtlInSeconds = 300)]
+public APIGatewayCustomAuthorizerV2SimpleResponse ValidateApiKey(
+    APIGatewayCustomAuthorizerV2Request request,
+    ILambdaContext context)
+{
+    var apiKey = request.Headers?.GetValueOrDefault("x-api-key", "");
+
+    if (!string.IsNullOrEmpty(apiKey) && apiKey.StartsWith("valid-"))
+    {
+        return new APIGatewayCustomAuthorizerV2SimpleResponse
+        {
+            IsAuthorized = true,
+            Context = new Dictionary<string, object>
+            {
+                { "clientId", "client-456" },
+                { "tier", "premium" }
+            }
+        };
+    }
+
+    return new APIGatewayCustomAuthorizerV2SimpleResponse { IsAuthorized = false };
+}
+
+[LambdaFunction(ResourceName = "ApiKeyProtectedFunction", PackageType = LambdaPackageType.Image)]
+[HttpApi(LambdaHttpMethod.Get, "/api/external", Authorizer = nameof(ValidateApiKey))]
+public object ExternalEndpoint(
+    [FromCustomAuthorizer(Name = "clientId")] string clientId,
+    [FromCustomAuthorizer(Name = "tier")] string tier)
+{
+    return new { ClientId = clientId, Tier = tier };
+}
+```
+
+### Simplified Authorizer with IAuthorizerResult
+
+As an alternative to working with raw API Gateway authorizer request and response types, authorizer functions can use `IAuthorizerResult` and the `AuthorizerResults` factory class for a simplified developer experience. This follows the same pattern as `IHttpResult`/`HttpResults` for API Gateway endpoint responses.
+
+With this pattern:
+- **`[FromHeader]`, `[FromQuery]`, and `[FromRoute]`** attributes can be used on authorizer function parameters to extract values from the authorizer request, just like they work on `[HttpApi]`/`[RestApi]` endpoint functions.
+- **`AuthorizerResults.Allow()`** and **`AuthorizerResults.Deny()`** replace manual construction of API Gateway response objects and IAM policy documents.
+- **`.WithContext(key, value)`** adds context values that downstream functions can access via `[FromCustomAuthorizer]`.
+- **`.WithPrincipalId(id)`** sets the principal ID (used by REST API and HTTP API IAM policy authorizers).
+
+The source generator automatically handles serialization to the correct API Gateway response format based on the authorizer attribute configuration.
+
+**HTTP API authorizer using IAuthorizerResult:**
+
+```csharp
+[LambdaFunction]
+[HttpApiAuthorizer(
+    EnableSimpleResponses = true,
+    AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
+public IAuthorizerResult SimpleHttpApiAuthorize(
+    [FromHeader(Name = "Authorization")] string authorization,
+    ILambdaContext context)
+{
+    if (string.IsNullOrEmpty(authorization))
+        return AuthorizerResults.Deny();
+
+    if (IsValidToken(authorization))
+    {
+        return AuthorizerResults.Allow()
+            .WithContext("userId", "user-12345")
+            .WithContext("email", "test@example.com");
+    }
+
+    return AuthorizerResults.Deny();
+}
+```
+
+**REST API authorizer using IAuthorizerResult:**
+
+For REST API authorizers, the source generator automatically constructs the IAM policy document from the `Allow()`/`Deny()` result. Use `WithPrincipalId()` to set the caller's principal ID.
+
+```csharp
+[LambdaFunction]
+[RestApiAuthorizer(
+    Type = RestApiAuthorizerType.Token,
+    IdentityHeader = "Authorization")]
+public IAuthorizerResult SimpleRestApiAuthorize(
+    [FromHeader(Name = "Authorization")] string authorization,
+    ILambdaContext context)
+{
+    if (string.IsNullOrEmpty(authorization))
+        return AuthorizerResults.Deny();
+
+    if (IsValidToken(authorization))
+    {
+        return AuthorizerResults.Allow()
+            .WithPrincipalId("user-12345")
+            .WithContext("userId", "user-12345")
+            .WithContext("email", "test@example.com");
+    }
+
+    return AuthorizerResults.Deny();
+}
+```
+
+Protected endpoints work the same way regardless of whether the authorizer uses raw types or `IAuthorizerResult`:
+
+```csharp
+[LambdaFunction]
+[HttpApi(LambdaHttpMethod.Get, "/api/user-info", Authorizer = nameof(SimpleHttpApiAuthorize))]
+public object GetUserInfo(
+    [FromCustomAuthorizer(Name = "userId")] string userId,
+    [FromCustomAuthorizer(Name = "email")] string email,
+    ILambdaContext context)
+{
+    return new { UserId = userId, Email = email };
+}
+```
+
+**`AuthorizerResults` API reference:**
+
+| Method | Description |
+|--------|-------------|
+| `AuthorizerResults.Allow()` | Creates a result that authorizes the request. |
+| `AuthorizerResults.Deny()` | Creates a result that denies the request. |
+| `.WithContext(key, value)` | Adds a context key-value pair passed to downstream functions (accessible via `[FromCustomAuthorizer]`). |
+| `.WithPrincipalId(id)` | Sets the principal ID for the caller (used by REST API and HTTP API IAM policy authorizers). |
+
+Async return types (`Task<IAuthorizerResult>`) are also supported.
+
+> **Backwards compatibility:** Both patterns — raw API Gateway types and `IAuthorizerResult` — are fully supported and can coexist in the same project. The source generator detects which pattern is used based on the return type.
+
 ## Getting build information
 
 The source generator integrates with MSBuild's compiler error and warning reporting when there are problems generating the boiler plate code. 
@@ -876,20 +1411,26 @@ Event attributes configuring the source generator for the type of event to expec
 parameter to the `LambdaFunction` must be the event object and the event source must be configured outside of the code.
 
 * RestApi
-    * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute.
+    * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute. Use the `Authorizer` property to reference a `RestApiAuthorizer` by name.
 * HttpApi
-    * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute.
+    * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute. Use the `Authorizer` property to reference an `HttpApiAuthorizer` by name.
+* HttpApiAuthorizer
+    * Marks a Lambda function as an HTTP API (API Gateway V2) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `HttpApi.Authorizer` using `nameof()` for compile-time safety.
+* RestApiAuthorizer
+    * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `RestApi.Authorizer` using `nameof()`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
 * SQSEvent
-    * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol. 
+    * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol.
+* ALBApi
+    * Configures the Lambda function to be called from an Application Load Balancer. The listener ARN (or `@ResourceName` template reference), path pattern, and priority are required. The source generator creates standalone CloudFormation resources (TargetGroup, ListenerRule, Lambda Permission) rather than SAM event types.
 
 ### Parameter Attributes
 
 * FromHeader
-    * Map method parameter to HTTP header value
+    * Map method parameter to HTTP header value. Also supported on authorizer functions (see [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult)).
 * FromQuery
-    * Map method parameter to query string parameter
+    * Map method parameter to query string parameter. Also supported on authorizer functions.
 * FromRoute
-    * Map method parameter to resource path segment
+    * Map method parameter to resource path segment. Also supported on authorizer functions.
 * FromBody
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
@@ -916,6 +1457,8 @@ public async Task ProtectedEndpoint(
 The attributes `RestApi` or `HttpApi` configure a `LambdaFunction` method to use API Gateway as the event source for the function. By default these methods return an 
 HTTP status code of 200. To customize the HTTP response, including adding HTTP headers, the method signature must return an `Amazon.Lambda.Annotations.APIGateway.IHttpResult`
 or `Task<Amazon.Lambda.Annotations.APIGateway.IHttpResult>`.
+
+Similarly, authorizer functions can return `Amazon.Lambda.Annotations.APIGateway.IAuthorizerResult` or `Task<IAuthorizerResult>` to use the simplified authorizer response pattern instead of raw API Gateway types. See the [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult) section for details.
 The `Amazon.Lambda.Annotations.APIGateway.HttpResults` class contains static methods for creating an instance of `IHttpResult` with the appropriate HTTP status code and headers.
 
 The example below shows how to return a HTTP status code 404 with a response body and custom header.
@@ -957,3 +1500,5 @@ The content type is determined using the following rules.
 ## Project References
 
 If API Gateway event attributes, such as `RestAPI` or `HttpAPI`, are being used then a package reference to `Amazon.Lambda.APIGatewayEvents` must be added to the project, otherwise the project will not compile. We do not include it by default in order to keep the `Amazon.Lambda.Annotations` library lightweight.
+
+Similarly, if the `ALBApi` attribute is being used then a package reference to `Amazon.Lambda.ApplicationLoadBalancerEvents` must be added to the project. This provides the `ApplicationLoadBalancerRequest` and `ApplicationLoadBalancerResponse` types used by ALB Lambda functions.
