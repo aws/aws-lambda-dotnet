@@ -718,12 +718,22 @@ internal sealed class DurableFunctionDeployment : IAsyncDisposable
                   <ItemGroup>
                 {itemsXml}  </ItemGroup>
                   <Target Name="PublishAll">
-                    <!-- Restore then Publish per project: the MSBuild task's targets run against
-                         each referenced project, so each function restores its own packages before
-                         publishing (an outer -restore would only restore this traversal project). -->
+                    <!-- Restore in a SEPARATE, NON-parallel pass first. Restore is not
+                         parallel-safe: the function projects share src ProjectReferences
+                         (e.g. Amazon.Lambda.Serialization.SystemTextJson), and restoring them
+                         concurrently races on the shared obj/project.assets.json ("file already
+                         exists"). One sequential restore pass writes each shared project's assets
+                         once. (An outer -restore would only restore this traversal project, not the
+                         referenced functions, so it must be done here.) -->
                     <MSBuild
                       Projects="@(FunctionProject)"
-                      Targets="Restore;Publish"
+                      Targets="Restore"
+                      BuildInParallel="false"
+                      Properties="Configuration=Release;RuntimeIdentifier=linux-x64;SelfContained=false" />
+                    <!-- Then publish in parallel; restore is already done so no shared-output race. -->
+                    <MSBuild
+                      Projects="@(FunctionProject)"
+                      Targets="Publish"
                       BuildInParallel="true"
                       Properties="Configuration=Release;RuntimeIdentifier=linux-x64;SelfContained=false;PublishDir=bin\publish\" />
                   </Target>
