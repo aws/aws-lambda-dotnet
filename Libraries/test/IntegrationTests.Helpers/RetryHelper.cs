@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace IntegrationTests.Helpers
@@ -11,6 +13,45 @@ namespace IntegrationTests.Helpers
     /// </summary>
     public static class RetryHelper
     {
+        /// <summary>
+        /// Sends an HTTP request, retrying while API Gateway returns <see cref="HttpStatusCode.Forbidden"/>
+        /// on what is expected to be an authorized request. A freshly deployed API Gateway stage can
+        /// transiently 403 on the authorizer "allow" path until the Lambda authorizer wiring has fully
+        /// propagated; once propagated the request returns a stable non-403 status. Because
+        /// <see cref="HttpRequestMessage"/> cannot be resent, the caller supplies a factory that builds a
+        /// fresh request for each attempt.
+        /// </summary>
+        /// <param name="httpClient">The client used to send the request.</param>
+        /// <param name="requestFactory">Builds a fresh request for each attempt.</param>
+        /// <param name="timeout">Maximum total time to keep retrying. Defaults to 2 minutes.</param>
+        /// <param name="pollInterval">Delay between attempts. Defaults to 5 seconds.</param>
+        /// <returns>The first non-403 response, or the last 403 response if the timeout elapses.</returns>
+        public static async Task<HttpResponseMessage> SendWithRetryOnForbiddenAsync(
+            HttpClient httpClient,
+            Func<HttpRequestMessage> requestFactory,
+            TimeSpan? timeout = null,
+            TimeSpan? pollInterval = null)
+        {
+            if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
+            if (requestFactory == null) throw new ArgumentNullException(nameof(requestFactory));
+
+            var interval = pollInterval ?? TimeSpan.FromSeconds(5);
+            var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromMinutes(2));
+
+            HttpResponseMessage response;
+            while (true)
+            {
+                response = await httpClient.SendAsync(requestFactory());
+                if (response.StatusCode != HttpStatusCode.Forbidden || DateTime.UtcNow >= deadline)
+                {
+                    return response;
+                }
+
+                response.Dispose();
+                await Task.Delay(interval);
+            }
+        }
+
         /// <summary>
         /// Polls <paramref name="condition"/> until it returns <c>true</c> or <paramref name="timeout"/> elapses.
         /// Useful for gating tests on resources that report ready (e.g. CloudFormation CREATE_COMPLETE)

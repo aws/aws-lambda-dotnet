@@ -31,12 +31,8 @@ public class HttpApiV2Tests : IAssemblyFixture<IntegrationTestContextFixture>
     [Fact]
     public async Task ProtectedEndpoint_WithValidAuth_ReturnsSuccess()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/protected");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.HttpApiUrl}/api/protected");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -56,12 +52,8 @@ public class HttpApiV2Tests : IAssemblyFixture<IntegrationTestContextFixture>
     [Fact]
     public async Task UserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.HttpApiUrl}/api/user-info");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -97,12 +89,8 @@ public class HttpApiV2Tests : IAssemblyFixture<IntegrationTestContextFixture>
     [Fact]
     public async Task IHttpResult_WithValidAuth_ReturnsSuccess()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/ihttpresult-user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.HttpApiUrl}/api/ihttpresult-user-info");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
