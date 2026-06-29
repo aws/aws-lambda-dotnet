@@ -3,12 +3,6 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Microsoft.Extensions.Logging;
 
-// Durable execution uses the Lambda Annotations programming model in the CLASS-LIBRARY variant:
-// there is no hand-written Main. The Amazon.Lambda.Annotations source generator turns the
-// [LambdaFunction] + [DurableExecution] method below into a handler wrapper that delegates to
-// Amazon.Lambda.DurableExecution.DurableFunction.WrapAsync. The managed dotnet10 runtime hosts its
-// own bootstrap, resolves the serializer from the assembly attribute here, and invokes the
-// generated wrapper directly.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace BlueprintBaseName._1;
