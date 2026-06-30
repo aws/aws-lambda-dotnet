@@ -1,11 +1,9 @@
+using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
-using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.Extensions.Logging;
 
-// The durable runtime reads this serializer off ILambdaContext.Serializer to (de)serialize the
-// invocation envelope and every checkpointed step input/output.
-[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace BlueprintBaseName._1;
 
@@ -14,28 +12,17 @@ namespace BlueprintBaseName._1;
 /// but durable execution checkpoints every operation, so the function can be suspended (during the
 /// settlement wait) and re-invoked without re-running completed work. If the process crashes
 /// mid-flight it resumes from the last checkpoint — no lost orders, no double charges.
-///
-/// This template uses the <b>static wrapper</b> programming model and the class-library hosting
-/// model on the managed <c>dotnet10</c> runtime: there is no <c>[DurableExecution]</c> annotation and
-/// no <c>serverless.template</c>. The handler delegates to <see cref="DurableFunction.WrapAsync"/>,
-/// and the function deploys straight to Lambda with <c>dotnet lambda deploy-function</c>.
 /// </summary>
 public class Function
 {
     /// <summary>
-    /// The Lambda entry point. The managed runtime invokes this method directly (via the
-    /// <c>Assembly::Type::Method</c> handler string in aws-lambda-tools-defaults.json) and
-    /// <see cref="DurableFunction.WrapAsync"/> bridges the durable invocation envelope to the
-    /// strongly-typed <see cref="ProcessOrder"/> workflow below.
+    /// The durable workflow entry point. The method signature is
+    /// <c>(TInput, IDurableContext) -&gt; Task&lt;TOutput&gt;</c>; the source generator wires it to the
+    /// durable runtime and emits the matching CloudFormation resource (with DurableConfig and the
+    /// durable IAM policy) in serverless.template.
     /// </summary>
-    public Task<DurableExecutionInvocationOutput> Handler(
-        DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<OrderRequest, OrderResult>(ProcessOrder, input, context);
-
-    /// <summary>
-    /// The durable workflow. The signature is <c>(TInput, IDurableContext) -&gt; Task&lt;TOutput&gt;</c>.
-    /// It is public so the test project can drive it directly with the durable test runner.
-    /// </summary>
+    [LambdaFunction]
+    [DurableExecution]
     public async Task<OrderResult> ProcessOrder(OrderRequest order, IDurableContext context)
     {
         // The durable logger is replay-aware: this line is emitted once, not once per replay.
