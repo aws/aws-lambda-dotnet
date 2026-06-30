@@ -7,20 +7,8 @@ using Microsoft.Extensions.Logging;
 
 namespace BlueprintBaseName._1;
 
-/// <summary>
-/// A durable order-processing workflow. A single invocation reads like one straight-line method,
-/// but durable execution checkpoints every operation, so the function can be suspended (during the
-/// settlement wait) and re-invoked without re-running completed work. If the process crashes
-/// mid-flight it resumes from the last checkpoint — no lost orders, no double charges.
-/// </summary>
 public class Function
 {
-    /// <summary>
-    /// The durable workflow entry point. The method signature is
-    /// <c>(TInput, IDurableContext) -&gt; Task&lt;TOutput&gt;</c>; the source generator wires it to the
-    /// durable runtime and emits the matching CloudFormation resource (with DurableConfig and the
-    /// durable IAM policy) in serverless.template.
-    /// </summary>
     [LambdaFunction]
     [DurableExecution]
     public async Task<OrderResult> ProcessOrder(OrderRequest order, IDurableContext context)

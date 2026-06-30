@@ -9,17 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace BlueprintBaseName._1;
 
-/// <summary>
-/// A durable order-processing workflow. A single invocation reads like one straight-line method,
-/// but durable execution checkpoints every operation, so the function can be suspended (during the
-/// settlement wait) and re-invoked without re-running completed work. If the process crashes
-/// mid-flight it resumes from the last checkpoint — no lost orders, no double charges.
-///
-/// This template uses the <b>static wrapper</b> programming model and the class-library hosting
-/// model on the managed <c>dotnet10</c> runtime: there is no <c>[DurableExecution]</c> annotation and
-/// no <c>serverless.template</c>. The handler delegates to <see cref="DurableFunction.WrapAsync"/>,
-/// and the function deploys straight to Lambda with <c>dotnet lambda deploy-function</c>.
-/// </summary>
 public class Function
 {
     /// <summary>
@@ -32,10 +21,6 @@ public class Function
         DurableExecutionInvocationInput input, ILambdaContext context)
         => DurableFunction.WrapAsync<OrderRequest, OrderResult>(ProcessOrder, input, context);
 
-    /// <summary>
-    /// The durable workflow. The signature is <c>(TInput, IDurableContext) -&gt; Task&lt;TOutput&gt;</c>.
-    /// It is public so the test project can drive it directly with the durable test runner.
-    /// </summary>
     public async Task<OrderResult> ProcessOrder(OrderRequest order, IDurableContext context)
     {
         // The durable logger is replay-aware: this line is emitted once, not once per replay.
