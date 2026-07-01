@@ -1,9 +1,9 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v2.1.0.0).",
+  "Description": "An AWS Serverless Application with a durable execution function, deployed via CloudFormation for integration testing. This template is partially managed by Amazon.Lambda.Annotations (v2.1.0.0).",
   "Resources": {
-    "AnnotationsClassLibraryFunctionFunctionWorkflowGenerated": {
+    "TestDurableServerlessAppFunctionWorkflowGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -20,8 +20,10 @@
           "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy"
         ],
         "PackageType": "Zip",
-        "Handler": "AnnotationsClassLibraryFunction::AnnotationsClassLibraryFunction.Function_Workflow_Generated::Workflow",
-        "DurableConfig": {}
+        "Handler": "TestDurableServerlessApp::TestDurableServerlessApp.Function_Workflow_Generated::Workflow",
+        "DurableConfig": {
+          "ExecutionTimeout": 300
+        }
       }
     }
   }

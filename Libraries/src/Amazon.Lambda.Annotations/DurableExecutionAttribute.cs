@@ -24,6 +24,19 @@ namespace Amazon.Lambda.Annotations
         private const int MaxRetentionPeriodInDays = 90;
         private const int MaxExecutionTimeoutInSeconds = 31622400;
 
+        /// <summary>
+        /// Marks the method as a durable execution workflow.
+        /// </summary>
+        /// <param name="executionTimeout">
+        /// The maximum duration, in seconds, that a single durable execution may run. This is required:
+        /// the Lambda service rejects a durable function whose <c>DurableConfig</c> has no
+        /// <c>ExecutionTimeout</c>, so there is no valid "unset" value.
+        /// </param>
+        public DurableExecutionAttribute(int executionTimeout)
+        {
+            ExecutionTimeout = executionTimeout;
+        }
+
         private int _retentionPeriodInDays;
 
         /// <summary>
@@ -46,27 +59,12 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         internal bool IsRetentionPeriodInDaysSet { get; private set; }
 
-        private int _executionTimeout;
-
         /// <summary>
         /// The maximum duration, in seconds, that a single durable execution may run.
         /// Maps to <c>DurableConfig.ExecutionTimeout</c> on the generated function resource.
-        /// When unset, the property is omitted from the template and the service default applies.
+        /// Set via the constructor; always emitted to the template because the service requires it.
         /// </summary>
-        public int ExecutionTimeout
-        {
-            get => _executionTimeout;
-            set
-            {
-                _executionTimeout = value;
-                IsExecutionTimeoutSet = true;
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether <see cref="ExecutionTimeout"/> was explicitly set.
-        /// </summary>
-        internal bool IsExecutionTimeoutSet { get; private set; }
+        public int ExecutionTimeout { get; }
 
         /// <summary>
         /// Validates the attribute's property values.
@@ -81,7 +79,7 @@ namespace Amazon.Lambda.Annotations
                 validationErrors.Add($"{nameof(RetentionPeriodInDays)} = {RetentionPeriodInDays}. It must be between 1 and {MaxRetentionPeriodInDays}.");
             }
 
-            if (IsExecutionTimeoutSet && (ExecutionTimeout < 1 || ExecutionTimeout > MaxExecutionTimeoutInSeconds))
+            if (ExecutionTimeout < 1 || ExecutionTimeout > MaxExecutionTimeoutInSeconds)
             {
                 validationErrors.Add($"{nameof(ExecutionTimeout)} = {ExecutionTimeout}. It must be between 1 and {MaxExecutionTimeoutInSeconds}.");
             }

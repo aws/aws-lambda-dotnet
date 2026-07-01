@@ -14,11 +14,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
     public partial class CloudFormationWriterTests
     {
-        private static AttributeModel<DurableExecutionAttribute> DurableAttribute(int? retentionDays = null, int? executionTimeout = null)
+        // ExecutionTimeout is required on the attribute, so the helper always supplies one (default 300);
+        // RetentionPeriodInDays stays optional.
+        private static AttributeModel<DurableExecutionAttribute> DurableAttribute(int? retentionDays = null, int executionTimeout = 300)
         {
-            var data = new DurableExecutionAttribute();
+            var data = new DurableExecutionAttribute(executionTimeout);
             if (retentionDays.HasValue) data.RetentionPeriodInDays = retentionDays.Value;
-            if (executionTimeout.HasValue) data.ExecutionTimeout = executionTimeout.Value;
             return new AttributeModel<DurableExecutionAttribute> { Data = data };
         }
 
@@ -47,11 +48,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
-        public void DurableExecution_OmitsUnsetProperties(CloudFormationTemplateFormat templateFormat)
+        public void DurableExecution_OmitsUnsetRetention_ButAlwaysWritesTimeout(CloudFormationTemplateFormat templateFormat)
         {
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 30, 512, null, "AWSLambdaBasicExecutionRole");
-            lambdaFunctionModel.Attributes = new List<AttributeModel> { DurableAttribute(retentionDays: 7) };
+            // Only the required ExecutionTimeout is set; RetentionPeriodInDays is left unset.
+            lambdaFunctionModel.Attributes = new List<AttributeModel> { DurableAttribute(executionTimeout: 300) };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
@@ -59,8 +61,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             cloudFormationWriter.ApplyReport(report);
 
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-            Assert.Equal(7, templateWriter.GetToken<int>("Resources.TestMethod.Properties.DurableConfig.RetentionPeriodInDays"));
-            Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.DurableConfig.ExecutionTimeout"));
+            // ExecutionTimeout is required and always emitted; RetentionPeriodInDays is omitted when unset.
+            Assert.Equal(300, templateWriter.GetToken<int>("Resources.TestMethod.Properties.DurableConfig.ExecutionTimeout"));
+            Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.DurableConfig.RetentionPeriodInDays"));
         }
 
         [Theory]

@@ -128,7 +128,7 @@ using Amazon.Lambda.DurableExecution;
 public class OrderProcessor
 {
     [LambdaFunction]
-    [DurableExecution(RetentionPeriodInDays = 7, ExecutionTimeout = 300)]
+    [DurableExecution(executionTimeout: 300, RetentionPeriodInDays = 7)]
     public async Task<OrderResult> Workflow(Order order, IDurableContext ctx)
     {
         var reservation = await ctx.StepAsync(

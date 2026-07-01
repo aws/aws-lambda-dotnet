@@ -42,23 +42,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         // ===== Attribute unit tests (the attribute now lives in Amazon.Lambda.Annotations) =====
 
         [Fact]
-        public void Attribute_Defaults_NothingSet()
+        public void Attribute_Defaults_OnlyTimeoutSet()
         {
-            var attr = new DurableExecutionAttribute();
+            // ExecutionTimeout is a required constructor argument; RetentionPeriodInDays stays optional.
+            var attr = new DurableExecutionAttribute(300);
 
             Assert.False(attr.IsRetentionPeriodInDaysSet);
-            Assert.False(attr.IsExecutionTimeoutSet);
+            Assert.Equal(300, attr.ExecutionTimeout);
             Assert.Empty(attr.Validate());
         }
 
         [Fact]
-        public void Attribute_SettingProperties_TracksIsSet()
+        public void Attribute_SettingRetention_TracksIsSet()
         {
-            var attr = new DurableExecutionAttribute { RetentionPeriodInDays = 7 };
+            var attr = new DurableExecutionAttribute(300) { RetentionPeriodInDays = 7 };
 
             Assert.True(attr.IsRetentionPeriodInDaysSet);
             Assert.Equal(7, attr.RetentionPeriodInDays);
-            Assert.False(attr.IsExecutionTimeoutSet);
+            Assert.Equal(300, attr.ExecutionTimeout);
         }
 
         [Theory]
@@ -67,7 +68,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [InlineData(91)] // Above the service maximum of 90 days.
         public void Attribute_Validate_RejectsOutOfRangeRetentionPeriod(int value)
         {
-            var attr = new DurableExecutionAttribute { RetentionPeriodInDays = value };
+            var attr = new DurableExecutionAttribute(300) { RetentionPeriodInDays = value };
 
             var errors = attr.Validate();
 
@@ -81,7 +82,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [InlineData(31622401)] // Above the service maximum of 31622400 seconds.
         public void Attribute_Validate_RejectsOutOfRangeExecutionTimeout(int value)
         {
-            var attr = new DurableExecutionAttribute { ExecutionTimeout = value };
+            var attr = new DurableExecutionAttribute(value);
 
             var errors = attr.Validate();
 
@@ -94,7 +95,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [InlineData(90)]
         public void Attribute_Validate_AcceptsInRangeRetentionPeriod(int value)
         {
-            var attr = new DurableExecutionAttribute { RetentionPeriodInDays = value };
+            var attr = new DurableExecutionAttribute(300) { RetentionPeriodInDays = value };
 
             Assert.Empty(attr.Validate());
         }
@@ -104,7 +105,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [InlineData(31622400)]
         public void Attribute_Validate_AcceptsInRangeExecutionTimeout(int value)
         {
-            var attr = new DurableExecutionAttribute { ExecutionTimeout = value };
+            var attr = new DurableExecutionAttribute(value);
 
             Assert.Empty(attr.Validate());
         }
@@ -112,7 +113,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public void Attribute_Validate_ReportsBothInvalidValues()
         {
-            var attr = new DurableExecutionAttribute { RetentionPeriodInDays = 0, ExecutionTimeout = -5 };
+            var attr = new DurableExecutionAttribute(-5) { RetentionPeriodInDays = 0 };
 
             Assert.Equal(2, attr.Validate().Count);
         }
@@ -165,7 +166,7 @@ namespace MyApp
 {
     public class Workflows
     {
-        [Amazon.Lambda.Annotations.DurableExecution]
+        [Amazon.Lambda.Annotations.DurableExecution(300)]
         public void Run() { }
     }
 }");
@@ -178,14 +179,14 @@ namespace MyApp
         }
 
         [Fact]
-        public void DurableExecutionAttributeBuilder_ReadsNamedArguments()
+        public void DurableExecutionAttributeBuilder_ReadsConstructorAndNamedArguments()
         {
             var method = GetWorkflowMethod(@"
 namespace MyApp
 {
     public class Workflows
     {
-        [Amazon.Lambda.Annotations.DurableExecution(RetentionPeriodInDays = 14, ExecutionTimeout = 600)]
+        [Amazon.Lambda.Annotations.DurableExecution(600, RetentionPeriodInDays = 14)]
         public void Run() { }
     }
 }");
@@ -195,40 +196,20 @@ namespace MyApp
 
             Assert.True(data.IsRetentionPeriodInDaysSet);
             Assert.Equal(14, data.RetentionPeriodInDays);
-            Assert.True(data.IsExecutionTimeoutSet);
             Assert.Equal(600, data.ExecutionTimeout);
         }
 
         [Fact]
-        public void DurableExecutionAttributeBuilder_OmitsUnsetArguments()
+        public void DurableExecutionAttributeBuilder_OmitsUnsetRetention()
         {
+            // Only the required ExecutionTimeout is supplied; RetentionPeriodInDays stays unset so it is
+            // omitted from the generated template.
             var method = GetWorkflowMethod(@"
 namespace MyApp
 {
     public class Workflows
     {
-        [Amazon.Lambda.Annotations.DurableExecution(RetentionPeriodInDays = 7)]
-        public void Run() { }
-    }
-}");
-
-            var att = method.GetAttributes().Single();
-            var data = DurableExecutionAttributeBuilder.Build(att);
-
-            Assert.True(data.IsRetentionPeriodInDaysSet);
-            Assert.Equal(7, data.RetentionPeriodInDays);
-            Assert.False(data.IsExecutionTimeoutSet);
-        }
-
-        [Fact]
-        public void DurableExecutionAttributeBuilder_NoArguments_LeavesNothingSet()
-        {
-            var method = GetWorkflowMethod(@"
-namespace MyApp
-{
-    public class Workflows
-    {
-        [Amazon.Lambda.Annotations.DurableExecution]
+        [Amazon.Lambda.Annotations.DurableExecution(300)]
         public void Run() { }
     }
 }");
@@ -237,7 +218,7 @@ namespace MyApp
             var data = DurableExecutionAttributeBuilder.Build(att);
 
             Assert.False(data.IsRetentionPeriodInDaysSet);
-            Assert.False(data.IsExecutionTimeoutSet);
+            Assert.Equal(300, data.ExecutionTimeout);
         }
     }
 }
