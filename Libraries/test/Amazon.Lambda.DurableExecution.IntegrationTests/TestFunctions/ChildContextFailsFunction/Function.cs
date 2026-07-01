@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="ChildContextWorkflows.FailsAsync"/>. Workflow
+/// body shared verbatim with the local backend; the cloud-only test additionally
+/// verifies the inner ops re-parent under the CONTEXT op and the failure detail.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,28 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        // Throw inside a child context to validate the CONTEXT FAIL path: the
-        // service must record a ContextFailed event with the error details and
-        // mark the workflow FAILED.
-        await context.RunInChildContextAsync<string>(
-            async (childCtx, _) =>
-            {
-                await childCtx.StepAsync(
-                    async (_, _) => { await Task.CompletedTask; return $"prepared-{input.OrderId}"; },
-                    name: "prepare");
-
-                throw new InvalidOperationException("intentional child context failure for integration test");
-            },
-            name: "phase",
-            config: new ChildContextConfig { SubType = "OrderProcessing" });
-
-        return new TestResult { Status = "should_not_reach" };
-    }
+        => DurableFunction.WrapAsync<StepsRequest, StepsResult>(
+            ChildContextWorkflows.FailsAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }

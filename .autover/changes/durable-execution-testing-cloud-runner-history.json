@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution.Testing",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add Amazon.Lambda.DurableExecution.Testing package"
+      ]
+    }
+  ]
+}

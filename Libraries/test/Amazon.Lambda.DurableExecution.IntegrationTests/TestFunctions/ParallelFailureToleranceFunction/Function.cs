@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="ParallelWorkflows.FailureToleranceAsync"/>. Workflow
+/// body shared verbatim with the local backend; the cloud-only test additionally
+/// verifies the event-shape / timing concerns the runner cannot express.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,43 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        // Five branches, two throw. ToleratedFailureCount = 1 means a second
-        // failure exceeds tolerance and the parallel surfaces a ParallelException.
-        var batch = await context.ParallelAsync(
-            new[]
-            {
-                new DurableBranch<string>("ok1", async (_, _) => { await Task.CompletedTask; return "1"; }),
-                new DurableBranch<string>("bad1", async (_, _) =>
-                {
-                    await Task.CompletedTask;
-                    throw new InvalidOperationException("bad1 boom");
-                }),
-                new DurableBranch<string>("ok2", async (_, _) => { await Task.CompletedTask; return "2"; }),
-                new DurableBranch<string>("bad2", async (_, _) =>
-                {
-                    await Task.CompletedTask;
-                    throw new InvalidOperationException("bad2 boom");
-                }),
-                new DurableBranch<string>("ok3", async (_, _) => { await Task.CompletedTask; return "3"; }),
-            },
-            name: "tolerance",
-            config: new ParallelConfig
-            {
-                CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
-            });
-
-        // Should not reach here — the parallel must throw ParallelException.
-        return new TestResult { Status = "should_not_reach", SuccessCount = batch.SuccessCount };
-    }
-}
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult
-{
-    public string? Status { get; set; }
-    public int SuccessCount { get; set; }
+        => DurableFunction.WrapAsync<BatchRequest, BatchResult>(
+            ParallelWorkflows.FailureToleranceAsync, input, context);
 }

@@ -1,0 +1,32 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
+using Amazon.Lambda.RuntimeSupport;
+using Amazon.Lambda.Serialization.SystemTextJson;
+
+namespace DurableExecutionTestFunction;
+
+/// <summary>
+/// Deployed entry point for <see cref="ChainedInvokeWorkflow.RunAsync"/> (the
+/// caller). It durably invokes the downstream function whose ARN is supplied via
+/// the <c>DOWNSTREAM_FUNCTION_ARN</c> environment variable.
+/// </summary>
+public class Function
+{
+    public static async Task Main(string[] args)
+    {
+        var handler = new Function();
+        var serializer = new DefaultLambdaJsonSerializer();
+        using var handlerWrapper = HandlerWrapper.GetHandlerWrapper<DurableExecutionInvocationInput, DurableExecutionInvocationOutput>(handler.Handler, serializer);
+        using var bootstrap = new LambdaBootstrap(handlerWrapper);
+        await bootstrap.RunAsync();
+    }
+
+    public Task<DurableExecutionInvocationOutput> Handler(
+        DurableExecutionInvocationInput input, ILambdaContext context)
+        => DurableFunction.WrapAsync<ChainedInvokeRequest, ChainedInvokeResult>(
+            ChainedInvokeWorkflow.RunAsync, input, context);
+}

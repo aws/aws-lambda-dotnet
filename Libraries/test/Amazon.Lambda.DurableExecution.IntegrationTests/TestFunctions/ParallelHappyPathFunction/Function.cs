@@ -3,11 +3,17 @@
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Testing.Shared;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace DurableExecutionTestFunction;
 
+/// <summary>
+/// Deployed entry point for <see cref="ParallelWorkflows.HappyAsync"/>. Workflow
+/// body shared verbatim with the local backend; the cloud-only test additionally
+/// verifies the event-shape / timing concerns the runner cannot express.
+/// </summary>
 public class Function
 {
     public static async Task Main(string[] args)
@@ -21,23 +27,6 @@ public class Function
 
     public Task<DurableExecutionInvocationOutput> Handler(
         DurableExecutionInvocationInput input, ILambdaContext context)
-        => DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, input, context);
-
-    private async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
-    {
-        var batch = await context.ParallelAsync(
-            new[]
-            {
-                new DurableBranch<string>("alpha", async (_, _) => { await Task.CompletedTask; return $"alpha-{input.OrderId}"; }),
-                new DurableBranch<string>("beta",  async (_, _) => { await Task.CompletedTask; return $"beta-{input.OrderId}"; }),
-                new DurableBranch<string>("gamma", async (_, _) => { await Task.CompletedTask; return $"gamma-{input.OrderId}"; }),
-            },
-            name: "fanout");
-
-        var joined = string.Join(",", batch.GetResults());
-        return new TestResult { Status = "completed", Data = joined };
-    }
+        => DurableFunction.WrapAsync<BatchRequest, BatchResult>(
+            ParallelWorkflows.HappyAsync, input, context);
 }
-
-public class TestEvent { public string? OrderId { get; set; } }
-public class TestResult { public string? Status { get; set; } public string? Data { get; set; } }

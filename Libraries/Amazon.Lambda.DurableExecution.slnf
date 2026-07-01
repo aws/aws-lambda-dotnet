@@ -1,0 +1,17 @@
+{
+  "solution": {
+    "path": "Libraries.sln",
+    "projects": [
+      "src\\Amazon.Lambda.Core\\Amazon.Lambda.Core.csproj",
+      "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
+      "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
+      "src\\Amazon.Lambda.TestUtilities\\Amazon.Lambda.TestUtilities.csproj",
+      "src\\Amazon.Lambda.DurableExecution\\Amazon.Lambda.DurableExecution.csproj",
+      "src\\Amazon.Lambda.DurableExecution.Testing\\Amazon.Lambda.DurableExecution.Testing.csproj",
+      "test\\Amazon.Lambda.DurableExecution.Tests\\Amazon.Lambda.DurableExecution.Tests.csproj",
+      "test\\Amazon.Lambda.DurableExecution.Testing.Tests\\Amazon.Lambda.DurableExecution.Testing.Tests.csproj",
+      "test\\Amazon.Lambda.DurableExecution.IntegrationTests\\Amazon.Lambda.DurableExecution.IntegrationTests.csproj",
+      "test\\Amazon.Lambda.DurableExecution.AotPublishTest\\Amazon.Lambda.DurableExecution.AotPublishTest.csproj"
+    ]
+  }
+}
