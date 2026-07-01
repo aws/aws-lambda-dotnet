@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.0 is required for a Roslyn analyzer/code-fix assembly. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <Description>Roslyn analyzers and code fixes for Amazon.Lambda.DurableExecution — catches durable-execution determinism and authoring mistakes (DE001-DE004) at build time.</Description>
+    <AssemblyTitle>Amazon.Lambda.DurableExecution.Analyzers</AssemblyTitle>
+    <AssemblyName>Amazon.Lambda.DurableExecution.Analyzers</AssemblyName>
+    <PackageTags>AWS;Amazon;Lambda;Durable;Workflow;Analyzer;Roslyn</PackageTags>
+
+    <!-- This assembly is bundled INSIDE the Amazon.Lambda.DurableExecution package
+         (analyzers/dotnet/cs), so it is never packed on its own. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Strong-named so it sits alongside the rest of the repo's signed assemblies. -->
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- The repo precedent (Amazon.Lambda.Annotations.SourceGenerator) does not localize
+         diagnostic strings; match it. Suppress the localization-nag analyzers. -->
+    <NoWarn>$(NoWarn);RS1032;RS1033</NoWarn>
+  </PropertyGroup>
+
+  <!-- Pinned to 4.0.1 to match Amazon.Lambda.Annotations.SourceGenerator and the
+       Microsoft.CodeAnalysis.*.Testing 1.1.2 harness used by the test project. Keeps the analyzer's
+       minimum Roslyn floor low (broad VS / SDK compatibility) and avoids version-conflict load errors. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.0.1" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Release-tracking files required by the Microsoft.CodeAnalysis release-tracking
+       analyzer (RS2007/RS2008) so every shipped diagnostic id is accounted for. -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+</Project>

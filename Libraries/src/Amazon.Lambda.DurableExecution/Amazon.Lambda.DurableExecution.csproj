@@ -32,6 +32,26 @@
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
 
+  <!-- Bundle the Roslyn analyzers (DE001-DE004) into this package under analyzers/dotnet/cs so every
+       consumer of Amazon.Lambda.DurableExecution gets build-time authoring diagnostics automatically.
+       ReferenceOutputAssembly=false (and no OutputItemType=Analyzer) keeps the analyzer from running
+       against THIS SDK's own source — the SDK defines IDurableContext, which would otherwise activate
+       the rules on library internals and, with TreatWarningsAsErrors, could fail the SDK build. The
+       ProjectReference is build-ordering only, ensuring the analyzer DLL exists before packing. -->
+  <PropertyGroup>
+    <DurableAnalyzersDir>..\Amazon.Lambda.DurableExecution.Analyzers\</DurableAnalyzersDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(DurableAnalyzersDir)Amazon.Lambda.DurableExecution.Analyzers.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+    <None Include="$(DurableAnalyzersDir)bin\$(Configuration)\netstandard2.0\Amazon.Lambda.DurableExecution.Analyzers.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
