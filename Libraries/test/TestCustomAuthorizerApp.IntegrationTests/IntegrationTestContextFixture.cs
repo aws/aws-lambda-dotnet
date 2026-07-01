@@ -39,9 +39,10 @@ public class IntegrationTestContextFixture : IAsyncLifetime
 
     public IntegrationTestContextFixture()
     {
-        _cloudFormationHelper = new CloudFormationHelper(new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2));
+        var cloudFormationClient = new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2);
+        _cloudFormationHelper = new CloudFormationHelper(cloudFormationClient);
         _s3Helper = new S3Helper(new AmazonS3Client(Amazon.RegionEndpoint.USWest2));
-        LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2));
+        LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2), cloudFormationClient);
         CloudWatchHelper = new CloudWatchHelper(new AmazonCloudWatchLogsClient(Amazon.RegionEndpoint.USWest2));
         HttpClient = new HttpClient();
     }
@@ -99,18 +100,49 @@ public class IntegrationTestContextFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Polls a representative "allow path" endpoint on each deployed API until the custom authorizer
+    /// Sends an authenticated GET (valid-token) to <paramref name="url"/>, retrying on a transient 403
+    /// from API Gateway. A freshly deployed stage can briefly 403 on the authorizer "allow" path until
+    /// the Lambda authorizer wiring finishes propagating; this resends until a stable non-403 response
+    /// (200 or 401) is returned. Use this for any test that asserts an authorized request succeeds.
+    /// </summary>
+    public Task<HttpResponseMessage> GetWithValidTokenAsync(string url)
+    {
+        return RetryHelper.SendWithRetryOnForbiddenAsync(HttpClient, () =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "valid-token");
+            return request;
+        });
+    }
+
+    /// <summary>
+    /// Polls every authorizer "allow path" endpoint on each deployed API until the custom authorizer
     /// is fully wired and the request succeeds (or a 401 from the backend), confirming the API is
     /// serving traffic before the test suite runs.
+    ///
+    /// Every distinct authorizer must be warmed individually: API Gateway propagates each authorizer's
+    /// invoke wiring separately, so warming one endpoint does not guarantee a sibling authorizer on the
+    /// same API is ready. The REST API endpoints are listed first because REST (v1) stages settle slower
+    /// than HTTP (v2).
     /// </summary>
     private async Task WarmUpApisAsync()
     {
         var timeout = TimeSpan.FromMinutes(2);
         var pollInterval = TimeSpan.FromSeconds(5);
 
-        // A warmed-up authorizer returns a non-403 response on the allow path: either 200 (context
-        // present) or 401 (backend rejects missing context). A 403 means API Gateway could not yet
-        // invoke/attach the authorizer, so keep waiting.
+        // One representative allow-path endpoint per distinct authorizer. A warmed-up authorizer returns
+        // a non-403 response on the allow path: either 200 (context present) or 401 (backend rejects
+        // missing context). A 403 means API Gateway could not yet invoke/attach the authorizer, so keep
+        // waiting.
+        var allowPaths = new[]
+        {
+            $"{RestApiUrl}/api/rest-user-info",          // RestApiAuthorizer (REST API token authorizer)
+            $"{RestApiUrl}/api/simple-restapi-user-info",// SimpleRestAuthorizer (IAuthorizerResult REST authorizer)
+            $"{HttpApiUrl}/api/user-info",               // CustomAuthorizer (HTTP API v2)
+            $"{HttpApiUrl}/api/http-v1-user-info",       // CustomAuthorizerV1 (HTTP API v1)
+            $"{HttpApiUrl}/api/simple-httpapi-user-info" // SimpleAuthorizer (IAuthorizerResult HTTP authorizer)
+        };
+
         async Task<bool> EndpointIsReady(string url)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -119,13 +151,12 @@ public class IntegrationTestContextFixture : IAsyncLifetime
             return response.StatusCode != System.Net.HttpStatusCode.Forbidden;
         }
 
-        var restReady = await RetryHelper.WaitForConditionAsync(
-            () => EndpointIsReady($"{RestApiUrl}/api/rest-user-info"), timeout, pollInterval);
-        Console.WriteLine($"[IntegrationTest] REST API warm-up {(restReady ? "succeeded" : "timed out")}.");
-
-        var httpReady = await RetryHelper.WaitForConditionAsync(
-            () => EndpointIsReady($"{HttpApiUrl}/api/user-info"), timeout, pollInterval);
-        Console.WriteLine($"[IntegrationTest] HTTP API warm-up {(httpReady ? "succeeded" : "timed out")}.");
+        foreach (var url in allowPaths)
+        {
+            var ready = await RetryHelper.WaitForConditionAsync(
+                () => EndpointIsReady(url), timeout, pollInterval);
+            Console.WriteLine($"[IntegrationTest] Warm-up for '{url}' {(ready ? "succeeded" : "timed out")}.");
+        }
     }
 
     public async Task DisposeAsync()

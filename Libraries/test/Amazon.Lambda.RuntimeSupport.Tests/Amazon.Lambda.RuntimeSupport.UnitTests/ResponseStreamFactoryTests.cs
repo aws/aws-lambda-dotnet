@@ -90,15 +90,21 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         /// Validates: Requirements 1.3, 2.2, 2.3
         /// </summary>
         [Fact]
-        public void CreateStream_MultiConcurrencyMode_ReturnsValidStream()
+        public Task CreateStream_MultiConcurrencyMode_ReturnsValidStream()
         {
-            var mock = new MockStreamingRuntimeApiClient();
-            InitializeWithMock("req-2", isMultiConcurrency: true, mock);
+            // Run on an isolated execution-context flow (Task.Run) so the multi-concurrency
+            // AsyncLocal context this writes does not leak onto the reused xUnit worker thread and
+            // contaminate a later on-demand test (see StreamingE2EWithMoq flake).
+            return Task.Run(() =>
+            {
+                var mock = new MockStreamingRuntimeApiClient();
+                InitializeWithMock("req-2", isMultiConcurrency: true, mock);
 
-            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
-            Assert.NotNull(stream);
-            Assert.IsAssignableFrom<ResponseStream>(stream);
+                Assert.NotNull(stream);
+                Assert.IsAssignableFrom<ResponseStream>(stream);
+            });
         }
 
         // --- Property 4: Single Stream Per Invocation ---
@@ -192,15 +198,21 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public void InitializeInvocation_MultiConcurrency_SetsUpContext()
+        public Task InitializeInvocation_MultiConcurrency_SetsUpContext()
         {
-            var mock = new MockStreamingRuntimeApiClient();
-            InitializeWithMock("req-5", isMultiConcurrency: true, mock);
+            // Run on an isolated execution-context flow (Task.Run) so the multi-concurrency
+            // AsyncLocal context this writes does not leak onto the reused xUnit worker thread and
+            // contaminate a later on-demand test (see StreamingE2EWithMoq flake).
+            return Task.Run(() =>
+            {
+                var mock = new MockStreamingRuntimeApiClient();
+                InitializeWithMock("req-5", isMultiConcurrency: true, mock);
 
-            Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true));
+                Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true));
 
-            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-            Assert.NotNull(stream);
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                Assert.NotNull(stream);
+            });
         }
 
         [Fact]
@@ -264,21 +276,27 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         /// Validates: Requirements 2.9, 2.10
         /// </summary>
         [Fact]
-        public async Task StateIsolation_MultiConcurrency_UsesAsyncLocal()
+        public Task StateIsolation_MultiConcurrency_UsesAsyncLocal()
         {
-            var mock = new MockStreamingRuntimeApiClient();
-            InitializeWithMock("req-9", isMultiConcurrency: true, mock);
-            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-            Assert.NotNull(stream);
-
-            bool childSawNull = false;
-            await Task.Run(() =>
+            // Run the whole body on an isolated execution-context flow (Task.Run) so the
+            // multi-concurrency AsyncLocal context written here does not leak onto the reused xUnit
+            // worker thread and contaminate a later on-demand test (see StreamingE2EWithMoq flake).
+            return Task.Run(async () =>
             {
-                ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
-                childSawNull = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true) == null;
-            });
+                var mock = new MockStreamingRuntimeApiClient();
+                InitializeWithMock("req-9", isMultiConcurrency: true, mock);
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                Assert.NotNull(stream);
 
-            Assert.True(childSawNull);
+                bool childSawNull = false;
+                await Task.Run(() =>
+                {
+                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
+                    childSawNull = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true) == null;
+                });
+
+                Assert.True(childSawNull);
+            });
         }
     }
 }

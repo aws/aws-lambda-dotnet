@@ -89,7 +89,7 @@ public class WaitForConditionOperationTests
             },
             name: "poll");
 
-        await Task.Delay(50);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);
@@ -818,7 +818,7 @@ public class WaitForConditionOperationTests
             },
             name: "poll");
 
-        await Task.Delay(50);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(task.IsCompleted);

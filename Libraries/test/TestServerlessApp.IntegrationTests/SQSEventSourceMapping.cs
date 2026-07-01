@@ -4,11 +4,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class SQSEventSourceMapping
+    public class SQSEventSourceMapping : IAssemblyFixture<IntegrationTestContextFixture>
     {
         private readonly IntegrationTestContextFixture _fixture;
 

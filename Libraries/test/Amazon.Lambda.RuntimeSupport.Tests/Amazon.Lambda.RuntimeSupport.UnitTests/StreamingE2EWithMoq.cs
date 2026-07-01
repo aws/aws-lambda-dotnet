@@ -37,7 +37,15 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     [Collection("RuntimeSupportStateCheck")]
     public class StreamingE2EWithMoq : IDisposable
     {
-        public void Dispose()
+        // Reset the factory's static/async-local state before AND after each test so these tests
+        // start from a clean slate. The root cause of the cross-test leak (multi-concurrency tests
+        // writing the AsyncLocal on a reused xUnit worker thread) is contained at its source by
+        // running those tests on isolated Task.Run flows; this reset is belt-and-suspenders.
+        public StreamingE2EWithMoq() => ResetFactoryState();
+
+        public void Dispose() => ResetFactoryState();
+
+        private static void ResetFactoryState()
         {
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);

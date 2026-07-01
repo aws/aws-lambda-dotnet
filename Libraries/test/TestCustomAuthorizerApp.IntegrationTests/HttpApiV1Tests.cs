@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -12,8 +13,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// These tests verify that the source-generated Lambda handler correctly extracts
 /// values from the authorizer context using [FromCustomAuthorizer] attributes.
 /// </summary>
-[Collection("Integration Tests")]
-public class HttpApiV1Tests
+public class HttpApiV1Tests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 
@@ -33,12 +33,8 @@ public class HttpApiV1Tests
     [Fact]
     public async Task HttpApiV1UserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/http-v1-user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.HttpApiUrl}/api/http-v1-user-info");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

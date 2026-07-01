@@ -163,7 +163,7 @@ public class CallbackOperationTests
 
         // GetResultAsync should signal termination and return a never-completing task.
         var resultTask = callback.GetResultAsync();
-        await Task.Delay(10);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(resultTask.IsCompleted);
@@ -193,7 +193,7 @@ public class CallbackOperationTests
         Assert.False(tm.IsTerminated);
 
         var resultTask = callback.GetResultAsync();
-        await Task.Delay(10);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(resultTask.IsCompleted);

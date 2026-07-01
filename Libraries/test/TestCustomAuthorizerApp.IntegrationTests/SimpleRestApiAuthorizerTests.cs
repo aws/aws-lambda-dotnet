@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -14,8 +15,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// which returns IAuthorizerResult (AuthorizerResults.Allow()/Deny()) instead of raw API Gateway types.
 /// The generated handler serializes this to an IAM policy document with the correct MethodArn.
 /// </summary>
-[Collection("Integration Tests")]
-public class SimpleRestApiAuthorizerTests
+public class SimpleRestApiAuthorizerTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 
@@ -36,12 +36,8 @@ public class SimpleRestApiAuthorizerTests
     [Fact]
     public async Task SimpleRestApiUserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.RestApiUrl}/api/simple-restapi-user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.RestApiUrl}/api/simple-restapi-user-info");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

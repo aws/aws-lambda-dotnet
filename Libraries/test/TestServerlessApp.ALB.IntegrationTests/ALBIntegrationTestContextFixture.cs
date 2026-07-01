@@ -35,9 +35,10 @@ namespace TestServerlessApp.ALB.IntegrationTests
 
         public ALBIntegrationTestContextFixture()
         {
-            _cloudFormationHelper = new CloudFormationHelper(new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2));
+            var cloudFormationClient = new AmazonCloudFormationClient(Amazon.RegionEndpoint.USWest2);
+            _cloudFormationHelper = new CloudFormationHelper(cloudFormationClient);
             _s3Helper = new S3Helper(new AmazonS3Client(Amazon.RegionEndpoint.USWest2));
-            LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2));
+            LambdaHelper = new LambdaHelper(new AmazonLambdaClient(Amazon.RegionEndpoint.USWest2), cloudFormationClient);
             ELBv2Client = new AmazonElasticLoadBalancingV2Client(Amazon.RegionEndpoint.USWest2);
             HttpClient = new HttpClient();
         }

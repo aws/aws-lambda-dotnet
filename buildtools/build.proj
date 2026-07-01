@@ -218,12 +218,11 @@
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
-        <!-- Discover all integration test projects by convention (*.IntegrationTests.csproj) so new
-             projects are picked up automatically without editing this target. -->
-        <ItemGroup>
-            <IntegTestProject Include="..\Libraries\test\**\*.IntegrationTests.csproj"/>
-        </ItemGroup>
-        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot; &quot;%(IntegTestProject.FullPath)&quot;"/>
+        <!-- Each *.IntegrationTests.csproj deploys its own isolated CloudFormation stack, so the
+             projects share no state and are run concurrently to cut the integ-test wall-clock time.
+             The helper script discovers projects by convention (*.IntegrationTests.csproj) so new
+             projects are picked up automatically, and exits non-zero if any project fails. -->
+        <Exec Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)run-integ-tests-parallel.ps1&quot; -Configuration $(Configuration)"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

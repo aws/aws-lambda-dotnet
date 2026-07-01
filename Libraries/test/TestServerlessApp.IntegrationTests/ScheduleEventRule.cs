@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using Amazon.CloudWatchEvents;
 using Amazon.CloudWatchEvents.Model;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class ScheduleEventRule
+    public class ScheduleEventRule : IAssemblyFixture<IntegrationTestContextFixture>
     {
         private readonly IntegrationTestContextFixture _fixture;
 

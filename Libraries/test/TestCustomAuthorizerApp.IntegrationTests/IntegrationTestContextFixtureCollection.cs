@@ -1,11 +1,4 @@
-using Xunit;
-
-namespace TestCustomAuthorizerApp.IntegrationTests;
-
-[CollectionDefinition("Integration Tests", DisableParallelization = true)]
-public class IntegrationTestContextFixtureCollection : ICollectionFixture<IntegrationTestContextFixture>
-{
-    // This class has no code, and is never created. Its purpose is simply
-    // to be the place to apply [CollectionDefinition] and all the
-    // ICollectionFixture<> interfaces.
-}
+// Registers the AssemblyFixture test framework so test classes can share a single
+// IntegrationTestContextFixture (one deployed stack) via IAssemblyFixture<T> while still
+// running in parallel. Without this attribute IAssemblyFixture<T> is silently ignored.
+[assembly: Xunit.TestFramework("Xunit.Extensions.AssemblyFixture.AssemblyFixtureFramework", "Xunit.Extensions.AssemblyFixture")]

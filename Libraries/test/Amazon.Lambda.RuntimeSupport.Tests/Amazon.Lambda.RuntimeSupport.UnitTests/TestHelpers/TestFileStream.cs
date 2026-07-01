@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
 {
@@ -19,13 +17,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            WriteAction(TrimTrailingNullBytes(buffer).Take(count).ToArray(), offset, count);
-        }
-
-        private static IEnumerable<byte> TrimTrailingNullBytes(IEnumerable<byte> buffer)
-        {
-            // Trim trailing null bytes to make testing assertions easier
-            return buffer.Reverse().SkipWhile(x => x == 0).Reverse();
+            // Capture exactly the bytes that were written: [offset, offset + count).
+            // The previous implementation trimmed trailing null bytes from the buffer, which was
+            // flaky: a log header ends with an 8-byte big-endian microsecond timestamp, and roughly
+            // 1 in 256 timestamps ends in a 0x00 byte. Trimming that legitimate byte made the
+            // captured header 15 bytes instead of 16 and failed MaxSizeProducesOneLogFrame.
+            var written = new byte[count];
+            Array.Copy(buffer, offset, written, 0, count);
+            WriteAction(written, offset, count);
         }
     }
 }

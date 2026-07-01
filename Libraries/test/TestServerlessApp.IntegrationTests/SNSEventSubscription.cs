@@ -5,11 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class SNSEventSubscription
+    public class SNSEventSubscription : IAssemblyFixture<IntegrationTestContextFixture>
     {
         private readonly IntegrationTestContextFixture _fixture;
 

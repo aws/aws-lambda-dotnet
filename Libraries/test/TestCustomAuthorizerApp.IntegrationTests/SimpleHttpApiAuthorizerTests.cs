@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions.AssemblyFixture;
 
 namespace TestCustomAuthorizerApp.IntegrationTests;
 
@@ -13,8 +14,7 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 /// The authorizer under test is <see cref="TestCustomAuthorizerApp.AuthorizerFunction.SimpleHttpApiAuthorize"/>
 /// which returns IAuthorizerResult (AuthorizerResults.Allow()/Deny()) instead of raw API Gateway types.
 /// </summary>
-[Collection("Integration Tests")]
-public class SimpleHttpApiAuthorizerTests
+public class SimpleHttpApiAuthorizerTests : IAssemblyFixture<IntegrationTestContextFixture>
 {
     private readonly IntegrationTestContextFixture _fixture;
 
@@ -34,12 +34,8 @@ public class SimpleHttpApiAuthorizerTests
     [Fact]
     public async Task SimpleHttpApiUserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/simple-httpapi-user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
+        // Act - retry on transient 403 while the freshly deployed authorizer wiring propagates
+        var response = await _fixture.GetWithValidTokenAsync($"{_fixture.HttpApiUrl}/api/simple-httpapi-user-info");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

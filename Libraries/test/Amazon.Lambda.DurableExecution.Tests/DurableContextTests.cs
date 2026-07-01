@@ -379,7 +379,7 @@ public class DurableContextTests
         var waitTask = context.WaitAsync(TimeSpan.FromSeconds(30), name: "my_wait");
 
         // Give it a moment to execute
-        await Task.Delay(10);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(waitTask.IsCompleted);
@@ -433,7 +433,7 @@ public class DurableContextTests
 
         var waitTask = context.WaitAsync(TimeSpan.FromSeconds(30), name: "pending_wait");
 
-        await Task.Delay(10);
+        await tm.WaitForTerminationAsync();
 
         Assert.True(tm.IsTerminated);
         Assert.False(waitTask.IsCompleted);
