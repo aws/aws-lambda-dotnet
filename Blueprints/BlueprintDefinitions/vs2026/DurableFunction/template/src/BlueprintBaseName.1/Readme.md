@@ -69,10 +69,11 @@ checkpoint permissions the function needs at runtime. If you supply your own rol
 
 ## Invoke
 
-Durable functions are invoked with a qualified function reference and a durable execution name:
+Durable functions are invoked asynchronously and then monitored until the execution completes. Pass
+`--invoke-mode DurableExecution` so the tool starts the execution and polls it to completion:
 
 ```bash
-dotnet lambda invoke-function BlueprintBaseName.1 --payload '{"OrderId":"order-123","Items":["sku-1","sku-2"]}'
+dotnet lambda invoke-function BlueprintBaseName.1 --invoke-mode DurableExecution --payload '{"OrderId":"order-123","Items":["sku-1","sku-2"]}'
 ```
 
 The workflow validates the order, charges payment, waits out a short settlement period, ships the
@@ -80,8 +81,11 @@ order in a child context, and returns the result.
 
 ## Test
 
-The included test project drives the workflow locally with the
-`Amazon.Lambda.DurableExecution.Testing` runner — no AWS resources required:
+You can drive the workflow locally with the `Amazon.Lambda.DurableExecution.Testing` package — no AWS
+resources required. Add a test project that references your function project and
+`Amazon.Lambda.DurableExecution.Testing`, then use its in-memory durable execution runner to invoke
+`ProcessOrder` and assert on the result. If you created this project from the Visual Studio template
+that includes a test project, run it with:
 
 ```bash
 dotnet test
