@@ -68,7 +68,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction]
-        [DurableExecution]
+        [DurableExecution(executionTimeout: 300)]
         public Task<string> Run(string input, ILambdaContext ctx) => Task.FromResult(input);
     }
 }";
@@ -95,7 +95,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction]
-        [DurableExecution]
+        [DurableExecution(executionTimeout: 300)]
         public ValueTask<string> Run(string input, IDurableContext ctx) => new ValueTask<string>(input);
     }
 }";
@@ -122,7 +122,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction]
-        [DurableExecution]
+        [DurableExecution(executionTimeout: 300)]
         public Task<string> Run(string input) => Task.FromResult(input);
     }
 }";
@@ -149,7 +149,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction]
-        [DurableExecution(RetentionPeriodInDays = -1)]
+        [DurableExecution(300, RetentionPeriodInDays = -1)]
         public Task<string> Run(string input, IDurableContext ctx) => Task.FromResult(input);
     }
 }";
@@ -178,7 +178,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction(Role = ""arn:aws:iam::123456789012:role/MyRole"")]
-        [DurableExecution]
+        [DurableExecution(executionTimeout: 300)]
         public Task<string> Run(string input, IDurableContext ctx) => Task.FromResult(input);
     }
 }";
@@ -210,7 +210,7 @@ namespace MyApp
     public class Workflows
     {
         [LambdaFunction]
-        [DurableExecution]
+        [DurableExecution(executionTimeout: 300)]
         [RestApi(LambdaHttpMethod.Get, ""/run"")]
         public Task<string> Run(string input, IDurableContext ctx) => Task.FromResult(input);
     }

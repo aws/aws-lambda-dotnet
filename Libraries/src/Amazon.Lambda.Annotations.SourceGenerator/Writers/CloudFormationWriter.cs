@@ -437,13 +437,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (durableExecutionAttribute.IsRetentionPeriodInDaysSet)
                 _templateWriter.SetToken($"{durableConfigPath}.RetentionPeriodInDays", durableExecutionAttribute.RetentionPeriodInDays);
 
-            if (durableExecutionAttribute.IsExecutionTimeoutSet)
-                _templateWriter.SetToken($"{durableConfigPath}.ExecutionTimeout", durableExecutionAttribute.ExecutionTimeout);
-
-            // DurableConfig may have no properties if the user set neither; create an empty block so the
-            // function is still marked as durable in the template.
-            if (!_templateWriter.Exists(durableConfigPath))
-                _templateWriter.SetToken(durableConfigPath, new Dictionary<string, object>(), TokenType.Object);
+            // ExecutionTimeout is required (see DurableExecutionAttribute's constructor): the Lambda service
+            // rejects a DurableConfig without it, so it is always written and the block is never empty.
+            _templateWriter.SetToken($"{durableConfigPath}.ExecutionTimeout", durableExecutionAttribute.ExecutionTimeout);
 
             _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedDurableConfig", true);
 

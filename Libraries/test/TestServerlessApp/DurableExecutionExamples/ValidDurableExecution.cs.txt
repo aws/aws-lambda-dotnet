@@ -14,7 +14,7 @@ namespace TestServerlessApp.DurableExecutionExamples
     public class ValidDurableExecution
     {
         [LambdaFunction]
-        [DurableExecution(RetentionPeriodInDays = 7, ExecutionTimeout = 300)]
+        [DurableExecution(300, RetentionPeriodInDays = 7)]
         public Task<string> ProcessOrder(string input, IDurableContext context)
         {
             return Task.FromResult(input);

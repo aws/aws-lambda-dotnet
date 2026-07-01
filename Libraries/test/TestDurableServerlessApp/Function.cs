@@ -5,24 +5,21 @@ using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 
-// Lambda Annotations programming model for durable execution, CLASS-LIBRARY variant. There is NO
-// GenerateMain and NO hand-written Main: the source generator emits only the durable handler wrapper
-// (a single DurableFunction.WrapAsync delegation). The managed dotnet10 runtime hosts its own bootstrap,
-// resolves the serializer from the assembly attribute below, surfaces it on ILambdaContext.Serializer
-// (where DurableFunction.WrapAsync reads it), and invokes the generated wrapper directly via an
-// Assembly::Type::Method handler string.
+// Durable execution via the Lambda Annotations programming model, class-library variant. The source
+// generator emits the durable handler wrapper (Function_Workflow_Generated) that delegates to
+// DurableFunction.WrapAsync; the managed dotnet10 runtime resolves the serializer from this assembly
+// attribute and invokes the wrapper via an Assembly::Type::Method handler string.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace AnnotationsClassLibraryFunction;
+namespace TestDurableServerlessApp;
 
 public class Function
 {
-    // The generator turns this into a wrapper class Function_Workflow_Generated whose Workflow method
-    // delegates to DurableFunction.WrapAsync<TestEvent, TestResult>(Workflow, __request__, __context__) —
-    // the exact entry point the hand-written and executable test functions call, so the
-    // checkpoint/replay/history behavior is identical.
+    // [LambdaFunction] + [DurableExecution] => the generator emits DurableConfig (with the required
+    // ExecutionTimeout) and the checkpoint-API IAM policy into serverless.template, and a wrapper that
+    // calls DurableFunction.WrapAsync<TestEvent, TestResult>. Two chained steps exercise checkpointing.
     [LambdaFunction]
-    [DurableExecution]
+    [DurableExecution(executionTimeout: 300)]
     public async Task<TestResult> Workflow(TestEvent input, IDurableContext context)
     {
         var step1 = await context.StepAsync(

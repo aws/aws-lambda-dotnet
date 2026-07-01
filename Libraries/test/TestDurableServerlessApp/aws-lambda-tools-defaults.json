@@ -1,0 +1,16 @@
+{
+  "Information": [
+    "This file provides default values for the deployment wizard inside Visual Studio and the AWS Lambda commands added to the .NET Core CLI.",
+    "dotnet lambda help",
+    "All the command line options for the Lambda command can be specified in this file."
+  ],
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "framework": "net10.0",
+  "s3-prefix": "TestDurableServerlessApp/",
+  "template": "serverless.template",
+  "template-parameters": "",
+  "s3-bucket": "test-durable-serverless-app",
+  "stack-name": "test-durable-serverless-app"
+}
