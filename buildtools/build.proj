@@ -94,10 +94,12 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessF;Lang=F#;Version=vs2026"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Giraffe;ProjectName=GiraffeF;Lang=F#;Version=vs2026"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=vs2026"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=vs2026"/>				
-		
-		
-        <Exec Command="dotnet new uninstall Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\" IgnoreExitCode="true" />		
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=vs2026"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DurableFunction;ProjectName=DurableFunctionC;Lang=C#;Version=vs2026"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DurableFunction;ProjectName=DurableFunctionServerlessC;Lang=C#;Version=vs2026"/>
+
+
+        <Exec Command="dotnet new uninstall Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\" IgnoreExitCode="true" />
         <Exec Command="dotnet new install Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew-legacy" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=vs2022"/>
