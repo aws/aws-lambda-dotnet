@@ -10,7 +10,7 @@ namespace BlueprintBaseName._1;
 public class Function
 {
     [LambdaFunction]
-    [DurableExecution]
+    [DurableExecution(executionTimeout: 86400)]
     public async Task<OrderResult> ProcessOrder(OrderRequest order, IDurableContext context)
     {
         // The durable logger is replay-aware: this line is emitted once, not once per replay.

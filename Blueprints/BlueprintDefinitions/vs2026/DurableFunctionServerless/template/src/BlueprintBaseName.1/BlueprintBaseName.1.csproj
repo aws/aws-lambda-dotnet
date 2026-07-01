@@ -20,7 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="3.1.1" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.0" />
-    <PackageReference Include="Amazon.Lambda.Annotations" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.Annotations" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.DurableExecution" Version="0.1.1-preview" />
   </ItemGroup>
 </Project>

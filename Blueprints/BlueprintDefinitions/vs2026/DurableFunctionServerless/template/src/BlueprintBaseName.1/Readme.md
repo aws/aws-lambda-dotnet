@@ -13,8 +13,9 @@ runtime checkpoints every operation, so the function can be **suspended** during
 `Function.ProcessOrder` is the workflow entry point. It is marked with two attributes:
 
 * `[LambdaFunction]` — registers the method with the Annotations source generator.
-* `[DurableExecution]` — tells the generator to wrap the method with the durable runtime and to add
-  the durable configuration and IAM policy to `serverless.template`.
+* `[DurableExecution(executionTimeout: 86400)]` — tells the generator to wrap the method with the
+  durable runtime and to add the durable configuration and IAM policy to `serverless.template`.
+  `executionTimeout` (in seconds) is required.
 
 The workflow uses the core durable primitives on `IDurableContext`:
 
