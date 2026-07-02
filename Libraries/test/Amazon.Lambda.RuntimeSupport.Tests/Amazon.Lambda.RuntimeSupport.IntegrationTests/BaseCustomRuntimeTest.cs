@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda.Model;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 
@@ -81,22 +82,22 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     {
                         RoleName = ExecutionRoleName
                     };
-                    var attachedPolicies = await iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest);
+                    var attachedPolicies = await RetryOnThrottleAsync(() => iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest));
 
                     foreach (var policy in attachedPolicies.AttachedPolicies)
                     {
-                        await iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                        await RetryOnThrottleAsync(() => iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
                         {
                             RoleName = ExecutionRoleName,
                             PolicyArn = policy.PolicyArn
-                        });
+                        }));
                     }
 
                     var deleteRoleRequest = new DeleteRoleRequest
                     {
                         RoleName = ExecutionRoleName
                     };
-                    await iamClient.DeleteRoleAsync(deleteRoleRequest);
+                    await RetryOnThrottleAsync(() => iamClient.DeleteRoleAsync(deleteRoleRequest));
                 }
                 catch (Exception)
                 {
@@ -130,7 +131,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             };
             try
             {
-                ExecutionRoleArn = (await iamClient.GetRoleAsync(getRoleRequest)).Role.Arn;
+                ExecutionRoleArn = (await RetryOnThrottleAsync(() => iamClient.GetRoleAsync(getRoleRequest))).Role.Arn;
                 return true;
             }
             catch (NoSuchEntityException)
@@ -142,20 +143,72 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     Description = "Test role for CustomRuntimeTests.",
                     AssumeRolePolicyDocument = LAMBDA_ASSUME_ROLE_POLICY
                 };
-                ExecutionRoleArn = (await iamClient.CreateRoleAsync(createRoleRequest)).Role.Arn;
+                ExecutionRoleArn = (await RetryOnThrottleAsync(() => iamClient.CreateRoleAsync(createRoleRequest))).Role.Arn;
 
                 // Wait for role to propagate.
                 await Task.Delay(10000);
 
-                await iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+                await RetryOnThrottleAsync(() => iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
                 {
                     PolicyArn = "arn:aws:iam::aws:policy/AWSLambdaExecute",
                     RoleName = ExecutionRoleName,
-                });
+                }));
 
 
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Invokes an AWS SDK call, retrying with exponential backoff when the service throttles the request.
+        /// Because every test class provisions its own IAM role and these tests now run in parallel, the
+        /// IAM control-plane APIs (which have low request-rate limits) are easily throttled at startup and
+        /// teardown, surfacing as "Rate exceeded". Retrying smooths the parallel burst instead of failing the test.
+        /// </summary>
+        private static async Task<T> RetryOnThrottleAsync<T>(Func<Task<T>> action)
+        {
+            const int maxAttempts = 8;
+            var delay = TimeSpan.FromSeconds(2);
+
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    return await action();
+                }
+                catch (AmazonServiceException e) when (IsThrottlingException(e) && attempt < maxAttempts)
+                {
+                    await Task.Delay(delay);
+                    // Exponential backoff, capped at 30s, to let the IAM request rate recover.
+                    delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Overload of <see cref="RetryOnThrottleAsync{T}"/> for SDK calls whose response is not needed.
+        /// </summary>
+        private static async Task RetryOnThrottleAsync(Func<Task> action)
+        {
+            await RetryOnThrottleAsync<object>(async () =>
+            {
+                await action();
+                return null;
+            });
+        }
+
+        private static bool IsThrottlingException(AmazonServiceException e)
+        {
+            if (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                return true;
+            }
+
+            var errorCode = e.ErrorCode ?? string.Empty;
+            return errorCode.IndexOf("Throttl", StringComparison.OrdinalIgnoreCase) >= 0
+                || errorCode.IndexOf("TooManyRequests", StringComparison.OrdinalIgnoreCase) >= 0
+                || errorCode.Equals("RequestLimitExceeded", StringComparison.OrdinalIgnoreCase)
+                || (e.Message?.IndexOf("Rate exceeded", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private async Task CreateBucketWithDeploymentZipAsync(IAmazonS3 s3Client, string bucketName)
