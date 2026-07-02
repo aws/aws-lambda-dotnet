@@ -21,7 +21,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
