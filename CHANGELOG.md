@@ -1,3 +1,8 @@
+## Release 2026-07-02 #2
+
+### Amazon.Lambda.Templates (8.1.0)
+* Add lambda.DurableFunction and serverless.DurableFunction blueprints (vs2026) for Lambda durable execution workflows. lambda.DurableFunction uses the class-library static-wrapper model (DurableFunction.WrapAsync) and deploys via dotnet lambda deploy-function; serverless.DurableFunction uses the annotations model ([LambdaFunction] + [DurableExecution]) and deploys via CloudFormation (serverless.template). Both target the managed dotnet10 runtime and ship a sample ProcessOrder workflow plus a local test project driven by Amazon.Lambda.DurableExecution.Testing. Preview.
+
 ## Release 2026-07-02
 
 ### Amazon.Lambda.DurableExecution (0.2.0-preview)
