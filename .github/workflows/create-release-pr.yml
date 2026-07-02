@@ -31,36 +31,36 @@ jobs:
     steps:
       # Assume an AWS Role that provides access to the Access Token
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7  # v6.0.0
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6.2.1
         with:
           role-to-assume: ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_ROLE_ARN }}
           aws-region: us-west-2
       # Retrieve the per-repo deploy key + FG PAT from Secrets Manager
       - name: Retrieve secrets from AWS Secrets Manager
-        uses: aws-actions/aws-secretsmanager-get-secrets@3a411b6ec5cace3d626412dd917e7bfeac242cfa #v3.0.0
+        uses: aws-actions/aws-secretsmanager-get-secrets@2cb1a461cbd4865ac4299648312e4704c646cd53 #v3.0.1
         with:
           secret-ids: |
             DEPLOY_KEY, prod/devops/aws-lambda-dotnet-deploy-key
             FG_PAT, prod/devops/aws-lambda-dotnet-fg-pat
       # Checkout a full clone of the repo using the deploy key (push runs over SSH)
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: "0"
           ssh-key: ${{ env.DEPLOY_KEY }}
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5.1.0
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1  # v5.4.0
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5.1.0
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1  # v5.4.0
         with:
           dotnet-version: 10.0.x
       # Install .NET11 which is needed for building the solution
       - name: Setup .NET 11.0
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 #v5.4.0
         with:
           dotnet-version: 11.0.x
       # Install AutoVer to automate versioning and changelog creation
