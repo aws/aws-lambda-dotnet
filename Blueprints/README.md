@@ -39,6 +39,7 @@ Lambda Simple S3 Function            lambda.S3                     [C#]         
 Lambda ASP.NET Core Web API          lambda.AspNetCoreWebAPI       [C#]          AWS/Lambda/Serverless
 Lambda DynamoDB Blog API             lambda.DynamoDBBlogAPI        [C#]          AWS/Lambda/Serverless
 Lambda Empty Serverless              lambda.EmptyServerless        [C#]          AWS/Lambda/Serverless
+Lambda Durable Function              lambda.DurableFunction        [C#]          AWS/Lambda/Serverless
 Console Application                  console                       [C#], F#      Common/Console
 Class library                        classlib                      [C#], F#      Common/Library
 Unit Test Project                    mstest                        [C#], F#      Test/MSTest
