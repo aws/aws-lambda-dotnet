@@ -1,3 +1,13 @@
+## Release 2026-07-02
+
+### Amazon.Lambda.DurableExecution (0.2.0-preview)
+* Add Roslyn analyzers (DE001-DE004) that catch common durable-execution authoring mistakes at build time, bundled in the package so they activate automatically for consumers. DE001 (Warning) flags non-deterministic APIs (DateTime.Now, Guid.NewGuid(), Random, Stopwatch, Environment.TickCount, crypto RNG) used in workflow code outside a step. DE002 (Warning) flags a durable operation invoked inside a step body via the captured outer IDurableContext. DE003 (Warning) flags mutation of a captured outer-scope variable inside a durable-operation delegate. DE004 (Info) suggests ParallelAsync/MapAsync over Task.WhenAll/Task.WhenAny for durable tasks. DE001 and DE004 include code fixes. Preview.
+### Amazon.Lambda.Annotations (2.2.0)
+* Breaking Change: Make ExecutionTimeout a required constructor argument on [DurableExecution]. The Lambda service rejects a durable function whose DurableConfig has no ExecutionTimeout, so the source generator now always emits it and never produces an empty DurableConfig block that would fail deployment. RetentionPeriodInDays remains an optional named property.
+### Amazon.Lambda.DurableExecution.Testing (0.1.0-preview)
+* Add Amazon.Lambda.DurableExecution.Testing package
+* Fix local test runner spinning on real timers/retry backoffs when SkipTime is disabled by delaying until the next scheduled resume time, and throw an actionable error when WaitForResultAsync is called without a prior StartAsync
+
 ## Release 2026-06-26
 
 ### Amazon.Lambda.DurableExecution (0.1.2-preview)
