@@ -52,6 +52,16 @@ public static class LambdaToolsHelper
     }
 
     /// <summary>
+    /// Directories that are skipped when copying the repo into a temp location for packaging.
+    /// These are volatile build outputs / IDE state that <c>dotnet lambda package</c> regenerates
+    /// anyway. Copying them is not only wasteful but unsafe: when integration test projects run in
+    /// parallel, a concurrent build (or Roslyn loading an analyzer such as
+    /// Amazon.Lambda.DurableExecution.Analyzers) holds files under bin/obj open, causing
+    /// File.CopyTo to throw "being used by another process".
+    /// </summary>
+    private static readonly string[] SkippedDirectories = { ".vs", "bin", "obj" };
+
+    /// <summary>
     /// <see cref="https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories"/>
     /// </summary>
     private static void CopyDirectory(DirectoryInfo dir, string destDirName)
@@ -74,7 +84,7 @@ public static class LambdaToolsHelper
 
         foreach (var subdir in dirs)
         {
-            if (string.Equals(subdir.Name, ".vs", System.StringComparison.OrdinalIgnoreCase))
+            if (System.Array.Exists(SkippedDirectories, name => string.Equals(subdir.Name, name, System.StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             var tempPath = Path.Combine(destDirName, subdir.Name);
