@@ -610,4 +610,107 @@ public class ChildContextOperationTests
         }
     }
 
+    [Fact]
+    public async Task RunInChildContextAsync_FlatNesting_EmitsNoContextCheckpointAndReparentsInnerOps()
+    {
+        var (context, recorder, tm, _) = CreateContext();
+
+        var executed = false;
+        var result = await context.RunInChildContextAsync(
+            async (childCtx, _) =>
+            {
+                executed = true;
+                return await childCtx.StepAsync(async (_, _) => { await Task.CompletedTask; return "inner"; }, name: "inner_step");
+            },
+            name: "phase",
+            config: new ChildContextConfig { NestingType = NestingType.Flat });
+
+        Assert.True(executed);
+        Assert.Equal("inner", result);
+        Assert.False(tm.IsTerminated);
+
+        await recorder.Batcher.DrainAsync();
+
+        // A virtual (Flat) child emits no CONTEXT checkpoint of its own — only
+        // the inner step's operations are recorded.
+        var actions = recorder.Flushed.Select(o => $"{o.Type}:{o.Action}").ToArray();
+        Assert.Equal(new[]
+        {
+            "STEP:START",
+            "STEP:SUCCEED"
+        }, actions);
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT");
+
+        // Inner-op IDs still derive from the child's own operation ID (so sibling
+        // branches never collide), but they re-parent to the nearest non-virtual
+        // ancestor — here the root, whose ParentId is null — since the virtual
+        // branch has no CONTEXT checkpoint for them to reference.
+        var parentOpId = IdAt(1);
+        var innerStepId = ChildIdAt(parentOpId, 1);
+        var stepStart = recorder.Flushed.Single(o => o.Type == "STEP" && o.Action == "START");
+        Assert.Equal(innerStepId, stepStart.Id);
+        Assert.Null(stepStart.ParentId);
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_FlatNesting_ReplayReExecutesBodyFromInnerCheckpoint()
+    {
+        // No CONTEXT checkpoint exists for a virtual child, so on replay the body
+        // re-executes; the inner step replays from its own SUCCEEDED checkpoint
+        // without re-running the step delegate.
+        var parentOpId = IdAt(1);
+        var innerStepId = ChildIdAt(parentOpId, 1);
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = innerStepId,
+                    Type = OperationTypes.Step,
+                    Status = OperationStatuses.Succeeded,
+                    Name = "inner_step",
+                    StepDetails = new StepDetails { Result = "\"cached\"" }
+                }
+            }
+        });
+
+        var stepRan = false;
+        var result = await context.RunInChildContextAsync(
+            async (childCtx, _) =>
+                await childCtx.StepAsync(async (_, _) =>
+                {
+                    stepRan = true;
+                    await Task.CompletedTask;
+                    return "fresh";
+                }, name: "inner_step"),
+            name: "phase",
+            config: new ChildContextConfig { NestingType = NestingType.Flat });
+
+        Assert.False(stepRan);
+        Assert.Equal("cached", result);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT");
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_FlatNesting_FuncThrows_EmitsNoFailCheckpointButPropagates()
+    {
+        var (context, recorder, _, _) = CreateContext();
+
+        var ex = await Assert.ThrowsAsync<ChildContextException>(() =>
+            context.RunInChildContextAsync<string>(
+                (_, _) => throw new InvalidOperationException("boom"),
+                name: "phase",
+                config: new ChildContextConfig { NestingType = NestingType.Flat }));
+
+        Assert.Equal("boom", ex.Message);
+
+        await recorder.Batcher.DrainAsync();
+        // Virtual child suppresses the CONTEXT FAIL checkpoint; the exception
+        // still propagates to the caller.
+        Assert.DoesNotContain(recorder.Flushed, o => o.Type == "CONTEXT");
+    }
+
 }

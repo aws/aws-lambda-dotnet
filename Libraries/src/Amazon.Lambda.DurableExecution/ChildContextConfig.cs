@@ -32,4 +32,26 @@ public sealed class ChildContextConfig
     /// <see cref="ChildContextException"/> is mapped before being thrown).
     /// </remarks>
     public Func<Exception, Exception>? ErrorMapping { get; set; }
+
+    /// <summary>
+    /// How the child context is represented in the checkpoint graph. Defaults to
+    /// <see cref="NestingType.Nested"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Under <see cref="NestingType.Flat"/> the child runs in a virtual context
+    /// that emits no <c>CONTEXT</c> checkpoint of its own — reducing checkpoint
+    /// volume at the cost of less granular execution traces. Operations inside
+    /// the child (steps, waits, callbacks) still checkpoint, re-parented to this
+    /// context's parent.
+    /// </para>
+    /// <para>
+    /// This mirrors the <c>NestingType.Flat</c> option on
+    /// <see cref="MapConfig"/> and <see cref="ParallelConfig"/>, letting a
+    /// standalone <see cref="IDurableContext.RunInChildContextAsync{T}(System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, ChildContextConfig?, System.Threading.CancellationToken)"/>
+    /// call opt into virtual contexts — for example when manually fanning out
+    /// work and awaiting the returned tasks with <c>Task.WhenAll</c>.
+    /// </para>
+    /// </remarks>
+    public NestingType NestingType { get; set; } = NestingType.Nested;
 }
