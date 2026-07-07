@@ -21,6 +21,7 @@
         ],
         "PackageType": "Zip",
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function_ProcessOrder_Generated::ProcessOrder",
+        "AutoPublishAlias": "live",
         "DurableConfig": {
           "ExecutionTimeout": 86400
         }
