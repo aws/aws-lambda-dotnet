@@ -27,3 +27,4 @@ AWSLambda0139 | AWSLambdaCSharpGenerator | Error | Invalid ScheduleEventAttribut
 AWSLambda0142 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecution method signature
 AWSLambda0143 | AWSLambdaCSharpGenerator | Info | DurableExecution function with explicit Role needs checkpoint permissions
 AWSLambda0144 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecutionAttribute
+AWSLambda0145 | AWSLambdaCSharpGenerator | Warning | Durable execution envelope types not registered with JsonSerializerContext

@@ -323,5 +323,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DurableExecutionMissingSerializableEnvelope = new DiagnosticDescriptor(id: "AWSLambda0145",
+            title: "Durable execution envelope types not registered with JsonSerializerContext",
+            messageFormat: "The [DurableExecution] function uses SourceGeneratorLambdaJsonSerializer<{0}>, but {0} does not register {1} with a [JsonSerializable] attribute. The durable runtime serializes the invocation envelope with this context, so add [JsonSerializable(typeof({1}))] to {0} or the function will fail at invocation time.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }
