@@ -180,7 +180,7 @@ public class ParallelOperationTests
     // ──────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task ParallelAsync_AllSuccessfulDefault_OneFailureThrowsParallelException()
+    public async Task ParallelAsync_AllSuccessfulDefault_OneFailureResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
@@ -194,23 +194,23 @@ public class ParallelOperationTests
         var branch0Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var branch2Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(new Func<IDurableContext, CancellationToken, Task<int>>[]
+        // The default is fail-fast, but the operation NEVER throws (JS parity) —
+        // the failure surfaces on the returned result.
+        var result = await context.ParallelAsync(new Func<IDurableContext, CancellationToken, Task<int>>[]
+        {
+            async (_, _) => { await Task.Yield(); branch0Done.SetResult(); return 1; },
+            async (_, _) =>
             {
-                async (_, _) => { await Task.Yield(); branch0Done.SetResult(); return 1; },
-                async (_, _) =>
-                {
-                    await Task.WhenAll(branch0Done.Task, branch2Done.Task);
-                    throw new InvalidOperationException("branch boom");
-                },
-                async (_, _) => { await Task.Yield(); branch2Done.SetResult(); return 3; },
-            }));
+                await Task.WhenAll(branch0Done.Task, branch2Done.Task);
+                throw new InvalidOperationException("branch boom");
+            },
+            async (_, _) => { await Task.Yield(); branch2Done.SetResult(); return 3; },
+        });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        Assert.NotNull(ex.Result);
-        var typed = Assert.IsAssignableFrom<IBatchResult<int>>(ex.Result);
-        Assert.Equal(1, typed.FailureCount);
-        Assert.Equal(2, typed.SuccessCount);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Equal(2, result.SuccessCount);
     }
 
     [Fact]
@@ -264,47 +264,47 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_ToleratedFailureCount_ExceededThrows()
+    public async Task ParallelAsync_ToleratedFailureCount_ExceededResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-1"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-2"); },
-                    async (_, _) => { await Task.Yield(); return 3; },
-                },
-                config: new ParallelConfig
-                {
-                    CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
-                }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-1"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-2"); },
+                async (_, _) => { await Task.Yield(); return 3; },
+            },
+            config: new ParallelConfig
+            {
+                CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
+            });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
     }
 
     [Fact]
-    public async Task ParallelAsync_ToleratedFailurePercentage_ExceededThrows()
+    public async Task ParallelAsync_ToleratedFailurePercentage_ExceededResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
         // 4 branches, 3 fail (75%) > 0.5 (50%) → exceeded.
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f1"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f2"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f3"); },
-                    async (_, _) => { await Task.Yield(); return 4; },
-                },
-                config: new ParallelConfig
-                {
-                    CompletionConfig = new CompletionConfig { ToleratedFailurePercentage = 0.5 }
-                }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f1"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f2"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f3"); },
+                async (_, _) => { await Task.Yield(); return 4; },
+            },
+            config: new ParallelConfig
+            {
+                CompletionConfig = new CompletionConfig { ToleratedFailurePercentage = 0.5 }
+            });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
     }
 
     [Fact]
@@ -946,7 +946,7 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_NestingTypeFlat_ReplayFailed_ThrowsWithInlineError()
+    public async Task ParallelAsync_NestingTypeFlat_ReplayFailed_ResolvesWithInlineError()
     {
         var parentOpId = IdAt(1);
 
@@ -976,20 +976,20 @@ public class ParallelOperationTests
             }
         });
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); return 1; },
-                    async (_, _) => { await Task.Yield(); return 2; },
-                },
-                name: "fanout",
-                config: new ParallelConfig { NestingType = NestingType.Flat }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 1; },
+                async (_, _) => { await Task.Yield(); return 2; },
+            },
+            name: "fanout",
+            config: new ParallelConfig { NestingType = NestingType.Flat });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        var typed = (IBatchResult<int>)ex.Result!;
-        Assert.Equal(1, typed.FailureCount);
-        Assert.Contains("flat branch 0 failed", typed.GetErrors()[0].Message);
+        // Replay reconstructs the frozen FailureToleranceExceeded result from the
+        // inline payload and returns it — no throw (JS parity).
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Contains("flat branch 0 failed", result.GetErrors()[0].Message);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -1062,7 +1062,7 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_ReplayFailed_ThrowsParallelException()
+    public async Task ParallelAsync_ReplayFailed_ResolvesFailureTolerance()
     {
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
@@ -1123,21 +1123,19 @@ public class ParallelOperationTests
             }
         });
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); return 1; },
-                    async (_, _) => { await Task.Yield(); return 2; },
-                },
-                name: "fanout"));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 1; },
+                async (_, _) => { await Task.Yield(); return 2; },
+            },
+            name: "fanout");
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        Assert.NotNull(ex.Result);
-
-        var typed = (IBatchResult<int>)ex.Result!;
-        Assert.Equal(2, typed.FailureCount);
-        Assert.Contains("branch 0 failed", typed.GetErrors()[0].Message);
+        // Replay reconstructs the frozen FailureToleranceExceeded result and
+        // returns it — no throw (JS parity).
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.Equal(2, result.FailureCount);
+        Assert.Contains("branch 0 failed", result.GetErrors()[0].Message);
     }
 
     [Fact]
@@ -1489,14 +1487,14 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_FirstSuccessful_AllFail_AggregatesAsParallelException()
+    public async Task ParallelAsync_FirstSuccessful_AllFail_ResolvesAllCompleted()
     {
-        // FirstSuccessful() aliases MinSuccessful=1 with no explicit failure
-        // tolerance. When every branch fails, MinSuccessful is unreachable
-        // AND there is no failure-tolerance threshold, so the run completes
-        // as AllCompleted with HasFailure=true. Calling ThrowIfError surfaces
-        // the first failure; without explicit failure tolerance the parallel
-        // does NOT throw on its own (matches Python).
+        // FirstSuccessful() aliases MinSuccessful=1. Setting any completion
+        // criterion opts out of the fail-fast default, so there is no
+        // failure-tolerance threshold here. When every branch fails,
+        // MinSuccessful is unreachable, so the run completes as AllCompleted with
+        // HasFailure=true. The parallel never throws on its own (JS parity);
+        // ThrowIfError surfaces the first failure only when the caller asks.
         var (context, _, _, _) = CreateContext();
 
         var result = await context.ParallelAsync(

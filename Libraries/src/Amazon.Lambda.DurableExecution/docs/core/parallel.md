@@ -44,7 +44,7 @@ var batch = await ctx.ParallelAsync(
 var quotes = batch.GetResults();   // all three, in original branch order
 ```
 
-With the default completion policy (`AllSuccessful`), any single branch failure surfaces as a `ParallelException` when the result is awaited.
+With the default completion policy (`AllSuccessful`, fail-fast), any single branch failure resolves the batch with `CompletionReason.FailureToleranceExceeded` and `HasFailure == true`. The operation never throws on failure — inspect the result or call `ThrowIfError()`.
 
 ## Configuration
 
@@ -53,11 +53,11 @@ public sealed class ParallelConfig
 {
     public int? MaxConcurrency { get; set; }                                   // null = unlimited; must be >= 1 when set
     public CompletionConfig CompletionConfig { get; set; } = CompletionConfig.AllSuccessful();
-    public NestingType NestingType { get; set; } = NestingType.Nested;         // Flat is reserved — throws NotSupportedException
+    public NestingType NestingType { get; set; } = NestingType.Nested;
 }
 ```
 
-`MaxConcurrency` bounds how many branches run at once via a semaphore — useful to avoid overwhelming a downstream service. `NestingType.Nested` (default) gives each branch a full child context visible in traces; `NestingType.Flat` is reserved for a future checkpoint optimization and currently throws `NotSupportedException`.
+`MaxConcurrency` bounds how many branches run at once via a semaphore — useful to avoid overwhelming a downstream service. `NestingType.Nested` (default) gives each branch a full child context visible in traces; `NestingType.Flat` runs branches in virtual contexts that emit no per-branch `CONTEXT` checkpoint, recording per-branch results inline on the parallel operation's payload instead — fewer checkpoints, at the cost of trace granularity.
 
 ## Completion policies
 
@@ -65,8 +65,8 @@ public sealed class ParallelConfig
 
 | Factory | Behavior |
 | --- | --- |
-| `CompletionConfig.AllSuccessful()` | Every branch must succeed (equivalent to `ToleratedFailureCount = 0`). The first failure resolves the batch as failed. **Default.** |
-| `CompletionConfig.AllCompleted()` | Run every branch to a terminal state regardless of failures; never auto-throws. Inspect `Succeeded` / `Failed` (or call `ThrowIfError`) afterward. |
+| `CompletionConfig.AllSuccessful()` | Every branch must succeed (equivalent to `ToleratedFailureCount = 0`, and to a default/empty `CompletionConfig`). Any failure resolves the batch as `FailureToleranceExceeded`. **Default.** |
+| `CompletionConfig.AllCompleted()` | Run every branch to a terminal state regardless of failures (`ToleratedFailureCount = int.MaxValue`). Inspect `Succeeded` / `Failed` (or call `ThrowIfError`) afterward. |
 | `CompletionConfig.FirstSuccessful()` | Resolve as soon as one branch succeeds (`MinSuccessful = 1`). Branches not yet dispatched are reported as `Started`. |
 
 For finer control, set the properties yourself:
@@ -121,18 +121,17 @@ foreach (var item in batch.Failed)
 var succeeded = batch.GetResults();
 ```
 
-With the default `AllSuccessful` policy, awaiting a batch in which a branch failed throws `ParallelException`. The exception carries the type-erased `Result` (cast to `IBatchResult<T>` to inspect per-branch detail) and the `CompletionReason`:
+The operation never throws on failure — even under the default `AllSuccessful` (fail-fast) policy, a batch with a failed branch resolves with `CompletionReason.FailureToleranceExceeded` and `HasFailure == true` (matching the JS/Python/Java SDKs). Inspect the result, or call `ThrowIfError()` to opt into surfacing the first branch failure as an exception:
 
 ```csharp
-try
+var batch = await ctx.ParallelAsync(branches, name: "fan-out");
+
+if (batch.HasFailure)
 {
-    var batch = await ctx.ParallelAsync(branches, name: "fan-out");
-}
-catch (ParallelException ex)
-{
-    var result = (IBatchResult<PricingQuote>?)ex.Result;
     ctx.Logger.LogWarning(
         "Parallel operation failed ({Reason}); {Failed} of {Total} branches failed.",
-        ex.CompletionReason, result?.FailureCount, result?.TotalCount);
+        batch.CompletionReason, batch.FailureCount, batch.TotalCount);
+
+    batch.ThrowIfError(); // rethrow the first branch's DurableExecutionException, if desired
 }
 ```

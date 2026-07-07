@@ -43,20 +43,10 @@ internal sealed class ParallelOperation<T> : ConcurrentOperation<T>
     protected override string ParentSubType => OperationSubTypes.Parallel;
     protected override string ChildSubType => OperationSubTypes.ParallelBranch;
     protected override string OperationNoun => "Parallel";
-    protected override string UnitNounPlural => "branches";
 
     protected override (string? Name, Func<IDurableContext, CancellationToken, Task<T>> Func) GetUnit(int index)
     {
         var branch = _branches[index];
         return (branch.Name, branch.Func);
-    }
-
-    protected override DurableExecutionException CreateException(string message, IBatchResult<T> result)
-    {
-        return new ParallelException(message)
-        {
-            Result = result,
-            CompletionReason = result.CompletionReason
-        };
     }
 }
