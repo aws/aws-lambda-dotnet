@@ -3,7 +3,6 @@
 #if NET8_0_OR_GREATER
 using System;
 using System.IO;
-using System.Runtime.Versioning;
 
 namespace Amazon.Lambda.Core.ResponseStreaming
 {

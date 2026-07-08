@@ -19,7 +19,7 @@
       "Name": "Amazon.Lambda.AspNetCoreServer",
       "Type": "Minor",
       "ChangelogMessages": [
-		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming."
+		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.",
         "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
       ]		
 	},
@@ -27,7 +27,7 @@
       "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
       "Type": "Minor",
       "ChangelogMessages": [
-		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming."	  
+		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.",
         "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
       ]		
 	},

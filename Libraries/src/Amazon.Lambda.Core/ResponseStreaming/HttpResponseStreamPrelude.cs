@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Runtime.Versioning;
 using System.Text.Json;
 
 namespace Amazon.Lambda.Core.ResponseStreaming
