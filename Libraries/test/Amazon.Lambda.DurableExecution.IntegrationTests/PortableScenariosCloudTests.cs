@@ -284,7 +284,7 @@ public class PortableScenariosCloudTests
     }
 
     [Fact]
-    public async Task Parallel_FailureTolerance_Exceeded_Fails()
+    public async Task Parallel_FailureTolerance_Exceeded_ResolvesWithReason()
     {
         await using var deployment = await DurableFunctionDeployment.CreateAsync(
             DurableFunctionDeployment.FindTestFunctionDir("ParallelFailureToleranceFunction"),
@@ -339,7 +339,7 @@ public class PortableScenariosCloudTests
     }
 
     [Fact]
-    public async Task Map_FailureTolerance_Exceeded_Fails()
+    public async Task Map_FailureTolerance_Exceeded_ResolvesWithReason()
     {
         await using var deployment = await DurableFunctionDeployment.CreateAsync(
             DurableFunctionDeployment.FindTestFunctionDir("MapFailureToleranceFunction"),

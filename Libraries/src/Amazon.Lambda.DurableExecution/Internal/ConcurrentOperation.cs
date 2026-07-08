@@ -31,17 +31,20 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       SUCCEED with summary payload (<see cref="BatchSummary"/>).</item>
 ///   <item><b>SUCCEEDED</b>: parent payload supplies the snapshot of per-unit
 ///       statuses + completion reason; per-unit results are deserialised from the
-///       children's own CONTEXT checkpoints. If the completion reason is
-///       <see cref="CompletionReason.FailureToleranceExceeded"/>, throws the
-///       subclass exception carrying the rebuilt <see cref="IBatchResult{T}"/>.</item>
+///       children's own CONTEXT checkpoints. The rebuilt
+///       <see cref="IBatchResult{T}"/> is returned regardless of completion
+///       reason.</item>
 ///   <item><b>STARTED</b> / <b>PENDING</b>: re-execute (children replay from their
 ///       own checkpoints).</item>
 /// </list>
-/// Per-unit errors do NOT abort the operation directly — the orchestrator catches
-/// each unit's <see cref="ChildContextException"/>, records it as a failed
+/// Per-unit errors do NOT abort the operation — the orchestrator catches each
+/// unit's <see cref="ChildContextException"/>, records it as a failed
 /// <see cref="IBatchItem{T}"/>, and consults the <see cref="CompletionConfig"/>
-/// after every completion. Only when the completion config marks the run as
-/// <see cref="CompletionReason.FailureToleranceExceeded"/> does it throw.
+/// after every completion only to decide whether to stop dispatching. The
+/// operation ALWAYS returns an <see cref="IBatchResult{T}"/> — it never throws on
+/// failure, matching the JS/Python/Java SDKs. Callers inspect
+/// <see cref="IBatchResult.CompletionReason"/> / <see cref="IBatchResult.HasFailure"/>
+/// or call <see cref="IBatchResult{T}.ThrowIfError"/> to surface a failure.
 /// </remarks>
 internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T>>
 {
@@ -104,20 +107,11 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     /// <summary>Singular operation noun used in messages (e.g. "Parallel" / "Map").</summary>
     protected abstract string OperationNoun { get; }
 
-    /// <summary>Plural unit noun used in messages (e.g. "branches" / "items").</summary>
-    protected abstract string UnitNounPlural { get; }
-
     /// <summary>
     /// Resolves the unit at <paramref name="index"/> into its display name and the
     /// function to run inside the unit's child context.
     /// </summary>
     protected abstract (string? Name, Func<IDurableContext, CancellationToken, Task<T>> Func) GetUnit(int index);
-
-    /// <summary>
-    /// Builds the subclass-specific exception thrown when the operation resolves
-    /// with <see cref="CompletionReason.FailureToleranceExceeded"/>.
-    /// </summary>
-    protected abstract DurableExecutionException CreateException(string message, IBatchResult<T> result);
 
     // ── Orchestration ───────────────────────────────────────────────────
 
@@ -159,12 +153,10 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
             case OperationStatuses.Succeeded:
                 // The parent always checkpoints as SUCCEED — even when
-                // CompletionReason is FailureToleranceExceeded. Reconstruct
-                // the BatchResult and throw if it was a tolerance failure.
-                var result = ReconstructFromCheckpoints(existing);
-                if (result.CompletionReason == CompletionReason.FailureToleranceExceeded)
-                    throw BuildException(result);
-                return Task.FromResult(result);
+                // CompletionReason is FailureToleranceExceeded. Reconstruct and
+                // return the BatchResult; the operation never throws on failure
+                // (the caller inspects CompletionReason / calls ThrowIfError).
+                return Task.FromResult(ReconstructFromCheckpoints(existing));
 
             case OperationStatuses.Started:
             case OperationStatuses.Pending:
@@ -382,17 +374,11 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         var completionReason = ComputeCompletionReason(items, unitCount);
         var result = new BatchResult<T>(items, completionReason);
 
-        var failureException = completionReason == CompletionReason.FailureToleranceExceeded
-            ? BuildException(result)
-            : null;
-
         await CheckpointParentResultAsync(result, completionReason, cancellationToken);
 
-        if (failureException != null)
-        {
-            throw failureException;
-        }
-
+        // Never throw on failure — always return the aggregate result. The caller
+        // inspects CompletionReason / HasFailure or calls ThrowIfError. Matches
+        // the JS/Python/Java SDKs.
         return result;
     }
 
@@ -476,15 +462,9 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             ? DeserializeCompletionReason(summary.CompletionReason)
             : ComputeCompletionReason(items, unitCount);
 
-        var result = new BatchResult<T>(items, completionReason);
-
-        // No re-checkpoint: the parent is already terminal in state.
-        if (completionReason == CompletionReason.FailureToleranceExceeded)
-        {
-            throw BuildException(result);
-        }
-
-        return result;
+        // No re-checkpoint: the parent is already terminal in state. Return the
+        // reconstructed result regardless of completion reason — never throw.
+        return new BatchResult<T>(items, completionReason);
     }
 
     private async Task RunUnitAsync(
@@ -696,14 +676,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         }
 
         return _policy.Evaluate(succeeded, failed, started, totalCount);
-    }
-
-    private DurableExecutionException BuildException(IBatchResult<T> result)
-    {
-        var message =
-            $"{OperationNoun} operation failed: failure tolerance exceeded " +
-            $"({result.FailureCount} of {result.TotalCount} {UnitNounPlural} failed).";
-        return CreateException(message, result);
     }
 
     private async Task CheckpointParentResultAsync(

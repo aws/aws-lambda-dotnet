@@ -259,7 +259,7 @@ internal sealed class DurableContext : IDurableContext
         IReadOnlyList<TItem> items,
         Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
         string? name = null,
-        MapConfig? config = null,
+        MapConfig<TItem>? config = null,
         CancellationToken cancellationToken = default)
         => RunMap(items, func, name, config, cancellationToken);
 
@@ -267,13 +267,13 @@ internal sealed class DurableContext : IDurableContext
         IReadOnlyList<TItem> items,
         Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
         string? name,
-        MapConfig? config,
+        MapConfig<TItem>? config,
         CancellationToken cancellationToken)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
         if (func == null) throw new ArgumentNullException(nameof(func));
 
-        var effectiveConfig = config ?? new MapConfig();
+        var effectiveConfig = config ?? new MapConfig<TItem>();
 
         var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
 

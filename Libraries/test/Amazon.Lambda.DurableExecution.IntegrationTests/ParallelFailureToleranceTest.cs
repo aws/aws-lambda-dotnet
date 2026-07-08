@@ -15,14 +15,15 @@ public class ParallelFailureToleranceTest
     public ParallelFailureToleranceTest(ITestOutputHelper output) => _output = output;
 
     /// <summary>
-    /// Five branches, two fail, ToleratedFailureCount=1. The parallel must surface a
-    /// <see cref="ParallelException"/> with reason
-    /// <see cref="CompletionReason.FailureToleranceExceeded"/>; the workflow must
-    /// terminate FAILED. Validates the failure-tolerance short-circuit and that
-    /// <c>ParallelException</c> propagates as the workflow's terminal error.
+    /// Five branches, two fail, ToleratedFailureCount=1. The parallel resolves with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/> but does NOT throw
+    /// (JS parity): the workflow completes SUCCEEDED and the returned
+    /// <c>BatchResult</c> reports the completion reason. Validates the
+    /// failure-tolerance short-circuit and that the parent CONTEXT is checkpointed
+    /// ContextSucceeded (the completion reason lives inside the payload).
     /// </summary>
     [Fact]
-    public async Task Parallel_FailureToleranceExceeded_FailsWorkflow()
+    public async Task Parallel_FailureToleranceExceeded_CompletesWithReason()
     {
         await using var deployment = await DurableFunctionDeployment.CreateAsync(
             DurableFunctionDeployment.FindTestFunctionDir("ParallelFailureToleranceFunction"),
@@ -32,24 +33,18 @@ public class ParallelFailureToleranceTest
         var responsePayload = Encoding.UTF8.GetString(invokeResponse.Payload.ToArray());
         _output.WriteLine($"Response: {responsePayload}");
 
-        // Failed workflows return null payload to the Invoke caller — locate the
-        // execution by name to inspect its terminal status.
         var arn = await deployment.FindDurableExecutionArnByNameAsync(executionName, TimeSpan.FromSeconds(60));
         Assert.NotNull(arn);
 
+        // The operation no longer throws on failure tolerance, so the workflow
+        // itself succeeds — the failure surfaces in the result payload, not as a
+        // terminal workflow error.
         var status = await deployment.PollForCompletionAsync(arn!, TimeSpan.FromSeconds(60));
-        Assert.Equal("FAILED", status, ignoreCase: true);
+        Assert.Equal("SUCCEEDED", status, ignoreCase: true);
 
         var execution = await deployment.GetExecutionAsync(arn!);
-        Assert.NotNull(execution.Error);
-        // ParallelException is the terminal error type the SDK throws when the
-        // failure-tolerance short-circuit fires.
-        var errorType = execution.Error.ErrorType ?? string.Empty;
-        var errorMessage = execution.Error.ErrorMessage ?? string.Empty;
-        Assert.True(
-            errorType.Contains("ParallelException", StringComparison.Ordinal)
-                || errorMessage.Contains("Parallel", StringComparison.OrdinalIgnoreCase),
-            $"Expected error to indicate ParallelException; got type='{errorType}' message='{errorMessage}'");
+        Assert.Null(execution.Error);
+        Assert.Contains("FailureToleranceExceeded", responsePayload, StringComparison.Ordinal);
 
         // History: parent CONTEXT and at least 2 failed branch contexts visible.
         var history = await deployment.WaitForHistoryAsync(
@@ -68,11 +63,8 @@ public class ParallelFailureToleranceTest
         // The parent context (named "tolerance") is checkpointed ContextSucceeded
         // even when the failure tolerance is exceeded: ConcurrentOperation always
         // writes the parent batch summary with action SUCCEED (the completion
-        // reason lives inside the payload), then the SDK throws ParallelException
-        // AFTER the checkpoint. This matches the Python/JS/Java wire format. The
-        // workflow-level failure is asserted above via PollForCompletionAsync ==
-        // FAILED and the ParallelException error type — the parent CONTEXT itself
-        // is NOT recorded as ContextFailed.
+        // reason lives inside the payload). This matches the Python/JS/Java wire
+        // format. The parent CONTEXT itself is NOT recorded as ContextFailed.
         var parentSucceeded = events.FirstOrDefault(e =>
             e.EventType == EventType.ContextSucceeded && e.Name == "tolerance");
         Assert.NotNull(parentSucceeded);

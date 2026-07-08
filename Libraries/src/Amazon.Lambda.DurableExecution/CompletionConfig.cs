@@ -90,20 +90,29 @@ public sealed class CompletionConfig
     }
 
     /// <summary>
-    /// All items must succeed. Equivalent to
-    /// <see cref="ToleratedFailureCount"/> = 0. The default for
-    /// <see cref="ParallelConfig.CompletionConfig"/>.
+    /// All items must succeed — any single failure resolves the batch with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>. Equivalent to
+    /// <see cref="ToleratedFailureCount"/> = 0, and to a default (empty)
+    /// <see cref="CompletionConfig"/>. The default for both
+    /// <see cref="ParallelConfig.CompletionConfig"/> and
+    /// <see cref="MapConfig{TItem}.CompletionConfig"/>, matching the JS/Python SDKs.
     /// </summary>
     public static CompletionConfig AllSuccessful() => new() { ToleratedFailureCount = 0 };
 
     /// <summary>
     /// Run every branch regardless of failures; surface failures per-item via
-    /// <see cref="IBatchResult{T}.Failed"/>. Resolution does not auto-throw —
-    /// the caller can inspect the result and call
-    /// <see cref="IBatchResult{T}.ThrowIfError"/> if they want strict-success
-    /// behavior.
+    /// <see cref="IBatchResult{T}.Failed"/>. Never resolves with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>. The caller
+    /// inspects the result and can call <see cref="IBatchResult{T}.ThrowIfError"/>
+    /// if it wants strict-success behavior.
     /// </summary>
-    public static CompletionConfig AllCompleted() => new();
+    /// <remarks>
+    /// Sets <see cref="ToleratedFailureCount"/> to <see cref="int.MaxValue"/> so it
+    /// stays lenient. An <em>empty</em> <see cref="CompletionConfig"/> is fail-fast
+    /// (equivalent to <see cref="AllSuccessful"/>), so leniency must be opted into
+    /// explicitly.
+    /// </remarks>
+    public static CompletionConfig AllCompleted() => new() { ToleratedFailureCount = int.MaxValue };
 
     /// <summary>
     /// Resolve once at least one branch has succeeded. Branches that were not

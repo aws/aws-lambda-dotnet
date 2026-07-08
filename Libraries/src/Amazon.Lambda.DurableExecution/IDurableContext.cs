@@ -377,9 +377,11 @@ public interface IDurableContext
     /// <remarks>
     /// On per-branch failure (a branch's user function throws), the failure is
     /// captured on the corresponding <see cref="IBatchItem{T}"/> instead of
-    /// aborting the parallel. The parallel only throws
-    /// <see cref="ParallelException"/> when <see cref="CompletionConfig"/>
-    /// criteria are violated. Use
+    /// aborting the parallel. The parallel NEVER throws on failure — it always
+    /// returns an <see cref="IBatchResult{T}"/>. By default
+    /// (<see cref="CompletionConfig.AllSuccessful"/>, fail-fast) any branch failure
+    /// resolves it with <see cref="CompletionReason.FailureToleranceExceeded"/>;
+    /// failures surface via <see cref="IBatchResult.HasFailure"/>. Use
     /// <see cref="IBatchResult{T}.ThrowIfError"/> for explicit strict-success
     /// semantics. Per-branch results are serialized to checkpoints using the
     /// <see cref="ILambdaSerializer"/> registered on
@@ -449,8 +451,8 @@ public interface IDurableContext
     /// Process a collection of items concurrently, running <paramref name="func"/>
     /// once per item. Each item runs inside its own child context; per-item
     /// results are aggregated into an <see cref="IBatchResult{TResult}"/>. Items
-    /// are dispatched up to <see cref="MapConfig.MaxConcurrency"/>; the aggregate
-    /// resolves according to <see cref="MapConfig.CompletionConfig"/>.
+    /// are dispatched up to <see cref="MapConfig{TItem}.MaxConcurrency"/>; the aggregate
+    /// resolves according to <see cref="MapConfig{TItem}.CompletionConfig"/>.
     /// </summary>
     /// <remarks>
     /// The per-item function receives the durable context, the item, its
@@ -458,13 +460,17 @@ public interface IDurableContext
     /// <see cref="CancellationToken"/> linking the
     /// caller-supplied token with the SDK's workflow-shutdown signal (it is also
     /// tripped cooperatively when a sibling item satisfies the
-    /// <see cref="MapConfig.CompletionConfig"/> and the map short-circuits). On
+    /// <see cref="MapConfig{TItem}.CompletionConfig"/> and the map short-circuits). On
     /// per-item failure (the user function throws), the failure is captured on
     /// the corresponding <see cref="IBatchItem{TResult}"/> instead of aborting
-    /// the map. By default (<see cref="CompletionConfig.AllCompleted"/>) every
-    /// item runs and failures surface via <see cref="IBatchResult{TResult}.Failed"/>;
-    /// the map throws <see cref="MapException"/> only when
-    /// <see cref="CompletionConfig"/> criteria are violated. Use
+    /// the map. The map NEVER throws on failure — it always returns an
+    /// <see cref="IBatchResult{TResult}"/>. By default
+    /// (<see cref="CompletionConfig.AllSuccessful"/>, fail-fast) any item failure
+    /// resolves the map with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>; use
+    /// <see cref="CompletionConfig.AllCompleted"/> to run every item regardless.
+    /// Failures surface via <see cref="IBatchResult{TResult}.Failed"/> /
+    /// <see cref="IBatchResult.HasFailure"/>; call
     /// <see cref="IBatchResult{TResult}.ThrowIfError"/> for explicit
     /// strict-success semantics. Per-item results are serialized to checkpoints
     /// using the <see cref="ILambdaSerializer"/> registered on
@@ -474,7 +480,7 @@ public interface IDurableContext
         IReadOnlyList<TItem> items,
         Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
         string? name = null,
-        MapConfig? config = null,
+        MapConfig<TItem>? config = null,
         CancellationToken cancellationToken = default);
 }
 

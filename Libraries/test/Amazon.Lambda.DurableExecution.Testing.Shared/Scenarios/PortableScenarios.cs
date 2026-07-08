@@ -424,14 +424,18 @@ public static class PortableScenarios
         Assert.NotEqual("FailureToleranceExceeded", result.Result.CompletionReason);
     }
 
-    /// <summary>Behavioral half of parallel failure tolerance: exceeding tolerance fails the workflow.</summary>
+    /// <summary>
+    /// Behavioral half of parallel failure tolerance: exceeding tolerance resolves
+    /// the batch with <c>FailureToleranceExceeded</c>. The operation does NOT throw
+    /// (JS parity) — the workflow completes and reports the completion reason.
+    /// </summary>
     public static async Task ParallelFailureToleranceAsync(IDurableTestRunner<BatchRequest, BatchResult> runner)
     {
         var result = await runner.RunAsync(new BatchRequest { OrderId = "tol" });
 
-        Assert.True(result.IsFailed);
-        Assert.NotNull(result.Error);
-        Assert.Contains("ParallelException", result.Error!.ErrorType ?? string.Empty);
+        result.EnsureSucceeded();
+        Assert.Equal("FailureToleranceExceeded", result.Result!.CompletionReason);
+        Assert.Equal(2, result.Result.FailureCount);
     }
 
     /// <summary>
@@ -485,14 +489,18 @@ public static class PortableScenarios
         Assert.NotEqual("FailureToleranceExceeded", result.Result.CompletionReason);
     }
 
-    /// <summary>Behavioral half of map failure tolerance: exceeding tolerance fails the workflow with MapException.</summary>
+    /// <summary>
+    /// Behavioral half of map failure tolerance: exceeding tolerance resolves the
+    /// batch with <c>FailureToleranceExceeded</c>. The operation does NOT throw
+    /// (JS parity) — the workflow completes and reports the completion reason.
+    /// </summary>
     public static async Task MapFailureToleranceAsync(IDurableTestRunner<BatchRequest, BatchResult> runner)
     {
         var result = await runner.RunAsync(new BatchRequest { OrderId = "tol" });
 
-        Assert.True(result.IsFailed);
-        Assert.NotNull(result.Error);
-        Assert.Contains("MapException", result.Error!.ErrorType ?? string.Empty);
+        result.EnsureSucceeded();
+        Assert.Equal("FailureToleranceExceeded", result.Result!.CompletionReason);
+        Assert.Equal(2, result.Result.FailureCount);
     }
 
     /// <summary>Behavioral half of map max-concurrency: all six items complete (wave timing is cloud-only).</summary>

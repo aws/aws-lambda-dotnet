@@ -24,9 +24,11 @@ public enum CompletionReason
 
     /// <summary>
     /// <see cref="CompletionConfig.ToleratedFailureCount"/> or
-    /// <see cref="CompletionConfig.ToleratedFailurePercentage"/> was exceeded.
-    /// The batch is considered failed and surfaces a
-    /// <see cref="ParallelException"/> when awaited.
+    /// <see cref="CompletionConfig.ToleratedFailurePercentage"/> was exceeded (a
+    /// default/empty <see cref="CompletionConfig"/> is fail-fast, so any failure
+    /// trips this). The batch is considered failed: <see cref="IBatchResult.HasFailure"/>
+    /// is <c>true</c> and <see cref="IBatchResult{T}.ThrowIfError"/> surfaces the
+    /// first item error. The operation itself does not throw.
     /// </summary>
     FailureToleranceExceeded
 }

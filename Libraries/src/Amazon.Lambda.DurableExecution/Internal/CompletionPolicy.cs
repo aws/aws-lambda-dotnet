@@ -22,11 +22,20 @@ internal readonly struct CompletionPolicy
     private readonly int? _toleratedFailureCount;
     private readonly double? _toleratedFailurePercentage;
 
+    // True when NO completion criteria are set at all (every field null). This is
+    // the fail-fast default, matching the JS/Python SDKs: an empty CompletionConfig
+    // fails the batch on the first failed unit. Setting ANY field (even
+    // MinSuccessful alone) opts out of this and uses the explicit thresholds below.
+    private readonly bool _failFastOnAnyFailure;
+
     public CompletionPolicy(CompletionConfig config)
     {
         _minSuccessful = config.MinSuccessful;
         _toleratedFailureCount = config.ToleratedFailureCount;
         _toleratedFailurePercentage = config.ToleratedFailurePercentage;
+        _failFastOnAnyFailure = _minSuccessful is null
+            && _toleratedFailureCount is null
+            && _toleratedFailurePercentage is null;
     }
 
     /// <summary>
@@ -61,12 +70,18 @@ internal readonly struct CompletionPolicy
     private bool MinSuccessfulReached(int succeeded)
         => _minSuccessful is { } min && succeeded >= min;
 
-    // Failure count or ratio STRICTLY exceeds a configured threshold. Only a
-    // threshold that was explicitly set can trip this — an "empty" CompletionConfig
-    // (all properties null) is permissive. CompletionConfig.AllSuccessful() opts
-    // into fail-fast by setting ToleratedFailureCount = 0.
+    // Failure count or ratio STRICTLY exceeds a configured threshold. An "empty"
+    // CompletionConfig (all properties null) is FAIL-FAST — any failure trips it —
+    // matching the JS/Python SDKs. Setting any explicit threshold opts out of that
+    // and uses the thresholds below. CompletionConfig.AllSuccessful() (which sets
+    // ToleratedFailureCount = 0) and the empty config are therefore equivalent;
+    // CompletionConfig.AllCompleted() sets ToleratedFailureCount = int.MaxValue to
+    // stay lenient.
     private bool FailureToleranceExceeded(int failed, int totalBranches)
     {
+        if (_failFastOnAnyFailure)
+            return failed > 0;
+
         if (_toleratedFailureCount is { } tfc && failed > tfc)
             return true;
 

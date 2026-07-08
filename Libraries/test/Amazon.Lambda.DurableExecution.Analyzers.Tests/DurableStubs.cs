@@ -32,7 +32,7 @@ namespace Amazon.Lambda.DurableExecution
     public sealed class WaitForCallbackConfig { }
     public sealed class InvokeConfig { }
     public sealed class ParallelConfig { }
-    public sealed class MapConfig { }
+    public sealed class MapConfig<TItem> { }
     public sealed class WaitForConditionConfig<TState> { }
     public readonly struct DurableBranch<T> { public DurableBranch(string name, Func<IDurableContext, CancellationToken, Task<T>> func) { } }
     public interface IBatchResult<T> { }
@@ -59,7 +59,7 @@ namespace Amazon.Lambda.DurableExecution
         Task<IBatchResult<T>> ParallelAsync<T>(IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches, string name = null, ParallelConfig config = null, CancellationToken cancellationToken = default);
         Task<IBatchResult<T>> ParallelAsync<T>(IReadOnlyList<DurableBranch<T>> branches, string name = null, ParallelConfig config = null, CancellationToken cancellationToken = default);
 
-        Task<IBatchResult<TResult>> MapAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func, string name = null, MapConfig config = null, CancellationToken cancellationToken = default);
+        Task<IBatchResult<TResult>> MapAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func, string name = null, MapConfig<TItem> config = null, CancellationToken cancellationToken = default);
     }
 }
 ";

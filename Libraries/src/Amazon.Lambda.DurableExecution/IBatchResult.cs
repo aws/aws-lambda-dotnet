@@ -4,9 +4,9 @@
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
-/// Non-generic marker for <see cref="IBatchResult{T}"/>. Used by
-/// <see cref="ParallelException.Result"/> so callers can hold a reference to
-/// the aggregate result without knowing the per-branch type at compile time.
+/// Non-generic marker for <see cref="IBatchResult{T}"/>. Lets callers hold a
+/// reference to the aggregate result, or read the completion bookkeeping, without
+/// knowing the per-branch type at compile time.
 /// </summary>
 public interface IBatchResult
 {

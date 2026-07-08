@@ -147,7 +147,7 @@ public class MapOperationTests
             new[] { "order-1", "order-2" },
             async (ctx, item, index, all, _) => { await Task.Yield(); return item.Length; },
             name: "process_orders",
-            config: new MapConfig { ItemNamer = (item, index) => $"Order-{item}" });
+            config: new MapConfig<string> { ItemNamer = (item, index) => $"Order-{item}" });
 
         Assert.Equal("Order-order-1", result.All[0].Name);
         Assert.Equal("Order-order-2", result.All[1].Name);
@@ -182,15 +182,17 @@ public class MapOperationTests
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // CompletionConfig — Map's permissive default vs fail-fast opt-in
+    // CompletionConfig — fail-fast default (JS parity); operations never throw
     // ──────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task MapAsync_AllCompletedDefault_PartialFailureDoesNotThrow()
+    public async Task MapAsync_DefaultFailFast_PartialFailureResolvesFailureTolerance()
     {
-        // Map's default CompletionConfig is AllCompleted() (permissive), unlike
-        // Parallel's AllSuccessful(). A single item failure is captured rather
-        // than thrown.
+        // Map's default CompletionConfig is AllSuccessful() (fail-fast), matching
+        // Parallel and the JS/Python SDKs. A single item failure resolves the map
+        // with FailureToleranceExceeded, but the map NEVER throws — the failure is
+        // captured on the result. With unlimited concurrency all three items are
+        // dispatched before any completes, so two still succeed.
         var (context, _, _, _) = CreateContext();
 
         var result = await context.MapAsync(
@@ -205,7 +207,7 @@ public class MapOperationTests
         Assert.True(result.HasFailure);
         Assert.Equal(2, result.SuccessCount);
         Assert.Equal(1, result.FailureCount);
-        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
         Assert.Equal(new[] { 1, 3 }, result.GetResults());
 
         var errors = result.GetErrors();
@@ -214,33 +216,34 @@ public class MapOperationTests
     }
 
     [Fact]
-    public async Task MapAsync_AllSuccessfulOptIn_OneFailureThrowsMapException()
+    public async Task MapAsync_AllCompletedOptIn_PartialFailureIsTolerated()
     {
+        // AllCompleted() opts out of fail-fast: every item runs and the batch
+        // resolves AllCompleted despite the failure. Still no throw.
         var (context, _, _, _) = CreateContext();
 
-        var ex = await Assert.ThrowsAsync<MapException>(() =>
-            context.MapAsync(
-                new[] { 1, 2, 3 },
-                async (ctx, item, index, all, _) =>
-                {
-                    await Task.Yield();
-                    if (item == 2) throw new InvalidOperationException("item boom");
-                    return item;
-                },
-                config: new MapConfig { CompletionConfig = CompletionConfig.AllSuccessful() }));
+        var result = await context.MapAsync(
+            new[] { 1, 2, 3 },
+            async (ctx, item, index, all, _) =>
+            {
+                await Task.Yield();
+                if (item == 2) throw new InvalidOperationException("oops");
+                return item;
+            },
+            config: new MapConfig<int> { CompletionConfig = CompletionConfig.AllCompleted() });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        Assert.NotNull(ex.Result);
-        var typed = Assert.IsAssignableFrom<IBatchResult<int>>(ex.Result);
-        Assert.Equal(1, typed.FailureCount);
-        Assert.Equal(2, typed.SuccessCount);
+        Assert.True(result.HasFailure);
+        Assert.Equal(2, result.SuccessCount);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+        Assert.Equal(new[] { 1, 3 }, result.GetResults());
     }
 
     [Fact]
-    public async Task MapAsync_ThrowIfError_ThrowsUnderPermissiveDefault()
+    public async Task MapAsync_ThrowIfError_ThrowsAfterFailure()
     {
-        // The permissive default does not auto-throw; ThrowIfError is the
-        // explicit strict-success check.
+        // The operation never auto-throws; ThrowIfError is the explicit
+        // strict-success check the caller opts into.
         var (context, _, _, _) = CreateContext();
 
         var result = await context.MapAsync(
@@ -258,25 +261,26 @@ public class MapOperationTests
     }
 
     [Fact]
-    public async Task MapAsync_ToleratedFailureCount_ExceededThrows()
+    public async Task MapAsync_ToleratedFailureCount_ExceededResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
-        var ex = await Assert.ThrowsAsync<MapException>(() =>
-            context.MapAsync(
-                new[] { 1, 2, 3 },
-                async (ctx, item, index, all, _) =>
-                {
-                    await Task.Yield();
-                    if (item != 3) throw new InvalidOperationException($"fail-{item}");
-                    return item;
-                },
-                config: new MapConfig
-                {
-                    CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
-                }));
+        var result = await context.MapAsync(
+            new[] { 1, 2, 3 },
+            async (ctx, item, index, all, _) =>
+            {
+                await Task.Yield();
+                if (item != 3) throw new InvalidOperationException($"fail-{item}");
+                return item;
+            },
+            config: new MapConfig<int>
+            {
+                CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
+            });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
+        Assert.Equal(2, result.FailureCount);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -294,7 +298,7 @@ public class MapOperationTests
         var result = await context.MapAsync(
             new[] { 1, 2, 3 },
             async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
-            config: new MapConfig
+            config: new MapConfig<int>
             {
                 MaxConcurrency = 1,
                 CompletionConfig = CompletionConfig.FirstSuccessful()
@@ -337,7 +341,7 @@ public class MapOperationTests
                 lock (lockObj) inFlight--;
                 return item;
             },
-            config: new MapConfig { MaxConcurrency = 2 });
+            config: new MapConfig<int> { MaxConcurrency = 2 });
 
         Assert.Equal(5, result.SuccessCount);
         Assert.True(maxObserved <= 2, $"Observed concurrency {maxObserved} exceeded MaxConcurrency = 2");
@@ -353,7 +357,7 @@ public class MapOperationTests
         var result = await context.MapAsync(
             new[] { 1, 2, 3 },
             async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
-            config: new MapConfig { MaxConcurrency = 10 });
+            config: new MapConfig<int> { MaxConcurrency = 10 });
 
         Assert.Equal(3, result.SuccessCount);
         Assert.Equal(new[] { 1, 2, 3 }, result.GetResults());
@@ -362,7 +366,7 @@ public class MapOperationTests
     [Fact]
     public void MapConfig_MaxConcurrency_OutOfRange_Throws()
     {
-        var config = new MapConfig();
+        var config = new MapConfig<int>();
         Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxConcurrency = 0);
         Assert.Throws<ArgumentOutOfRangeException>(() => config.MaxConcurrency = -1);
         config.MaxConcurrency = 1;
@@ -370,12 +374,12 @@ public class MapOperationTests
     }
 
     [Fact]
-    public void MapConfig_DefaultCompletionConfig_IsAllCompleted()
+    public void MapConfig_DefaultCompletionConfig_IsAllSuccessful()
     {
-        // Guards the intentional divergence from ParallelConfig (AllSuccessful).
-        var config = new MapConfig();
-        // AllCompleted() == empty CompletionConfig (no failure thresholds).
-        Assert.Null(config.CompletionConfig.ToleratedFailureCount);
+        // Map now defaults to fail-fast (AllSuccessful), matching ParallelConfig
+        // and the JS/Python SDKs. AllSuccessful() sets ToleratedFailureCount = 0.
+        var config = new MapConfig<int>();
+        Assert.Equal(0, config.CompletionConfig.ToleratedFailureCount);
         Assert.Null(config.CompletionConfig.MinSuccessful);
         Assert.Null(config.CompletionConfig.ToleratedFailurePercentage);
     }
@@ -393,7 +397,7 @@ public class MapOperationTests
             new[] { 1, 2, 3 },
             async (ctx, item, index, all, _) => { await Task.Yield(); return item * 10; },
             name: "doubler",
-            config: new MapConfig { NestingType = NestingType.Flat });
+            config: new MapConfig<int> { NestingType = NestingType.Flat });
 
         Assert.Equal(new[] { 10, 20, 30 }, result.GetResults());
         Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
@@ -420,7 +424,7 @@ public class MapOperationTests
             async (ctx, item, index, all, _) =>
                 await ctx.StepAsync(async (_, _) => { await Task.Yield(); return item * 10; }),
             name: "doubler",
-            config: new MapConfig { NestingType = NestingType.Flat });
+            config: new MapConfig<int> { NestingType = NestingType.Flat });
 
         await recorder.Batcher.DrainAsync();
 
@@ -475,7 +479,7 @@ public class MapOperationTests
             new[] { 1, 2 },
             async (ctx, item, index, all, _) => { executed = true; await Task.Yield(); return item * 999; },
             name: "doubler",
-            config: new MapConfig { NestingType = NestingType.Flat });
+            config: new MapConfig<int> { NestingType = NestingType.Flat });
 
         Assert.False(executed);
         Assert.Equal(new[] { 10, 20 }, result.GetResults());
@@ -646,7 +650,7 @@ public class MapOperationTests
     }
 
     [Fact]
-    public async Task MapAsync_ReplayFailed_RebuildsResultAndThrows()
+    public async Task MapAsync_ReplayFailed_RebuildsResultWithoutThrowing()
     {
         var parentOpId = IdAt(1);
         var i0 = ChildIdAt(parentOpId, 1);
@@ -685,15 +689,16 @@ public class MapOperationTests
             }
         });
 
-        var ex = await Assert.ThrowsAsync<MapException>(() =>
-            context.MapAsync(
-                new[] { 1 },
-                async (ctx, item, index, all, _) => { await Task.Yield(); return 999; },
-                name: "m"));
+        var result = await context.MapAsync(
+            new[] { 1 },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return 999; },
+            name: "m");
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        var typed = Assert.IsAssignableFrom<IBatchResult<int>>(ex.Result);
-        Assert.Equal(1, typed.FailureCount);
+        // Replay reconstructs the frozen FailureToleranceExceeded result and
+        // returns it — the operation never throws (JS parity).
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
+        Assert.Equal(1, result.FailureCount);
     }
 
     [Fact]
@@ -741,7 +746,7 @@ public class MapOperationTests
                 async (ctx, item, index, all, _) => { await Task.Yield(); return 999; },
                 name: "m",
                 // Namer now yields "renamed" instead of the checkpointed "alpha".
-                config: new MapConfig { ItemNamer = (item, index) => "renamed" }));
+                config: new MapConfig<int> { ItemNamer = (item, index) => "renamed" }));
     }
 
     // ──────────────────────────────────────────────────────────────────────
