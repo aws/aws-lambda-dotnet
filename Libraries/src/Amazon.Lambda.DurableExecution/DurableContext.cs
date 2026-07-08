@@ -167,7 +167,8 @@ internal sealed class DurableContext : IDurableContext
 
         var op = new ChildContextOperation<T>(
             operationId, name, _idGenerator.ParentId, func, config, serializer, MakeChildFactory(),
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher,
+            isVirtual: config?.NestingType == NestingType.Flat);
         return op.ExecuteAsync(cancellationToken);
     }
 
