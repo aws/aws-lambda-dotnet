@@ -20,7 +20,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
-    [RequiresPreviewFeatures]
     public class ResponseStreamingPropertyTests
     {
         // -----------------------------------------------------------------------
@@ -52,7 +51,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
             }
 
-            [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {
@@ -195,12 +193,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             int expectedStatus = statusCode == 0 ? 200 : statusCode;
             Assert.Equal((System.Net.HttpStatusCode)expectedStatus, prelude.StatusCode);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey(headerKey),
-                $"Header '{headerKey}' missing from MultiValueHeaders");
-            Assert.Equal(headerValues, prelude.MultiValueHeaders[headerKey].ToArray());
+            // HTTP API v2 uses the single-value "headers" collection; multiple values are joined with ", ".
+            Assert.True(prelude.Headers.ContainsKey(headerKey),
+                $"Header '{headerKey}' missing from Headers");
+            Assert.Equal(string.Join(", ", headerValues), prelude.Headers[headerKey]);
 
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("set-cookie"));
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"));
+            Assert.False(prelude.Headers.ContainsKey("set-cookie"));
         }
 
 
@@ -227,12 +226,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             foreach (var cookie in cookies)
                 Assert.Contains(cookie, prelude.Cookies);
 
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"),
-                "Set-Cookie must not appear in MultiValueHeaders");
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("set-cookie"),
-                "set-cookie must not appear in MultiValueHeaders");
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"),
+                "Set-Cookie must not appear in Headers");
+            Assert.False(prelude.Headers.ContainsKey("set-cookie"),
+                "set-cookie must not appear in Headers");
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("content-type"));
+            Assert.True(prelude.Headers.ContainsKey("content-type"));
         }
 
 
@@ -446,7 +445,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
             }
 
-            [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {

@@ -10,15 +10,8 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// <summary>
     /// Factory to create Lambda response streams for writing streaming responses in AWS Lambda functions. The created streams are write-only and non-seekable.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class LambdaResponseStreamFactory
     {
-        internal const string PreviewMessage =
-            "Response streaming is in preview till a new version of .NET Lambda runtime client that supports response streaming " +
-            "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
-            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
-            "project file to \"true\"";
-
         internal const string UninitializedFactoryMessage =
             "LambdaResponseStreamFactory is not initialized. This is caused by mismatch versions of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport. " +
             "Update both packages to the current version to address the issue.";

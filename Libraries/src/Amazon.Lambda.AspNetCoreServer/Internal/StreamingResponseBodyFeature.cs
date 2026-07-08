@@ -20,7 +20,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// <see cref="MemoryStream"/>; after <see cref="StartAsync"/> all writes go directly to the
     /// <see cref="LambdaResponseStream"/> obtained from the stream opener delegate.
     /// </summary>
-    [RequiresPreviewFeatures(AbstractAspNetCoreFunction.ParameterizedPreviewMessage)]
     internal class StreamingResponseBodyFeature : IHttpResponseBodyFeature
     {
         private readonly ILogger _logger;

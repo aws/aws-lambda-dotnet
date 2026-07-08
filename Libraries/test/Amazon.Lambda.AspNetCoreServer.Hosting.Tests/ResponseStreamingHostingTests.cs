@@ -16,7 +16,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 /// <summary>
 /// Tests for response streaming integration in hosting (Requirement 10).
 /// </summary>
-[RequiresPreviewFeatures]
 public class ResponseStreamingHostingTests
 {
     [Fact]

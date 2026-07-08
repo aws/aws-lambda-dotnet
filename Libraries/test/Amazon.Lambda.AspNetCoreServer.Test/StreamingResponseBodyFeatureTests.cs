@@ -11,7 +11,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
-    [RequiresPreviewFeatures]
     public class StreamingResponseBodyFeatureTests
     {
         // Helper: creates a StreamingResponseBodyFeature backed by a MemoryStream stand-in.

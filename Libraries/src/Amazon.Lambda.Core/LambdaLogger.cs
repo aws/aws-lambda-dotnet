@@ -139,7 +139,6 @@ namespace Amazon.Lambda.Core
         /// When structured logging is enabled this method will allow overriding the default configuration the Lambda runtime uses for structured logging.
         /// </summary>
         /// <param name="options">The options to use for configuring structured logging.</param>
-        [RequiresPreviewFeatures("This method is in preview until the latest changes of the .NET Lambda runtime client have been deployed to the Lambda managed runtimes")]
         public static void ConfigureStructuredLogging(StructuredLoggingOptions options) => _configureStructuredLoggingAction(options);
 
         internal static void SetConfigureStructuredLoggingAction(Action<StructuredLoggingOptions> configureStructuredLoggingAction)

@@ -15,7 +15,6 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// to the Lambda Runtime API. Returned by <see cref="LambdaResponseStreamFactory.CreateStream"/>.
     /// Integrates with standard .NET stream consumers such as <see cref="System.IO.StreamWriter"/>.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class LambdaResponseStream : Stream
     {
         private readonly ILambdaResponseStream _responseStream;

@@ -15,7 +15,6 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// headers, and cookies for the response. The prelude must be sent as the first chunk of the response stream, followed by the response body chunks.
     /// This allows you to set the status code and headers for the response before sending any of the response body.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class HttpResponseStreamPrelude
     {
         /// <summary>

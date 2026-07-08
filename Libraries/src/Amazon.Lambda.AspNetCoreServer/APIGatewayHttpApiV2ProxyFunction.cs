@@ -59,7 +59,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// instead of <c>multiValueHeaders</c>. API Gateway HTTP API v2 expects the <c>headers</c>
         /// format; using <c>multiValueHeaders</c> causes a 500 Internal Server Error.
         /// </summary>
-        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         protected override Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
         {
             var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude

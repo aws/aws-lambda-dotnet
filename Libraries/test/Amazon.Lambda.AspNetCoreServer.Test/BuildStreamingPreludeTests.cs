@@ -9,7 +9,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
-    [RequiresPreviewFeatures]
     public class BuildStreamingPreludeTests
     {
         // Subclass that skips host startup entirely and
@@ -83,10 +82,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         // -----------------------------------------------------------------------
-        // 6.3 Non-Set-Cookie headers appear in MultiValueHeaders with all values preserved
+        // 6.3 Non-Set-Cookie headers appear in Headers with all values preserved.
+        // HTTP API v2 uses the single-value "headers" collection (not "multiValueHeaders"),
+        // so multiple values for the same header are joined with ", ".
         // -----------------------------------------------------------------------
         [Fact]
-        public void NonSetCookieHeaders_AppearInMultiValueHeaders_WithAllValuesPreserved()
+        public void NonSetCookieHeaders_AppearInHeaders_WithAllValuesPreserved()
         {
             var builder = CreateBuilder();
             var rf = MakeResponseFeature(200, new System.Collections.Generic.Dictionary<string, string[]>
@@ -98,18 +99,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
-            Assert.Equal(new[] { "application/json" }, prelude.MultiValueHeaders["Content-Type"]);
+            Assert.True(prelude.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json", prelude.Headers["Content-Type"]);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("X-Custom"));
-            Assert.Equal(new[] { "val1", "val2" }, prelude.MultiValueHeaders["X-Custom"]);
+            Assert.True(prelude.Headers.ContainsKey("X-Custom"));
+            Assert.Equal("val1, val2", prelude.Headers["X-Custom"]);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Cache-Control"));
-            Assert.Equal(new[] { "no-cache", "no-store" }, prelude.MultiValueHeaders["Cache-Control"]);
+            Assert.True(prelude.Headers.ContainsKey("Cache-Control"));
+            Assert.Equal("no-cache, no-store", prelude.Headers["Cache-Control"]);
         }
 
         [Fact]
-        public void NonSetCookieHeaders_MultiValueHeaders_PreservesMultipleValues()
+        public void NonSetCookieHeaders_Headers_JoinsMultipleValues()
         {
             var builder = CreateBuilder();
             var rf = MakeResponseFeature(200, new System.Collections.Generic.Dictionary<string, string[]>
@@ -119,8 +120,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
-            Assert.Equal(new[] { "text/html", "application/xhtml+xml", "application/xml" },
-                prelude.MultiValueHeaders["Accept"]);
+            Assert.Equal("text/html, application/xhtml+xml, application/xml",
+                prelude.Headers["Accept"]);
         }
 
         // -----------------------------------------------------------------------
@@ -141,12 +142,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             // Cookie value is in Cookies
             Assert.Contains("session=abc123; Path=/; HttpOnly", prelude.Cookies);
 
-            // Set-Cookie is NOT in MultiValueHeaders
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("set-cookie"));
+            // Set-Cookie is NOT in Headers
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"));
+            Assert.False(prelude.Headers.ContainsKey("set-cookie"));
 
             // Other headers are still present
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.True(prelude.Headers.ContainsKey("Content-Type"));
         }
 
         [Fact]
@@ -164,8 +165,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
             Assert.Contains("id=xyz; Path=/", prelude.Cookies);
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("set-cookie"));
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"));
+            Assert.False(prelude.Headers.ContainsKey("set-cookie"));
         }
 
         // -----------------------------------------------------------------------
@@ -192,8 +193,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Contains("theme=dark; Path=/", prelude.Cookies);
             Assert.Contains("lang=en; Path=/; SameSite=Strict", prelude.Cookies);
 
-            // None of them should be in MultiValueHeaders
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"));
+            // None of them should be in Headers
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"));
         }
 
         [Fact]
@@ -212,8 +213,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(2, prelude.Cookies.Count);
             Assert.Contains("a=1", prelude.Cookies);
             Assert.Contains("b=2", prelude.Cookies);
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Location"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Set-Cookie"));
+            Assert.True(prelude.Headers.ContainsKey("Location"));
+            Assert.False(prelude.Headers.ContainsKey("Set-Cookie"));
         }
 
         [Fact]
@@ -225,7 +226,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
             Assert.Equal(HttpStatusCode.NoContent, prelude.StatusCode);
-            Assert.Empty(prelude.MultiValueHeaders);
+            Assert.Empty(prelude.Headers);
             Assert.Empty(prelude.Cookies);
         }
 
@@ -244,8 +245,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Content-Length"));
+            Assert.True(prelude.Headers.ContainsKey("Content-Type"));
+            Assert.False(prelude.Headers.ContainsKey("Content-Length"));
         }
 
         [Fact]
@@ -260,8 +261,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var prelude = builder.InvokeBuildStreamingPrelude(rf);
 
-            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
-            Assert.False(prelude.MultiValueHeaders.ContainsKey("Transfer-Encoding"));
+            Assert.True(prelude.Headers.ContainsKey("Content-Type"));
+            Assert.False(prelude.Headers.ContainsKey("Transfer-Encoding"));
         }
     }
 }

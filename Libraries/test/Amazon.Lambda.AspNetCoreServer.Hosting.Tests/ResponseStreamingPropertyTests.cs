@@ -14,7 +14,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 
-[RequiresPreviewFeatures]
 public class ResponseStreamingPropertyTests
 {
     private static IServiceProvider BuildServiceProvider(HostingOptions hostingOptions)

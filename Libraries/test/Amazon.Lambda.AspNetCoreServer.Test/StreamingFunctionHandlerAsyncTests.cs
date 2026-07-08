@@ -30,7 +30,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
     /// a <see cref="MemoryStream"/> instead of calling <c>LambdaResponseStreamFactory.CreateHttpStream</c>,
     /// allowing tests to run without the Lambda runtime.
     /// </summary>
-    [RequiresPreviewFeatures]
     public class StreamingFunctionHandlerAsyncTests
     {
         // -----------------------------------------------------------------------
@@ -75,7 +74,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
             }
 
-            [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {
@@ -468,18 +466,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public void EnableResponseStreaming_Property_HasRequiresPreviewFeaturesAttribute()
-        {
-            var prop = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetProperty(nameof(APIGatewayHttpApiV2ProxyFunction.EnableResponseStreaming));
-
-            Assert.NotNull(prop);
-
-            var attr = prop.GetCustomAttribute<RequiresPreviewFeaturesAttribute>();
-            Assert.NotNull(attr);
-        }
-
-        [Fact]
         public void EnableResponseStreaming_Property_DefaultsToFalse()
         {
             var function = new TestableStreamingFunction();
@@ -531,7 +517,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 EnableResponseStreaming = true;
             }
 
-            [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {
