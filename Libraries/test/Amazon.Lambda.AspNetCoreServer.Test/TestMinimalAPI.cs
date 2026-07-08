@@ -54,16 +54,32 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 processStartInfo.FileName = GetSystemShell();
                 processStartInfo.Arguments = $"{comamndArgument} dotnet run \"{requestFilePath}\" \"{responseFilePath}\"";
                 processStartInfo.WorkingDirectory = GetTestAppDirectory();
+                // Capture the child process output so a launch/build failure (e.g. the exit code 129
+                // seen intermittently in CI) surfaces a diagnosable message instead of a bare exit code.
+                processStartInfo.RedirectStandardOutput = true;
+                processStartInfo.RedirectStandardError = true;
+                processStartInfo.UseShellExecute = false;
 
 
                 lock (lock_process)
                 {
                     using var process = Process.Start(processStartInfo);
-                    process.WaitForExit(15000);
+                    var stdout = process.StandardOutput.ReadToEndAsync();
+                    var stderr = process.StandardError.ReadToEndAsync();
+
+                    // WaitForExit(timeout) returns false when the process is still running at the
+                    // timeout; kill it so it does not leak, then fail with the captured output.
+                    if (!process.WaitForExit(60000))
+                    {
+                        process.Kill(entireProcessTree: true);
+                        throw new Exception(
+                            $"Process timed out after 60s.{Environment.NewLine}STDOUT:{Environment.NewLine}{stdout.Result}{Environment.NewLine}STDERR:{Environment.NewLine}{stderr.Result}");
+                    }
 
                     if (process.ExitCode != 0)
                     {
-                        throw new Exception("Process failed with exit code: " + process.ExitCode);
+                        throw new Exception(
+                            $"Process failed with exit code: {process.ExitCode}.{Environment.NewLine}STDOUT:{Environment.NewLine}{stdout.Result}{Environment.NewLine}STDERR:{Environment.NewLine}{stderr.Result}");
                     }
 
                     if(!File.Exists(responseFilePath))

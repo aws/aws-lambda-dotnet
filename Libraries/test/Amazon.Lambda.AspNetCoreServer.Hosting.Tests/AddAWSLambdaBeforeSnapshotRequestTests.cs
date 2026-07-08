@@ -44,10 +44,16 @@ public class AddAWSLambdaBeforeSnapshotRequestTests
             
         var serverTask = app.RunAsync();
 
-        // let the server run for a max of 500 ms
-        await Task.WhenAny(
-            serverTask,
-            Task.Delay(TimeSpan.FromMilliseconds(500)));
+        // Poll for the before-snapshot callback to fire rather than racing a single fixed delay.
+        // A fixed 500 ms window is flaky under load (observed intermittently in CI): the
+        // before-snapshot request may not have completed yet, leaving the callback unset. Wait up
+        // to 10 seconds, checking frequently, and stop as soon as the callback has run.
+        var timeout = TimeSpan.FromSeconds(10);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (!callbackDidTheCallback && sw.Elapsed < timeout && !serverTask.IsCompleted)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+        }
 
         // shut down server
         await app.StopAsync();
