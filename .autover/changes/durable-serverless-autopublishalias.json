@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Set AutoPublishAlias to 'live' on the function in the serverless.DurableFunction blueprint (vs2026). SAM now publishes a new function version and points the 'live' alias at it on every deploy, so the durable function can be invoked immediately after deployment instead of failing with a no-published-version error. Preview."
+      ]
+    }
+  ]
+}
