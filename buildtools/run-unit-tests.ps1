@@ -43,7 +43,6 @@ if (-not $projects)
 Write-Host "Running $($projects.Count) unit-test project(s):"
 $projects | ForEach-Object { Write-Host "  - $_" }
 
-$failed = @()
 foreach ($project in $projects)
 {
     $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
@@ -52,17 +51,12 @@ foreach ($project in $projects)
     dotnet test -c $Configuration $project
     if ($LASTEXITCODE -ne 0)
     {
-        Write-Host "Tests failed for $name (exit $LASTEXITCODE)."
-        $failed += $name
+        # Fail fast: stop at the first failing project rather than running the rest. This gives
+        # quicker feedback and avoids spending CI time on later projects once the build is red.
+        Write-Host ""
+        Write-Host "Tests failed for $name (exit $LASTEXITCODE). Stopping without running the remaining project(s)."
+        exit 1
     }
-}
-
-if ($failed)
-{
-    Write-Host ""
-    Write-Host "The following unit-test project(s) failed:"
-    $failed | ForEach-Object { Write-Host "  - $_" }
-    exit 1
 }
 
 Write-Host ""
