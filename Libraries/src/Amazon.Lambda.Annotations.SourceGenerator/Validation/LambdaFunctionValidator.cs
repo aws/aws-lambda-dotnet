@@ -118,6 +118,79 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             {
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionExplicitRoleNeedsCheckpointPolicy, methodLocation));
             }
+
+            // When the registered serializer is the source-generator serializer, the durable invocation
+            // envelope (DurableExecutionInvocationInput / DurableExecutionInvocationOutput) is (de)serialized
+            // through the user's JsonSerializerContext. Unlike the reflection-based DefaultLambdaJsonSerializer,
+            // the context only handles types explicitly registered via [JsonSerializable]. If the envelope types
+            // are missing, the failure only surfaces at invocation time, so warn about it at build time here.
+            ValidateDurableExecutionSerializerContext(context, lambdaMethodSymbol, methodLocation, diagnostics);
+        }
+
+        private static void ValidateDurableExecutionSerializerContext(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            // The serializer is registered via [assembly: LambdaSerializer(typeof(...))] or the same attribute on
+            // the method. The method-level attribute takes precedence, matching GetSerializerInfoAttribute.
+            var serializerAttribute = lambdaMethodSymbol.GetAttributeData(context, TypeFullNames.LambdaSerializerAttribute)
+                ?? lambdaMethodSymbol.ContainingAssembly.GetAttributeData(context, TypeFullNames.LambdaSerializerAttribute);
+            if (serializerAttribute == null)
+            {
+                return;
+            }
+
+            // The single constructor argument is the serializer Type. Only the source-generator serializer,
+            // SourceGeneratorLambdaJsonSerializer<TContext>, routes serialization through a JsonSerializerContext.
+            // Any other serializer (e.g. the reflection-based DefaultLambdaJsonSerializer) needs no registration.
+            if (!(serializerAttribute.ConstructorArguments.FirstOrDefault(arg => arg.Kind == TypedConstantKind.Type).Value is INamedTypeSymbol serializerType))
+            {
+                return;
+            }
+
+            var sourceGeneratorSerializerSymbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.SourceGeneratorLambdaSerializer);
+            if (sourceGeneratorSerializerSymbol == null
+                || !SymbolEqualityComparer.Default.Equals(serializerType.ConstructedFrom?.OriginalDefinition, sourceGeneratorSerializerSymbol)
+                || serializerType.TypeArguments.Length != 1
+                || !(serializerType.TypeArguments[0] is INamedTypeSymbol contextType))
+            {
+                return;
+            }
+
+            // Collect every type registered on the context via [JsonSerializable(typeof(T))], walking base
+            // contexts too since [JsonSerializable] attributes are inherited across a context hierarchy.
+            var jsonSerializableAttributeSymbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.JsonSerializableAttribute);
+            var registeredTypes = new HashSet<string>();
+            for (var current = contextType; current != null; current = current.BaseType)
+            {
+                foreach (var att in current.GetAttributes())
+                {
+                    if (!SymbolEqualityComparer.Default.Equals(att.AttributeClass, jsonSerializableAttributeSymbol))
+                    {
+                        continue;
+                    }
+
+                    if (att.ConstructorArguments.FirstOrDefault(arg => arg.Kind == TypedConstantKind.Type).Value is INamedTypeSymbol registeredType)
+                    {
+                        registeredTypes.Add(registeredType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                    }
+                }
+            }
+
+            var contextDisplayName = contextType.ToDisplayString();
+            foreach (var envelopeTypeName in new[] { TypeFullNames.DurableExecutionInvocationInput, TypeFullNames.DurableExecutionInvocationOutput })
+            {
+                var envelopeTypeSymbol = context.Compilation.GetTypeByMetadataName(envelopeTypeName);
+                // If the durable envelope type cannot be resolved the durable package is not referenced; other
+                // diagnostics/compile errors will surface that, so skip rather than emit a misleading warning.
+                if (envelopeTypeSymbol == null)
+                {
+                    continue;
+                }
+
+                if (!registeredTypes.Contains(envelopeTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionMissingSerializableEnvelope, methodLocation, contextDisplayName, envelopeTypeName));
+                }
+            }
         }
 
         private static void ValidateDurableExecutionSignature(IMethodSymbol lambdaMethodSymbol, LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)

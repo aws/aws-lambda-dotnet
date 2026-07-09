@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add diagnostic AWSLambda0145 (Warning) for durable execution functions. When a [DurableExecution] function registers the source-generator serializer (SourceGeneratorLambdaJsonSerializer<TContext>), the durable invocation envelope types DurableExecutionInvocationInput and DurableExecutionInvocationOutput must be registered on the JsonSerializerContext with [JsonSerializable]. The generator now warns at build time when either is missing, instead of the function failing at invocation time. Preview."
+      ]
+    }
+  ]
+}
