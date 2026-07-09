@@ -15,8 +15,8 @@
 #
 # Mirrors run-integ-tests-parallel.ps1: each project's output is streamed live, prefixed with the
 # project name so interleaved logs stay attributable, and failed projects get their full output
-# reprinted as one clean block at the end. The script runs all projects (it does not short-circuit)
-# so every failure is surfaced in a single pass, then exits non-zero listing which projects failed.
+# reprinted as one clean block at the end. All projects run (it does not short-circuit) so every
+# failure is surfaced in a single pass, then it exits non-zero listing which projects failed.
 
 param(
     [string]$Configuration = "Release",
@@ -28,8 +28,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Projects that must NOT run concurrently with the parallel pool. Amazon.Lambda.AspNetCoreServer.Test
+# drives SnapStart initialization that invokes before-snapshot hooks accumulated in a process-global
+# registry, each running in-process ASP.NET requests; under the CPU/host contention of the parallel
+# pool that work deadlocked and hung CI until the credentials expired. It passes fine on its own, so
+# it is run serially, after the parallel pool. Matched on the file name.
+$serialProjectNames = @(
+    'Amazon.Lambda.AspNetCoreServer.Test.csproj'
+)
+
 # Discover unit-test projects: reference the test SDK / IsTestProject, but are not integration tests.
-$projects = Get-ChildItem -Path $TestRoot -Recurse -Filter "*.csproj" |
+$allProjects = Get-ChildItem -Path $TestRoot -Recurse -Filter "*.csproj" |
     Where-Object { $_.Name -notlike "*.IntegrationTests.csproj" } |
     Where-Object {
         $content = Get-Content -Raw -LiteralPath $_.FullName
@@ -39,22 +48,31 @@ $projects = Get-ChildItem -Path $TestRoot -Recurse -Filter "*.csproj" |
     Select-Object -ExpandProperty FullName |
     Sort-Object
 
-if (-not $projects)
+if (-not $allProjects)
 {
     Write-Host "No unit-test projects found under '$TestRoot'."
     exit 0
 }
 
-Write-Host "Running $($projects.Count) unit-test project(s) in parallel (throttle limit $ThrottleLimit):"
-$projects | ForEach-Object { Write-Host "  - $_" }
+$serialProjects = $allProjects | Where-Object { $serialProjectNames -contains [System.IO.Path]::GetFileName($_) }
+$parallelProjects = $allProjects | Where-Object { $serialProjectNames -notcontains [System.IO.Path]::GetFileName($_) }
+
+Write-Host "Discovered $($allProjects.Count) unit-test project(s):"
+Write-Host "  Parallel (throttle limit $ThrottleLimit):"
+$parallelProjects | ForEach-Object { Write-Host "    - $_" }
+if ($serialProjects)
+{
+    Write-Host "  Serial (run one at a time, after the parallel pool):"
+    $serialProjects | ForEach-Object { Write-Host "    - $_" }
+}
 
 # Build all projects ONCE, up front, before the parallel phase. The test projects share
 # ProjectReferences (e.g. TestWebApp, TestUtilities); running `dotnet test` on them concurrently
 # each rebuilt those shared projects, racing on their build output (e.g. a .deps.json "being used by
-# another process" / GenerateDepsFile failure). Building once here lets the parallel runs use
-# --no-build so they only execute tests, never rebuild shared output.
-Write-Host "Building all unit-test projects once before running in parallel..."
-foreach ($project in $projects)
+# another process" / GenerateDepsFile failure). Building once here lets the runs use --no-build so
+# they only execute tests, never rebuild shared output.
+Write-Host "Building all unit-test projects once before running..."
+foreach ($project in $allProjects)
 {
     dotnet build -c $Configuration $project
     if ($LASTEXITCODE -ne 0)
@@ -64,24 +82,45 @@ foreach ($project in $projects)
     }
 }
 
-$results = $projects | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
-    $project = $_
-    $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
-    $lines = [System.Collections.Generic.List[string]]::new()
-    # --no-build: everything was built serially above, so the parallel runs only execute tests and
-    # never rebuild shared project output. 2>&1 folds stderr into the stream; each line is emitted as
-    # it arrives, prefixed with the project name, so progress is visible.
-    dotnet test -c $using:Configuration --no-build --logger "console;verbosity=detailed" $project 2>&1 |
-        ForEach-Object {
-            $line = $_.ToString()
-            $lines.Add($line)
-            Write-Host "[$name] $line"
+$results = @()
+
+if ($parallelProjects)
+{
+    $results += $parallelProjects | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
+        $project = $_
+        $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
+        $lines = [System.Collections.Generic.List[string]]::new()
+        # --no-build: everything was built serially above, so the runs only execute tests and never
+        # rebuild shared project output. 2>&1 folds stderr into the stream; each line is emitted as it
+        # arrives, prefixed with the project name, so progress is visible.
+        dotnet test -c $using:Configuration --no-build --logger "console;verbosity=detailed" $project 2>&1 |
+            ForEach-Object {
+                $line = $_.ToString()
+                $lines.Add($line)
+                Write-Host "[$name] $line"
+            }
+        [PSCustomObject]@{
+            Name     = $name
+            Project  = $project
+            ExitCode = $LASTEXITCODE
+            Output   = ($lines -join [System.Environment]::NewLine)
         }
-    [PSCustomObject]@{
+    }
+}
+
+# Run the serial projects one at a time, after the parallel pool has finished, so their process-global
+# behavior can't interfere with (or be starved by) the concurrent runs.
+foreach ($project in $serialProjects)
+{
+    $name = [System.IO.Path]::GetFileNameWithoutExtension($project)
+    Write-Host ""
+    Write-Host "==================== $name (serial) ===================="
+    dotnet test -c $Configuration --no-build --logger "console;verbosity=detailed" $project
+    $results += [PSCustomObject]@{
         Name     = $name
         Project  = $project
         ExitCode = $LASTEXITCODE
-        Output   = ($lines -join [System.Environment]::NewLine)
+        Output   = ""
     }
 }
 
@@ -89,9 +128,12 @@ $results = $projects | ForEach-Object -ThrottleLimit $ThrottleLimit -Parallel {
 $failed = $results | Where-Object { $_.ExitCode -ne 0 }
 foreach ($result in $failed)
 {
-    Write-Host ""
-    Write-Host "==================== FAILED: $($result.Name) (exit $($result.ExitCode)) ===================="
-    Write-Host $result.Output
+    if ($result.Output)
+    {
+        Write-Host ""
+        Write-Host "==================== FAILED: $($result.Name) (exit $($result.ExitCode)) ===================="
+        Write-Host $result.Output
+    }
 }
 
 if ($failed)
