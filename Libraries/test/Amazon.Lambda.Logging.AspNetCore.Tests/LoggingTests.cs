@@ -575,6 +575,76 @@ namespace Amazon.Lambda.Tests
         }
 
         [Fact]
+        public void TestJSONParameterLoggingIncludesCategoryWhenEnabled()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    loggerOptions.IncludeCategory = true;
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogError(new Exception("Too Cheap"), "User {name} fail to by {product} for {price}", "Gilmour", "Guitar", 55.55);
+
+                    var text = writer.ToString();
+                    // Category is prepended as a placeholder + argument, so it becomes
+                    // a queryable JSON property instead of being dropped.
+                    Assert.Contains("{Category}", text);
+                    Assert.Contains("parameter count: 4", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void TestJSONParameterLoggingOmitsCategoryWhenDisabled()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    loggerOptions.IncludeCategory = false;
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogError(new Exception("Too Cheap"), "User {name} fail to by {product} for {price}", "Gilmour", "Guitar", 55.55);
+
+                    var text = writer.ToString();
+                    Assert.DoesNotContain("{Category}", text);
+                    Assert.Contains("parameter count: 3", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
         public void JsonLoggingWithNoOriginalFormat()
         {
             Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
