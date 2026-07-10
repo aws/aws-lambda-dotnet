@@ -75,6 +75,16 @@ namespace Microsoft.Extensions.Logging
                     messageTemplate = formatter.Invoke(state, exception);
                 }
 
+                if (_options.IncludeCategory)
+                {
+                    // Unlike the text format, the JSON format otherwise drops the
+                    // category entirely, so IncludeCategory has no effect. Prepend a
+                    // "{Category}" placeholder (which the JSON formatter turns into a
+                    // queryable property) and supply the category value.
+                    messageTemplate = "[{Category}] " + messageTemplate;
+                    parameters.Insert(0, _categoryName);
+                }
+
                 Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters.ToArray());
             }
             else
