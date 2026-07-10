@@ -123,6 +123,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Context,
             Action = OperationAction.START,
             SubType = ParentSubType,
@@ -341,34 +342,28 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // FailureToleranceExceeded verdict from units that merely unwound.
         controlToken.ThrowIfCancellationRequested();
 
-        // Build BatchItems for every unit in original order.
+        // Build BatchItems ONLY for units that were dispatched — matching the JS
+        // SDK, whose sparse resultItems array never records a never-dispatched
+        // branch. A dispatched-then-bailed unit (cooperative short-circuit) keeps
+        // its Started slot and stays in All; a never-dispatched unit is omitted
+        // entirely. This makes TotalCount = started(in-flight) + succeeded + failed
+        // and excludes branches that a CompletionConfig short-circuit skipped.
         var items = new List<IBatchItem<T>>(unitCount);
         for (var i = 0; i < unitCount; i++)
         {
+            if (!dispatched[i])
+                continue;
+
             var (unitName, _) = GetUnit(i);
-            if (dispatched[i])
+            var outcome = slots[i];
+            items.Add(new BatchItem<T>
             {
-                var outcome = slots[i];
-                items.Add(new BatchItem<T>
-                {
-                    Index = i,
-                    Name = unitName,
-                    Status = outcome.Status,
-                    Result = outcome.Status == BatchItemStatus.Succeeded ? outcome.Result : default,
-                    Error = outcome.Status == BatchItemStatus.Failed ? outcome.Error : null
-                });
-            }
-            else
-            {
-                items.Add(new BatchItem<T>
-                {
-                    Index = i,
-                    Name = unitName,
-                    Status = BatchItemStatus.Started,
-                    Result = default,
-                    Error = null
-                });
-            }
+                Index = i,
+                Name = unitName,
+                Status = outcome.Status,
+                Result = outcome.Status == BatchItemStatus.Succeeded ? outcome.Result : default,
+                Error = outcome.Status == BatchItemStatus.Failed ? outcome.Error : null
+            });
         }
 
         var completionReason = ComputeCompletionReason(items, unitCount);
@@ -422,12 +417,17 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             }
             var resolvedName = checkpointedName ?? unitName;
 
+            // STARTED units in the frozen summary were short-circuited (never
+            // dispatched) originally — exclude them from the reconstructed All to
+            // match the fresh-run view and the JS SDK. (The name-drift check above
+            // still runs over the complete summary before we skip.)
+            if (status == BatchItemStatus.Started)
+                continue;
+
             T? unitResult = default;
             DurableExecutionException? unitError = null;
 
             // Re-execute only completed units to recover the stripped value/error.
-            // STARTED units were short-circuited (never dispatched) originally —
-            // do NOT run their bodies, so there are no spurious side effects.
             if (status == BatchItemStatus.Succeeded || status == BatchItemStatus.Failed)
             {
                 var outcome = await RunSingleUnitAsync(i, cancellationToken).ConfigureAwait(false);
@@ -663,7 +663,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     {
         var succeeded = 0;
         var failed = 0;
-        var started = 0;
 
         foreach (var item in items)
         {
@@ -671,9 +670,16 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             {
                 case BatchItemStatus.Succeeded: succeeded++; break;
                 case BatchItemStatus.Failed:    failed++;    break;
-                case BatchItemStatus.Started:   started++;   break;
             }
         }
+
+        // "started" for the policy is the DECLARED total minus what settled — this
+        // captures BOTH genuinely in-flight units AND never-dispatched units (which
+        // are no longer materialised in items). It preserves the early-stop signal
+        // (started > 0 => a CompletionConfig short-circuit skipped work) that drives
+        // MinSuccessfulReached, and totalCount stays the declared count so
+        // ToleratedFailurePercentage divides by the true branch count.
+        var started = totalCount - succeeded - failed;
 
         return _policy.Evaluate(succeeded, failed, started, totalCount);
     }
@@ -686,23 +692,35 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // Local builder: includeInline=true writes per-unit Result/Error inline
         // (Flat only); includeInline=false writes the minimal index/name/status
         // map (the shape Nested always uses, and the Flat overflow fallback).
+        // The persisted summary keeps EVERY declared unit — including
+        // never-dispatched ones tagged STARTED — even though result.All now omits
+        // them from the user-facing view. Replay/reconstruct and the unit-name
+        // drift check both loop the declared UnitCount and read per-unit
+        // status/name from this summary, so it must stay complete. Dispatched
+        // units are looked up by Index in result.All; the gaps are the
+        // never-dispatched branches.
         BatchSummary BuildSummary(bool includeInline)
         {
+            var byIndex = new Dictionary<int, IBatchItem<T>>(result.All.Count);
+            foreach (var it in result.All)
+                byIndex[it.Index] = it;
+
             var s = new BatchSummary
             {
                 CompletionReason = SerializeCompletionReason(completionReason),
-                Units = new List<BatchUnitSummary>(result.All.Count)
+                Units = new List<BatchUnitSummary>(UnitCount)
             };
-            for (var i = 0; i < result.All.Count; i++)
+            for (var i = 0; i < UnitCount; i++)
             {
-                var item = result.All[i];
+                var (unitName, _) = GetUnit(i);
+                byIndex.TryGetValue(i, out var item);
                 var unit = new BatchUnitSummary
                 {
-                    Index = item.Index,
-                    Name = item.Name,
-                    Status = SerializeStatus(item.Status)
+                    Index = i,
+                    Name = item?.Name ?? unitName,
+                    Status = SerializeStatus(item?.Status ?? BatchItemStatus.Started)
                 };
-                if (includeInline && _isVirtual)
+                if (includeInline && _isVirtual && item != null)
                 {
                     if (item.Status == BatchItemStatus.Succeeded)
                         unit.Result = SerializeResult(item.Result);
@@ -735,6 +753,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Context,
             Action = OperationAction.SUCCEED,
             SubType = ParentSubType,
@@ -776,6 +795,14 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                     $"units between deployments.");
             }
             var resolvedName = checkpointedName ?? unitName;
+
+            // A never-dispatched unit (Started status with no per-unit child
+            // checkpoint) is excluded from the reconstructed All, matching the
+            // fresh-run view and the JS SDK. A dispatched-then-bailed unit is also
+            // Started but HAS a child op, so it stays. The name-drift check above
+            // still runs over the complete summary before we skip.
+            if (status == BatchItemStatus.Started && childOp == null)
+                continue;
 
             T? unitResult = default;
             DurableExecutionException? unitError = null;

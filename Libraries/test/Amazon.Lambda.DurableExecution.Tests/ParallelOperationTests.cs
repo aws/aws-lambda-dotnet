@@ -352,7 +352,8 @@ public class ParallelOperationTests
 
         // MaxConcurrency = 1 so we know the dispatch order is deterministic:
         // branch 0 fires first and succeeds; branches 1 and 2 are never
-        // dispatched at all, so they remain in BatchItemStatus.Started.
+        // dispatched at all, so they are EXCLUDED from the user-facing All list
+        // entirely (they are not Started, don't count in TotalCount/StartedCount).
         var result = await context.ParallelAsync(
             new Func<IDurableContext, CancellationToken, Task<int>>[]
             {
@@ -368,13 +369,12 @@ public class ParallelOperationTests
 
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(1, result.SuccessCount);
-        Assert.Equal(2, result.StartedCount);
+        Assert.Equal(0, result.StartedCount);
         Assert.Equal(0, result.FailureCount);
-        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(1, result.TotalCount);
 
+        Assert.Single(result.All);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[2].Status);
     }
 
     [Fact]
@@ -398,7 +398,10 @@ public class ParallelOperationTests
 
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(2, result.SuccessCount);
-        Assert.Equal(2, result.StartedCount);
+        // MaxConcurrency = 1: branches 2 and 3 are never dispatched once
+        // MinSuccessful = 2 is reached, so they are excluded from All.
+        Assert.Equal(0, result.StartedCount);
+        Assert.Equal(2, result.TotalCount);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -820,10 +823,11 @@ public class ParallelOperationTests
         Assert.Equal(2, executions);
         Assert.False(startedBodyRan);
 
-        // Per-item statuses come from the frozen summary.
+        // Per-item statuses come from the frozen summary. The never-dispatched
+        // STARTED unit (index 2, no child checkpoint) is excluded from All.
+        Assert.Equal(2, result.All.Count);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
 
         // Recovered values for the two succeeded units.
         Assert.Equal(new[] { 100, 200 }, result.GetResults());
@@ -1521,9 +1525,10 @@ public class ParallelOperationTests
     {
         // Parent SUCCEEDED with MinSuccessful short-circuit: branch 0
         // SUCCEEDED, branch 1 SUCCEEDED, branch 2 was never dispatched
-        // (still STARTED in the summary). Replay must reproduce the original
-        // BatchResult shape — including the un-dispatched STARTED entry —
-        // without re-executing any branch.
+        // (still STARTED in the summary, but has NO child checkpoint). Replay
+        // must reconstruct the user-facing BatchResult WITHOUT re-executing any
+        // branch and must EXCLUDE the never-dispatched STARTED entry (no child
+        // op) from All — matching a fresh run.
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
         var b1 = ChildIdAt(parentOpId, 2);
@@ -1584,10 +1589,10 @@ public class ParallelOperationTests
         Assert.Equal(0, calls);
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(2, result.SuccessCount);
-        Assert.Equal(1, result.StartedCount);
+        Assert.Equal(0, result.StartedCount);
+        Assert.Equal(2, result.All.Count);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
         Assert.Equal(new[] { 10, 20 }, result.GetResults());
 
         await recorder.Batcher.DrainAsync();
@@ -1675,11 +1680,13 @@ public class ParallelOperationTests
     [Fact]
     public async Task ParallelAsync_ReplayUsesCheckpointedBranchName_NotCurrentName()
     {
-        // The checkpointed name is authoritative on replay. Even when a branch
-        // has no per-branch checkpoint (STARTED / never dispatched), the name
-        // from the parent summary must flow through to the reconstructed item.
+        // The checkpointed name is authoritative on replay. For a
+        // dispatched-then-bailed branch (STARTED with a per-branch START
+        // checkpoint), the reconstructed item is kept in All and its name must
+        // come from the parent summary, not from current code.
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
+        var b1 = ChildIdAt(parentOpId, 2);
 
         var summaryJson = """
             {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Units":[
@@ -1709,6 +1716,16 @@ public class ParallelOperationTests
                     SubType = OperationSubTypes.ParallelBranch,
                     Name = "alpha",
                     ContextDetails = new ContextDetails { Result = "10" }
+                },
+                new()
+                {
+                    // Dispatched-then-bailed: has a START checkpoint (STARTED)
+                    // so the reconstructed item stays in All.
+                    Id = b1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Started,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "beta"
                 }
             }
         });
