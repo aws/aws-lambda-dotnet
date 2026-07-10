@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application with a durable execution function, deployed via CloudFormation for integration testing. This template is partially managed by Amazon.Lambda.Annotations (v2.2.0.0).",
+  "Description": "An AWS Serverless Application with a durable execution function, deployed via CloudFormation for integration testing. This template is partially managed by Amazon.Lambda.Annotations (v2.3.0.0).",
   "Resources": {
     "TestDurableServerlessAppFunctionWorkflowGenerated": {
       "Type": "AWS::Serverless::Function",
