@@ -47,7 +47,7 @@ public sealed class ChildContextConfig
     /// </para>
     /// <para>
     /// This mirrors the <c>NestingType.Flat</c> option on
-    /// <see cref="MapConfig"/> and <see cref="ParallelConfig"/>, letting a
+    /// <see cref="MapConfig{TItem}"/> and <see cref="ParallelConfig"/>, letting a
     /// standalone <see cref="IDurableContext.RunInChildContextAsync{T}(System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, ChildContextConfig?, System.Threading.CancellationToken)"/>
     /// call opt into virtual contexts — for example when manually fanning out
     /// work and awaiting the returned tasks with <c>Task.WhenAll</c>.
