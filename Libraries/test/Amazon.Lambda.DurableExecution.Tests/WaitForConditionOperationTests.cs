@@ -315,8 +315,11 @@ public class WaitForConditionOperationTests
 
         await recorder.Batcher.DrainAsync();
 
-        // No new START — original is authoritative.
-        Assert.DoesNotContain(recorder.Flushed, o => o.Action == "START");
+        // Each poll iteration emits its own START (StepStarted), matching the
+        // spec and the Python/JS/Java SDKs. START is only skipped when the
+        // persisted status is STARTED (see Replay_Started_*); a PENDING resume
+        // gets a fresh START.
+        Assert.Contains(recorder.Flushed, o => o.Action == "START");
         Assert.Contains(recorder.Flushed, o => o.Action == "SUCCEED");
     }
 
@@ -365,7 +368,11 @@ public class WaitForConditionOperationTests
         Assert.Equal(22, result);
 
         await recorder.Batcher.DrainAsync();
-        Assert.DoesNotContain(recorder.Flushed, o => o.Action == "START");
+        // Each poll iteration emits its own START (StepStarted), matching the
+        // spec and the Python/JS/Java SDKs. START is only skipped when the
+        // persisted status is STARTED (see Replay_Started_*); a READY resume
+        // gets a fresh START.
+        Assert.Contains(recorder.Flushed, o => o.Action == "START");
     }
 
     [Fact]
