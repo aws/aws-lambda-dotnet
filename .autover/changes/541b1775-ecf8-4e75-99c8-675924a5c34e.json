@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed the JSON log formatter ignoring IncludeCategory"
+      ]
+    }
+  ]
+}
