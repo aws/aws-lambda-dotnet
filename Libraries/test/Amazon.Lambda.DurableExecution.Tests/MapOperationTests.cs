@@ -293,8 +293,8 @@ public class MapOperationTests
         var (context, _, _, _) = CreateContext();
 
         // MaxConcurrency = 1 so dispatch order is deterministic: item 0 fires
-        // first and succeeds; items 1 and 2 are never dispatched and remain
-        // BatchItemStatus.Started.
+        // first and succeeds; items 1 and 2 are never dispatched and are
+        // EXCLUDED from the user-facing All list entirely.
         var result = await context.MapAsync(
             new[] { 1, 2, 3 },
             async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
@@ -306,13 +306,12 @@ public class MapOperationTests
 
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(1, result.SuccessCount);
-        Assert.Equal(2, result.StartedCount);
+        Assert.Equal(0, result.StartedCount);
         Assert.Equal(0, result.FailureCount);
-        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(1, result.TotalCount);
 
+        Assert.Single(result.All);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[2].Status);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -639,10 +638,12 @@ public class MapOperationTests
         Assert.Equal(0, calls);
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(2, result.SuccessCount);
-        Assert.Equal(1, result.StartedCount);
+        // Item 2 was never dispatched (STARTED in the summary, no child
+        // checkpoint) so it is excluded from the reconstructed All.
+        Assert.Equal(0, result.StartedCount);
+        Assert.Equal(2, result.All.Count);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
         Assert.Equal(new[] { 10, 20 }, result.GetResults());
 
         await recorder.Batcher.DrainAsync();

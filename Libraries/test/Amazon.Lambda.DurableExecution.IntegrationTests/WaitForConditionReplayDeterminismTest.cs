@@ -50,12 +50,15 @@ public class WaitForConditionReplayDeterminismTest
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
 
-        // Each named step / polling op started exactly once. The leading and
-        // trailing steps each have one StepStarted; the polling op also has
-        // one (sub-iterations replay from RETRY/READY/PENDING and skip START).
+        // Plain steps start exactly once — the leading and trailing steps
+        // each have one StepStarted. The polling op re-emits a fresh START
+        // per iteration (READY/PENDING replays re-emit START to match the
+        // spec and Python/JS/Java SDKs), so it has one StepStarted per
+        // StepSucceeded rather than a single one.
         Assert.Single(events.Where(e => e.EventType == EventType.StepStarted && e.Name == "before_poll"));
         Assert.Single(events.Where(e => e.EventType == EventType.StepStarted && e.Name == "after_poll"));
-        Assert.Single(events.Where(e => e.EventType == EventType.StepStarted && e.Name == "determinism_poll"));
+        var pollStarted = events.Where(e => e.EventType == EventType.StepStarted && e.Name == "determinism_poll").ToList();
+        Assert.NotEmpty(pollStarted);
 
         // Plain steps SUCCEED exactly once (replay returns cached values).
         // The polling op surfaces one StepSucceeded per iteration (RETRYs +
@@ -63,7 +66,10 @@ public class WaitForConditionReplayDeterminismTest
         var stepSucceededEvents = events.Where(e => e.StepSucceededDetails != null).ToList();
         Assert.Single(stepSucceededEvents.Where(e => e.Name == "before_poll"));
         Assert.Single(stepSucceededEvents.Where(e => e.Name == "after_poll"));
-        Assert.NotEmpty(stepSucceededEvents.Where(e => e.Name == "determinism_poll"));
+        var pollSucceeded = stepSucceededEvents.Where(e => e.Name == "determinism_poll").ToList();
+        Assert.NotEmpty(pollSucceeded);
+        // One START per SUCCEED for the polling op across all iterations.
+        Assert.Equal(pollSucceeded.Count, pollStarted.Count);
 
         // Verify the trailing step received the GUID from the leading step
         // verbatim, AND the final counter — proves the cached step value and
