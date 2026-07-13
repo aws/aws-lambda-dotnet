@@ -1,3 +1,8 @@
+## Release 2026-07-13
+
+### Amazon.Lambda.DurableExecution (0.3.1-preview)
+* Fix durable execution conformance issues found via cross-SDK testing. WaitForCondition now re-emits a fresh START on each poll iteration (READY/PENDING replays), matching the Python/JS/Java SDKs and the spec; only a STARTED-status replay skips it. Preview.
+
 ## Release 2026-07-10
 
 ### Amazon.Lambda.DurableExecution (0.3.0-preview)
