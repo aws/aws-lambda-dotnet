@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
 
-    <Version>0.3.0-preview</Version>
+    <Version>0.3.1-preview</Version>
     <Description>Roslyn analyzers and code fixes for Amazon.Lambda.DurableExecution — catches durable-execution determinism and authoring mistakes (DE001-DE004) at build time.</Description>
     <AssemblyTitle>Amazon.Lambda.DurableExecution.Analyzers</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.DurableExecution.Analyzers</AssemblyName>
