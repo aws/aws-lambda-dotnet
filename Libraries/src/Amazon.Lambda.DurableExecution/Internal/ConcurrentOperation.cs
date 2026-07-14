@@ -101,7 +101,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     /// <summary>Parent CONTEXT sub-type label (e.g. Parallel / Map).</summary>
     protected abstract string ParentSubType { get; }
 
-    /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapItem).</summary>
+    /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapIteration).</summary>
     protected abstract string ChildSubType { get; }
 
     /// <summary>Singular operation noun used in messages (e.g. "Parallel" / "Map").</summary>
@@ -720,7 +720,15 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                     Name = item?.Name ?? unitName,
                     Status = SerializeStatus(item?.Status ?? BatchItemStatus.Started)
                 };
-                if (includeInline && _isVirtual && item != null)
+                // Persist each unit's result/error inline on the parent summary —
+                // for BOTH Nested and Flat units. The service collapses completed
+                // per-unit child contexts out of the state returned on a later
+                // (post-operation) resume, so replay cannot recover a Nested unit's
+                // value from its child checkpoint; the inline copy is the only
+                // durable source. This mirrors the JS SDK, whose default
+                // BatchResult serdes serializes the whole `all` array (results
+                // included) into the parent payload.
+                if (includeInline && item != null)
                 {
                     if (item.Status == BatchItemStatus.Succeeded)
                         unit.Result = SerializeResult(item.Result);
@@ -735,11 +743,12 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         var summary = BuildSummary(includeInline: true);
         var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
 
-        // Flat overflow: the inline per-unit results pushed the summary over the
+        // Overflow: the inline per-unit results pushed the summary over the
         // checkpoint limit. Re-emit a stripped summary (statuses only) and flag
         // ReplayChildren so replay reconstructs the values by re-executing units.
-        var overflow = _isVirtual
-            && Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+        // Applies to both Nested and Flat now that both inline their results.
+        var overflow =
+            Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
         if (overflow)
         {
             summary = BuildSummary(includeInline: false);
@@ -796,38 +805,39 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             }
             var resolvedName = checkpointedName ?? unitName;
 
-            // A never-dispatched unit (Started status with no per-unit child
-            // checkpoint) is excluded from the reconstructed All, matching the
-            // fresh-run view and the JS SDK. A dispatched-then-bailed unit is also
-            // Started but HAS a child op, so it stays. The name-drift check above
-            // still runs over the complete summary before we skip.
+            // A never-dispatched unit (Started, with neither an inline result/error
+            // on the summary nor a surviving per-unit child checkpoint) is excluded
+            // from the reconstructed All, matching the fresh-run view and the JS
+            // SDK. A dispatched-then-bailed unit is also Started but HAS a child op,
+            // so it stays. The name-drift check above still runs over the complete
+            // summary before we skip.
             if (status == BatchItemStatus.Started && childOp == null)
                 continue;
 
             T? unitResult = default;
             DurableExecutionException? unitError = null;
 
-            // Flat (virtual) units have no child checkpoint — their result/error
-            // was recorded inline on this summary. Nested units read from the
-            // child's own CONTEXT checkpoint. A unit is "inline" when the summary
-            // entry carries a Result/Error, which only Flat writes.
-            if (_isVirtual && summaryEntry != null)
+            // Prefer the result/error recorded INLINE on the parent summary (both
+            // Nested and Flat units write it). This is the only durable source on a
+            // post-operation resume, since the service collapses completed per-unit
+            // child contexts out of the returned state. Fall back to the child's
+            // own CONTEXT checkpoint only when the summary carries no inline copy
+            // (e.g. state hydrated from an older checkpoint, or a dispatched unit
+            // whose child op is still present in state).
+            if (status == BatchItemStatus.Succeeded && summaryEntry?.Result != null)
             {
-                if (status == BatchItemStatus.Succeeded && summaryEntry.Result != null)
+                unitResult = DeserializeResult(summaryEntry.Result);
+            }
+            else if (status == BatchItemStatus.Failed && summaryEntry?.Error != null)
+            {
+                var err = summaryEntry.Error;
+                unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
                 {
-                    unitResult = DeserializeResult(summaryEntry.Result);
-                }
-                else if (status == BatchItemStatus.Failed && summaryEntry.Error != null)
-                {
-                    var err = summaryEntry.Error;
-                    unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
-                    {
-                        SubType = ChildSubType,
-                        ErrorType = err.ErrorType,
-                        ErrorData = err.ErrorData,
-                        OriginalStackTrace = err.StackTrace
-                    };
-                }
+                    SubType = ChildSubType,
+                    ErrorType = err.ErrorType,
+                    ErrorData = err.ErrorData,
+                    OriginalStackTrace = err.StackTrace
+                };
             }
             else if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
             {

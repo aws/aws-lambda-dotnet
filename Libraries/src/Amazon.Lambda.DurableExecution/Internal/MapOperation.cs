@@ -48,7 +48,7 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
 
     protected override int UnitCount => _items.Count;
     protected override string ParentSubType => OperationSubTypes.Map;
-    protected override string ChildSubType => OperationSubTypes.MapItem;
+    protected override string ChildSubType => OperationSubTypes.MapIteration;
     protected override string OperationNoun => "Map";
 
     protected override (string? Name, Func<IDurableContext, CancellationToken, Task<TResult>> Func) GetUnit(int index)

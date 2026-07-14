@@ -1066,6 +1066,88 @@ public class ParallelOperationTests
     }
 
     [Fact]
+    public async Task ParallelAsync_NestedSucceeded_InlinesPerBranchResultsOnParentPayload()
+    {
+        // A Nested parallel must persist each branch's result INLINE on the parent
+        // SUCCEED payload (not only on the per-branch child checkpoints). The
+        // service collapses completed per-branch child contexts out of the state
+        // returned on a later resume, so the inline copy is the only durable source
+        // for reconstructing results on replay (e.g. a wait after the parallel).
+        var (context, recorder, _, _) = CreateContext();
+
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 100; },
+                async (_, _) => { await Task.Yield(); return 200; },
+            },
+            name: "fanout");
+
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+
+        await recorder.Batcher.DrainAsync();
+
+        var parentSucceed = Assert.Single(recorder.Flushed.Where(o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel" && $"{o.Action}" == "SUCCEED"));
+
+        // The parent payload carries the per-branch results inline.
+        var summary = System.Text.Json.JsonSerializer.Deserialize<BatchSummary>(parentSucceed.Payload!);
+        Assert.NotNull(summary);
+        Assert.Equal("100", summary!.Units[0].Result);
+        Assert.Equal("200", summary.Units[1].Result);
+    }
+
+    [Fact]
+    public async Task ParallelAsync_ReplaySucceeded_RebuildsResultFromInlineSummaryWithoutChildOps()
+    {
+        // On a post-parallel resume the service returns only the parent Parallel op
+        // — the per-branch child ops are collapsed away. Results must be recovered
+        // from the inline summary alone, WITHOUT re-executing the branch bodies and
+        // WITHOUT the child ops present in state.
+        var parentOpId = IdAt(1);
+
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED","Result":"100"},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED","Result":"200"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+                // NOTE: no per-branch child ops — mirrors the pruned resume state.
+            }
+        });
+
+        var executed = false;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { executed = true; await Task.Yield(); return 999; },
+                async (_, _) => { executed = true; await Task.Yield(); return 999; },
+            },
+            name: "fanout");
+
+        Assert.False(executed);
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed);
+    }
+
+    [Fact]
     public async Task ParallelAsync_ReplayFailed_ResolvesFailureTolerance()
     {
         var parentOpId = IdAt(1);

@@ -118,7 +118,7 @@ public class MapOperationTests
         var secondItemId = ChildIdAt(parentOpId, 2);
 
         var itemStarts = recorder.Flushed
-            .Where(o => o.Type == "CONTEXT" && o.SubType == "MapItem" && o.Action == "START")
+            .Where(o => o.Type == "CONTEXT" && o.SubType == "MapIteration" && o.Action == "START")
             .ToArray();
         Assert.Equal(2, itemStarts.Length);
         Assert.Contains(itemStarts, o => o.Id == firstItemId);
@@ -155,7 +155,7 @@ public class MapOperationTests
         await recorder.Batcher.DrainAsync();
 
         var itemSucceeds = recorder.Flushed
-            .Where(o => o.Type == "CONTEXT" && o.SubType == "MapItem" && o.Action == "SUCCEED")
+            .Where(o => o.Type == "CONTEXT" && o.SubType == "MapIteration" && o.Action == "SUCCEED")
             .ToArray();
         Assert.Contains(itemSucceeds, o => o.Name == "Order-order-1");
         Assert.Contains(itemSucceeds, o => o.Name == "Order-order-2");
@@ -410,7 +410,7 @@ public class MapOperationTests
         Assert.Equal(new[] { "START", "SUCCEED" }, parentActions);
 
         Assert.Empty(recorder.Flushed.Where(o =>
-            o.Type == "CONTEXT" && o.SubType == "MapItem"));
+            o.Type == "CONTEXT" && o.SubType == "MapIteration"));
     }
 
     [Fact]
@@ -548,7 +548,7 @@ public class MapOperationTests
                     Id = i0,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Succeeded,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "0",
                     ContextDetails = new ContextDetails { Result = "100" }
                 },
@@ -557,7 +557,7 @@ public class MapOperationTests
                     Id = i1,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Succeeded,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "1",
                     ContextDetails = new ContextDetails { Result = "200" }
                 }
@@ -574,6 +574,85 @@ public class MapOperationTests
         Assert.Equal(0, calls);
         Assert.Equal(2, result.SuccessCount);
         Assert.Equal(new[] { 100, 200 }, result.GetResults());
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed);
+    }
+
+    [Fact]
+    public async Task MapAsync_NestedSucceeded_InlinesPerItemResultsOnParentPayload()
+    {
+        // A Nested map must persist each item's result INLINE on the parent
+        // SUCCEED payload (not only on the per-item child checkpoints). The
+        // service collapses completed per-item child contexts out of the state
+        // returned on a later resume, so the inline copy is the only durable
+        // source for reconstructing results on replay (see the 9-17 conformance
+        // test: a wait after a successful map).
+        var (context, recorder, _, _) = CreateContext();
+
+        var result = await context.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return item.ToUpperInvariant(); },
+            name: "then-wait");
+
+        Assert.Equal(new[] { "A", "B" }, result.GetResults());
+
+        await recorder.Batcher.DrainAsync();
+
+        var parentSucceed = Assert.Single(recorder.Flushed.Where(o =>
+            o.Type == "CONTEXT" && o.SubType == "Map" && $"{o.Action}" == "SUCCEED"));
+
+        // The parent payload carries the per-item results inline (the serializer
+        // stores each item's serialized value on the summary unit).
+        var summary = System.Text.Json.JsonSerializer.Deserialize<BatchSummary>(parentSucceed.Payload!);
+        Assert.NotNull(summary);
+        Assert.Equal("\"A\"", summary!.Units[0].Result);
+        Assert.Equal("\"B\"", summary.Units[1].Result);
+    }
+
+    [Fact]
+    public async Task MapAsync_ReplaySucceeded_RebuildsResultFromInlineSummaryWithoutChildOps()
+    {
+        // Reproduces the 9-17 conformance scenario: on a post-map resume the
+        // service returns only the parent Map op (plus EXECUTION / the trailing
+        // wait) — the per-item MapIteration child ops are collapsed away. Results
+        // must be recovered from the inline summary alone, WITHOUT re-executing
+        // the item callback and WITHOUT the child ops present in state.
+        var parentOpId = IdAt(1);
+
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED","Result":"\"A\""},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED","Result":"\"B\""}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "then-wait",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+                // NOTE: no per-item child ops — mirrors the pruned resume state.
+            }
+        });
+
+        var calls = 0;
+        var result = await context.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { calls++; await Task.Yield(); return "SHOULD-NOT-RUN"; },
+            name: "then-wait");
+
+        Assert.Equal(0, calls);
+        Assert.Equal(2, result.SuccessCount);
+        Assert.Equal(new[] { "A", "B" }, result.GetResults());
 
         await recorder.Batcher.DrainAsync();
         Assert.Empty(recorder.Flushed);
@@ -612,7 +691,7 @@ public class MapOperationTests
                     Id = i0,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Succeeded,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "0",
                     ContextDetails = new ContextDetails { Result = "10" }
                 },
@@ -621,7 +700,7 @@ public class MapOperationTests
                     Id = i1,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Succeeded,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "1",
                     ContextDetails = new ContextDetails { Result = "20" }
                 }
@@ -680,7 +759,7 @@ public class MapOperationTests
                     Id = i0,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Failed,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "0",
                     ContextDetails = new ContextDetails
                     {
@@ -734,7 +813,7 @@ public class MapOperationTests
                     Id = i0,
                     Type = OperationTypes.Context,
                     Status = OperationStatuses.Succeeded,
-                    SubType = OperationSubTypes.MapItem,
+                    SubType = OperationSubTypes.MapIteration,
                     Name = "alpha",
                     ContextDetails = new ContextDetails { Result = "10" }
                 }
@@ -768,7 +847,7 @@ public class MapOperationTests
                 async (ctx, item, index, all, _) => { await Task.Yield(); return item; }).GetAwaiter().GetResult();
             recorder.Batcher.DrainAsync().GetAwaiter().GetResult();
             return recorder.Flushed
-                .Where(o => o.Type == "CONTEXT" && o.SubType == "MapItem" && o.Action == "START")
+                .Where(o => o.Type == "CONTEXT" && o.SubType == "MapIteration" && o.Action == "START")
                 .Select(o => o.Id)
                 .OrderBy(id => id)
                 .ToArray();

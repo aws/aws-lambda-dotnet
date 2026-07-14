@@ -11,13 +11,15 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// rebuilt without depending on user T shape.
 /// </summary>
 /// <remarks>
-/// Under <see cref="NestingType.Nested"/> per-unit results live on the children's
-/// own CONTEXT checkpoints and only <see cref="BatchUnitSummary.Status"/> (plus
-/// index/name) is recorded here. Under <see cref="NestingType.Flat"/> the
-/// children emit no checkpoint, so each unit's serialized result
-/// (<see cref="BatchUnitSummary.Result"/>) or error
-/// (<see cref="BatchUnitSummary.Error"/>) is recorded inline here and read back
-/// on replay.
+/// Each dispatched unit's serialized result (<see cref="BatchUnitSummary.Result"/>)
+/// or error (<see cref="BatchUnitSummary.Error"/>) is recorded inline here for
+/// BOTH <see cref="NestingType.Nested"/> and <see cref="NestingType.Flat"/>. Flat
+/// children emit no checkpoint of their own, and the service collapses completed
+/// Nested per-unit child contexts out of the state returned on a later resume, so
+/// the inline copy is the authoritative source for rebuilding the
+/// <see cref="IBatchResult{T}"/> on replay. If the inline payload would exceed the
+/// checkpoint size limit it is stripped (statuses only) and <c>ReplayChildren</c>
+/// is set, so replay re-executes the units to recover their values instead.
 /// </remarks>
 internal sealed class BatchSummary
 {
@@ -40,16 +42,19 @@ internal sealed class BatchUnitSummary
     public string? Status { get; set; }
 
     /// <summary>
-    /// Serialized per-unit result, recorded inline only for
-    /// <see cref="NestingType.Flat"/> succeeded units (where no child checkpoint
-    /// exists to read it from). <c>null</c> under <see cref="NestingType.Nested"/>.
+    /// Serialized per-unit result, recorded inline for succeeded units under both
+    /// <see cref="NestingType.Nested"/> and <see cref="NestingType.Flat"/>.
+    /// <c>null</c> for non-succeeded units, or when the summary was stripped on
+    /// overflow (results recovered by re-executing units on replay).
     /// </summary>
     [JsonPropertyName("Result")]
     public string? Result { get; set; }
 
     /// <summary>
-    /// Per-unit error, recorded inline only for <see cref="NestingType.Flat"/>
-    /// failed units. <c>null</c> under <see cref="NestingType.Nested"/>.
+    /// Per-unit error, recorded inline for failed units under both
+    /// <see cref="NestingType.Nested"/> and <see cref="NestingType.Flat"/>.
+    /// <c>null</c> for non-failed units, or when the summary was stripped on
+    /// overflow.
     /// </summary>
     [JsonPropertyName("Error")]
     public ErrorObject? Error { get; set; }
