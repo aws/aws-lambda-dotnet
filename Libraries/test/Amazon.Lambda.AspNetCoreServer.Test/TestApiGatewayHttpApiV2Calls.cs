@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -299,15 +300,36 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                     new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(opt => opt.RuntimeApiEndpoint = "localhost:123")
                 .Build();
-            
-            _ = bootstrap.RunAsync(cts.Token);
+
+            // Keep the task so we can tear the bootstrap down before the test returns. Previously this
+            // was fire-and-forget (_ = bootstrap.RunAsync(...)); the polling loop (against a dead
+            // endpoint) then kept running after the assert, and under parallel CI load the leaked loop
+            // hung the whole test process until the credentials expired ~2h later.
+            var bootstrapTask = bootstrap.RunAsync(cts.Token);
 
             // allow some time for Bootstrap to initialize in background
-            await Task.Delay(100, cts.Token);
+            await Task.Delay(100);
+
+            // Assert what the test is actually about (the SnapStart before-snapshot hook ran) before
+            // tearing down, so a teardown exception can't mask the real result.
+            Assert.True(SnapStartController.Invoked);
 
             await cts.CancelAsync();
 
-            Assert.True(SnapStartController.Invoked);
+            // Wait for the polling loop to actually stop so no background work outlives the test. The
+            // bootstrap runs against a dead endpoint (localhost:123), so its loop either observes the
+            // cancellation (OperationCanceledException) or throws the connection failure it was
+            // retrying (HttpRequestException); both are expected teardown noise, not test failures.
+            try
+            {
+                await bootstrapTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (HttpRequestException)
+            {
+            }
         }
 
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)

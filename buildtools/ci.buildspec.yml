@@ -5,6 +5,12 @@ phases:
     runtime-versions:
       dotnet: 8.x
     commands:
+      # Raise the inotify limits. The AspNetCoreServer tests each start an ASP.NET Core host, and the
+      # file-watching config providers allocate inotify instances; the container default (128) is
+      # exhausted once all unit-test projects run, surfacing as
+      # "The configured user limit (128) on the number of inotify instances has been reached".
+      - sysctl -w fs.inotify.max_user_instances=1024 || true
+      - sysctl -w fs.inotify.max_user_watches=524288 || true
       # Find and delete the global.json files that were added by CodeBuild. This causes issues when multiple SDKs are installed.
       - find / -type f -name 'global.json' -delete
       # The tests need .NET 3.1, 6, 8, 9 and 10. .NET6 is installed by default. .NET8 is added in the runtime-versions. .NET 3.1, 9 and 10 are installed manually.

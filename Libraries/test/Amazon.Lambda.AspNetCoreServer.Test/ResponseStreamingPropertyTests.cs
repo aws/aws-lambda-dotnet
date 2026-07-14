@@ -71,7 +71,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             }
         }
 
-        private class StandalonePreludeBuilder : APIGatewayHttpApiV2ProxyFunction
+        // Derives from the REST (v1) APIGatewayProxyFunction because the prelude property tests
+        // (Property3/Property4) assert on the multi-value MultiValueHeaders collection; the HTTP
+        // API v2 function instead collapses headers into the single-value Headers collection.
+        private class StandalonePreludeBuilder : APIGatewayProxyFunction
         {
             public StandalonePreludeBuilder() : base(StartupMode.FirstRequest) { }
 

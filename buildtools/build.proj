@@ -214,10 +214,10 @@
         IgnoreStandardErrorWarningFormat="true"/>
     </Target>
     <Target Name="run-unit-tests">
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\SnapshotRestore.Registry.Tests"/>
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests"/>
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.Tests"/>
+        <!-- Unit-test projects are discovered by convention (any *.csproj referencing the test SDK,
+             excluding *.IntegrationTests.csproj) so newly added test projects are picked up
+             automatically instead of having to be appended to a hardcoded list here. -->
+        <Exec Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)run-unit-tests.ps1&quot; -Configuration $(Configuration)"/>
     </Target>
     <Target Name="run-integ-tests">
         <!-- Each *.IntegrationTests.csproj deploys its own isolated CloudFormation stack, so the

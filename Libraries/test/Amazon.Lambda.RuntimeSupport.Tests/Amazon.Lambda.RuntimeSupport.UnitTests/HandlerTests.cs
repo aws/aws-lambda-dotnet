@@ -257,11 +257,15 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             using (var cancellationTokenSource = new CancellationTokenSource())
             {
-                var exceptionWaiterTask = Task.Run(() =>
+                var exceptionWaiterTask = Task.Run(async () =>
                 {
                     _output.WriteLine($"Waiting for an exception.");
+                    // Yield between checks instead of a tight spin. A busy-wait pins a CPU core and,
+                    // under load (e.g. when several test projects run in parallel), starves the
+                    // bootstrap thread that sets LastRecordedException, causing the test to flake.
                     while (testRuntimeApiClient.LastRecordedException == null)
                     {
+                        await Task.Delay(1);
                     }
                     _output.WriteLine($"Exception available.");
                     cancellationTokenSource.Cancel();
@@ -292,8 +296,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var exceptionWaiterTask = Task.Run(async () =>
                 {
                     _output.WriteLine($"Waiting for an output.");
+                    // Yield between checks instead of a tight spin. A busy-wait pins a CPU core and,
+                    // under load (e.g. when several test projects run in parallel), starves the
+                    // bootstrap thread that sets LastOutputStream, causing the handler test to flake.
                     while (testRuntimeApiClient.LastOutputStream == null)
                     {
+                        await Task.Delay(1);
                     }
                     _output.WriteLine($"Output available.");
                     cancellationTokenSource.Cancel();

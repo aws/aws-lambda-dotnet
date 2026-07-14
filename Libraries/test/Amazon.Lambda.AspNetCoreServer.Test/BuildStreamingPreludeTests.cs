@@ -14,7 +14,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
     {
         // Subclass that skips host startup entirely and
         // just exposes BuildStreamingPrelude directly without needing a running host.
-        private class StandalonePreludeBuilder : APIGatewayHttpApiV2ProxyFunction
+        // Derives from the REST (v1) APIGatewayProxyFunction because these tests assert on the
+        // multi-value MultiValueHeaders collection; the HTTP API v2 function instead collapses
+        // headers into the single-value Headers collection (see APIGatewayHttpApiV2ProxyFunction).
+        private class StandalonePreludeBuilder : APIGatewayProxyFunction
         {
             // Use the StartupMode.FirstRequest constructor so no host is started eagerly.
             public StandalonePreludeBuilder()
