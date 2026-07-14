@@ -1,3 +1,8 @@
+## Release 2026-07-14
+
+### Amazon.Lambda.DurableExecution (0.3.2-preview)
+* Fix two durable Map/Parallel conformance issues found via cross-SDK testing. (1) Per-item map iteration child contexts now use the SubType "MapIteration" (was "MapItem"), matching the JS/Python/Java SDKs. (2) Persist each unit's result/error inline on the parent Parallel/Map SUCCEED payload for Nested nesting (previously only Flat), so a batch that completes and then suspends (e.g. a wait after the map) reconstructs its per-item results correctly on replay — the service collapses completed per-unit child contexts out of the resumed state, so the inline copy is the authoritative source. Large aggregate results still overflow to the ReplayChildren path. Preview.
+
 ## Release 2026-07-13
 
 ### Amazon.Lambda.DurableExecution (0.3.1-preview)
