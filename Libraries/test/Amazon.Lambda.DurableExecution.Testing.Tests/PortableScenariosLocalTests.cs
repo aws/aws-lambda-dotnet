@@ -180,7 +180,7 @@ public class PortableScenariosLocalTests
     }
 
     [Fact]
-    public async Task Parallel_FailureTolerance_Exceeded_Fails()
+    public async Task Parallel_FailureTolerance_Exceeded_ResolvesWithReason()
     {
         await using var runner = new DurableTestRunner<BatchRequest, BatchResult>(ParallelWorkflows.FailureToleranceAsync);
         await PortableScenarios.ParallelFailureToleranceAsync(runner);
@@ -215,7 +215,7 @@ public class PortableScenariosLocalTests
     }
 
     [Fact]
-    public async Task Map_FailureTolerance_Exceeded_Fails()
+    public async Task Map_FailureTolerance_Exceeded_ResolvesWithReason()
     {
         await using var runner = new DurableTestRunner<BatchRequest, BatchResult>(MapWorkflows.FailureToleranceAsync);
         await PortableScenarios.MapFailureToleranceAsync(runner);

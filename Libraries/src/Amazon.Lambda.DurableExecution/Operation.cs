@@ -216,8 +216,8 @@ public static class OperationSubTypes
     /// <summary>Map parent sub-type.</summary>
     public const string Map = "Map";
 
-    /// <summary>Map item (per-item child-context) sub-type.</summary>
-    public const string MapItem = "MapItem";
+    /// <summary>Map iteration (per-item child-context) sub-type.</summary>
+    public const string MapIteration = "MapIteration";
 }
 
 /// <summary>

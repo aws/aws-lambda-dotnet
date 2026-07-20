@@ -180,7 +180,7 @@ public class ParallelOperationTests
     // ──────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task ParallelAsync_AllSuccessfulDefault_OneFailureThrowsParallelException()
+    public async Task ParallelAsync_AllSuccessfulDefault_OneFailureResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
@@ -194,23 +194,23 @@ public class ParallelOperationTests
         var branch0Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var branch2Done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(new Func<IDurableContext, CancellationToken, Task<int>>[]
+        // The default is fail-fast, but the operation NEVER throws (JS parity) —
+        // the failure surfaces on the returned result.
+        var result = await context.ParallelAsync(new Func<IDurableContext, CancellationToken, Task<int>>[]
+        {
+            async (_, _) => { await Task.Yield(); branch0Done.SetResult(); return 1; },
+            async (_, _) =>
             {
-                async (_, _) => { await Task.Yield(); branch0Done.SetResult(); return 1; },
-                async (_, _) =>
-                {
-                    await Task.WhenAll(branch0Done.Task, branch2Done.Task);
-                    throw new InvalidOperationException("branch boom");
-                },
-                async (_, _) => { await Task.Yield(); branch2Done.SetResult(); return 3; },
-            }));
+                await Task.WhenAll(branch0Done.Task, branch2Done.Task);
+                throw new InvalidOperationException("branch boom");
+            },
+            async (_, _) => { await Task.Yield(); branch2Done.SetResult(); return 3; },
+        });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        Assert.NotNull(ex.Result);
-        var typed = Assert.IsAssignableFrom<IBatchResult<int>>(ex.Result);
-        Assert.Equal(1, typed.FailureCount);
-        Assert.Equal(2, typed.SuccessCount);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Equal(2, result.SuccessCount);
     }
 
     [Fact]
@@ -264,47 +264,47 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_ToleratedFailureCount_ExceededThrows()
+    public async Task ParallelAsync_ToleratedFailureCount_ExceededResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-1"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-2"); },
-                    async (_, _) => { await Task.Yield(); return 3; },
-                },
-                config: new ParallelConfig
-                {
-                    CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
-                }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-1"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("fail-2"); },
+                async (_, _) => { await Task.Yield(); return 3; },
+            },
+            config: new ParallelConfig
+            {
+                CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 }
+            });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
     }
 
     [Fact]
-    public async Task ParallelAsync_ToleratedFailurePercentage_ExceededThrows()
+    public async Task ParallelAsync_ToleratedFailurePercentage_ExceededResolvesFailureTolerance()
     {
         var (context, _, _, _) = CreateContext();
 
         // 4 branches, 3 fail (75%) > 0.5 (50%) → exceeded.
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f1"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f2"); },
-                    async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f3"); },
-                    async (_, _) => { await Task.Yield(); return 4; },
-                },
-                config: new ParallelConfig
-                {
-                    CompletionConfig = new CompletionConfig { ToleratedFailurePercentage = 0.5 }
-                }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f1"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f2"); },
+                async (_, _) => { await Task.Yield(); throw new InvalidOperationException("f3"); },
+                async (_, _) => { await Task.Yield(); return 4; },
+            },
+            config: new ParallelConfig
+            {
+                CompletionConfig = new CompletionConfig { ToleratedFailurePercentage = 0.5 }
+            });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.True(result.HasFailure);
     }
 
     [Fact]
@@ -352,7 +352,8 @@ public class ParallelOperationTests
 
         // MaxConcurrency = 1 so we know the dispatch order is deterministic:
         // branch 0 fires first and succeeds; branches 1 and 2 are never
-        // dispatched at all, so they remain in BatchItemStatus.Started.
+        // dispatched at all, so they are EXCLUDED from the user-facing All list
+        // entirely (they are not Started, don't count in TotalCount/StartedCount).
         var result = await context.ParallelAsync(
             new Func<IDurableContext, CancellationToken, Task<int>>[]
             {
@@ -368,13 +369,12 @@ public class ParallelOperationTests
 
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(1, result.SuccessCount);
-        Assert.Equal(2, result.StartedCount);
+        Assert.Equal(0, result.StartedCount);
         Assert.Equal(0, result.FailureCount);
-        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(1, result.TotalCount);
 
+        Assert.Single(result.All);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started,   result.All[2].Status);
     }
 
     [Fact]
@@ -398,7 +398,10 @@ public class ParallelOperationTests
 
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(2, result.SuccessCount);
-        Assert.Equal(2, result.StartedCount);
+        // MaxConcurrency = 1: branches 2 and 3 are never dispatched once
+        // MinSuccessful = 2 is reached, so they are excluded from All.
+        Assert.Equal(0, result.StartedCount);
+        Assert.Equal(2, result.TotalCount);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -820,10 +823,11 @@ public class ParallelOperationTests
         Assert.Equal(2, executions);
         Assert.False(startedBodyRan);
 
-        // Per-item statuses come from the frozen summary.
+        // Per-item statuses come from the frozen summary. The never-dispatched
+        // STARTED unit (index 2, no child checkpoint) is excluded from All.
+        Assert.Equal(2, result.All.Count);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
 
         // Recovered values for the two succeeded units.
         Assert.Equal(new[] { 100, 200 }, result.GetResults());
@@ -946,7 +950,7 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_NestingTypeFlat_ReplayFailed_ThrowsWithInlineError()
+    public async Task ParallelAsync_NestingTypeFlat_ReplayFailed_ResolvesWithInlineError()
     {
         var parentOpId = IdAt(1);
 
@@ -976,20 +980,20 @@ public class ParallelOperationTests
             }
         });
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); return 1; },
-                    async (_, _) => { await Task.Yield(); return 2; },
-                },
-                name: "fanout",
-                config: new ParallelConfig { NestingType = NestingType.Flat }));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 1; },
+                async (_, _) => { await Task.Yield(); return 2; },
+            },
+            name: "fanout",
+            config: new ParallelConfig { NestingType = NestingType.Flat });
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        var typed = (IBatchResult<int>)ex.Result!;
-        Assert.Equal(1, typed.FailureCount);
-        Assert.Contains("flat branch 0 failed", typed.GetErrors()[0].Message);
+        // Replay reconstructs the frozen FailureToleranceExceeded result from the
+        // inline payload and returns it — no throw (JS parity).
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.Equal(1, result.FailureCount);
+        Assert.Contains("flat branch 0 failed", result.GetErrors()[0].Message);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -1062,7 +1066,89 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_ReplayFailed_ThrowsParallelException()
+    public async Task ParallelAsync_NestedSucceeded_InlinesPerBranchResultsOnParentPayload()
+    {
+        // A Nested parallel must persist each branch's result INLINE on the parent
+        // SUCCEED payload (not only on the per-branch child checkpoints). The
+        // service collapses completed per-branch child contexts out of the state
+        // returned on a later resume, so the inline copy is the only durable source
+        // for reconstructing results on replay (e.g. a wait after the parallel).
+        var (context, recorder, _, _) = CreateContext();
+
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 100; },
+                async (_, _) => { await Task.Yield(); return 200; },
+            },
+            name: "fanout");
+
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+
+        await recorder.Batcher.DrainAsync();
+
+        var parentSucceed = Assert.Single(recorder.Flushed.Where(o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel" && $"{o.Action}" == "SUCCEED"));
+
+        // The parent payload carries the per-branch results inline.
+        var summary = System.Text.Json.JsonSerializer.Deserialize<BatchSummary>(parentSucceed.Payload!);
+        Assert.NotNull(summary);
+        Assert.Equal("100", summary!.Units[0].Result);
+        Assert.Equal("200", summary.Units[1].Result);
+    }
+
+    [Fact]
+    public async Task ParallelAsync_ReplaySucceeded_RebuildsResultFromInlineSummaryWithoutChildOps()
+    {
+        // On a post-parallel resume the service returns only the parent Parallel op
+        // — the per-branch child ops are collapsed away. Results must be recovered
+        // from the inline summary alone, WITHOUT re-executing the branch bodies and
+        // WITHOUT the child ops present in state.
+        var parentOpId = IdAt(1);
+
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"0","Status":"SUCCEEDED","Result":"100"},
+                {"Index":1,"Name":"1","Status":"SUCCEEDED","Result":"200"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+                // NOTE: no per-branch child ops — mirrors the pruned resume state.
+            }
+        });
+
+        var executed = false;
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { executed = true; await Task.Yield(); return 999; },
+                async (_, _) => { executed = true; await Task.Yield(); return 999; },
+            },
+            name: "fanout");
+
+        Assert.False(executed);
+        Assert.Equal(new[] { 100, 200 }, result.GetResults());
+        Assert.Equal(CompletionReason.AllCompleted, result.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed);
+    }
+
+    [Fact]
+    public async Task ParallelAsync_ReplayFailed_ResolvesFailureTolerance()
     {
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
@@ -1123,21 +1209,19 @@ public class ParallelOperationTests
             }
         });
 
-        var ex = await Assert.ThrowsAsync<ParallelException>(() =>
-            context.ParallelAsync(
-                new Func<IDurableContext, CancellationToken, Task<int>>[]
-                {
-                    async (_, _) => { await Task.Yield(); return 1; },
-                    async (_, _) => { await Task.Yield(); return 2; },
-                },
-                name: "fanout"));
+        var result = await context.ParallelAsync(
+            new Func<IDurableContext, CancellationToken, Task<int>>[]
+            {
+                async (_, _) => { await Task.Yield(); return 1; },
+                async (_, _) => { await Task.Yield(); return 2; },
+            },
+            name: "fanout");
 
-        Assert.Equal(CompletionReason.FailureToleranceExceeded, ex.CompletionReason);
-        Assert.NotNull(ex.Result);
-
-        var typed = (IBatchResult<int>)ex.Result!;
-        Assert.Equal(2, typed.FailureCount);
-        Assert.Contains("branch 0 failed", typed.GetErrors()[0].Message);
+        // Replay reconstructs the frozen FailureToleranceExceeded result and
+        // returns it — no throw (JS parity).
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, result.CompletionReason);
+        Assert.Equal(2, result.FailureCount);
+        Assert.Contains("branch 0 failed", result.GetErrors()[0].Message);
     }
 
     [Fact]
@@ -1489,14 +1573,14 @@ public class ParallelOperationTests
     }
 
     [Fact]
-    public async Task ParallelAsync_FirstSuccessful_AllFail_AggregatesAsParallelException()
+    public async Task ParallelAsync_FirstSuccessful_AllFail_ResolvesAllCompleted()
     {
-        // FirstSuccessful() aliases MinSuccessful=1 with no explicit failure
-        // tolerance. When every branch fails, MinSuccessful is unreachable
-        // AND there is no failure-tolerance threshold, so the run completes
-        // as AllCompleted with HasFailure=true. Calling ThrowIfError surfaces
-        // the first failure; without explicit failure tolerance the parallel
-        // does NOT throw on its own (matches Python).
+        // FirstSuccessful() aliases MinSuccessful=1. Setting any completion
+        // criterion opts out of the fail-fast default, so there is no
+        // failure-tolerance threshold here. When every branch fails,
+        // MinSuccessful is unreachable, so the run completes as AllCompleted with
+        // HasFailure=true. The parallel never throws on its own (JS parity);
+        // ThrowIfError surfaces the first failure only when the caller asks.
         var (context, _, _, _) = CreateContext();
 
         var result = await context.ParallelAsync(
@@ -1523,9 +1607,10 @@ public class ParallelOperationTests
     {
         // Parent SUCCEEDED with MinSuccessful short-circuit: branch 0
         // SUCCEEDED, branch 1 SUCCEEDED, branch 2 was never dispatched
-        // (still STARTED in the summary). Replay must reproduce the original
-        // BatchResult shape — including the un-dispatched STARTED entry —
-        // without re-executing any branch.
+        // (still STARTED in the summary, but has NO child checkpoint). Replay
+        // must reconstruct the user-facing BatchResult WITHOUT re-executing any
+        // branch and must EXCLUDE the never-dispatched STARTED entry (no child
+        // op) from All — matching a fresh run.
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
         var b1 = ChildIdAt(parentOpId, 2);
@@ -1586,10 +1671,10 @@ public class ParallelOperationTests
         Assert.Equal(0, calls);
         Assert.Equal(CompletionReason.MinSuccessfulReached, result.CompletionReason);
         Assert.Equal(2, result.SuccessCount);
-        Assert.Equal(1, result.StartedCount);
+        Assert.Equal(0, result.StartedCount);
+        Assert.Equal(2, result.All.Count);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[0].Status);
         Assert.Equal(BatchItemStatus.Succeeded, result.All[1].Status);
-        Assert.Equal(BatchItemStatus.Started, result.All[2].Status);
         Assert.Equal(new[] { 10, 20 }, result.GetResults());
 
         await recorder.Batcher.DrainAsync();
@@ -1677,11 +1762,13 @@ public class ParallelOperationTests
     [Fact]
     public async Task ParallelAsync_ReplayUsesCheckpointedBranchName_NotCurrentName()
     {
-        // The checkpointed name is authoritative on replay. Even when a branch
-        // has no per-branch checkpoint (STARTED / never dispatched), the name
-        // from the parent summary must flow through to the reconstructed item.
+        // The checkpointed name is authoritative on replay. For a
+        // dispatched-then-bailed branch (STARTED with a per-branch START
+        // checkpoint), the reconstructed item is kept in All and its name must
+        // come from the parent summary, not from current code.
         var parentOpId = IdAt(1);
         var b0 = ChildIdAt(parentOpId, 1);
+        var b1 = ChildIdAt(parentOpId, 2);
 
         var summaryJson = """
             {"CompletionReason":"MIN_SUCCESSFUL_REACHED","Units":[
@@ -1711,6 +1798,16 @@ public class ParallelOperationTests
                     SubType = OperationSubTypes.ParallelBranch,
                     Name = "alpha",
                     ContextDetails = new ContextDetails { Result = "10" }
+                },
+                new()
+                {
+                    // Dispatched-then-bailed: has a START checkpoint (STARTED)
+                    // so the reconstructed item stays in All.
+                    Id = b1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Started,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "beta"
                 }
             }
         });

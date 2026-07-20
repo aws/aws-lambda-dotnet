@@ -45,15 +45,19 @@ public class WaitForConditionHappyPathTest
             TimeSpan.FromSeconds(60));
         var events = history.Events ?? new List<Event>();
 
-        // Exactly one START emitted on the first iteration (subsequent
-        // iterations resume from a RETRY checkpoint and skip START).
-        Assert.Equal(1, events.Count(e => e.EventType == EventType.StepStarted && e.Name == "happy_poll"));
+        // A fresh START is emitted per poll iteration (READY/PENDING replays
+        // re-emit START to match the spec and Python/JS/Java SDKs), so there
+        // is one StepStarted per StepSucceeded. Require the pairing rather
+        // than a fixed count since the iteration total is timing-dependent.
+        var startedEvents = events.Where(e => e.EventType == EventType.StepStarted && e.Name == "happy_poll").ToList();
+        var succeededEvents = events.Where(e => e.StepSucceededDetails != null && e.Name == "happy_poll").ToList();
+        Assert.NotEmpty(startedEvents);
+        Assert.NotEmpty(succeededEvents);
+        Assert.Equal(succeededEvents.Count, startedEvents.Count);
 
         // Each polling iteration surfaces as a StepSucceeded event (one per
         // RETRY plus one for the terminal SUCCEED). The last one carries the
         // terminal state.
-        var succeededEvents = events.Where(e => e.StepSucceededDetails != null && e.Name == "happy_poll").ToList();
-        Assert.NotEmpty(succeededEvents);
         var succeeded = succeededEvents.Last();
 
         var finalPayload = succeeded.StepSucceededDetails.Result?.Payload;

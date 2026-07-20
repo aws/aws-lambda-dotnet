@@ -1,3 +1,23 @@
+## Release 2026-07-14
+
+### Amazon.Lambda.DurableExecution (0.3.2-preview)
+* Fix two durable Map/Parallel conformance issues found via cross-SDK testing. (1) Per-item map iteration child contexts now use the SubType "MapIteration" (was "MapItem"), matching the JS/Python/Java SDKs. (2) Persist each unit's result/error inline on the parent Parallel/Map SUCCEED payload for Nested nesting (previously only Flat), so a batch that completes and then suspends (e.g. a wait after the map) reconstructs its per-item results correctly on replay — the service collapses completed per-unit child contexts out of the resumed state, so the inline copy is the authoritative source. Large aggregate results still overflow to the ReplayChildren path. Preview.
+
+## Release 2026-07-13
+
+### Amazon.Lambda.DurableExecution (0.3.1-preview)
+* Fix durable execution conformance issues found via cross-SDK testing. WaitForCondition now re-emits a fresh START on each poll iteration (READY/PENDING replays), matching the Python/JS/Java SDKs and the spec; only a STARTED-status replay skips it. Preview.
+
+## Release 2026-07-10
+
+### Amazon.Lambda.DurableExecution (0.3.0-preview)
+* Add virtual-context support to standalone RunInChildContextAsync via ChildContextConfig.NestingType. Setting NestingType.Flat runs the child in a virtual context that emits no CONTEXT checkpoint of its own (mirroring MapConfig/ParallelConfig), enabling manual fan-out with Task.WhenAll while reducing checkpoint volume.
+* Align ParallelAsync/MapAsync failure semantics with the JS/Python SDKs (breaking, preview). ParallelAsync and MapAsync no longer throw on failure — they always return an IBatchResult; inspect CompletionReason/HasFailure or call ThrowIfError(). The ParallelException and MapException types are removed. MapConfig.CompletionConfig now defaults to AllSuccessful() (fail-fast), matching ParallelConfig. An empty CompletionConfig() is now fail-fast (any failure resolves FailureToleranceExceeded); use CompletionConfig.AllCompleted() to run every unit regardless of failures. MapConfig is now generic (MapConfig<TItem>) so ItemNamer is typed Func<TItem, int, string> instead of Func<object, int, string>. Preview.
+### Amazon.Lambda.Annotations (2.3.0)
+* Add diagnostic AWSLambda0145 (Warning) for durable execution functions. When a [DurableExecution] function registers the source-generator serializer (SourceGeneratorLambdaJsonSerializer<TContext>), the durable invocation envelope types DurableExecutionInvocationInput and DurableExecutionInvocationOutput must be registered on the JsonSerializerContext with [JsonSerializable]. The generator now warns at build time when either is missing, instead of the function failing at invocation time. Preview.
+### Amazon.Lambda.Templates (8.1.1)
+* Set AutoPublishAlias to 'live' on the function in the serverless.DurableFunction blueprint (vs2026). SAM now publishes a new function version and points the 'live' alias at it on every deploy, so the durable function can be invoked immediately after deployment instead of failing with a no-published-version error. Preview.
+
 ## Release 2026-07-02 #2
 
 ### Amazon.Lambda.Templates (8.1.0)

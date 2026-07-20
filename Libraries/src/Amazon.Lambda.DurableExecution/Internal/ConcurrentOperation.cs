@@ -31,17 +31,20 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 ///       SUCCEED with summary payload (<see cref="BatchSummary"/>).</item>
 ///   <item><b>SUCCEEDED</b>: parent payload supplies the snapshot of per-unit
 ///       statuses + completion reason; per-unit results are deserialised from the
-///       children's own CONTEXT checkpoints. If the completion reason is
-///       <see cref="CompletionReason.FailureToleranceExceeded"/>, throws the
-///       subclass exception carrying the rebuilt <see cref="IBatchResult{T}"/>.</item>
+///       children's own CONTEXT checkpoints. The rebuilt
+///       <see cref="IBatchResult{T}"/> is returned regardless of completion
+///       reason.</item>
 ///   <item><b>STARTED</b> / <b>PENDING</b>: re-execute (children replay from their
 ///       own checkpoints).</item>
 /// </list>
-/// Per-unit errors do NOT abort the operation directly — the orchestrator catches
-/// each unit's <see cref="ChildContextException"/>, records it as a failed
+/// Per-unit errors do NOT abort the operation — the orchestrator catches each
+/// unit's <see cref="ChildContextException"/>, records it as a failed
 /// <see cref="IBatchItem{T}"/>, and consults the <see cref="CompletionConfig"/>
-/// after every completion. Only when the completion config marks the run as
-/// <see cref="CompletionReason.FailureToleranceExceeded"/> does it throw.
+/// after every completion only to decide whether to stop dispatching. The
+/// operation ALWAYS returns an <see cref="IBatchResult{T}"/> — it never throws on
+/// failure, matching the JS/Python/Java SDKs. Callers inspect
+/// <see cref="IBatchResult.CompletionReason"/> / <see cref="IBatchResult.HasFailure"/>
+/// or call <see cref="IBatchResult{T}.ThrowIfError"/> to surface a failure.
 /// </remarks>
 internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T>>
 {
@@ -98,26 +101,17 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     /// <summary>Parent CONTEXT sub-type label (e.g. Parallel / Map).</summary>
     protected abstract string ParentSubType { get; }
 
-    /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapItem).</summary>
+    /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapIteration).</summary>
     protected abstract string ChildSubType { get; }
 
     /// <summary>Singular operation noun used in messages (e.g. "Parallel" / "Map").</summary>
     protected abstract string OperationNoun { get; }
-
-    /// <summary>Plural unit noun used in messages (e.g. "branches" / "items").</summary>
-    protected abstract string UnitNounPlural { get; }
 
     /// <summary>
     /// Resolves the unit at <paramref name="index"/> into its display name and the
     /// function to run inside the unit's child context.
     /// </summary>
     protected abstract (string? Name, Func<IDurableContext, CancellationToken, Task<T>> Func) GetUnit(int index);
-
-    /// <summary>
-    /// Builds the subclass-specific exception thrown when the operation resolves
-    /// with <see cref="CompletionReason.FailureToleranceExceeded"/>.
-    /// </summary>
-    protected abstract DurableExecutionException CreateException(string message, IBatchResult<T> result);
 
     // ── Orchestration ───────────────────────────────────────────────────
 
@@ -129,6 +123,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Context,
             Action = OperationAction.START,
             SubType = ParentSubType,
@@ -159,12 +154,10 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
             case OperationStatuses.Succeeded:
                 // The parent always checkpoints as SUCCEED — even when
-                // CompletionReason is FailureToleranceExceeded. Reconstruct
-                // the BatchResult and throw if it was a tolerance failure.
-                var result = ReconstructFromCheckpoints(existing);
-                if (result.CompletionReason == CompletionReason.FailureToleranceExceeded)
-                    throw BuildException(result);
-                return Task.FromResult(result);
+                // CompletionReason is FailureToleranceExceeded. Reconstruct and
+                // return the BatchResult; the operation never throws on failure
+                // (the caller inspects CompletionReason / calls ThrowIfError).
+                return Task.FromResult(ReconstructFromCheckpoints(existing));
 
             case OperationStatuses.Started:
             case OperationStatuses.Pending:
@@ -349,50 +342,38 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // FailureToleranceExceeded verdict from units that merely unwound.
         controlToken.ThrowIfCancellationRequested();
 
-        // Build BatchItems for every unit in original order.
+        // Build BatchItems ONLY for units that were dispatched — matching the JS
+        // SDK, whose sparse resultItems array never records a never-dispatched
+        // branch. A dispatched-then-bailed unit (cooperative short-circuit) keeps
+        // its Started slot and stays in All; a never-dispatched unit is omitted
+        // entirely. This makes TotalCount = started(in-flight) + succeeded + failed
+        // and excludes branches that a CompletionConfig short-circuit skipped.
         var items = new List<IBatchItem<T>>(unitCount);
         for (var i = 0; i < unitCount; i++)
         {
+            if (!dispatched[i])
+                continue;
+
             var (unitName, _) = GetUnit(i);
-            if (dispatched[i])
+            var outcome = slots[i];
+            items.Add(new BatchItem<T>
             {
-                var outcome = slots[i];
-                items.Add(new BatchItem<T>
-                {
-                    Index = i,
-                    Name = unitName,
-                    Status = outcome.Status,
-                    Result = outcome.Status == BatchItemStatus.Succeeded ? outcome.Result : default,
-                    Error = outcome.Status == BatchItemStatus.Failed ? outcome.Error : null
-                });
-            }
-            else
-            {
-                items.Add(new BatchItem<T>
-                {
-                    Index = i,
-                    Name = unitName,
-                    Status = BatchItemStatus.Started,
-                    Result = default,
-                    Error = null
-                });
-            }
+                Index = i,
+                Name = unitName,
+                Status = outcome.Status,
+                Result = outcome.Status == BatchItemStatus.Succeeded ? outcome.Result : default,
+                Error = outcome.Status == BatchItemStatus.Failed ? outcome.Error : null
+            });
         }
 
         var completionReason = ComputeCompletionReason(items, unitCount);
         var result = new BatchResult<T>(items, completionReason);
 
-        var failureException = completionReason == CompletionReason.FailureToleranceExceeded
-            ? BuildException(result)
-            : null;
-
         await CheckpointParentResultAsync(result, completionReason, cancellationToken);
 
-        if (failureException != null)
-        {
-            throw failureException;
-        }
-
+        // Never throw on failure — always return the aggregate result. The caller
+        // inspects CompletionReason / HasFailure or calls ThrowIfError. Matches
+        // the JS/Python/Java SDKs.
         return result;
     }
 
@@ -436,12 +417,17 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             }
             var resolvedName = checkpointedName ?? unitName;
 
+            // STARTED units in the frozen summary were short-circuited (never
+            // dispatched) originally — exclude them from the reconstructed All to
+            // match the fresh-run view and the JS SDK. (The name-drift check above
+            // still runs over the complete summary before we skip.)
+            if (status == BatchItemStatus.Started)
+                continue;
+
             T? unitResult = default;
             DurableExecutionException? unitError = null;
 
             // Re-execute only completed units to recover the stripped value/error.
-            // STARTED units were short-circuited (never dispatched) originally —
-            // do NOT run their bodies, so there are no spurious side effects.
             if (status == BatchItemStatus.Succeeded || status == BatchItemStatus.Failed)
             {
                 var outcome = await RunSingleUnitAsync(i, cancellationToken).ConfigureAwait(false);
@@ -476,15 +462,9 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             ? DeserializeCompletionReason(summary.CompletionReason)
             : ComputeCompletionReason(items, unitCount);
 
-        var result = new BatchResult<T>(items, completionReason);
-
-        // No re-checkpoint: the parent is already terminal in state.
-        if (completionReason == CompletionReason.FailureToleranceExceeded)
-        {
-            throw BuildException(result);
-        }
-
-        return result;
+        // No re-checkpoint: the parent is already terminal in state. Return the
+        // reconstructed result regardless of completion reason — never throw.
+        return new BatchResult<T>(items, completionReason);
     }
 
     private async Task RunUnitAsync(
@@ -683,7 +663,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     {
         var succeeded = 0;
         var failed = 0;
-        var started = 0;
 
         foreach (var item in items)
         {
@@ -691,19 +670,18 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             {
                 case BatchItemStatus.Succeeded: succeeded++; break;
                 case BatchItemStatus.Failed:    failed++;    break;
-                case BatchItemStatus.Started:   started++;   break;
             }
         }
 
-        return _policy.Evaluate(succeeded, failed, started, totalCount);
-    }
+        // "started" for the policy is the DECLARED total minus what settled — this
+        // captures BOTH genuinely in-flight units AND never-dispatched units (which
+        // are no longer materialised in items). It preserves the early-stop signal
+        // (started > 0 => a CompletionConfig short-circuit skipped work) that drives
+        // MinSuccessfulReached, and totalCount stays the declared count so
+        // ToleratedFailurePercentage divides by the true branch count.
+        var started = totalCount - succeeded - failed;
 
-    private DurableExecutionException BuildException(IBatchResult<T> result)
-    {
-        var message =
-            $"{OperationNoun} operation failed: failure tolerance exceeded " +
-            $"({result.FailureCount} of {result.TotalCount} {UnitNounPlural} failed).";
-        return CreateException(message, result);
+        return _policy.Evaluate(succeeded, failed, started, totalCount);
     }
 
     private async Task CheckpointParentResultAsync(
@@ -714,23 +692,43 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // Local builder: includeInline=true writes per-unit Result/Error inline
         // (Flat only); includeInline=false writes the minimal index/name/status
         // map (the shape Nested always uses, and the Flat overflow fallback).
+        // The persisted summary keeps EVERY declared unit — including
+        // never-dispatched ones tagged STARTED — even though result.All now omits
+        // them from the user-facing view. Replay/reconstruct and the unit-name
+        // drift check both loop the declared UnitCount and read per-unit
+        // status/name from this summary, so it must stay complete. Dispatched
+        // units are looked up by Index in result.All; the gaps are the
+        // never-dispatched branches.
         BatchSummary BuildSummary(bool includeInline)
         {
+            var byIndex = new Dictionary<int, IBatchItem<T>>(result.All.Count);
+            foreach (var it in result.All)
+                byIndex[it.Index] = it;
+
             var s = new BatchSummary
             {
                 CompletionReason = SerializeCompletionReason(completionReason),
-                Units = new List<BatchUnitSummary>(result.All.Count)
+                Units = new List<BatchUnitSummary>(UnitCount)
             };
-            for (var i = 0; i < result.All.Count; i++)
+            for (var i = 0; i < UnitCount; i++)
             {
-                var item = result.All[i];
+                var (unitName, _) = GetUnit(i);
+                byIndex.TryGetValue(i, out var item);
                 var unit = new BatchUnitSummary
                 {
-                    Index = item.Index,
-                    Name = item.Name,
-                    Status = SerializeStatus(item.Status)
+                    Index = i,
+                    Name = item?.Name ?? unitName,
+                    Status = SerializeStatus(item?.Status ?? BatchItemStatus.Started)
                 };
-                if (includeInline && _isVirtual)
+                // Persist each unit's result/error inline on the parent summary —
+                // for BOTH Nested and Flat units. The service collapses completed
+                // per-unit child contexts out of the state returned on a later
+                // (post-operation) resume, so replay cannot recover a Nested unit's
+                // value from its child checkpoint; the inline copy is the only
+                // durable source. This mirrors the JS SDK, whose default
+                // BatchResult serdes serializes the whole `all` array (results
+                // included) into the parent payload.
+                if (includeInline && item != null)
                 {
                     if (item.Status == BatchItemStatus.Succeeded)
                         unit.Result = SerializeResult(item.Result);
@@ -745,11 +743,12 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         var summary = BuildSummary(includeInline: true);
         var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
 
-        // Flat overflow: the inline per-unit results pushed the summary over the
+        // Overflow: the inline per-unit results pushed the summary over the
         // checkpoint limit. Re-emit a stripped summary (statuses only) and flag
         // ReplayChildren so replay reconstructs the values by re-executing units.
-        var overflow = _isVirtual
-            && Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+        // Applies to both Nested and Flat now that both inline their results.
+        var overflow =
+            Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
         if (overflow)
         {
             summary = BuildSummary(includeInline: false);
@@ -763,6 +762,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Context,
             Action = OperationAction.SUCCEED,
             SubType = ParentSubType,
@@ -805,30 +805,39 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             }
             var resolvedName = checkpointedName ?? unitName;
 
+            // A never-dispatched unit (Started, with neither an inline result/error
+            // on the summary nor a surviving per-unit child checkpoint) is excluded
+            // from the reconstructed All, matching the fresh-run view and the JS
+            // SDK. A dispatched-then-bailed unit is also Started but HAS a child op,
+            // so it stays. The name-drift check above still runs over the complete
+            // summary before we skip.
+            if (status == BatchItemStatus.Started && childOp == null)
+                continue;
+
             T? unitResult = default;
             DurableExecutionException? unitError = null;
 
-            // Flat (virtual) units have no child checkpoint — their result/error
-            // was recorded inline on this summary. Nested units read from the
-            // child's own CONTEXT checkpoint. A unit is "inline" when the summary
-            // entry carries a Result/Error, which only Flat writes.
-            if (_isVirtual && summaryEntry != null)
+            // Prefer the result/error recorded INLINE on the parent summary (both
+            // Nested and Flat units write it). This is the only durable source on a
+            // post-operation resume, since the service collapses completed per-unit
+            // child contexts out of the returned state. Fall back to the child's
+            // own CONTEXT checkpoint only when the summary carries no inline copy
+            // (e.g. state hydrated from an older checkpoint, or a dispatched unit
+            // whose child op is still present in state).
+            if (status == BatchItemStatus.Succeeded && summaryEntry?.Result != null)
             {
-                if (status == BatchItemStatus.Succeeded && summaryEntry.Result != null)
+                unitResult = DeserializeResult(summaryEntry.Result);
+            }
+            else if (status == BatchItemStatus.Failed && summaryEntry?.Error != null)
+            {
+                var err = summaryEntry.Error;
+                unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
                 {
-                    unitResult = DeserializeResult(summaryEntry.Result);
-                }
-                else if (status == BatchItemStatus.Failed && summaryEntry.Error != null)
-                {
-                    var err = summaryEntry.Error;
-                    unitError = new ChildContextException(err.ErrorMessage ?? "Unit failed")
-                    {
-                        SubType = ChildSubType,
-                        ErrorType = err.ErrorType,
-                        ErrorData = err.ErrorData,
-                        OriginalStackTrace = err.StackTrace
-                    };
-                }
+                    SubType = ChildSubType,
+                    ErrorType = err.ErrorType,
+                    ErrorData = err.ErrorData,
+                    OriginalStackTrace = err.StackTrace
+                };
             }
             else if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
             {

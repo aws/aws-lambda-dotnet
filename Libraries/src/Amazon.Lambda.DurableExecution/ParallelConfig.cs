@@ -41,10 +41,17 @@ public sealed class ParallelConfig
 
     /// <summary>
     /// When the parallel operation is considered complete. Defaults to
-    /// <see cref="CompletionConfig.AllSuccessful"/> — any single branch failure
-    /// surfaces as a <see cref="ParallelException"/> when the parallel result
-    /// is awaited.
+    /// <see cref="CompletionConfig.AllSuccessful"/> (fail-fast) — any single
+    /// branch failure resolves the operation with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>.
     /// </summary>
+    /// <remarks>
+    /// The parallel operation never throws on failure — it always returns an
+    /// <see cref="IBatchResult{T}"/>. Inspect
+    /// <see cref="IBatchResult.CompletionReason"/> /
+    /// <see cref="IBatchResult.HasFailure"/> or call
+    /// <see cref="IBatchResult{T}.ThrowIfError"/> to surface failures.
+    /// </remarks>
     public CompletionConfig CompletionConfig { get; set; } = CompletionConfig.AllSuccessful();
 
     /// <summary>

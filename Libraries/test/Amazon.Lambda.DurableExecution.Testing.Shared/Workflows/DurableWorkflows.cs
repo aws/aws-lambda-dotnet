@@ -73,7 +73,7 @@ public static class FulfillmentWorkflow
                     async (_, _) => { await Task.CompletedTask; return (index + 1) * 10m; },
                     name: "price"),
             name: "price_items",
-            config: new MapConfig { ItemNamer = (sku, index) => $"sku-{sku}" });
+            config: new MapConfig<string> { ItemNamer = (sku, index) => $"sku-{sku}" });
         var pricedResults = priced.GetResults();
         var orderTotal = await context.StepAsync(
             async (_, _) => { await Task.CompletedTask; return pricedResults.Sum(); },
@@ -669,7 +669,11 @@ public static class ParallelWorkflows
         };
     }
 
-    /// <summary>Two branches throw with tolerance=1, so the parallel exceeds tolerance and throws.</summary>
+    /// <summary>
+    /// Two branches throw with tolerance=1, so the parallel resolves with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>. The operation does
+    /// NOT throw (JS parity) — the workflow inspects the result and reports it.
+    /// </summary>
     public static async Task<BatchResult> FailureToleranceAsync(BatchRequest input, IDurableContext context)
     {
         var batch = await context.ParallelAsync(
@@ -684,7 +688,13 @@ public static class ParallelWorkflows
             name: "tolerance",
             config: new ParallelConfig { CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 } });
 
-        return new BatchResult { Status = "should_not_reach", SuccessCount = batch.SuccessCount };
+        return new BatchResult
+        {
+            Status = "completed",
+            SuccessCount = batch.SuccessCount,
+            FailureCount = batch.FailureCount,
+            CompletionReason = batch.CompletionReason.ToString(),
+        };
     }
 
     /// <summary>Six branches, MaxConcurrency=2; each waits then timestamps. All must succeed.</summary>
@@ -735,12 +745,17 @@ public static class MapWorkflows
                     async (_, _) => { await Task.CompletedTask; return $"{orderId}-{input.OrderId}"; },
                     name: "process"),
             name: "process_all",
-            config: new MapConfig { ItemNamer = (item, index) => $"item-{item}" });
+            config: new MapConfig<string> { ItemNamer = (item, index) => $"item-{item}" });
 
         return new BatchResult { Status = "completed", Data = string.Join(",", batch.GetResults()) };
     }
 
-    /// <summary>Middle item throws; Map's default AllCompleted tolerates it.</summary>
+    /// <summary>
+    /// Middle item throws. Under the fail-fast default the map resolves with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>, but with unlimited
+    /// concurrency all three items are dispatched before any completes, so the
+    /// result still reports two successes and one failure. The map does not throw.
+    /// </summary>
     public static async Task<BatchResult> PartialFailureAsync(BatchRequest input, IDurableContext context)
     {
         var items = new[] { "ok1", "boom", "ok2" };
@@ -753,7 +768,8 @@ public static class MapWorkflows
                     throw new InvalidOperationException("intentional partial failure");
                 return item;
             },
-            name: "partial");
+            name: "partial",
+            config: new MapConfig<string> { CompletionConfig = CompletionConfig.AllCompleted() });
 
         var errorSummary = string.Join("|", batch.GetErrors().Select(e => $"{e.GetType().Name}:{e.Message}"));
         return new BatchResult
@@ -777,7 +793,7 @@ public static class MapWorkflows
                 return index;
             },
             name: "race",
-            config: new MapConfig { CompletionConfig = CompletionConfig.FirstSuccessful() });
+            config: new MapConfig<int> { CompletionConfig = CompletionConfig.FirstSuccessful() });
 
         var winner = batch.Succeeded.FirstOrDefault();
         return new BatchResult
@@ -791,7 +807,11 @@ public static class MapWorkflows
         };
     }
 
-    /// <summary>Two items throw with tolerance=1, so the map exceeds tolerance and throws MapException.</summary>
+    /// <summary>
+    /// Two items throw with tolerance=1, so the map resolves with
+    /// <see cref="CompletionReason.FailureToleranceExceeded"/>. The operation does
+    /// NOT throw (JS parity) — the workflow inspects the result and reports it.
+    /// </summary>
     public static async Task<BatchResult> FailureToleranceAsync(BatchRequest input, IDurableContext context)
     {
         var items = new[] { "ok1", "bad1", "ok2", "bad2", "ok3" };
@@ -805,9 +825,15 @@ public static class MapWorkflows
                 return item;
             },
             name: "tolerance",
-            config: new MapConfig { CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 } });
+            config: new MapConfig<string> { CompletionConfig = new CompletionConfig { ToleratedFailureCount = 1 } });
 
-        return new BatchResult { Status = "should_not_reach", SuccessCount = batch.SuccessCount };
+        return new BatchResult
+        {
+            Status = "completed",
+            SuccessCount = batch.SuccessCount,
+            FailureCount = batch.FailureCount,
+            CompletionReason = batch.CompletionReason.ToString(),
+        };
     }
 
     /// <summary>Six items, MaxConcurrency=2; each waits then timestamps. All must succeed.</summary>
@@ -822,7 +848,7 @@ public static class MapWorkflows
                 return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             },
             name: "throttled",
-            config: new MapConfig { MaxConcurrency = 2, CompletionConfig = CompletionConfig.AllCompleted() });
+            config: new MapConfig<int> { MaxConcurrency = 2, CompletionConfig = CompletionConfig.AllCompleted() });
 
         return new BatchResult
         {

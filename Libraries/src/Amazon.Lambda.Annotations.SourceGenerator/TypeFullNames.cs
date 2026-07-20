@@ -80,6 +80,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
+        // The source-generator serializer is generic: SourceGeneratorLambdaJsonSerializer<TContext> where
+        // TContext is the user's JsonSerializerContext. Compared against INamedTypeSymbol.ConstructedFrom by
+        // metadata name (the `1 arity suffix is part of the metadata name for a generic type).
+        public const string SourceGeneratorLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.SourceGeneratorLambdaJsonSerializer`1";
+        public const string JsonSerializableAttribute = "System.Text.Json.Serialization.JsonSerializableAttribute";
+
         public const string LambdaSerializerAttributeWithoutNamespace = "LambdaSerializerAttribute";
 
         public static HashSet<string> ApiGatewayRequests = new HashSet<string>

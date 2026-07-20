@@ -103,6 +103,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
+            ParentId = ParentId,
             Type = OperationTypes.Callback,
             Action = OperationAction.START,
             SubType = OperationSubTypes.Callback,

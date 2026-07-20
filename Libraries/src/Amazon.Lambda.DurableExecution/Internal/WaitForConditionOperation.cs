@@ -82,7 +82,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
     protected override string OperationType => OperationTypes.Step;
 
     protected override Task<TState> StartAsync(CancellationToken cancellationToken)
-        => ExecuteIteration(_config.InitialState, attemptNumber: 1, cancellationToken);
+        => ExecuteIteration(_config.InitialState, attemptNumber: 1, existingStatus: null, cancellationToken);
 
     protected override Task<TState> ReplayAsync(Operation existing, CancellationToken cancellationToken)
     {
@@ -106,7 +106,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
                 // START emitted but no RETRY/SUCCEED yet — the very first
                 // check attempt was lost. Re-execute with InitialState. Do
                 // NOT re-emit START (the original is authoritative).
-                return ExecuteIteration(_config.InitialState, attemptNumber: 1, cancellationToken);
+                return ExecuteIteration(_config.InitialState, attemptNumber: 1, existingStatus: existing.Status, cancellationToken);
 
             default:
                 throw new NonDeterministicExecutionException(
@@ -133,7 +133,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
 
         var priorState = DeserializeStateOrInitial(pending.StepDetails?.Result);
         var attemptNumber = (pending.StepDetails?.Attempt ?? 0) + 1;
-        return ExecuteIteration(priorState, attemptNumber, cancellationToken);
+        return ExecuteIteration(priorState, attemptNumber, existingStatus: pending.Status, cancellationToken);
     }
 
     /// <summary>
@@ -145,21 +145,32 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
     {
         var priorState = DeserializeStateOrInitial(ready.StepDetails?.Result);
         var attemptNumber = (ready.StepDetails?.Attempt ?? 0) + 1;
-        return ExecuteIteration(priorState, attemptNumber, cancellationToken);
+        return ExecuteIteration(priorState, attemptNumber, existingStatus: ready.Status, cancellationToken);
     }
 
-    private async Task<TState> ExecuteIteration(TState currentState, int attemptNumber, CancellationToken cancellationToken)
+    private async Task<TState> ExecuteIteration(TState currentState, int attemptNumber, string? existingStatus, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Emit START on the very first attempt only — and sync-flush so the
-        // service has a record of the polling op even if the check function
-        // drives termination via, e.g., a wait inside it. Subsequent
-        // iterations resume from a RETRY/READY/PENDING checkpoint and skip
-        // START.
-        if (State.GetOperation(OperationId) == null)
+        // Emit a fresh START before every poll iteration, matching the spec and
+        // the Python/JS/Java SDKs. The ONLY case we skip is when the persisted
+        // status is already STARTED: the START was written but the first check
+        // attempt was lost (crash/timeout), so the original START is
+        // authoritative. On a normal resume the status is READY/PENDING (not
+        // STARTED), so each poll gets its own StepStarted checkpoint.
+        //
+        // START is fire-and-forget (NOT awaited), mirroring StepOperation and the
+        // Python/JS reference SDKs. Awaiting it would force two back-to-back
+        // synchronous checkpoint round-trips (START then terminal FAIL) with no
+        // suspension between them when the check throws on the first attempt,
+        // which hangs the invocation. START is telemetry-only for
+        // wait_for_condition — replay correctness depends solely on the terminal
+        // RETRY/SUCCEED/FAIL checkpoints, which remain awaited. Any flush error
+        // still surfaces deterministically via the batcher's terminal error on
+        // the next awaited checkpoint.
+        if (existingStatus != OperationStatuses.Started)
         {
-            await EnqueueAsync(new SdkOperationUpdate
+            FireAndForget(EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
                 ParentId = ParentId,
@@ -167,7 +178,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
                 Action = OperationAction.START,
                 SubType = OperationSubTypes.WaitForCondition,
                 Name = Name
-            }, cancellationToken);
+            }, cancellationToken));
         }
 
         // Link the caller's token with the workflow-shutdown token. The check
@@ -381,6 +392,21 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         ErrorMessage = ex.Message,
         StackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
     };
+
+    /// <summary>
+    /// Discards a Task but observes any exception so it doesn't surface as an
+    /// <c>UnobservedTaskException</c>. Used for fire-and-forget START checkpoints.
+    /// The actual error still propagates via the batcher's terminal error: the
+    /// next sync EnqueueAsync or DrainAsync rethrows with the original cause.
+    /// </summary>
+    private static void FireAndForget(Task task)
+    {
+        _ = task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
 }
 
 /// <summary>

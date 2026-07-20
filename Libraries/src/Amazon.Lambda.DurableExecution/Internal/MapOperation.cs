@@ -14,14 +14,13 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// checkpoint, and replay logic lives in <see cref="ConcurrentOperation{T}"/>;
 /// this subclass supplies only the map-specific bits: how to turn an item index
 /// into a <c>(name, func)</c> pair (the per-item callback receives the item, its
-/// index, and the full source list), the Map sub-type labels, and the
-/// <see cref="MapException"/> factory.
+/// index, and the full source list) and the Map sub-type labels.
 /// </summary>
 internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult>
 {
     private readonly IReadOnlyList<TItem> _items;
     private readonly Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> _func;
-    private readonly Func<object, int, string>? _itemNamer;
+    private readonly Func<TItem, int, string>? _itemNamer;
 
     public MapOperation(
         string operationId,
@@ -29,7 +28,7 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
         string? parentId,
         IReadOnlyList<TItem> items,
         Func<IDurableContext, TItem, int, IReadOnlyList<TItem>, CancellationToken, Task<TResult>> func,
-        MapConfig config,
+        MapConfig<TItem> config,
         ILambdaSerializer serializer,
         Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
@@ -49,9 +48,8 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
 
     protected override int UnitCount => _items.Count;
     protected override string ParentSubType => OperationSubTypes.Map;
-    protected override string ChildSubType => OperationSubTypes.MapItem;
+    protected override string ChildSubType => OperationSubTypes.MapIteration;
     protected override string OperationNoun => "Map";
-    protected override string UnitNounPlural => "items";
 
     protected override (string? Name, Func<IDurableContext, CancellationToken, Task<TResult>> Func) GetUnit(int index)
     {
@@ -61,21 +59,12 @@ internal sealed class MapOperation<TItem, TResult> : ConcurrentOperation<TResult
         // item's content. Naming affects observability only, never replay
         // correlation (child operation IDs are derived from the index).
         var name = _itemNamer is not null
-            ? _itemNamer(item!, index)
+            ? _itemNamer(item, index)
             : index.ToString(CultureInfo.InvariantCulture);
 
         // Forward the child context's token (caller + workflow-shutdown +
         // cooperative-bail, linked by ChildContextOperation) to the user callback
         // so map items can observe short-circuit just like parallel branches.
         return (name, (ctx, ct) => _func(ctx, item, index, _items, ct));
-    }
-
-    protected override DurableExecutionException CreateException(string message, IBatchResult<TResult> result)
-    {
-        return new MapException(message)
-        {
-            Result = result,
-            CompletionReason = result.CompletionReason
-        };
     }
 }

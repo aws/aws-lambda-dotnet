@@ -46,7 +46,7 @@ public class Function
                 return generatedId;
             },
             name: "fanout",
-            config: new MapConfig { NestingType = NestingType.Flat });
+            config: new MapConfig<int> { NestingType = NestingType.Flat });
 
         var joined = string.Join(",", batch.GetResults());
         return new TestResult { Status = "completed", Data = joined };

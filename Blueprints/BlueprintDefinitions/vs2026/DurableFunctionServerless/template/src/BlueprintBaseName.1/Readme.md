@@ -51,6 +51,11 @@ The `[DurableExecution]` attribute drives the source generator, which keeps the 
 dotnet lambda deploy-serverless
 ```
 
+The template sets `AutoPublishAlias: live` on the function. On every deploy, SAM publishes a new
+function version and points the `live` alias at it, so the function can be invoked immediately after
+deployment. Without a published version, invoking a freshly deployed durable function fails because
+durable execution requires a specific function version to run against.
+
 ## Invoke
 
 CloudFormation generates the deployed function name, so it won't be `BlueprintBaseName.1`. Find it by
