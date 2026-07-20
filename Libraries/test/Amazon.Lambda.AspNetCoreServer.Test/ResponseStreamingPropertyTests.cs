@@ -107,7 +107,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task Property1_RequestMarshalling_IdenticalInStreamingAndBufferedModes(
             string method, string path, Dictionary<string, string> headers, string body)
         {
-            var function = new PropertyTestStreamingFunction();
+            using var function = new PropertyTestStreamingFunction();
             var context = new TestLambdaContext();
 
             // Warm up so the host is started
@@ -152,7 +152,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             string method, string path, Dictionary<string, string> headers, string body)
         {
             // Use a fresh function with streaming OFF
-            var function = new PropertyTestStreamingFunction();
+            using var function = new PropertyTestStreamingFunction();
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
 
@@ -358,7 +358,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var completedSequences = new List<int>();
             int streamClosedSequence = -1;
 
-            var function = new OnCompletedTrackingFunction(
+            using var function = new OnCompletedTrackingFunction(
                 cbCount: cbCount,
                 completedSequences: completedSequences,
                 getAndIncrementCounter: () => sequenceCounter++,

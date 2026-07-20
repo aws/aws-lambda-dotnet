@@ -242,7 +242,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(TestLambdaContext context, string fileName)
         {
-            var lambdaFunction = new ALBLambdaFunction();
+            using var lambdaFunction = new ALBLambdaFunction();
             var filePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<ApplicationLoadBalancerRequest>(requestStr);

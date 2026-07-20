@@ -529,7 +529,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent, bool configureApiToReturnExceptionDetail = false)
         {
-            var lambdaFunction = new ApiGatewayLambdaFunction();
+            using var lambdaFunction = new ApiGatewayLambdaFunction();
             if (configureApiToReturnExceptionDetail)
                 lambdaFunction.IncludeUnhandledExceptionDetailInResponse = true;
             var requestStream = new MemoryStream(System.Text.UTF8Encoding.UTF8.GetBytes(requestContent));

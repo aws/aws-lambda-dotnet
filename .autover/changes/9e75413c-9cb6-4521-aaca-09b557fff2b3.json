@@ -20,7 +20,8 @@
       "Type": "Minor",
       "ChangelogMessages": [
 		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.",
-        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support.",
+		"Updated the base class AbstractAspNetCoreFunction to implement IDisposable. This is mostly needed for unit tests. In the Lambda environment there will only be one instance of AbstractAspNetCoreFunction subclass created."
       ]		
 	},
 	{
