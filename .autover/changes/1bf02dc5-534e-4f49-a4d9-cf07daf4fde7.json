@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Graduate ILambdaContext.Serializer from experimental to stable. The AWSLAMBDA001 experimental diagnostic is removed; the managed runtime now populates the serializer in both the executable and class-library programming models."
+      ]
+    }
+  ]
+}

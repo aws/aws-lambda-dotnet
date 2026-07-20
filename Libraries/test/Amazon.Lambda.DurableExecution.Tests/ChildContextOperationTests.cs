@@ -25,9 +25,7 @@ public class ChildContextOperationTests
         state.LoadFromCheckpoint(initialState);
         var tm = new TerminationManager();
         var idGen = new OperationIdGenerator();
-#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
-#pragma warning restore AWSLAMBDA001
         var recorder = new RecordingBatcher();
         var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);

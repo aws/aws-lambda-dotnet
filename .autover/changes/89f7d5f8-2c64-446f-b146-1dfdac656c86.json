@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Graduate TestLambdaContext.Serializer from experimental to stable, mirroring the graduation of ILambdaContext.Serializer. The AWSLAMBDA001 experimental diagnostic is removed."
+      ]
+    }
+  ]
+}

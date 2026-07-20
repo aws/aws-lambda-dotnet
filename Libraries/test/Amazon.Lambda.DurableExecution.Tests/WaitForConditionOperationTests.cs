@@ -15,9 +15,7 @@ public class WaitForConditionOperationTests
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
 
     private static TestLambdaContext CreateLambdaContext(ILambdaSerializer? serializer = null) =>
-#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         new() { Serializer = serializer ?? new DefaultLambdaJsonSerializer() };
-#pragma warning restore AWSLAMBDA001
 
     private static (DurableContext context, RecordingBatcher recorder, TerminationManager tm, ExecutionState state)
         CreateContext(InitialExecutionState? initialState = null, ILambdaSerializer? serializer = null)
