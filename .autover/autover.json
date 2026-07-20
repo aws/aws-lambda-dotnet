@@ -52,13 +52,11 @@
       "Paths": [
         "Libraries/src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj",
         "Libraries/src/Amazon.Lambda.DurableExecution.Analyzers/Amazon.Lambda.DurableExecution.Analyzers.csproj"
-      ],
-      "PrereleaseLabel": "preview"
+      ]
     },
     {
       "Name": "Amazon.Lambda.DurableExecution.Testing",
-      "Path": "Libraries/src/Amazon.Lambda.DurableExecution.Testing/Amazon.Lambda.DurableExecution.Testing.csproj",
-      "PrereleaseLabel": "preview"
+      "Path": "Libraries/src/Amazon.Lambda.DurableExecution.Testing/Amazon.Lambda.DurableExecution.Testing.csproj"
     },
     {
       "Name": "Amazon.Lambda.DynamoDBEvents",

@@ -127,4 +127,4 @@ dotnet_diagnostic.DE004.severity = none
 
 Note: if your project sets `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`, the Warning-level
 rules (DE001–DE003) will fail the build. Lower their severity in `.editorconfig` if you prefer them as
-warnings during the preview.
+warnings.
