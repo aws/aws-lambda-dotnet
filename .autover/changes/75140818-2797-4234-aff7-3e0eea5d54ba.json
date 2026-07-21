@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.PowerShellHost",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update System.Security.Cryptography.Xml dependency to 8.0.4 for .NET 8 and 10.0.10 for .NET 10"
+      ]
+    }
+  ]
+}
