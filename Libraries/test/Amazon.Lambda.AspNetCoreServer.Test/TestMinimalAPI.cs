@@ -55,15 +55,40 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 processStartInfo.Arguments = $"{comamndArgument} dotnet run \"{requestFilePath}\" \"{responseFilePath}\"";
                 processStartInfo.WorkingDirectory = GetTestAppDirectory();
 
+                // Capture stdout/stderr from the "dotnet run" shell out so that, when it exits non-zero, the
+                // underlying build/runtime output is surfaced in the test failure instead of just an exit code.
+                processStartInfo.UseShellExecute = false;
+                processStartInfo.RedirectStandardOutput = true;
+                processStartInfo.RedirectStandardError = true;
+
 
                 lock (lock_process)
                 {
                     using var process = Process.Start(processStartInfo);
-                    process.WaitForExit(15000);
+
+                    // Read both streams asynchronously; reading them synchronously can deadlock if one pipe's
+                    // buffer fills while we're blocked waiting on the other.
+                    var stdout = new StringBuilder();
+                    var stderr = new StringBuilder();
+                    process.OutputDataReceived += (sender, e) => { if (e.Data != null) stdout.AppendLine(e.Data); };
+                    process.ErrorDataReceived += (sender, e) => { if (e.Data != null) stderr.AppendLine(e.Data); };
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    if (!process.WaitForExit(45000))
+                    {
+                        try { process.Kill(); } catch { /* best effort */ }
+                        throw new Exception(
+                            "Process timed out after 45000ms." + BuildProcessOutput(stdout, stderr));
+                    }
+
+                    // Ensure the asynchronous output handlers have flushed all buffered data before we read it.
+                    process.WaitForExit();
 
                     if (process.ExitCode != 0)
                     {
-                        throw new Exception("Process failed with exit code: " + process.ExitCode);
+                        throw new Exception(
+                            "Process failed with exit code: " + process.ExitCode + BuildProcessOutput(stdout, stderr));
                     }
 
                     if(!File.Exists(responseFilePath))
@@ -78,6 +103,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
                     return response;
                 }
+            }
+
+            private static string BuildProcessOutput(StringBuilder stdout, StringBuilder stderr)
+            {
+                return $"{Environment.NewLine}--- STDOUT ---{Environment.NewLine}{stdout}" +
+                       $"{Environment.NewLine}--- STDERR ---{Environment.NewLine}{stderr}";
             }
 
             private string GetTestAppDirectory()
