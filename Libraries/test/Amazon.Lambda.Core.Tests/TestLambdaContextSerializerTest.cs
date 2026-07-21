@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#pragma warning disable AWSLAMBDA001 // ILambdaContext.Serializer is preview; this is the test that proves it works.
 using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;

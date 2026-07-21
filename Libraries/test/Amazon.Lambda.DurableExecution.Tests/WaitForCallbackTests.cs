@@ -19,9 +19,7 @@ public class WaitForCallbackTests
         OperationIdGenerator.HashOperationId($"{parentOpId}-{position}");
 
     private static TestLambdaContext CreateLambdaContext() =>
-#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         new() { Serializer = new DefaultLambdaJsonSerializer() };
-#pragma warning restore AWSLAMBDA001
 
     private static (DurableContext context, RecordingBatcher recorder, TerminationManager tm, ExecutionState state)
         CreateContext(InitialExecutionState? initialState = null)

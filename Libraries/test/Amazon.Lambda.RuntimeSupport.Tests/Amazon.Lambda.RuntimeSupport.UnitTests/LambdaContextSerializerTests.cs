@@ -12,7 +12,6 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-#pragma warning disable AWSLAMBDA001 // ILambdaContext.Serializer is preview; this is the test that proves it works.
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.Helpers;

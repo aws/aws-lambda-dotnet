@@ -20,9 +20,7 @@ public class DurableFunctionTests
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
 
     private static TestLambdaContext CreateLambdaContext() =>
-#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         new() { Serializer = new DefaultLambdaJsonSerializer() };
-#pragma warning restore AWSLAMBDA001
 
     private readonly IAmazonLambda _mockClient = new MockLambdaClient();
 

@@ -16,10 +16,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
-    <!-- DurableExecution intentionally consumes the preview ILambdaContext.Serializer
-         API. The whole package is in development (0.x), so suppressing project-wide
-         is appropriate; downstream users still see AWSLAMBDA001 in their own code. -->
-    <NoWarn>$(NoWarn);AWSLAMBDA001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
