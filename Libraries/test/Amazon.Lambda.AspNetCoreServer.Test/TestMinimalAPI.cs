@@ -49,13 +49,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 var requestFilePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), eventFilePath);
                 var responseFilePath = Path.GetTempFileName();
 
-                var comamndArgument = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? $"/c" : $"-c";
+                // Invoke "dotnet" directly rather than through a shell. Routing "dotnet run ..." through a
+                // shell as a single Arguments string is not portable: on Unix .NET splits the string into an
+                // argv array, so "sh -c dotnet run <req> <resp>" makes the shell run just "dotnet" (with the
+                // rest as positional parameters $0/$1/...), which prints the dotnet usage text and exits 129.
+                // Passing each argument via ArgumentList lets the runtime quote them correctly on every OS.
                 ProcessStartInfo processStartInfo = new ProcessStartInfo();
-                processStartInfo.FileName = GetSystemShell();
-                processStartInfo.Arguments = $"{comamndArgument} dotnet run \"{requestFilePath}\" \"{responseFilePath}\"";
+                processStartInfo.FileName = "dotnet";
+                processStartInfo.ArgumentList.Add("run");
+                processStartInfo.ArgumentList.Add(requestFilePath);
+                processStartInfo.ArgumentList.Add(responseFilePath);
                 processStartInfo.WorkingDirectory = GetTestAppDirectory();
 
-                // Capture stdout/stderr from the "dotnet run" shell out so that, when it exits non-zero, the
+                // Capture stdout/stderr from the "dotnet run" child process so that, when it exits non-zero, the
                 // underlying build/runtime output is surfaced in the test failure instead of just an exit code.
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardOutput = true;
@@ -120,28 +126,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 }
 
                 return Path.GetFullPath(Path.Combine(path, "TestMinimalAPIApp"));
-            }
-
-            private string GetSystemShell()
-            {
-                if (TryGetEnvironmentVariable("COMSPEC", out var comspec))
-                {
-                    return comspec!;
-                }
-
-                if (TryGetEnvironmentVariable("SHELL", out var shell))
-                {
-                    return shell!;
-                }
-
-                // fallback to defaults
-                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/sh";
-            }
-
-            private bool TryGetEnvironmentVariable(string variable, out string value)
-            {
-                value = Environment.GetEnvironmentVariable(variable);
-                return !string.IsNullOrEmpty(value);
             }
         }
     }
