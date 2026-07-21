@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!--
+      Force ASP.NET Core / Microsoft.Extensions configuration to use a polling file watcher instead of
+      the OS file-system watcher. On Linux the OS watcher is backed by inotify, and each host built via
+      Host.CreateDefaultBuilder registers several reloadOnChange watchers on appsettings*.json. These tests
+      construct many ASP.NET Core hosts - both in-process and, for TestMinimalAPI, in spawned "dotnet run"
+      child processes - and xUnit runs test classes in parallel. The concurrent number of inotify instances
+      therefore exceeds the per-user limit (fs.inotify.max_user_instances, 128 by default on the CI hosts),
+      producing "The configured user limit (128) on the number of inotify instances has been reached".
+
+      The polling watcher uses a timer instead of inotify, so no inotify instances are consumed. VSTest sets
+      these variables before the test host process starts, so they take effect before any host is built and
+      are inherited by the child processes the tests spawn.
+    -->
+    <EnvironmentVariables>
+      <DOTNET_USE_POLLING_FILE_WATCHER>1</DOTNET_USE_POLLING_FILE_WATCHER>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

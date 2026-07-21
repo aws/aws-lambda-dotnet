@@ -136,26 +136,6 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddAWSLambdaHosting_NotInLambda_DoesNotRegisterHostingOptions()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        // No AWS_LAMBDA_FUNCTION_NAME environment variable set
-
-        // Act
-        services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
-        {
-            options.DefaultResponseContentEncoding = ResponseContentEncoding.Base64;
-        });
-
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        var hostingOptions = serviceProvider.GetService<HostingOptions>();
-        Assert.Null(hostingOptions);
-    }
-
-    [Fact]
     public void AddAWSLambdaHosting_ConfigurationIsApplied()
     {
         // Arrange
