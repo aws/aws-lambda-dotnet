@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix Blazor web UI being non-interactive on .NET 9\u002B/net10.0 (framework static assets 404) by serving them via MapStaticAssets"
+      ]
+    }
+  ]
+}

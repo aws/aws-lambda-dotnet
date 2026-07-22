@@ -40,6 +40,19 @@ public class TestToolProcess
 
         Utils.ConfigureWebApplicationBuilder(builder);
 
+#if NET9_0_OR_GREATER
+        // On .NET 9+ framework assets are served through MapStaticAssets (see below). When the
+        // build-time static web assets manifest is in use (dotnet build / dotnet run), ASP.NET Core
+        // attaches a development-time runtime-patching handler that probes each asset via the app's
+        // physical WebRootFileProvider (wwwroot) to detect local edits. The framework assets
+        // (_framework/*) and the scoped-CSS bundle do not physically exist under wwwroot, so that
+        // probe throws FileNotFoundException and the assets return HTTP 500. Disabling the runtime
+        // reload makes MapStaticAssets serve directly from the manifest's content roots, which is
+        // exactly what the installed global tool (publish manifest) already does. This tool manages
+        // its own static file serving, so runtime hot-reload of wwwroot is not needed.
+        builder.Configuration["ReloadStaticAssetsAtRuntime"] = "false";
+#endif
+
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
@@ -99,6 +112,18 @@ public class TestToolProcess
         {
             FileProvider = wwwrootFileProvider
         });
+
+#if NET9_0_OR_GREATER
+        // On .NET 9+ the Blazor framework files (_framework/blazor.web.js) and the scoped-CSS
+        // bundle (Amazon.Lambda.TestTool.styles.css) are served through the endpoint-routing
+        // static assets API backed by the *.staticwebassets.endpoints.json manifest, not the
+        // classic static-files middleware above. Without this call those assets return 404, so
+        // window.Blazor is never defined and the interactive server circuit is never established,
+        // leaving the entire Blazor UI non-interactive. This manifest is generated relative to the
+        // published output, so it works for the installed global-tool scenario. Guarded so net8.0
+        // (which serves these assets via the wwwroot provider above) keeps its existing behavior.
+        app.MapStaticAssets();
+#endif
 
         app.UseAntiforgery();
 
