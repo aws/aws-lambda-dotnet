@@ -98,6 +98,25 @@ public sealed class RunCommandSettings : CommandSettings
     public string? ConfigStoragePath { get; set; }
 
     /// <summary>
+    /// Enables the durable-execution service emulator: HTTP endpoints emulating the Lambda
+    /// durable-execution data plane (checkpoint / get-state) are hosted alongside the Runtime
+    /// API. Point the function's <c>AWS_ENDPOINT_URL_LAMBDA</c> at the emulator to run a durable
+    /// workflow locally.
+    /// </summary>
+    [CommandOption("--durable-execution")]
+    [Description("Enable the durable-execution service emulator (checkpoint/get-state endpoints) hosted alongside the Lambda Runtime API.")]
+    public bool DurableExecution { get; set; }
+
+    /// <summary>
+    /// When the durable-execution emulator is enabled, resolves timers (WaitAsync, retry
+    /// backoff) immediately instead of waiting for wall-clock time. Defaults to <c>true</c> so
+    /// local workflows advance without real delays.
+    /// </summary>
+    [CommandOption("--durable-time-skip")]
+    [Description("When durable execution is enabled, resolve timers/retry backoff immediately rather than waiting for wall-clock time. Default: true.")]
+    public bool DurableTimeSkip { get; set; } = true;
+
+    /// <summary>
     /// Validate that <see cref="ConfigStoragePath"/> is an absolute path.
     /// </summary>
     public override ValidationResult Validate()

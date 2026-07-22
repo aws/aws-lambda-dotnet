@@ -3,6 +3,7 @@
 
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Services.DurableExecution;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Amazon.Lambda.TestTool.Services;
@@ -14,11 +15,19 @@ public class LambdaRuntimeApi
     private const int MaxRequestSize = 6 * 1024 * 1024;
     private const int MaxResponseSize = 6 * 1024 * 1024;
 
+    // Header the SDK's Invoke sets to start a durable execution, and the header it reads the
+    // resulting ARN back from (rest-json locationName; see lambda-2015-03-31.normal.json).
+    private const string DurableExecutionNameHeader = "X-Amz-Durable-Execution-Name";
+    private const string DurableExecutionArnHeader = "X-Amz-Durable-Execution-Arn";
+
     private readonly IRuntimeApiDataStoreManager _runtimeApiDataStoreManager;
+    // Present only when the durable-execution emulator is enabled (--durable-execution).
+    private readonly DurableExecutionDriver? _durableDriver;
 
     internal LambdaRuntimeApi(WebApplication app)
     {
         _runtimeApiDataStoreManager = app.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
+        _durableDriver = app.Services.GetService<DurableExecutionDriver>();
 
         app.MapGet("/lambda-runtime-api/healthcheck", () => "health");
 
@@ -73,6 +82,17 @@ public class LambdaRuntimeApi
             return;
         }
 
+        // Durable-execution start: when the invoke carries X-Amz-Durable-Execution-Name and the
+        // emulator is enabled, the durable service (not the function directly) owns this call. It
+        // starts the execution asynchronously and returns the ARN; the driver then invokes the
+        // function itself, replay-style, until the workflow reaches a terminal state.
+        if (_durableDriver is not null
+            && ctx.Request.Headers.TryGetValue(DurableExecutionNameHeader, out var durableName))
+        {
+            await StartDurableExecution(ctx, functionName, durableName.ToString(), testEvent);
+            return;
+        }
+
         var evnt = runtimeDataStore.QueueEvent(testEvent, isRequestResponseMode);
 
         if (isRequestResponseMode)
@@ -109,6 +129,34 @@ public class LambdaRuntimeApi
         else
         {
             ctx.Response.StatusCode = 202;
+        }
+    }
+
+    /// <summary>
+    /// Handles a durable-execution start (an Invoke carrying the durable-execution-name header).
+    /// Mirrors the service's async start: launch the drive loop and return 202 with the minted
+    /// ARN in the <c>X-Amz-Durable-Execution-Arn</c> response header, or the
+    /// <c>DurableExecutionAlreadyStartedException</c> error if the name was reused with a
+    /// different payload.
+    /// </summary>
+    private async Task StartDurableExecution(HttpContext ctx, string functionName, string? executionName, string payload)
+    {
+        try
+        {
+            var arn = _durableDriver!.Start(functionName, executionName, payload);
+            ctx.Response.Headers[DurableExecutionArnHeader] = arn;
+            // The real service returns the started execution asynchronously (202); the driver
+            // invokes the function on its own thread from here.
+            ctx.Response.StatusCode = 202;
+        }
+        catch (DurableExecutionAlreadyStartedException ex)
+        {
+            ctx.Response.StatusCode = 409;
+            ctx.Response.Headers.ContentType = "application/json";
+            ctx.Response.Headers["X-Amzn-Errortype"] = nameof(DurableExecutionAlreadyStartedException);
+            var body = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new { message = ex.Message }));
+            ctx.Response.Headers.ContentLength = body.Length;
+            await ctx.Response.Body.WriteAsync(body);
         }
     }
 
