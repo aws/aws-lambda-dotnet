@@ -146,6 +146,46 @@ internal sealed class DurableExecutionStore
     public bool CallbackExists(string callbackId) => _callbacks.ContainsKey(callbackId);
 
     /// <summary>
+    /// Stamps the result/error of a resolved chained invoke onto the parent's CHAINED_INVOKE
+    /// operation so the next replay of the parent workflow sees it terminal. Mirrors
+    /// <c>ExecutionOrchestrator.ResolvePendingInvokesAsync</c>.
+    /// </summary>
+    public void ResolveChainedInvoke(string arn, string operationId, string? result, ErrorObject? error)
+    {
+        var ctx = GetOrCreate(arn);
+        var op = ctx.Store.GetOperation(arn, operationId);
+        if (op is null)
+            return;
+
+        op.ChainedInvokeDetails ??= new ChainedInvokeDetails();
+        op.EndTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (error is null)
+        {
+            op.Status = OperationStatuses.Succeeded;
+            op.ChainedInvokeDetails.Result = result;
+            op.ChainedInvokeDetails.Error = null;
+        }
+        else
+        {
+            op.Status = OperationStatuses.Failed;
+            op.ChainedInvokeDetails.Error = error;
+        }
+        ctx.Store.Upsert(arn, op);
+    }
+
+    /// <summary>Marks the top-level EXECUTION operation STOPPED (used by StopDurableExecution).</summary>
+    public void MarkStopped(string arn)
+    {
+        var ctx = GetOrCreate(arn);
+        var op = ctx.Store.GetOperation(arn, ExecutionOperationId);
+        if (op is null)
+            return;
+        op.Status = OperationStatuses.Stopped;
+        op.EndTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        ctx.Store.Upsert(arn, op);
+    }
+
+    /// <summary>
     /// Returns one page of the execution's operation history starting at <paramref name="marker"/>
     /// (an integer offset encoded as a string; null/empty = start). The returned NextMarker is
     /// null when the page reaches the end of the history.

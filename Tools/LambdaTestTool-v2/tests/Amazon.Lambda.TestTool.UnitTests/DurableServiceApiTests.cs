@@ -17,6 +17,7 @@ namespace Amazon.Lambda.TestTool.UnitTests;
 /// AWSSDK durable operations (<c>CheckpointDurableExecution</c> / <c>GetDurableExecutionState</c>),
 /// so the wire serialization, catch-all ARN routing, and state machine are all exercised together.
 /// </summary>
+[Collection(DurableTestCollection.Name)]
 public class DurableServiceApiTests
 {
     private const string FunctionName = "DurableFoo";
@@ -279,6 +280,36 @@ public class DurableServiceApiTests
             }, cts.Token);
             Assert.Equal(50, page2.Operations.Count);
             Assert.True(string.IsNullOrEmpty(page2.NextMarker));
+        }
+        finally
+        {
+            await cts.CancelAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Checkpoint_OversizedStepPayload_IsRejected()
+    {
+        var (process, cts) = StartTool();
+        try
+        {
+            Assert.True(await TestHelpers.WaitForApiToStartAsync($"{process.ServiceUrl}/lambda-runtime-api/healthcheck"));
+            var client = ConstructLambdaServiceClient(process.ServiceUrl);
+
+            // A STEP result over the 256 KB cap must be rejected.
+            var oversized = "\"" + new string('x', 300 * 1024) + "\"";
+            var ex = await Assert.ThrowsAsync<AmazonLambdaException>(async () =>
+                await client.CheckpointDurableExecutionAsync(new CheckpointDurableExecutionRequest
+                {
+                    DurableExecutionArn = Arn,
+                    CheckpointToken = "0",
+                    Updates = new List<OperationUpdate>
+                    {
+                        new() { Id = "big", Type = OperationType.STEP, Action = OperationAction.SUCCEED, Payload = oversized }
+                    }
+                }, cts.Token));
+
+            Assert.Equal(System.Net.HttpStatusCode.RequestEntityTooLarge, ex.StatusCode);
         }
         finally
         {

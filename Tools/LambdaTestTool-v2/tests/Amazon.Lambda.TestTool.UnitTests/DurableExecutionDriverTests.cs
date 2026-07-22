@@ -29,6 +29,12 @@ namespace Amazon.Lambda.TestTool.UnitTests;
 /// replay cycle without depending on the DurableExecution SDK's internal engine (tested in its
 /// own package) or its process-global cached checkpoint client.
 /// </summary>
+/// <remarks>
+/// Each test stands up a full Kestrel web host and a polling fake-function loop; running several
+/// concurrently starves the 100ms Runtime-API poll under CPU pressure. The shared
+/// <see cref="DurableTestCollection"/> serializes all durable web-host tests.
+/// </remarks>
+[Collection(DurableTestCollection.Name)]
 public class DurableExecutionDriverTests
 {
     private const string FunctionName = "DurableDriverFoo";
@@ -323,6 +329,181 @@ public class DurableExecutionDriverTests
             // The driver should reach a terminal state; the function processed exactly 2 invocations.
             var invocations = await functionTask;
             Assert.Equal(2, invocations);
+        }
+        finally
+        {
+            await cts.CancelAsync();
+        }
+    }
+
+    /// <summary>
+    /// Generic fake-function loop: for each invocation, calls <paramref name="onInvoke"/> with the
+    /// current operations to obtain the checkpoint updates to send and the output to return. Runs
+    /// until it returns a non-Pending output or cancellation. This models an arbitrary durable
+    /// function over the real Runtime API + checkpoint wire.
+    /// </summary>
+    private static async Task RunFakeFunctionLoopAsync(
+        string functionName, string serviceUrl, RunCommandSettings options,
+        Func<IReadOnlyList<DurableOperation>, (List<OperationUpdate> Updates, DurableExecutionInvocationOutput Output)> onInvoke,
+        CancellationToken ct)
+    {
+        var funcBase = $"http://{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}";
+        using var http = new HttpClient();
+        using var lambda = ConstructLambdaServiceClient(serviceUrl);
+
+        while (!ct.IsCancellationRequested)
+        {
+            HttpResponseMessage next;
+            try { next = await http.GetAsync($"{funcBase}/2018-06-01/runtime/invocation/next", ct); }
+            catch (OperationCanceledException) { break; }
+            if (!next.IsSuccessStatusCode) continue;
+
+            var requestId = next.Headers.TryGetValues("Lambda-Runtime-Aws-Request-Id", out var ids) ? ids.First() : null;
+            if (requestId is null) continue;
+
+            var envelopeJson = await next.Content.ReadAsStringAsync(ct);
+            var input = JsonSerializer.Deserialize<DurableExecutionInvocationInput>(envelopeJson, Json)!;
+            var ops = input.InitialExecutionState?.Operations ?? new List<DurableOperation>();
+
+            var (updates, output) = onInvoke(ops);
+            if (updates.Count > 0)
+            {
+                await lambda.CheckpointDurableExecutionAsync(new CheckpointDurableExecutionRequest
+                {
+                    DurableExecutionArn = input.DurableExecutionArn,
+                    CheckpointToken = input.CheckpointToken,
+                    Updates = updates
+                }, ct);
+            }
+
+            await http.PostAsync(
+                $"{funcBase}/2018-06-01/runtime/invocation/{requestId}/response",
+                new StringContent(JsonSerializer.Serialize(output, Json)), ct);
+
+            if (output.Status != InvocationStatus.Pending)
+                break;
+        }
+    }
+
+    [Fact]
+    public async Task ChainedInvoke_RunsSiblingAsNestedExecution_AndReturnsResult()
+    {
+        const string parentFn = "DurableParentFn";
+        const string siblingFn = "DurableSiblingFn";
+        var (process, options, cts) = StartTool(skipTime: true);
+        try
+        {
+            Assert.True(await TestHelpers.WaitForApiToStartAsync($"{process.ServiceUrl}/lambda-runtime-api/healthcheck"));
+
+            // Sibling: a single step that returns "sibling-done".
+            var siblingTask = RunFakeFunctionLoopAsync(siblingFn, process.ServiceUrl, options, ops =>
+            {
+                var updates = new List<OperationUpdate>
+                {
+                    new() { Id = "s1", Type = OperationType.STEP, Action = OperationAction.START, Name = "sibling-step" },
+                    new() { Id = "s1", Type = OperationType.STEP, Action = OperationAction.SUCCEED, Payload = "\"sibling-done\"" }
+                };
+                return (updates, new DurableExecutionInvocationOutput { Status = InvocationStatus.Succeeded, Result = "\"sibling-done\"" });
+            }, cts.Token);
+
+            // Parent: invocation 1 starts a chained invoke of the sibling (Pending); invocation 2
+            // sees it resolved and returns its result.
+            string? parentResult = null;
+            var parentTask = RunFakeFunctionLoopAsync(parentFn, process.ServiceUrl, options, ops =>
+            {
+                var invokeOp = ops.FirstOrDefault(o => o.Id == "ci1");
+                if (invokeOp is null)
+                {
+                    var updates = new List<OperationUpdate>
+                    {
+                        new()
+                        {
+                            Id = "ci1",
+                            Type = OperationType.CHAINED_INVOKE,
+                            Action = OperationAction.START,
+                            Name = "call-sibling",
+                            ChainedInvokeOptions = new ChainedInvokeOptions { FunctionName = siblingFn }
+                        }
+                    };
+                    return (updates, new DurableExecutionInvocationOutput { Status = InvocationStatus.Pending });
+                }
+
+                parentResult = invokeOp.ChainedInvokeDetails?.Result;
+                return (new List<OperationUpdate>(),
+                    new DurableExecutionInvocationOutput { Status = InvocationStatus.Succeeded, Result = parentResult });
+            }, cts.Token);
+
+            var client = ConstructLambdaServiceClient(process.ServiceUrl);
+            var invoke = await client.InvokeAsync(new InvokeRequest
+            {
+                FunctionName = parentFn,
+                Payload = "{}",
+                DurableExecutionName = "exec-parent"
+            }, cts.Token);
+            Assert.Equal(System.Net.HttpStatusCode.Accepted, invoke.HttpStatusCode);
+
+            await parentTask.WaitAsync(TimeSpan.FromSeconds(40), cts.Token);
+            await siblingTask.WaitAsync(TimeSpan.FromSeconds(40), cts.Token);
+
+            Assert.Equal("\"sibling-done\"", parentResult);
+        }
+        finally
+        {
+            await cts.CancelAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Stop_HaltsAPendingExecution()
+    {
+        const string stopFn = "DurableStopFn";
+        var (process, options, cts) = StartTool(skipTime: false);
+        try
+        {
+            Assert.True(await TestHelpers.WaitForApiToStartAsync($"{process.ServiceUrl}/lambda-runtime-api/healthcheck"));
+
+            // A function that always parks on a long wait, so the execution stays non-terminal
+            // until it is stopped. skipTime:false keeps the wait pending.
+            var functionTask = RunFakeFunctionLoopAsync(stopFn, process.ServiceUrl, options, ops =>
+            {
+                var updates = ops.Any(o => o.Id == "w1")
+                    ? new List<OperationUpdate>()
+                    : new List<OperationUpdate>
+                    {
+                        new() { Id = "w1", Type = OperationType.WAIT, Action = OperationAction.START,
+                                WaitOptions = new WaitOptions { WaitSeconds = 3600 } }
+                    };
+                return (updates, new DurableExecutionInvocationOutput { Status = InvocationStatus.Pending });
+            }, cts.Token);
+
+            var client = ConstructLambdaServiceClient(process.ServiceUrl);
+            var invoke = await client.InvokeAsync(new InvokeRequest
+            {
+                FunctionName = stopFn,
+                Payload = "{}",
+                DurableExecutionName = "exec-stop"
+            }, cts.Token);
+            var arn = invoke.DurableExecutionArn;
+            Assert.False(string.IsNullOrEmpty(arn));
+
+            // Give the first invocation time to record the wait, then stop the execution.
+            await Task.Delay(2000, cts.Token);
+            var stopResp = await client.StopDurableExecutionAsync(new StopDurableExecutionRequest
+            {
+                DurableExecutionArn = arn
+            }, cts.Token);
+            Assert.Equal(System.Net.HttpStatusCode.OK, stopResp.HttpStatusCode);
+
+            // GetState should now show the EXECUTION op STOPPED.
+            var state = await client.GetDurableExecutionStateAsync(new GetDurableExecutionStateRequest
+            {
+                DurableExecutionArn = arn,
+                CheckpointToken = "1",
+                Marker = ""
+            }, cts.Token);
+            var execOp = state.Operations.FirstOrDefault(o => o.Type?.Value == "EXECUTION");
+            Assert.NotNull(execOp);
+            Assert.Equal("STOPPED", execOp!.Status?.Value);
         }
         finally
         {

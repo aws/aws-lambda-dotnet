@@ -4,6 +4,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Amazon.Lambda.DurableExecution;
 
 namespace Amazon.Lambda.TestTool.Services.DurableExecution;
 
@@ -29,6 +30,11 @@ internal sealed class DurableServiceApi
     internal const string ApiVersion = "2025-12-01";
     private const string RoutePrefix = "/" + ApiVersion + "/durable-executions";
     private const string CallbackRoutePrefix = "/" + ApiVersion + "/durable-execution-callbacks";
+
+    // Operation-payload size caps (bytes), per the service model. CHAINED_INVOKE (and async
+    // payloads) allow up to 1 MB; STEP/WAIT/CALLBACK/CONTEXT/EXECUTION results are capped at 256 KB.
+    private const int SmallPayloadCap = 256 * 1024;
+    private const int LargePayloadCap = 1024 * 1024;
 
     // Case-insensitive to match the SDK's PascalCase members regardless of any future casing drift.
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -63,14 +69,31 @@ internal sealed class DurableServiceApi
 
     private async Task HandleDurableExecutionPost(HttpContext ctx, string tail)
     {
-        if (!TrySplit(tail, "checkpoint", out var arn))
+        if (TrySplit(tail, "checkpoint", out var checkpointArn))
         {
-            await WriteErrorAsync(ctx, HttpStatusCode.NotFound, "ResourceNotFoundException",
-                $"Unsupported durable-executions POST path: '{tail}'.");
+            await HandleCheckpointAsync(ctx, checkpointArn);
             return;
         }
 
-        await HandleCheckpointAsync(ctx, arn);
+        if (TrySplit(tail, "stop", out var stopArn))
+        {
+            await HandleStop(ctx, stopArn);
+            return;
+        }
+
+        await WriteErrorAsync(ctx, HttpStatusCode.NotFound, "ResourceNotFoundException",
+            $"Unsupported durable-executions POST path: '{tail}'.");
+    }
+
+    private async Task HandleStop(HttpContext ctx, string arn)
+    {
+        // Data-plane only mode has nothing to drive; otherwise stop the drive loop. Either way the
+        // call is idempotent (an already-terminal or unknown execution is not an error to stop).
+        _driver?.Stop(arn);
+
+        // StopDurableExecutionResponse requires StopTimestamp (unix seconds).
+        var stopTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+        await WriteJsonAsync(ctx, HttpStatusCode.OK, new StopResponseBody { StopTimestamp = stopTimestamp });
     }
 
     private async Task HandleDurableExecutionGet(HttpContext ctx, string tail)
@@ -106,6 +129,14 @@ internal sealed class DurableServiceApi
         {
             await WriteErrorAsync(ctx, HttpStatusCode.BadRequest, "InvalidRequestContentException",
                 "Checkpoint request body was empty.");
+            return;
+        }
+
+        // Enforce the service's operation-payload size caps so oversized payloads fail locally the
+        // same way they would against the real service, instead of silently succeeding.
+        if (TryFindOversizedPayload(request.Updates, out var capMessage))
+        {
+            await WriteErrorAsync(ctx, HttpStatusCode.RequestEntityTooLarge, "PayloadTooLargeException", capMessage);
             return;
         }
 
@@ -210,6 +241,31 @@ internal sealed class DurableServiceApi
     {
         try { return JsonSerializer.Deserialize<T>(json, JsonOptions); }
         catch (JsonException) { return default; }
+    }
+
+    /// <summary>
+    /// Returns true (with a message) if any update carries an operation payload larger than the
+    /// cap for its type. CHAINED_INVOKE gets the 1 MB cap; everything else gets 256 KB.
+    /// </summary>
+    private static bool TryFindOversizedPayload(IReadOnlyList<WireOperationUpdate> updates, out string message)
+    {
+        foreach (var update in updates)
+        {
+            if (update.Payload is null)
+                continue;
+
+            var size = System.Text.Encoding.UTF8.GetByteCount(update.Payload);
+            var cap = update.Type == OperationTypes.ChainedInvoke ? LargePayloadCap : SmallPayloadCap;
+            if (size > cap)
+            {
+                message = $"Operation '{update.Id}' ({update.Type}) payload is {size} bytes, exceeding the " +
+                          $"{cap}-byte limit for this operation type.";
+                return true;
+            }
+        }
+
+        message = string.Empty;
+        return false;
     }
 
     /// <summary>
