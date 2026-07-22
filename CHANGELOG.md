@@ -1,3 +1,19 @@
+## Release 2026-07-22
+
+### Amazon.Lambda.Core (3.2.0)
+* Graduate ILambdaContext.Serializer from experimental to stable. The AWSLAMBDA001 experimental diagnostic is removed; the managed runtime now populates the serializer in both the executable and class-library programming models.
+### Amazon.Lambda.Templates (8.1.2)
+* Update the durable function blueprints (DurableFunction and serverless.DurableFunction) to reference the GA 1.0.0 Amazon.Lambda.DurableExecution and Amazon.Lambda.DurableExecution.Testing packages instead of the preview versions.
+### Amazon.Lambda.PowerShellHost (4.0.1)
+* Update System.Security.Cryptography.Xml dependency to 8.0.4 for .NET 8 and 10.0.10 for .NET 10
+* Update System.Security.Cryptography.Xml dependency to address known vulnerabilities (net8.0: 8.0.3 to 9.0.18, net10.0: 10.0.7 to 10.0.10)
+### Amazon.Lambda.TestUtilities (4.2.0)
+* Graduate TestLambdaContext.Serializer from experimental to stable, mirroring the graduation of ILambdaContext.Serializer. The AWSLAMBDA001 experimental diagnostic is removed.
+### Amazon.Lambda.DurableExecution (1.0.0)
+* General availability release. Amazon.Lambda.DurableExecution is now GA and stable at 1.0.0; the SDK is no longer preview.
+### Amazon.Lambda.DurableExecution.Testing (1.0.0)
+* General availability release. Amazon.Lambda.DurableExecution.Testing is now GA and stable at 1.0.0; the package is no longer preview.
+
 ## Release 2026-07-14
 
 ### Amazon.Lambda.DurableExecution (0.3.2-preview)
