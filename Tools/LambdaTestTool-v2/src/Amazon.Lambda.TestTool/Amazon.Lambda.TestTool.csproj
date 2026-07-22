@@ -23,6 +23,11 @@
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="3.0.0" />
+    <!-- Public durable-execution wire model (Operation/ErrorObject/OperationTypes/…). The
+         durable-service emulator reuses these types so its checkpoint responses are byte-for-byte
+         the envelope the DurableExecution SDK expects; only the inbound request bodies are mapped
+         through Test Tool-local plain-STJ DTOs (see Services/DurableExecution). -->
+    <PackageReference Include="Amazon.Lambda.DurableExecution" Version="0.3.2-preview" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.4.1" />
     <PackageReference Include="AWSSDK.Lambda" Version="4.0.15.6" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.32" />

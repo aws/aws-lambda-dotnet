@@ -1,0 +1,12 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add durable-execution service emulator (preview): with --durable-execution, the Test Tool hosts CheckpointDurableExecution and GetDurableExecutionState endpoints alongside the Lambda Runtime API so durable workflows can checkpoint and read state locally. Point the function's AWS_ENDPOINT_URL_LAMBDA at the Test Tool to use it. Timers are time-skipped by default (--durable-time-skip).",
+        "Support running a durable workflow locally end to end: invoking a function with the X-Amz-Durable-Execution-Name header starts a durable execution that the Test Tool drives to completion, re-invoking the function across the replay cycle (steps, waits, retries, child contexts, parallel/map). Chained durable-to-durable invokes and external callbacks are not yet supported."
+      ]
+    }
+  ]
+}

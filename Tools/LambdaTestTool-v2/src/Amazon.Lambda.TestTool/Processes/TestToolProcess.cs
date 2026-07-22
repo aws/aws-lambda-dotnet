@@ -5,6 +5,7 @@ using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
+using Amazon.Lambda.TestTool.Services.DurableExecution;
 using Amazon.Lambda.TestTool.Services.IO;
 using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.Extensions.FileProviders;
@@ -71,6 +72,14 @@ public class TestToolProcess
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
+
+        if (settings.DurableExecution)
+        {
+            builder.Services.AddSingleton(new DurableExecutionStore(settings.DurableTimeSkip));
+            builder.Services.AddSingleton(sp => new DurableExecutionDriver(
+                sp.GetRequiredService<DurableExecutionStore>(),
+                sp.GetRequiredService<IRuntimeApiDataStoreManager>()));
+        }
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
         builder.Services.AddSingleton<ILambdaRequestManager, LambdaRequestManager>();
 
@@ -160,6 +169,11 @@ public class TestToolProcess
             .AddInteractiveServerRenderMode();
 
         LambdaRuntimeApi.SetupLambdaRuntimeApiEndpoints(app);
+
+        if (settings.DurableExecution)
+        {
+            DurableServiceApi.SetupDurableServiceEndpoints(app);
+        }
 
         var runTask = app.RunAsync(cancellationToken);
 
