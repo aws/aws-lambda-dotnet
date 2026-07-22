@@ -251,10 +251,14 @@ already forwards minted cb-ids back into `ExecutionState`.
   `DurableServiceApi.TrySplit`. (Phase 1 tests didn't catch it because checkpoint+getstate were both
   SDK-encoded and thus internally consistent.) **First genuinely useful ship** — single-function workflows
   headless, debugger-attached.
-- **Phase 3 — Callbacks + Blazor UI (M).** Callback endpoints + `CallbackId → ARN` map + driver wake;
-  `DurableExecutionPanel.razor` timeline, Send-Callback buttons, time control.
+- **Phase 3 — Callbacks + Blazor UI (M).** ✅ **Done.** Callback endpoints keyed by `{CallbackId}` +
+  a `CallbackId → (arn, opId)` index; the driver parks on a pending callback and resumes on
+  `NotifyCallbackResolved` (lock-guarded against a resolve racing the park). `DurableExecution.razor` lists
+  executions, shows the operation timeline, and offers a Send-Callback action. E2E test covers start → park
+  → SendCallbackSuccess → resume → Succeeded.
 - **Phase 4 — Chained invokes + fidelity polish (L).** Out-of-process nested drive for `CHAINED_INVOKE`
-  across registered sibling functions; tiered payload caps + `ReplayChildren`; idempotency; `StopDurableExecution`.
+  across registered sibling functions; tiered payload caps + `ReplayChildren`; `StopDurableExecution`.
+  (Idempotency via `DurableExecutionAlreadyStartedException` already landed in Phase 2.)
 
 ## Appendix — Phase-0 spike source
 

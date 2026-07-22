@@ -28,6 +28,7 @@ internal sealed class DurableServiceApi
 {
     internal const string ApiVersion = "2025-12-01";
     private const string RoutePrefix = "/" + ApiVersion + "/durable-executions";
+    private const string CallbackRoutePrefix = "/" + ApiVersion + "/durable-execution-callbacks";
 
     // Case-insensitive to match the SDK's PascalCase members regardless of any future casing drift.
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -37,15 +38,22 @@ internal sealed class DurableServiceApi
     };
 
     private readonly DurableExecutionStore _store;
+    // Present only when the control plane (start hook + drive loop) is enabled; the callback
+    // endpoints wake the parked drive loop after resolving a callback.
+    private readonly DurableExecutionDriver? _driver;
 
     private DurableServiceApi(WebApplication app)
     {
         _store = app.Services.GetRequiredService<DurableExecutionStore>();
+        _driver = app.Services.GetService<DurableExecutionDriver>();
 
         // A single catch-all captures "{arn-with-slashes}/{suffix}". ASP.NET Core decodes %2F in
         // {**tail} back to '/', so the raw ARN is reconstructed transparently.
         app.MapPost(RoutePrefix + "/{**tail}", HandleDurableExecutionPost);
         app.MapGet(RoutePrefix + "/{**tail}", HandleDurableExecutionGet);
+
+        // Callback endpoints: {CallbackId}/{succeed|fail|heartbeat}.
+        app.MapPost(CallbackRoutePrefix + "/{callbackId}/{action}", HandleCallbackPost);
     }
 
     public static void SetupDurableServiceEndpoints(WebApplication app)
@@ -129,6 +137,79 @@ internal sealed class DurableServiceApi
         };
 
         await WriteJsonAsync(ctx, HttpStatusCode.OK, response);
+    }
+
+    private async Task HandleCallbackPost(HttpContext ctx, string callbackId, string action)
+    {
+        // succeed: raw body is the result payload (BinaryOperationPayload).
+        // fail:    body is a JSON ErrorObject.
+        // heartbeat: no body; an ack that resets the callback's heartbeat timer (a no-op here).
+        string? result = null;
+        Amazon.Lambda.DurableExecution.ErrorObject? error = null;
+
+        switch (action)
+        {
+            case "succeed":
+            {
+                using var reader = new StreamReader(ctx.Request.Body);
+                result = await reader.ReadToEndAsync();
+                break;
+            }
+            case "fail":
+            {
+                using var reader = new StreamReader(ctx.Request.Body);
+                var body = await reader.ReadToEndAsync();
+                var wire = string.IsNullOrEmpty(body) ? null : SafeDeserialize<WireErrorObject>(body);
+                error = new Amazon.Lambda.DurableExecution.ErrorObject
+                {
+                    ErrorType = wire?.ErrorType ?? "CallbackFailure",
+                    ErrorMessage = wire?.ErrorMessage,
+                    ErrorData = wire?.ErrorData,
+                    StackTrace = wire?.StackTrace
+                };
+                break;
+            }
+            case "heartbeat":
+            {
+                // Acknowledge only if the callback is known; nothing to mutate.
+                if (!_store.CallbackExists(callbackId))
+                {
+                    await WriteErrorAsync(ctx, HttpStatusCode.NotFound, "ResourceNotFoundException",
+                        $"Unknown callback id '{callbackId}'.");
+                    return;
+                }
+                ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+                return;
+            }
+            default:
+                await WriteErrorAsync(ctx, HttpStatusCode.NotFound, "ResourceNotFoundException",
+                    $"Unsupported callback action '{action}'.");
+                return;
+        }
+
+        var (outcome, arn) = _store.ResolveCallback(callbackId, result, error);
+        switch (outcome)
+        {
+            case DurableExecutionStore.CallbackResolution.UnknownCallback:
+                await WriteErrorAsync(ctx, HttpStatusCode.NotFound, "ResourceNotFoundException",
+                    $"Unknown callback id '{callbackId}'.");
+                return;
+            case DurableExecutionStore.CallbackResolution.AlreadyResolved:
+                await WriteErrorAsync(ctx, HttpStatusCode.Conflict, "CallbackAlreadyCompletedException",
+                    $"Callback '{callbackId}' has already been completed.");
+                return;
+            case DurableExecutionStore.CallbackResolution.Resolved:
+                if (arn is not null)
+                    _driver?.NotifyCallbackResolved(arn);
+                ctx.Response.StatusCode = (int)HttpStatusCode.OK;
+                return;
+        }
+    }
+
+    private static T? SafeDeserialize<T>(string json)
+    {
+        try { return JsonSerializer.Deserialize<T>(json, JsonOptions); }
+        catch (JsonException) { return default; }
     }
 
     /// <summary>
