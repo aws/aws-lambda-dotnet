@@ -256,9 +256,35 @@ already forwards minted cb-ids back into `ExecutionState`.
   `NotifyCallbackResolved` (lock-guarded against a resolve racing the park). `DurableExecution.razor` lists
   executions, shows the operation timeline, and offers a Send-Callback action. E2E test covers start → park
   → SendCallbackSuccess → resume → Succeeded.
-- **Phase 4 — Chained invokes + fidelity polish (L).** Out-of-process nested drive for `CHAINED_INVOKE`
-  across registered sibling functions; tiered payload caps + `ReplayChildren`; `StopDurableExecution`.
-  (Idempotency via `DurableExecutionAlreadyStartedException` already landed in Phase 2.)
+- **Phase 4 — Chained invokes + fidelity polish (L).** ✅ **Done.** `CHAINED_INVOKE` now resolves by
+  starting the sibling as a **nested durable execution** (`DurableExecutionDriver.ResolveChainedInvokesAsync`)
+  and stamping its result/error onto the parent op; the sibling must be polling the Runtime API under its own
+  function name. `StopDurableExecution` (`/stop` endpoint → `driver.Stop`) cancels the drive loop and marks
+  the EXECUTION op STOPPED. Checkpoint payloads over the tiered caps (256 KB general / 1 MB chained-invoke)
+  are rejected with 413. (Idempotency via `DurableExecutionAlreadyStartedException` landed in Phase 2.)
+  **Bug found & fixed:** the drive loop awaited `EventContainer.WaitForCompletion` on a threadpool thread —
+  a blocking 15-min wait that ignored cancellation, so `Stop` couldn't interrupt an in-flight invocation and
+  serialized tests leaked pinned threads. Replaced with a cancellation-aware status poll. The durable
+  web-host tests were also moved into a non-parallel xUnit collection (each starts a full Kestrel host +
+  100 ms poll loop; running them concurrently starved the polls under CPU pressure).
+
+## Status
+
+All four phases are implemented, tested, and committed on `feature/testtool-durable-execution`. Remaining
+work before GA is quality/fidelity, not new capability: a real out-of-process-executable integration test
+(the E2E tests use a hand-written wire-protocol fake, not the DurableExecution SDK engine — see §"test-design
+note" below), `ReplayChildren`/large-result paging fidelity, and `GetDurableExecution`/`ListDurableExecutionsByFunction`
+read operations if the UI needs them.
+
+### Test-design note
+
+The end-to-end tests drive a **hand-written fake durable function** that speaks the wire protocol, not the
+real `Amazon.Lambda.DurableExecution` SDK engine. This is deliberate: the SDK caches its checkpoint client in
+a process-global `Lazy<AmazonLambdaClient>` keyed off a global env var, which would leak across xUnit tests in
+one process. The SDK's replay engine is covered in its own package; these tests verify the Test Tool's
+endpoints + driver. The gap — a mismatch between the real SDK's exact checkpoint sequence and the emulator —
+is best closed by a separate integration test using a real out-of-process function executable (as the
+DurableExecution integ tests already do).
 
 ## Appendix — Phase-0 spike source
 

@@ -182,6 +182,13 @@ internal sealed class NewExecutionStateBody
     public string? NextMarker { get; set; }
 }
 
+/// <summary>Response body for <c>StopDurableExecution</c> (requires StopTimestamp, unix seconds).</summary>
+internal sealed class StopResponseBody
+{
+    [JsonPropertyName("StopTimestamp")]
+    public double StopTimestamp { get; set; }
+}
+
 /// <summary>Response body for <c>GetDurableExecutionState</c>.</summary>
 internal sealed class StateResponseBody
 {
