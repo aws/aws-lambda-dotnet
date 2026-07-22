@@ -1,0 +1,143 @@
+@page "/durable-execution"
+@using Amazon.Lambda.DurableExecution
+@rendermode InteractiveServer
+
+<PageTitle>Durable Execution</PageTitle>
+
+<div class="container-fluid py-3">
+    <h3>Durable Execution</h3>
+
+    @if (Driver is null)
+    {
+        <div class="alert alert-info" role="alert">
+            The durable-execution emulator is not enabled. Restart the Test Tool with
+            <code>--durable-execution</code> and point your function's
+            <code>AWS_ENDPOINT_URL_LAMBDA</code> at this host to run durable workflows locally.
+        </div>
+    }
+    else
+    {
+        <p class="text-body-secondary">
+            Durable executions started against this Test Tool. Invoke your function with the
+            <code>X-Amz-Durable-Execution-Name</code> header (the AWS SDK sets this from
+            <code>DurableExecutionName</code>) to start one.
+        </p>
+
+        <div class="row">
+            <div class="col-4">
+                <h5>Executions</h5>
+                @if (_executions.Count == 0)
+                {
+                    <div class="text-body-secondary fst-italic">No executions yet.</div>
+                }
+                else
+                {
+                    <div class="list-group">
+                        @foreach (var exec in _executions)
+                        {
+                            <button type="button"
+                                    class="list-group-item list-group-item-action @(_selectedArn == exec.Arn ? "active" : "")"
+                                    @onclick="() => SelectExecution(exec.Arn)">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-truncate" title="@exec.Arn">@ShortName(exec.Arn)</span>
+                                    <span class="badge @PhaseBadgeClass(exec.Phase)">@exec.Phase</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(exec.FailureReason))
+                                {
+                                    <small class="d-block text-danger text-truncate" title="@exec.FailureReason">@exec.FailureReason</small>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="col-8">
+                @if (_selectedArn is null)
+                {
+                    <div class="text-body-secondary fst-italic">Select an execution to view its timeline.</div>
+                }
+                else
+                {
+                    <h5 class="text-truncate" title="@_selectedArn">Timeline</h5>
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Operation</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var op in _operations)
+                            {
+                                <tr>
+                                    <td><code>@op.Id</code>@if (!string.IsNullOrEmpty(op.Name)) { <span class="text-body-secondary"> (@op.Name)</span> }</td>
+                                    <td>@op.Type@if (!string.IsNullOrEmpty(op.SubType)) { <span class="text-body-secondary">/@op.SubType</span> }</td>
+                                    <td><span class="badge @StatusBadgeClass(op.Status)">@op.Status</span></td>
+                                    <td>
+                                        @{ var pendingCb = PendingCallbackId(op); }
+                                        @if (pendingCb is not null)
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => PrefillCallback(pendingCb)">
+                                                Send Callback (@pendingCb)
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-body-secondary small">@DetailText(op)</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="card mt-3">
+                        <div class="card-header">Send Callback</div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <label class="form-label mb-0">Callback ID</label>
+                                <input class="form-control form-control-sm" @bind="_callbackId" placeholder="cb-..." />
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label mb-0">Result (JSON)</label>
+                                <input class="form-control form-control-sm" @bind="_callbackResult" />
+                            </div>
+                            <button class="btn btn-primary btn-sm" @onclick="SendCallbackSuccess" disabled="@string.IsNullOrWhiteSpace(_callbackId)">
+                                Send Success
+                            </button>
+                            @if (_callbackFeedback is not null)
+                            {
+                                <div class="mt-2 small">@_callbackFeedback</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static string ShortName(string arn)
+    {
+        // Show the trailing "GROUP/NAME" of the durable-execution ARN for readability.
+        var idx = arn.IndexOf("/durable-execution/", StringComparison.Ordinal);
+        return idx >= 0 ? arn[(idx + "/durable-execution/".Length)..] : arn;
+    }
+
+    private static string DetailText(Operation op)
+    {
+        if (op.StepDetails?.Result is { } r) return Truncate(r);
+        if (op.ContextDetails?.Result is { } cr) return Truncate(cr);
+        if (op.CallbackDetails?.Result is { } cbr) return Truncate(cbr);
+        if (op.ChainedInvokeDetails?.Result is { } ir) return Truncate(ir);
+        if (op.ExecutionDetails?.InputPayload is { } ip) return "input: " + Truncate(ip);
+        if (op.StepDetails?.Error?.ErrorMessage is { } em) return "error: " + em;
+        return string.Empty;
+    }
+
+    private static string Truncate(string s) => s.Length <= 80 ? s : s[..77] + "...";
+}

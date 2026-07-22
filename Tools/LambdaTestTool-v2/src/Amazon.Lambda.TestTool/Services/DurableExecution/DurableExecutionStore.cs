@@ -31,6 +31,15 @@ internal sealed class DurableExecutionStore
     private readonly ConcurrentDictionary<string, ExecutionContext> _executions = new();
     private long _executionCounter;
 
+    // CallbackId -> (arn, operationId). Populated as checkpoints mint CALLBACK ops so the callback
+    // HTTP endpoints can resolve a callback back onto the right operation of the right execution.
+    private readonly ConcurrentDictionary<string, CallbackTarget> _callbacks = new();
+
+    private readonly record struct CallbackTarget(string Arn, string OperationId);
+
+    /// <summary>Outcome of attempting to resolve an inbound callback.</summary>
+    public enum CallbackResolution { Resolved, UnknownCallback, AlreadyResolved }
+
     public DurableExecutionStore(bool skipTime)
     {
         _skipTime = skipTime;
@@ -83,8 +92,58 @@ internal sealed class DurableExecutionStore
         IReadOnlyList<WireOperationUpdate> updates)
     {
         var ctx = GetOrCreate(arn);
-        return ctx.Processor.Process(arn, checkpointToken, updates);
+        var result = ctx.Processor.Process(arn, checkpointToken, updates);
+
+        // Index any freshly-minted callback IDs so inbound SendDurableExecutionCallback* requests
+        // can be routed back to the originating operation.
+        foreach (var op in result.NewOperations)
+        {
+            if (op.Type == OperationTypes.Callback && op.CallbackDetails?.CallbackId is { } callbackId)
+                _callbacks.TryAdd(callbackId, new CallbackTarget(arn, op.Id!));
+        }
+
+        return result;
     }
+
+    /// <summary>
+    /// Resolves a pending callback by its ID, setting the CALLBACK operation to SUCCEEDED (with
+    /// <paramref name="result"/>) or FAILED (with <paramref name="error"/>). Returns the outcome
+    /// and, when resolved, the ARN of the affected execution so the caller can wake its driver.
+    /// </summary>
+    public (CallbackResolution Outcome, string? Arn) ResolveCallback(
+        string callbackId, string? result, ErrorObject? error)
+    {
+        if (!_callbacks.TryGetValue(callbackId, out var target))
+            return (CallbackResolution.UnknownCallback, null);
+
+        var ctx = GetOrCreate(target.Arn);
+        var op = ctx.Store.GetOperation(target.Arn, target.OperationId);
+        if (op is null)
+            return (CallbackResolution.UnknownCallback, null);
+
+        // A callback is only resolvable once; a second success/failure is a no-op.
+        if (op.Status is OperationStatuses.Succeeded or OperationStatuses.Failed)
+            return (CallbackResolution.AlreadyResolved, target.Arn);
+
+        op.CallbackDetails ??= new CallbackDetails();
+        op.EndTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (error is null)
+        {
+            op.Status = OperationStatuses.Succeeded;
+            op.CallbackDetails.Result = result;
+            op.CallbackDetails.Error = null;
+        }
+        else
+        {
+            op.Status = OperationStatuses.Failed;
+            op.CallbackDetails.Error = error;
+        }
+        ctx.Store.Upsert(target.Arn, op);
+        return (CallbackResolution.Resolved, target.Arn);
+    }
+
+    /// <summary>True if the callback ID is known to the emulator.</summary>
+    public bool CallbackExists(string callbackId) => _callbacks.ContainsKey(callbackId);
 
     /// <summary>
     /// Returns one page of the execution's operation history starting at <paramref name="marker"/>
