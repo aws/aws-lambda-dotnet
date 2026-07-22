@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "General availability release. Amazon.Lambda.DurableExecution is now GA and stable at 1.0.0; the SDK is no longer preview."
+      ]
+    }
+  ]
+}

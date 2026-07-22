@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`Amazon.Lambda.DurableExecution` is the .NET SDK (preview, 0.x) for resilient, long-running AWS Lambda
+`Amazon.Lambda.DurableExecution` is the .NET SDK (GA, 1.x) for resilient, long-running AWS Lambda
 workflows that checkpoint progress after each step and resume after failures or waits. A workflow can run
 for up to ~1 year (the WAIT cap is 31,622,400 seconds) and is only billed for active compute. The SDK is
 client-side glue: the *durable execution service* (part of Lambda) owns the checkpoint store, fires timers,

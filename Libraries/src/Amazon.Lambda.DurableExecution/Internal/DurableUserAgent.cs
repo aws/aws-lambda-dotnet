@@ -23,7 +23,7 @@ internal static partial class DurableUserAgent
 {
     /// <summary>
     /// The user-agent component appended to every durable-execution request, e.g.
-    /// <c>aws-durable-execution-sdk-dotnet/0.1.0-preview</c>.
+    /// <c>aws-durable-execution-sdk-dotnet/1.0.0</c>.
     /// </summary>
     internal static readonly string UserAgentString =
         $"aws-durable-execution-sdk-dotnet/{AssemblyVersion}";
