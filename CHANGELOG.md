@@ -6,7 +6,6 @@
 * Update the durable function blueprints (DurableFunction and serverless.DurableFunction) to reference the GA 1.0.0 Amazon.Lambda.DurableExecution and Amazon.Lambda.DurableExecution.Testing packages instead of the preview versions.
 ### Amazon.Lambda.PowerShellHost (4.0.1)
 * Update System.Security.Cryptography.Xml dependency to 8.0.4 for .NET 8 and 10.0.10 for .NET 10
-* Update System.Security.Cryptography.Xml dependency to address known vulnerabilities (net8.0: 8.0.3 to 9.0.18, net10.0: 10.0.7 to 10.0.10)
 ### Amazon.Lambda.TestUtilities (4.2.0)
 * Graduate TestLambdaContext.Serializer from experimental to stable, mirroring the graduation of ILambdaContext.Serializer. The AWSLAMBDA001 experimental diagnostic is removed.
 ### Amazon.Lambda.DurableExecution (1.0.0)
