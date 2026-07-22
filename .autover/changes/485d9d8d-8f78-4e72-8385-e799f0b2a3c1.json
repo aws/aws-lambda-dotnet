@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update the durable function blueprints (DurableFunction and serverless.DurableFunction) to reference the GA 1.0.0 Amazon.Lambda.DurableExecution and Amazon.Lambda.DurableExecution.Testing packages instead of the preview versions."
+      ]
+    }
+  ]
+}
