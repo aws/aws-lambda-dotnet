@@ -1,20 +1,21 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Amazon.Lambda.DurableExecution.Testing;
+namespace Amazon.Lambda.DurableExecution.LocalEmulation;
 
 /// <summary>
-/// In-memory store for operations recorded during a test execution.
-/// Each execution (keyed by ARN) maintains its own isolated operation set.
+/// In-memory store for operations recorded during a local durable execution. Each execution
+/// (keyed by ARN) maintains its own isolated operation set and checkpoint token. Operates on the
+/// public <see cref="Operation"/> wire type so consumers can serialize state responses directly.
 /// </summary>
 internal sealed class InMemoryOperationStore
 {
     private readonly Dictionary<string, ExecutionData> _executions = new();
 
-    // A single lock guards both the per-ARN dictionary and each ExecutionData's
-    // collections. Writes are normally serialized by the runtime's single-reader
-    // checkpoint batcher, but parallel/map workflows and the snapshot reads below
-    // can interleave, so we lock to keep the Dictionary/List internally consistent.
+    // A single lock guards both the per-ARN dictionary and each ExecutionData's collections.
+    // Writes are normally serialized by the runtime's single-reader checkpoint batcher, but
+    // parallel/map workflows and the snapshot reads below can interleave, so we lock to keep
+    // the Dictionary/List internally consistent.
     private readonly object _gate = new();
 
     public string CurrentToken(string arn)
@@ -24,9 +25,8 @@ internal sealed class InMemoryOperationStore
     }
 
     /// <summary>
-    /// Returns a snapshot copy of the operations for the execution. The copy is
-    /// detached from the backing list so callers can iterate safely while the
-    /// store continues to mutate.
+    /// Returns a snapshot copy of the operations for the execution. The copy is detached from
+    /// the backing list so callers can iterate safely while the store continues to mutate.
     /// </summary>
     public IReadOnlyList<Operation> GetAllOperations(string arn)
     {
@@ -77,6 +77,13 @@ internal sealed class InMemoryOperationStore
     {
         lock (_gate)
             return GetOrCreate(arn).Operations.Count;
+    }
+
+    /// <summary>True once an execution with this ARN has been created.</summary>
+    public bool Exists(string arn)
+    {
+        lock (_gate)
+            return _executions.ContainsKey(arn);
     }
 
     private ExecutionData GetOrCreate(string arn)

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
+    <AssemblyName>Amazon.Lambda.DurableExecution.LocalEmulation.Tests</AssemblyName>
+    <PackageId>Amazon.Lambda.DurableExecution.LocalEmulation.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution.LocalEmulation\Amazon.Lambda.DurableExecution.LocalEmulation.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+
+</Project>

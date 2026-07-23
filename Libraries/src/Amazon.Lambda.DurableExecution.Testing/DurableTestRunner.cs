@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
 

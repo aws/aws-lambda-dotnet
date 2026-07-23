@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution.LocalEmulation",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add a shared local-emulation kernel for durable execution: the in-memory operation store and checkpoint state machine that drive durable workflows locally. Consumed by Amazon.Lambda.DurableExecution.Testing (and the Lambda Test Tool) via a transport-neutral OperationUpdateInput so the two cannot drift. Implementation detail; not intended for direct use."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DurableExecution.Testing",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Refactor the in-memory checkpoint state machine and operation store into the shared Amazon.Lambda.DurableExecution.LocalEmulation package. No public API or behavior change."
+      ]
+    }
+  ]
+}

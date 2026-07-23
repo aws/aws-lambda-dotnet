@@ -3,6 +3,7 @@
 
 using System.Text;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Amazon.Lambda.DurableExecution.Services;
 
 namespace Amazon.Lambda.DurableExecution.Testing;
@@ -120,7 +121,7 @@ internal sealed class ExecutionOrchestrator<TInput, TOutput>
             // would actually elapse. If nothing has a scheduled resume time the
             // workflow cannot progress on its own, so re-drive immediately and let
             // MaxInvocations / the timeout surface the stall.
-            if (TryGetNextResumeDelay(arn, out var delay) && delay > TimeSpan.Zero)
+            if (DurableEmulationHelpers.TryGetNextResumeDelay(_store, arn, out var delay) && delay > TimeSpan.Zero)
             {
                 // Task.Delay surfaces cancellation as TaskCanceledException; swallow
                 // it so the loop-top ThrowIfCancellationRequested throws the canonical
@@ -134,41 +135,6 @@ internal sealed class ExecutionOrchestrator<TInput, TOutput>
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Computes how long to wait before the workflow can next make progress, based
-    /// on the earliest future <c>ScheduledEndTimestamp</c> (pending WAIT) or
-    /// <c>NextAttemptTimestamp</c> (pending STEP retry backoff) across all operations.
-    /// Returns false when no operation carries a future resume time.
-    /// </summary>
-    private bool TryGetNextResumeDelay(string arn, out TimeSpan delay)
-    {
-        long? earliest = null;
-        foreach (var op in _store.GetAllOperations(arn))
-        {
-            long? resumeAt = op.Type switch
-            {
-                OperationTypes.Wait when op.Status == OperationStatuses.Started
-                    => op.WaitDetails?.ScheduledEndTimestamp,
-                OperationTypes.Step when op.Status == OperationStatuses.Pending
-                    => op.StepDetails?.NextAttemptTimestamp,
-                _ => null,
-            };
-
-            if (resumeAt is { } ts && (earliest is null || ts < earliest))
-                earliest = ts;
-        }
-
-        if (earliest is null)
-        {
-            delay = TimeSpan.Zero;
-            return false;
-        }
-
-        var deltaMs = earliest.Value - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        delay = deltaMs > 0 ? TimeSpan.FromMilliseconds(deltaMs) : TimeSpan.Zero;
-        return true;
     }
 
     /// <summary>
@@ -231,19 +197,10 @@ internal sealed class ExecutionOrchestrator<TInput, TOutput>
 
     private void SeedExecutionOperation(string arn, TInput input)
     {
-        // Idempotent: re-driving (e.g. WaitForResultAsync after a callback) must
-        // not reset the EXECUTION op back to Started or clobber recorded state.
-        if (_store.GetOperation(arn, "exec-0") is not null)
-            return;
-
-        var serializedInput = SerializeToString(input);
-        _store.Upsert(arn, new Operation
-        {
-            Id = "exec-0",
-            Type = OperationTypes.Execution,
-            Status = OperationStatuses.Started,
-            ExecutionDetails = new ExecutionDetails { InputPayload = serializedInput }
-        });
+        // Idempotent seeding of the top-level EXECUTION op (exec-0) is owned by the shared kernel
+        // so the orchestrator and the Test Tool driver stay in lock-step; we only supply the
+        // serialized input payload.
+        DurableEmulationHelpers.SeedExecution(_store, arn, SerializeToString(input));
     }
 
     private DurableExecutionInvocationInput BuildInvocationInput(string arn)

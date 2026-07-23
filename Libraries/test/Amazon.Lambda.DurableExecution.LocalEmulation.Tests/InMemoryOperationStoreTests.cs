@@ -1,10 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using Amazon.Lambda.DurableExecution.Testing;
+using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Xunit;
 
-namespace Amazon.Lambda.DurableExecution.Testing.Tests;
+namespace Amazon.Lambda.DurableExecution.LocalEmulation.Tests;
 
 public class InMemoryOperationStoreTests
 {
@@ -57,6 +58,17 @@ public class InMemoryOperationStoreTests
     {
         var store = new InMemoryOperationStore();
         Assert.Null(store.GetOperation("arn:test", "nonexistent"));
+    }
+
+    [Fact]
+    public void Exists_TrueOnceExecutionSeen()
+    {
+        var store = new InMemoryOperationStore();
+        Assert.False(store.Exists("arn:test"));
+
+        store.Upsert("arn:test", new Operation { Id = "op-1", Type = OperationTypes.Step });
+
+        Assert.True(store.Exists("arn:test"));
     }
 
     [Fact]

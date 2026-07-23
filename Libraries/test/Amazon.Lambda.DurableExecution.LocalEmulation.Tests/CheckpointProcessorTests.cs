@@ -1,12 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using Amazon.Lambda.DurableExecution.Testing;
-using Amazon.Lambda.Model;
+using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Xunit;
-using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
-namespace Amazon.Lambda.DurableExecution.Testing.Tests;
+namespace Amazon.Lambda.DurableExecution.LocalEmulation.Tests;
 
 public class CheckpointProcessorTests
 {
@@ -17,9 +16,9 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        var updates = new List<SdkOperationUpdate>
+        var updates = new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START, Name = "validate", SubType = OperationSubTypes.Step }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START", Name = "validate", SubType = OperationSubTypes.Step }
         };
 
         var (token, newOps) = processor.Process(Arn, null, updates);
@@ -37,14 +36,14 @@ public class CheckpointProcessorTests
     public void Process_StepSucceed_UpdatesStatus()
     {
         var (store, processor) = Create(skipTime: false);
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START, Name = "step1" }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START", Name = "step1" }
         });
 
-        processor.Process(Arn, "1", new List<SdkOperationUpdate>
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.SUCCEED, Payload = """{"x":1}""" }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "SUCCEED", Payload = """{"x":1}""" }
         });
 
         var op = store.GetOperation(Arn, "op-1");
@@ -58,17 +57,17 @@ public class CheckpointProcessorTests
     public void Process_StepFail_SetsError()
     {
         var (store, processor) = Create(skipTime: false);
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START" }
         });
 
-        processor.Process(Arn, "1", new List<SdkOperationUpdate>
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
         {
             new()
             {
-                Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.FAIL,
-                Error = new Amazon.Lambda.Model.ErrorObject { ErrorType = "TestEx", ErrorMessage = "boom" }
+                Id = "op-1", Type = OperationTypes.Step, Action = "FAIL",
+                Error = new ErrorObject { ErrorType = "TestEx", ErrorMessage = "boom" }
             }
         });
 
@@ -82,18 +81,18 @@ public class CheckpointProcessorTests
     public void Process_StepRetry_SetsPendingWithDelay()
     {
         var (store, processor) = Create(skipTime: false);
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START" }
         });
 
-        processor.Process(Arn, "1", new List<SdkOperationUpdate>
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
         {
             new()
             {
-                Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.RETRY,
-                StepOptions = new StepOptions { NextAttemptDelaySeconds = 5 },
-                Error = new Amazon.Lambda.Model.ErrorObject { ErrorType = "TransientEx" }
+                Id = "op-1", Type = OperationTypes.Step, Action = "RETRY",
+                NextAttemptDelaySeconds = 5,
+                Error = new ErrorObject { ErrorType = "TransientEx" }
             }
         });
 
@@ -107,17 +106,17 @@ public class CheckpointProcessorTests
     public void Process_StepRetry_WithSkipTime_SetsReady()
     {
         var (store, processor) = Create(skipTime: true);
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START" }
         });
 
-        processor.Process(Arn, "1", new List<SdkOperationUpdate>
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
         {
             new()
             {
-                Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.RETRY,
-                StepOptions = new StepOptions { NextAttemptDelaySeconds = 60 }
+                Id = "op-1", Type = OperationTypes.Step, Action = "RETRY",
+                NextAttemptDelaySeconds = 60
             }
         });
 
@@ -131,12 +130,12 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
             new()
             {
-                Id = "op-1", Type = OperationTypes.Wait, Action = OperationAction.START,
-                WaitOptions = new WaitOptions { WaitSeconds = 300 }
+                Id = "op-1", Type = OperationTypes.Wait, Action = "START",
+                WaitSeconds = 300
             }
         });
 
@@ -152,12 +151,12 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: true);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
             new()
             {
-                Id = "op-1", Type = OperationTypes.Wait, Action = OperationAction.START,
-                WaitOptions = new WaitOptions { WaitSeconds = 86400 }
+                Id = "op-1", Type = OperationTypes.Wait, Action = "START",
+                WaitSeconds = 86400
             }
         });
 
@@ -171,9 +170,9 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-cb-1", Type = OperationTypes.Callback, Action = OperationAction.START, Name = "approval" }
+            new() { Id = "op-cb-1", Type = OperationTypes.Callback, Action = "START", Name = "approval" }
         });
 
         var op = store.GetOperation(Arn, "op-cb-1");
@@ -186,13 +185,13 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        var (t1, _) = processor.Process(Arn, null, new List<SdkOperationUpdate>
+        var (t1, _) = processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START" }
         });
-        var (t2, _) = processor.Process(Arn, t1, new List<SdkOperationUpdate>
+        var (t2, _) = processor.Process(Arn, t1, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.SUCCEED }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "SUCCEED" }
         });
 
         Assert.NotEqual(t1, t2);
@@ -203,10 +202,10 @@ public class CheckpointProcessorTests
     {
         var (_, processor) = Create(skipTime: false);
 
-        var (_, newOps) = processor.Process(Arn, null, new List<SdkOperationUpdate>
+        var (_, newOps) = processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START, Name = "s1" },
-            new() { Id = "op-2", Type = OperationTypes.Wait, Action = OperationAction.START, WaitOptions = new WaitOptions { WaitSeconds = 10 } }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START", Name = "s1" },
+            new() { Id = "op-2", Type = OperationTypes.Wait, Action = "START", WaitSeconds = 10 }
         });
 
         Assert.Equal(2, newOps.Count);
@@ -219,9 +218,9 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-ctx", Type = OperationTypes.Context, Action = OperationAction.START, Name = "parallel_batch", SubType = "Parallel" }
+            new() { Id = "op-ctx", Type = OperationTypes.Context, Action = "START", Name = "parallel_batch", SubType = "Parallel" }
         });
 
         var op = store.GetOperation(Arn, "op-ctx");
@@ -235,9 +234,9 @@ public class CheckpointProcessorTests
     {
         var (store, processor) = Create(skipTime: false);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-inv", Type = OperationTypes.ChainedInvoke, Action = OperationAction.START, Name = "process-payment" }
+            new() { Id = "op-inv", Type = OperationTypes.ChainedInvoke, Action = "START", Name = "process-payment" }
         });
 
         var op = store.GetOperation(Arn, "op-inv");
@@ -246,15 +245,40 @@ public class CheckpointProcessorTests
     }
 
     [Fact]
+    public void Process_ChainedInvokeStart_WithFunctionName_RecordsPendingInvoke()
+    {
+        var (_, processor) = Create(skipTime: false);
+
+        processor.Process(Arn, null, new List<OperationUpdateInput>
+        {
+            new()
+            {
+                Id = "op-inv", Type = OperationTypes.ChainedInvoke, Action = "START",
+                Name = "process-payment", Payload = """{"amount":10}""",
+                ChainedInvokeFunctionName = "payment-fn"
+            }
+        });
+
+        var pending = processor.DrainPendingInvokes();
+        var invoke = Assert.Single(pending);
+        Assert.Equal("op-inv", invoke.OperationId);
+        Assert.Equal("payment-fn", invoke.FunctionName);
+        Assert.Equal("""{"amount":10}""", invoke.Payload);
+
+        // Draining is one-shot: a second drain returns nothing.
+        Assert.Empty(processor.DrainPendingInvokes());
+    }
+
+    [Fact]
     public void Process_MultipleUpdatesInBatch_AllApplied()
     {
         var (store, processor) = Create(skipTime: true);
 
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-1", Type = OperationTypes.Step, Action = OperationAction.START, Name = "a" },
-            new() { Id = "op-2", Type = OperationTypes.Step, Action = OperationAction.START, Name = "b" },
-            new() { Id = "op-3", Type = OperationTypes.Wait, Action = OperationAction.START, WaitOptions = new WaitOptions { WaitSeconds = 60 } }
+            new() { Id = "op-1", Type = OperationTypes.Step, Action = "START", Name = "a" },
+            new() { Id = "op-2", Type = OperationTypes.Step, Action = "START", Name = "b" },
+            new() { Id = "op-3", Type = OperationTypes.Wait, Action = "START", WaitSeconds = 60 }
         });
 
         Assert.Equal(3, store.OperationCount(Arn));
@@ -271,9 +295,9 @@ public class CheckpointProcessorTests
         // SubType=WaitForCondition (see WaitForConditionOperation.OperationType).
         // A STEP START is NOT time-skipped to Succeeded — only WAIT timers are —
         // so the op stays Started and the condition is genuinely re-evaluated.
-        processor.Process(Arn, null, new List<SdkOperationUpdate>
+        processor.Process(Arn, null, new List<OperationUpdateInput>
         {
-            new() { Id = "op-wfc", Type = OperationTypes.Step, Action = OperationAction.START, SubType = OperationSubTypes.WaitForCondition }
+            new() { Id = "op-wfc", Type = OperationTypes.Step, Action = "START", SubType = OperationSubTypes.WaitForCondition }
         });
 
         var op = store.GetOperation(Arn, "op-wfc");
@@ -281,13 +305,37 @@ public class CheckpointProcessorTests
 
         // A RETRY (condition not yet met) becomes immediately READY under SkipTime,
         // so the next replay re-runs the check without waiting for the poll delay.
-        processor.Process(Arn, "1", new List<SdkOperationUpdate>
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
         {
-            new() { Id = "op-wfc", Type = OperationTypes.Step, Action = OperationAction.RETRY, SubType = OperationSubTypes.WaitForCondition, StepOptions = new StepOptions { NextAttemptDelaySeconds = 10 } }
+            new() { Id = "op-wfc", Type = OperationTypes.Step, Action = "RETRY", SubType = OperationSubTypes.WaitForCondition, NextAttemptDelaySeconds = 10 }
         });
 
         op = store.GetOperation(Arn, "op-wfc");
         Assert.Equal(OperationStatuses.Ready, op!.Status);
+    }
+
+    [Fact]
+    public void Process_LiveSkipTimeProvider_TogglesAtRuntime()
+    {
+        // The Func<bool> overload is read on each checkpoint, so flipping the flag between
+        // checkpoints changes whether subsequent WAIT starts are folded to Succeeded — this is
+        // the behavior the Test Tool's runtime time-skip toggle depends on.
+        var store = new InMemoryOperationStore();
+        var skipTime = false;
+        var processor = new CheckpointProcessor(store, () => skipTime);
+
+        processor.Process(Arn, null, new List<OperationUpdateInput>
+        {
+            new() { Id = "wait-1", Type = OperationTypes.Wait, Action = "START", WaitSeconds = 3600 }
+        });
+        Assert.Equal(OperationStatuses.Started, store.GetOperation(Arn, "wait-1")!.Status);
+
+        skipTime = true;
+        processor.Process(Arn, "1", new List<OperationUpdateInput>
+        {
+            new() { Id = "wait-2", Type = OperationTypes.Wait, Action = "START", WaitSeconds = 3600 }
+        });
+        Assert.Equal(OperationStatuses.Succeeded, store.GetOperation(Arn, "wait-2")!.Status);
     }
 
     private static (InMemoryOperationStore Store, CheckpointProcessor Processor) Create(bool skipTime)
