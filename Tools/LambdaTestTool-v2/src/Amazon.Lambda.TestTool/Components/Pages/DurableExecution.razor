@@ -1,6 +1,5 @@
 @page "/durable-execution"
 @using Amazon.Lambda.DurableExecution
-@rendermode InteractiveServer
 
 <PageTitle>Durable Execution</PageTitle>
 
@@ -99,13 +98,13 @@
                         <div class="card-body">
                             <div class="mb-2">
                                 <label class="form-label mb-0">Callback ID</label>
-                                <input class="form-control form-control-sm" @bind="_callbackId" placeholder="cb-..." />
+                                <input class="form-control form-control-sm" @bind="_callbackId" @bind:event="oninput" placeholder="cb-..." />
                             </div>
                             <div class="mb-2">
                                 <label class="form-label mb-0">Result (JSON)</label>
-                                <input class="form-control form-control-sm" @bind="_callbackResult" />
+                                <input class="form-control form-control-sm" @bind="_callbackResult" @bind:event="oninput" />
                             </div>
-                            <button class="btn btn-primary btn-sm" @onclick="SendCallbackSuccess" disabled="@string.IsNullOrWhiteSpace(_callbackId)">
+                            <button class="btn btn-primary btn-sm" @onclick="SendCallbackSuccess">
                                 Send Success
                             </button>
                             @if (_callbackFeedback is not null)

@@ -80,8 +80,15 @@ public partial class DurableExecution : ComponentBase, IDisposable
 
     private void SendCallbackSuccess()
     {
-        if (Driver is null || string.IsNullOrWhiteSpace(_callbackId))
+        if (Driver is null)
             return;
+
+        if (string.IsNullOrWhiteSpace(_callbackId))
+        {
+            _callbackFeedback = "Enter a callback id first.";
+            StateHasChanged();
+            return;
+        }
 
         var outcome = Driver.SendCallback(_callbackId, _callbackResult, error: null);
         _callbackFeedback = outcome switch
