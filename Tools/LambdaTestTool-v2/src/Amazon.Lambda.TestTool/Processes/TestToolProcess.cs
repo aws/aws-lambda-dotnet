@@ -139,7 +139,19 @@ public class TestToolProcess
         // WebRootFileProvider, which is why UseStaticWebAssets() is also required above (see the
         // comment there). Guarded so net8.0 (which serves these assets via the classic static-web-
         // assets middleware) keeps its existing behavior.
-        app.MapStaticAssets();
+        //
+        // MapStaticAssets() throws if the manifest is absent. That manifest is named after the
+        // entry assembly, so when Startup is invoked from within a test host (unit tests call it
+        // directly) the tool's manifest isn't next to the running 'testhost' assembly. Only map
+        // static assets when the expected manifest exists — the running tool has it; the test host
+        // does not (and those tests only exercise the Runtime API, not the Blazor assets).
+        var staticAssetsManifest = Path.Combine(
+            AppContext.BaseDirectory,
+            $"{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name}.staticwebassets.endpoints.json");
+        if (File.Exists(staticAssetsManifest))
+        {
+            app.MapStaticAssets();
+        }
 #endif
 
         app.UseAntiforgery();
