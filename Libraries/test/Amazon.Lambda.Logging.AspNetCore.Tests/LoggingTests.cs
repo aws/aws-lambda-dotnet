@@ -575,6 +575,119 @@ namespace Amazon.Lambda.Tests
         }
 
         [Fact]
+        public void TestJSONParameterLoggingIncludesCategoryWhenEnabled()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    loggerOptions.IncludeCategory = true;
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogError(new Exception("Too Cheap"), "User {name} fail to by {product} for {price}", "Gilmour", "Guitar", 55.55);
+
+                    var text = writer.ToString();
+                    // Category is prepended as literal text, not a template placeholder,
+                    // so the caller's own {name}/{product}/{price} arguments are untouched.
+                    Assert.Contains("[JSONLogging]", text);
+                    Assert.DoesNotContain("{Category}", text);
+                    Assert.Contains("parameter count: 3", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void TestJSONParameterLoggingOmitsCategoryWhenDisabled()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    loggerOptions.IncludeCategory = false;
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogError(new Exception("Too Cheap"), "User {name} fail to by {product} for {price}", "Gilmour", "Guitar", 55.55);
+
+                    var text = writer.ToString();
+                    Assert.DoesNotContain("[JSONLogging]", text);
+                    Assert.DoesNotContain("{Category}", text);
+                    Assert.Contains("parameter count: 3", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void TestJSONParameterLoggingWithCategoryLeavesPositionalTemplateIntact()
+        {
+            // Prepending category as a "{Category}" template placeholder (the earlier approach)
+            // would mix a named property into an otherwise all-numeric template, which the JSON
+            // formatter's positional-argument detection relies on being all-numeric. Prepending
+            // it as literal text instead means the caller's own "{0}"/"{1}" placeholders, and the
+            // argument array they line up with, are passed through completely untouched.
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    loggerOptions.IncludeCategory = true;
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogInformation("{0} scored {1}", "Alice", 42);
+
+                    var text = writer.ToString();
+                    Assert.Contains("[JSONLogging]", text);
+                    Assert.Contains("{0} scored {1}", text);
+                    Assert.DoesNotContain("{Category}", text);
+                    Assert.Contains("parameter count: 2", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
         public void JsonLoggingWithNoOriginalFormat()
         {
             Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
