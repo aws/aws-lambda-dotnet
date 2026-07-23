@@ -19,6 +19,8 @@
 **/Deployment/
 **/packages
 **/launchSettings.json
+# Keep the launch profiles for the Lambda Test Tool v2 sample projects (they are part of the docs).
+!Tools/LambdaTestTool-v2/samples/**/launchSettings.json
 **/Debug/
 **/build/
 
