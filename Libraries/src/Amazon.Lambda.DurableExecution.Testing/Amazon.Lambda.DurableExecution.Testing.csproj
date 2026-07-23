@@ -33,6 +33,7 @@
   -->
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.DurableExecution.LocalEmulation\Amazon.Lambda.DurableExecution.LocalEmulation.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>

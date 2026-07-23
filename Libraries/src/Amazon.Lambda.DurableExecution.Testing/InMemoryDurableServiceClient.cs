@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Amazon.Lambda.DurableExecution.Services;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
@@ -32,7 +33,8 @@ internal sealed class InMemoryDurableServiceClient : IDurableServiceClient
         if (pendingOperations.Count == 0)
             return Task.FromResult(checkpointToken);
 
-        var (newToken, newOps) = _processor.Process(durableExecutionArn, checkpointToken, pendingOperations);
+        var inputs = SdkOperationUpdateMapper.ToInputs(pendingOperations);
+        var (newToken, newOps) = _processor.Process(durableExecutionArn, checkpointToken, inputs);
 
         if (onNewOperations is not null && newOps.Count > 0)
             onNewOperations(newOps);

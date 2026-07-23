@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
+    <Description>Shared in-memory emulation kernel for Amazon Lambda Durable Execution - the operation store and checkpoint state machine used to drive durable workflows locally (by the .Testing package and the Lambda Test Tool). Implementation detail; not intended for direct use.</Description>
+    <AssemblyTitle>Amazon.Lambda.DurableExecution.LocalEmulation</AssemblyTitle>
+    <Version>1.0.0</Version>
+    <AssemblyName>Amazon.Lambda.DurableExecution.LocalEmulation</AssemblyName>
+    <PackageId>Amazon.Lambda.DurableExecution.LocalEmulation</PackageId>
+    <PackageTags>AWS;Amazon;Lambda;Durable;Workflow;Testing</PackageTags>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    The kernel types are an implementation detail shared with the two local-emulation consumers
+    (the .Testing package and the Lambda Test Tool) and this package's own tests, rather than a
+    public API. They stay internal and are surfaced via InternalsVisibleTo so we do not commit to
+    documenting/stabilizing them as a public surface. All these assemblies are strong-named with
+    buildtools/public.snk (via common.props), so each grant carries that shared public key.
+  -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.DurableExecution.LocalEmulation.Tests, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.DurableExecution.Testing, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+    <!-- The .Testing package's tests exercise its SDK→OperationUpdateInput mapper, which names the
+         kernel's internal input type, so they need friend access here as well. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.DurableExecution.Testing.Tests, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.TestTool, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!--
+    The kernel depends only on the durable-execution runtime for its public wire model
+    (Operation, OperationTypes, OperationStatuses, ErrorObject). It intentionally does NOT
+    reference AWSSDK.Lambda's Model.OperationUpdate or any HTTP/STJ wire DTOs: consumers map
+    their own update representation to the neutral OperationUpdateInput at the boundary.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+  </ItemGroup>
+
+</Project>

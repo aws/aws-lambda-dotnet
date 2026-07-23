@@ -1,44 +1,53 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using Amazon.Lambda.Model;
-using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
-
-namespace Amazon.Lambda.DurableExecution.Testing;
+namespace Amazon.Lambda.DurableExecution.LocalEmulation;
 
 /// <summary>
-/// Processes checkpoint updates against the in-memory operation store.
-/// Handles action-to-status mapping, callback ID minting, time skipping,
-/// and producing the "new operations" response the runtime expects.
+/// Processes checkpoint updates against the in-memory operation store. Handles action-to-status
+/// mapping, callback ID minting, time skipping, and producing the "new operations" the runtime
+/// expects back in the checkpoint response.
 /// </summary>
+/// <remarks>
+/// This is the shared local-emulation state machine used by both the durable-execution testing
+/// package (driving the workflow as an in-process delegate) and the Lambda Test Tool (driving a
+/// real, separately-running function over the Runtime API + HTTP data plane). Both feed it the
+/// same transport-neutral <see cref="OperationUpdateInput"/>; the state transitions below are the
+/// single source of truth for how a local checkpoint mutates recorded operations.
+/// </remarks>
 internal sealed class CheckpointProcessor
 {
     private readonly InMemoryOperationStore _store;
-    private readonly bool _skipTime;
+    // Read on each checkpoint (not captured) so a consumer's time-skip toggle can be flipped at
+    // runtime — e.g. the Test Tool's UI switch — and take effect for subsequent checkpoints.
+    private readonly Func<bool> _skipTimeProvider;
     private readonly object _pendingGate = new();
     private readonly List<PendingInvoke> _pendingInvokes = new();
 
+    /// <summary>Creates a processor whose time-skip mode is fixed for the run.</summary>
     public CheckpointProcessor(InMemoryOperationStore store, bool skipTime)
+        : this(store, () => skipTime)
+    {
+    }
+
+    /// <summary>Creates a processor whose time-skip mode is read live on each checkpoint.</summary>
+    public CheckpointProcessor(InMemoryOperationStore store, Func<bool> skipTimeProvider)
     {
         _store = store;
-        _skipTime = skipTime;
+        _skipTimeProvider = skipTimeProvider;
     }
 
     /// <summary>
-    /// A chained-invoke (<c>ctx.InvokeAsync</c>) that has been started by the
-    /// workflow but not yet resolved. The runtime suspends after emitting the
-    /// START and expects an external system to run the target function; in the
-    /// local harness the <see cref="ExecutionOrchestrator{TInput, TOutput}"/>
-    /// drains these between invocations and resolves them via the
-    /// <see cref="FunctionRegistry"/>. The target function name lives only on the
-    /// wire-format <c>OperationUpdate.ChainedInvokeOptions</c>, so it is captured
-    /// here rather than on the persisted <see cref="Operation"/>.
+    /// A chained-invoke (<c>ctx.InvokeAsync</c>) that has been started by the workflow but not yet
+    /// resolved. The runtime suspends after emitting the START and expects an external system to
+    /// run the target function; the local drivers drain these between invocations and resolve them
+    /// (the testing package via its function registry, the Test Tool by starting a nested durable
+    /// execution). The target function name lives only on the update, not on the persisted
+    /// <see cref="Operation"/>, so it is captured here.
     /// </summary>
     internal readonly record struct PendingInvoke(string OperationId, string FunctionName, string? Payload);
 
-    /// <summary>
-    /// Returns and clears the chained-invokes started since the last drain.
-    /// </summary>
+    /// <summary>Returns and clears the chained-invokes started since the last drain.</summary>
     public IReadOnlyList<PendingInvoke> DrainPendingInvokes()
     {
         lock (_pendingGate)
@@ -52,14 +61,13 @@ internal sealed class CheckpointProcessor
     }
 
     /// <summary>
-    /// Processes a batch of updates and returns the new checkpoint token
-    /// and any operations that were created or modified (to feed back to
-    /// the runtime's onNewOperations callback).
+    /// Processes a batch of updates and returns the new checkpoint token and any operations
+    /// created or modified (to feed back to the runtime's onNewOperations mechanism).
     /// </summary>
     public (string NewToken, IReadOnlyList<Operation> NewOperations) Process(
         string arn,
         string? currentToken,
-        IReadOnlyList<SdkOperationUpdate> updates)
+        IReadOnlyList<OperationUpdateInput> updates)
     {
         var newOperations = new List<Operation>();
 
@@ -73,29 +81,28 @@ internal sealed class CheckpointProcessor
         return (newToken, newOperations);
     }
 
-    private Operation ApplyUpdate(string arn, SdkOperationUpdate update)
+    private Operation ApplyUpdate(string arn, OperationUpdateInput update)
     {
-        var existing = _store.GetOperation(arn, update.Id);
+        var existing = _store.GetOperation(arn, update.Id!);
         var operation = existing ?? new Operation { Id = update.Id };
 
-        operation.Type = update.Type?.Value ?? operation.Type;
+        operation.Type = update.Type ?? operation.Type;
         operation.Name = update.Name ?? operation.Name;
         operation.ParentId = update.ParentId ?? operation.ParentId;
         operation.SubType = update.SubType ?? operation.SubType;
 
-        var action = update.Action?.Value;
+        var action = update.Action;
         ApplyAction(operation, action, update);
 
-        if (_skipTime)
+        if (_skipTimeProvider())
             ApplyTimeSkipping(operation, action);
 
-        // A chained-invoke START suspends the workflow until an external system
-        // resolves it. Record it so the orchestrator can run the registered
-        // sibling and stamp the result/error before the next replay. The function
-        // name is only carried on the wire-format update, not on the Operation.
+        // A chained-invoke START suspends the workflow until an external system resolves it.
+        // Record it so a driver can run the sibling and stamp the result/error before the next
+        // replay. The function name is only carried on the update, not on the Operation.
         if (action == "START"
             && operation.Type == OperationTypes.ChainedInvoke
-            && update.ChainedInvokeOptions?.FunctionName is { } functionName)
+            && update.ChainedInvokeFunctionName is { } functionName)
         {
             lock (_pendingGate)
             {
@@ -107,7 +114,7 @@ internal sealed class CheckpointProcessor
         return operation;
     }
 
-    private static void ApplyAction(Operation operation, string? action, SdkOperationUpdate update)
+    private static void ApplyAction(Operation operation, string? action, OperationUpdateInput update)
     {
         switch (action)
         {
@@ -141,23 +148,23 @@ internal sealed class CheckpointProcessor
         }
     }
 
-    private static void ApplyStartDetails(Operation operation, SdkOperationUpdate update)
+    private static void ApplyStartDetails(Operation operation, OperationUpdateInput update)
     {
         switch (operation.Type)
         {
             case OperationTypes.Step:
                 operation.StepDetails ??= new StepDetails();
-                // A plain step re-emits START before every attempt, so START owns
-                // the attempt count. WaitForCondition (Type=STEP, SubType=WaitForCondition)
-                // emits START only once and advances the count on each RETRY instead,
-                // so it must NOT increment here.
+                // A plain step re-emits START before every attempt, so START owns the attempt
+                // count. WaitForCondition (Type=STEP, SubType=WaitForCondition) emits START
+                // only once and advances the count on each RETRY instead, so it must NOT
+                // increment here.
                 if (operation.SubType != OperationSubTypes.WaitForCondition)
                     operation.StepDetails.Attempt = (operation.StepDetails.Attempt ?? 0) + 1;
                 break;
 
             case OperationTypes.Wait:
                 operation.WaitDetails ??= new WaitDetails();
-                if (update.WaitOptions?.WaitSeconds is { } seconds)
+                if (update.WaitSeconds is { } seconds)
                 {
                     operation.WaitDetails.ScheduledEndTimestamp =
                         DateTimeOffset.UtcNow.AddSeconds(seconds).ToUnixTimeMilliseconds();
@@ -183,7 +190,7 @@ internal sealed class CheckpointProcessor
         }
     }
 
-    private static void ApplySucceedDetails(Operation operation, SdkOperationUpdate update)
+    private static void ApplySucceedDetails(Operation operation, OperationUpdateInput update)
     {
         var payload = update.Payload;
         switch (operation.Type)
@@ -214,9 +221,9 @@ internal sealed class CheckpointProcessor
         }
     }
 
-    private static void ApplyFailDetails(Operation operation, SdkOperationUpdate update)
+    private static void ApplyFailDetails(Operation operation, OperationUpdateInput update)
     {
-        var error = MapSdkError(update.Error);
+        var error = update.Error;
         switch (operation.Type)
         {
             case OperationTypes.Step:
@@ -241,26 +248,26 @@ internal sealed class CheckpointProcessor
         }
     }
 
-    private static void ApplyRetryDetails(Operation operation, SdkOperationUpdate update)
+    private static void ApplyRetryDetails(Operation operation, OperationUpdateInput update)
     {
-        // Both retried steps and WaitForCondition polls are wire-encoded as
-        // Type=STEP (WaitForCondition uses SubType=WaitForCondition); the runtime
-        // never emits a WAIT-typed RETRY, so this single STEP branch covers both.
+        // Both retried steps and WaitForCondition polls are wire-encoded as Type=STEP
+        // (WaitForCondition uses SubType=WaitForCondition); the runtime never emits a
+        // WAIT-typed RETRY, so this single STEP branch covers both.
         if (operation.Type == OperationTypes.Step)
         {
             operation.StepDetails ??= new StepDetails();
-            if (update.StepOptions?.NextAttemptDelaySeconds is { } delaySeconds)
+            if (update.NextAttemptDelaySeconds is { } delaySeconds)
             {
                 operation.StepDetails.NextAttemptTimestamp =
                     DateTimeOffset.UtcNow.AddSeconds(delaySeconds).ToUnixTimeMilliseconds();
             }
-            operation.StepDetails.Error = MapSdkError(update.Error);
+            operation.StepDetails.Error = update.Error;
 
-            // WaitForCondition emits START once and advances per RETRY: it carries
-            // the next poll state in Payload and relies on the persistence layer to
-            // own the attempt count. Persist both so the next replay resumes from
-            // the latest state with an advanced attempt number (a plain step RETRY
-            // carries no Payload and owns its count via START, so leave it alone).
+            // WaitForCondition emits START once and advances per RETRY: it carries the next
+            // poll state in Payload and relies on the persistence layer to own the attempt
+            // count. Persist both so the next replay resumes from the latest state with an
+            // advanced attempt number (a plain step RETRY carries no Payload and owns its count
+            // via START, so leave it alone).
             if (operation.SubType == OperationSubTypes.WaitForCondition)
             {
                 if (update.Payload is not null)
@@ -283,9 +290,9 @@ internal sealed class CheckpointProcessor
             }
         }
 
-        // A retried step (or WaitForCondition poll, also Type=STEP) becomes
-        // immediately READY under time-skipping so the next replay runs the next
-        // attempt without waiting for the backoff/poll delay.
+        // A retried step (or WaitForCondition poll, also Type=STEP) becomes immediately READY
+        // under time-skipping so the next replay runs the next attempt without waiting for the
+        // backoff/poll delay.
         if (action == "RETRY" && operation.Type == OperationTypes.Step)
         {
             operation.Status = OperationStatuses.Ready;
@@ -295,17 +302,5 @@ internal sealed class CheckpointProcessor
                     DateTimeOffset.UtcNow.AddMilliseconds(-1).ToUnixTimeMilliseconds();
             }
         }
-    }
-
-    private static ErrorObject? MapSdkError(Amazon.Lambda.Model.ErrorObject? sdkError)
-    {
-        if (sdkError == null) return null;
-        return new ErrorObject
-        {
-            ErrorType = sdkError.ErrorType,
-            ErrorMessage = sdkError.ErrorMessage,
-            ErrorData = sdkError.ErrorData,
-            StackTrace = sdkError.StackTrace
-        };
     }
 }
