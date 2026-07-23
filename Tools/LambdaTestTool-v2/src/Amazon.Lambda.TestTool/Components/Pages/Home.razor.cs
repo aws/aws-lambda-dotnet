@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.Model;
+using Amazon.Lambda.DurableExecution;
 using Microsoft.AspNetCore.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Models;
@@ -57,6 +58,21 @@ public partial class Home : ComponentBase, IDisposable
     /// <see cref="LambdaRequestManager"/>
     /// </summary>
     [Inject] public required ILambdaRequestManager LambdaRequestManager { get; set; }
+    /// <summary>
+    /// Service provider used to optionally resolve the durable-execution driver, which is only
+    /// registered when the tool was started with <c>--durable-execution</c>.
+    /// </summary>
+    [Inject] public required IServiceProvider ServiceProvider { get; set; }
+
+    // Non-null only when --durable-execution is enabled; gates the durable invoke UI.
+    private Services.DurableExecution.DurableExecutionDriver? _durableDriver;
+
+    /// <summary>True when the durable-execution emulator is enabled and the durable invoke UI should show.</summary>
+    private bool DurableExecutionEnabled => _durableDriver is not null;
+
+    // Durable invoke form state.
+    private bool _durableExecution;
+    private string _durableExecutionName = string.Empty;
 
     private StandaloneCodeEditor? _editor;
     private StandaloneCodeEditor? _activeEditor;
@@ -155,6 +171,11 @@ public partial class Home : ComponentBase, IDisposable
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        // Resolve the durable driver optionally (only present with --durable-execution). Used to
+        // gate the durable invoke UI and to re-run durable executions from Re-Invoke.
+        _durableDriver = ServiceProvider.GetService(typeof(Services.DurableExecution.DurableExecutionDriver))
+            as Services.DurableExecution.DurableExecutionDriver;
+
         var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
         string initialFunction = string.Empty;
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("function", out var queryValue))
@@ -242,6 +263,12 @@ public partial class Home : ComponentBase, IDisposable
         });
     }
 
+    void OnDurableExecutionToggled(ChangeEventArgs e)
+    {
+        _durableExecution = e.Value is true;
+        StateHasChanged();
+    }
+
     async Task OnAddEventClick()
     {
         if (_editor is null ||
@@ -285,8 +312,91 @@ public partial class Home : ComponentBase, IDisposable
 
         if (evnt == null)
             return;
+
+        // For a durable function the queued/executed events are internal replay envelopes
+        // (DurableExecutionArn + InitialExecutionState), not user payloads. Re-posting one as a
+        // plain invoke would just run a single replay pass against stale state — not a new
+        // execution. Instead, extract the original user payload and start a FRESH durable
+        // execution so "re-invoke" means "run the whole workflow again".
+        if (DurableExecutionEnabled && TryGetDurableUserPayload(evnt.EventJson, out var userPayload))
+        {
+            var invokeRequest = new InvokeRequest
+            {
+                FunctionName = SelectedFunctionName,
+                Payload = userPayload,
+                InvocationType = InvocationType.Event,
+                DurableExecutionName = Guid.NewGuid().ToString()
+            };
+            try
+            {
+                await LambdaClient.InvokeAsync(invokeRequest, LambdaOptions.Value.Endpoint);
+                _errorMessage = string.Empty;
+            }
+            catch (AmazonLambdaException ex)
+            {
+                Logger.LogInformation(ex.Message);
+                _errorMessage = ex.Message;
+            }
+            StateHasChanged();
+            return;
+        }
+
         await InvokeLambdaFunction(evnt.EventJson);
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// If <paramref name="eventJson"/> is a durable-execution replay envelope, extracts the
+    /// original user input payload from its EXECUTION operation. Returns false for ordinary
+    /// (non-durable) event JSON.
+    /// </summary>
+    private static bool TryGetDurableUserPayload(string eventJson, out string userPayload)
+    {
+        userPayload = string.Empty;
+        if (string.IsNullOrWhiteSpace(eventJson))
+            return false;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(eventJson);
+            var root = doc.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !root.TryGetProperty("DurableExecutionArn", out _))
+            {
+                return false; // not a durable envelope
+            }
+
+            // The user payload rides on the EXECUTION-type op's ExecutionDetails.InputPayload.
+            if (root.TryGetProperty("InitialExecutionState", out var state)
+                && state.ValueKind == System.Text.Json.JsonValueKind.Object
+                && state.TryGetProperty("Operations", out var ops)
+                && ops.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var op in ops.EnumerateArray())
+                {
+                    if (op.TryGetProperty("Type", out var type)
+                        && type.GetString() == OperationTypes.Execution
+                        && op.TryGetProperty("ExecutionDetails", out var details)
+                        && details.ValueKind == System.Text.Json.JsonValueKind.Object
+                        && details.TryGetProperty("InputPayload", out var input)
+                        && input.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        userPayload = input.GetString() ?? string.Empty;
+                        return !string.IsNullOrEmpty(userPayload);
+                    }
+                }
+            }
+
+            // It is a durable envelope but we couldn't find the payload (e.g. first invocation
+            // before the EXECUTION op is echoed back). Fall back to an empty payload rather than
+            // re-posting the raw envelope.
+            userPayload = "{}";
+            return true;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
     }
 
     void OnDeleteEvent(string awsRequestId)
@@ -420,6 +530,16 @@ public partial class Home : ComponentBase, IDisposable
             Payload = payload,
             InvocationType = InvocationType.Event
         };
+
+        // When the durable checkbox is set, carry the durable-execution-name header so the tool's
+        // start hook launches a durable execution (rather than a one-shot invoke). An empty name
+        // lets the emulator auto-generate one.
+        if (_durableExecution && DurableExecutionEnabled)
+        {
+            invokeRequest.DurableExecutionName = string.IsNullOrWhiteSpace(_durableExecutionName)
+                ? Guid.NewGuid().ToString()
+                : _durableExecutionName.Trim();
+        }
 
         try
         {

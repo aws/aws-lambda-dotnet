@@ -11,3 +11,25 @@
     Please see the README file <a href="https://github.com/aws/aws-lambda-dotnet/blob/master/Tools/LambdaTestTool-v2/README.md">here</a> for more information.
 </p>
 
+<h3 style="padding: 0 15px">Durable Execution (preview)</h3>
+<div style="padding: 0 15px">
+    <p>
+        Run <a href="https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.DurableExecution">durable Lambda functions</a>
+        locally. Start the tool with <code>--durable-execution</code> and the tool emulates the durable-execution
+        service: it stores checkpoints, drives the workflow across its replay cycle, time-skips timers, and manages callbacks.
+    </p>
+    <ol>
+        <li>Start the tool with <code>--durable-execution</code> (timers are time-skipped by default; use <code>--durable-time-skip false</code> for real waits).</li>
+        <li>
+            Run your durable function as a local process with these environment variables:
+            <ul>
+                <li><code>AWS_LAMBDA_RUNTIME_API=localhost:&lt;port&gt;/&lt;FunctionName&gt;</code> — must include the <code>/&lt;FunctionName&gt;</code> suffix.</li>
+                <li><code>AWS_ENDPOINT_URL_LAMBDA=http://localhost:&lt;port&gt;</code> — redirects checkpoint/state/callback calls to the tool.</li>
+                <li><code>AWS_REGION</code> plus dummy <code>AWS_ACCESS_KEY_ID</code>/<code>AWS_SECRET_ACCESS_KEY</code> — required for request signing; the emulator ignores the signature.</li>
+            </ul>
+        </li>
+        <li>On the Function Tester page, select your function, check <b>Start as durable execution</b> (optionally name it), and click <b>Invoke</b>.</li>
+        <li>Open the <a href="/durable-execution">Durable Execution</a> page to watch the operation timeline. When a workflow parks on a callback, use <b>Send Callback</b> to resume it.</li>
+    </ol>
+</div>
+
