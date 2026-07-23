@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.TestTool",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Fix Blazor web UI being non-interactive on .NET 9\u002B/net10.0 (framework static assets 404) by serving them via MapStaticAssets"
+        "Fix Blazor web UI being non-interactive on .NET 9+/net10.0. Framework static assets (_framework/blazor.web.js) and the scoped-CSS bundle are now served via MapStaticAssets, the static web assets manifest is composed regardless of hosting environment, and the content root is pinned to the tool's install directory so the assets resolve correctly when running as an installed global tool."
       ]
     }
   ]
