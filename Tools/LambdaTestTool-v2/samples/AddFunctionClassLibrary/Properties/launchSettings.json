@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "LambdaTestTool": {
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
+      "commandLineArgs": "exec --depsfile ./AddFunctionClassLibrary.deps.json --runtimeconfig ./AddFunctionClassLibrary.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.TestTool.dll AddFunctionClassLibrary::AddFunctionClassLibrary.Function::Add",
+      "environmentVariables": {
+        "AWS_LAMBDA_RUNTIME_API": "localhost:5050/AddLambdaFunction"
+      }
+    }
+  }
+}
