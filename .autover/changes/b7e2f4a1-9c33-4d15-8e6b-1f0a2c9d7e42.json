@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Consume the shared Amazon.Lambda.DurableExecution.LocalEmulation checkpoint state machine and operation store in the durable-execution emulator instead of a private fork, so the emulator and the durable-execution testing package cannot drift. No user-facing behavior change."
+      ]
+    }
+  ]
+}

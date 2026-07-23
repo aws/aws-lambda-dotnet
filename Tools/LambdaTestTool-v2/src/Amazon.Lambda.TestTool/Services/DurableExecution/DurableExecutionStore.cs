@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 
 namespace Amazon.Lambda.TestTool.Services.DurableExecution;
 
@@ -98,7 +99,8 @@ internal sealed class DurableExecutionStore
         IReadOnlyList<WireOperationUpdate> updates)
     {
         var ctx = GetOrCreate(arn);
-        var result = ctx.Processor.Process(arn, checkpointToken, updates);
+        var inputs = WireOperationUpdateMapper.ToInputs(updates);
+        var result = ctx.Processor.Process(arn, checkpointToken, inputs);
 
         // Index any freshly-minted callback IDs so inbound SendDurableExecutionCallback* requests
         // can be routed back to the originating operation.
@@ -246,27 +248,15 @@ internal sealed class DurableExecutionStore
     public string CurrentToken(string arn) => GetOrCreate(arn).Store.CurrentToken(arn);
 
     /// <summary>
-    /// Seeds the top-level EXECUTION operation carrying the user input payload. Idempotent:
-    /// re-driving (e.g. a replay pass) must not reset the op or clobber recorded state. Mirrors
-    /// <c>ExecutionOrchestrator.SeedExecutionOperation</c> (operation id <c>exec-0</c>).
+    /// Seeds the top-level EXECUTION operation carrying the user input payload. Idempotent
+    /// seeding is owned by the shared local-emulation kernel so the emulator and the testing
+    /// package's orchestrator stay in lock-step.
     /// </summary>
     public void SeedExecution(string arn, string? inputPayload)
-    {
-        var ctx = GetOrCreate(arn);
-        if (ctx.Store.GetOperation(arn, ExecutionOperationId) is not null)
-            return;
-
-        ctx.Store.Upsert(arn, new Operation
-        {
-            Id = ExecutionOperationId,
-            Type = OperationTypes.Execution,
-            Status = OperationStatuses.Started,
-            ExecutionDetails = new ExecutionDetails { InputPayload = inputPayload }
-        });
-    }
+        => DurableEmulationHelpers.SeedExecution(GetOrCreate(arn).Store, arn, inputPayload);
 
     /// <summary>The operation id of the seeded top-level EXECUTION op.</summary>
-    internal const string ExecutionOperationId = "exec-0";
+    internal const string ExecutionOperationId = DurableEmulationHelpers.ExecutionOperationId;
 
     /// <summary>Snapshot of all operations recorded for the execution.</summary>
     public IReadOnlyList<Operation> GetAllOperations(string arn) => GetOrCreate(arn).Store.GetAllOperations(arn);

@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.LocalEmulation;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 
@@ -344,7 +345,7 @@ internal sealed class DurableExecutionDriver
                 // on (the default) waits/retries are already folded to ready in the store, so we
                 // re-drive immediately. With time-skipping off, delay until the next scheduled
                 // resume so the loop doesn't spin the CPU and hit the invocation cap.
-                if (TryGetNextResumeDelay(arn, out var delay) && delay > TimeSpan.Zero)
+                if (DurableEmulationHelpers.TryGetNextResumeDelay(_store.GetAllOperations(arn), out var delay) && delay > TimeSpan.Zero)
                 {
                     await Task.Delay(delay);
                 }
@@ -468,39 +469,6 @@ internal sealed class DurableExecutionDriver
                 return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Earliest future resume time across pending WAITs (<c>ScheduledEndTimestamp</c>) and pending
-    /// STEP retries (<c>NextAttemptTimestamp</c>). Mirrors <c>ExecutionOrchestrator</c>.
-    /// </summary>
-    private bool TryGetNextResumeDelay(string arn, out TimeSpan delay)
-    {
-        long? earliest = null;
-        foreach (var op in _store.GetAllOperations(arn))
-        {
-            long? resumeAt = op.Type switch
-            {
-                OperationTypes.Wait when op.Status == OperationStatuses.Started
-                    => op.WaitDetails?.ScheduledEndTimestamp,
-                OperationTypes.Step when op.Status == OperationStatuses.Pending
-                    => op.StepDetails?.NextAttemptTimestamp,
-                _ => null,
-            };
-
-            if (resumeAt is { } ts && (earliest is null || ts < earliest))
-                earliest = ts;
-        }
-
-        if (earliest is null)
-        {
-            delay = TimeSpan.Zero;
-            return false;
-        }
-
-        var deltaMs = earliest.Value - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        delay = deltaMs > 0 ? TimeSpan.FromMilliseconds(deltaMs) : TimeSpan.Zero;
-        return true;
     }
 
     private static string ComputeHash(string payload)
