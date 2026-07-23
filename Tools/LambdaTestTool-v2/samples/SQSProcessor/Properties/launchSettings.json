@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SQSProcessor": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AWS_LAMBDA_RUNTIME_API": "localhost:5050/SQSProcessor"
+      }
+    }
+  }
+}
