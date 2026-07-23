@@ -8,6 +8,9 @@
     <AssemblyName>AddFunctionClassLibrary</AssemblyName>
     <!-- Produces the .deps.json / .runtimeconfig.json the launch profile references. -->
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Copy NuGet dependencies (Amazon.Lambda.Core, etc.) next to the output DLL so the
+         function can be launched from the command line without extra probing paths. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

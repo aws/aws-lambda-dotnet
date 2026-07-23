@@ -435,7 +435,7 @@ Run it with `dotnet run --launch-profile AddLambdaFunction`. A complete project 
 
 ### Option 2: Class Library
 
-For a class-library function (a handler method rather than top-level statements), the launch profile runs the function assembly under the test tool's copy of the Lambda runtime support library.
+For a class-library function (a handler method rather than top-level statements), you run the function assembly under the test tool's copy of the Lambda runtime support library. This works the same whether you launch it from the command line or an IDE.
 
 ```csharp
 using Amazon.Lambda.APIGatewayEvents;
@@ -453,6 +453,49 @@ public class Function
     }
 }
 ```
+
+**1. Make sure dependencies land in the build output.** A class library doesn't copy its NuGet dependencies (e.g. `Amazon.Lambda.Core.dll`) next to the output DLL by default, so add this to the `.csproj`:
+
+```xml
+<PropertyGroup>
+  <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+</PropertyGroup>
+```
+
+**2. Build the function** so the `.deps.json` / `.runtimeconfig.json` exist and dependencies are copied:
+
+```
+dotnet build
+```
+
+#### Run it from the command line
+
+Set [`AWS_LAMBDA_RUNTIME_API`](#the-aws_lambda_runtime_api-environment-variable), then launch the function assembly under the test tool's runtime support shim. From the build output directory (e.g. `bin/Debug/net8.0`):
+
+```bash
+# Linux/macOS
+export AWS_LAMBDA_RUNTIME_API="localhost:5050/AddLambdaFunction"
+
+dotnet exec \
+    --depsfile ./MyLambdaFunction.deps.json \
+    --runtimeconfig ./MyLambdaFunction.runtimeconfig.json \
+    "$HOME/.dotnet/tools/.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.TestTool.dll" \
+    "{FUNCTION_HANDLER}"
+```
+
+On Windows (PowerShell), the shim path is under `$env:USERPROFILE\.dotnet\tools\.store\...`.
+
+Replace the three placeholders:
+
+1. **`{TEST_TOOL_VERSION}`** — your installed test tool version (appears **twice** in the `.store` path). Find it with `dotnet lambda-test-tool info` or `dotnet tool list -g`.
+2. **`{TARGET_FRAMEWORK}`** — your Lambda project's target framework, e.g. `net8.0`.
+3. **`{FUNCTION_HANDLER}`** — your handler in the form `<assembly>::<namespace>.<class>::<method>`, e.g. `MyLambdaFunction::MyLambdaFunction.Function::Add`.
+
+> The runtime support assembly is named `Amazon.Lambda.RuntimeSupport.TestTool.dll` (not `Amazon.Lambda.RuntimeSupport.dll`) to avoid conflicting with the version your function already references.
+
+#### Run it from an IDE (Visual Studio / Rider)
+
+If you'd rather press F5, add a launch profile. This wraps the same `dotnet exec` command; the IDE expands `$(Configuration)` and resolves `workingDirectory` for you (plain `dotnet run --launch-profile` does not, so use the command-line form above outside an IDE).
 
 **Properties/launchSettings.json**
 
@@ -472,15 +515,7 @@ public class Function
 }
 ```
 
-Replace the three placeholders:
-
-1. **`{TEST_TOOL_VERSION}`** — your installed test tool version (appears **twice** in the `.store` path). Find it with `dotnet lambda-test-tool info` or `dotnet tool list -g`.
-2. **`{TARGET_FRAMEWORK}`** — your Lambda project's target framework, e.g. `net8.0` (appears in both `workingDirectory` and the runtime support DLL path).
-3. **`{FUNCTION_HANDLER}`** — your handler in the form `<assembly>::<namespace>.<class>::<method>`, e.g. `MyLambdaFunction::MyLambdaFunction.Function::Add`.
-
-> The runtime support assembly is named `Amazon.Lambda.RuntimeSupport.TestTool.dll` (not `Amazon.Lambda.RuntimeSupport.dll`) to avoid conflicting with the version your function already references.
-
-> **Linux/macOS:** replace `%USERPROFILE%` with `$HOME`/`~` and use forward slashes throughout the `workingDirectory`.
+The same three placeholders apply. On **Linux/macOS**, replace `%USERPROFILE%` with `$HOME`/`~` and use forward slashes throughout the `workingDirectory`.
 
 A complete, build-verified example is in [`samples/AddFunctionClassLibrary`](samples/AddFunctionClassLibrary).
 
