@@ -78,6 +78,33 @@ Use this mode when you want to test Lambda functions directly without API Gatewa
 dotnet lambda-test-tool start --lambda-emulator-port 5050
 ```
 
+### Durable Execution Mode (preview)
+Use this mode to run [durable Lambda functions](../../Libraries/src/Amazon.Lambda.DurableExecution) locally. The Test Tool emulates the durable-execution service: it stores checkpoints, drives the workflow across the replay cycle, resolves timers, and manages callbacks — so you can run a full multi-step workflow (and attach a debugger) without deploying to AWS.
+
+Enable it with `--durable-execution`:
+
+```
+# Start the Lambda emulator with the durable-execution service emulator
+dotnet lambda-test-tool start --lambda-emulator-port 5050 --durable-execution
+```
+
+By default, timers (`WaitAsync` and retry backoff) are **time-skipped** so workflows advance immediately. Pass `--durable-time-skip false` to wait real wall-clock time instead.
+
+**Point your function at the emulator.** Run your durable function as a normal local process (`dotnet run`) with these environment variables set:
+
+| Variable | Value | Why |
+|---|---|---|
+| `AWS_LAMBDA_RUNTIME_API` | `localhost:5050/<FunctionName>` | Runtime API endpoint. **Must include the `/<FunctionName>` suffix** — the tool partitions events by that path segment, and it must match the function name you invoke with. |
+| `AWS_ENDPOINT_URL_LAMBDA` | `http://localhost:5050` | Redirects the durable checkpoint/state/callback calls to the Test Tool. |
+| `AWS_REGION` | e.g. `us-east-1` | Required for request signing. |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | any dummy value | Required for signing; the emulator ignores the signature. |
+
+**Start a durable execution.** In the Test Tool web UI, select your function, check **Start as durable execution** (optionally name it), and click **Invoke**. Then open the **Durable Execution** page to watch the operation timeline (steps, waits, callbacks) as the workflow runs.
+
+**Callbacks.** When a workflow parks on `WaitForCallbackAsync`, the Durable Execution page shows a **Send Callback** action to resolve it and resume the workflow. Callbacks can also be sent with the AWS SDK's `SendDurableExecutionCallbackSuccess`/`Failure`/`Heartbeat` against the tool's endpoint.
+
+**Current limitations (preview):** chained durable-to-durable invokes run each target as a nested execution against a sibling function that must also be running locally; large-payload paging fidelity is approximate.
+
 ### API Gateway Emulator Mode
 Use this mode when you want to test Lambda functions through API Gateway endpoints. **Note: Running this mode by itself will not work, you will still need have the lambda runtime client running elsewhere and reference it in the `Endpoint` parameter in the `APIGATEWAY_EMULATOR_ROUTE_CONFIG` env varible (see below [Required Configuration](#required-configuration))** Api gateway mode requires additional configuration through environment variables.
 

@@ -40,6 +40,20 @@
     <PackageReference Include="BlazorMonaco" Version="3.2.0" />
   </ItemGroup>
 
+  <!-- Durable-execution support is referenced from in-repo source (like RuntimeSupport below)
+       rather than as a published package:
+       - Amazon.Lambda.DurableExecution supplies the public wire model (Operation/ErrorObject/
+         OperationTypes/…) the durable-service emulator reuses so its checkpoint responses are
+         byte-for-byte the envelope the SDK expects.
+       - Amazon.Lambda.DurableExecution.LocalEmulation is the shared in-memory checkpoint state
+         machine (InMemoryOperationStore/CheckpointProcessor), used via InternalsVisibleTo so the
+         emulator and the .Testing package cannot drift. A source reference (not a preview package
+         pin) keeps a single Amazon.Lambda.DurableExecution assembly identity across both. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Libraries\src\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="..\..\..\..\Libraries\src\Amazon.Lambda.DurableExecution.LocalEmulation\Amazon.Lambda.DurableExecution.LocalEmulation.csproj" />
+  </ItemGroup>
+
   <Target Name="GetRuntimeSupportTargetFrameworks">
     <Exec Command="dotnet msbuild ../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj --getProperty:TargetFrameworks" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="RuntimeSupportTargetFrameworks" />

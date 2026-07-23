@@ -1,0 +1,16 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add durable-execution service emulator (preview): with --durable-execution, the Test Tool hosts CheckpointDurableExecution and GetDurableExecutionState endpoints alongside the Lambda Runtime API so durable workflows can checkpoint and read state locally. Point the function's AWS_ENDPOINT_URL_LAMBDA at the Test Tool to use it. Timers are time-skipped by default (--durable-time-skip).",
+        "Support running a durable workflow locally end to end: invoking a function with the X-Amz-Durable-Execution-Name header starts a durable execution that the Test Tool drives to completion, re-invoking the function across the replay cycle (steps, waits, retries, child contexts, parallel/map). Chained durable-to-durable invokes are not yet supported.",
+        "Add external callback support and a Durable Execution web UI: SendDurableExecutionCallbackSuccess/Failure/Heartbeat endpoints resume a workflow parked on a callback, and a new Durable Execution page lists executions, shows each operation timeline, and can send a callback from the browser.",
+        "Complete local durable workflow support: chained durable-to-durable invokes (ctx.InvokeAsync) now run the target function as a nested execution and return its result to the caller; StopDurableExecution halts a running execution; and checkpoint payloads exceeding the service size limits are rejected.",
+        "Start durable executions from the web UI: the Function Tester page adds a 'Start as durable execution' checkbox (with an optional execution name) so a durable workflow can be started without setting the X-Amz-Durable-Execution-Name header manually. Re-Invoke on a durable function now starts a fresh execution from the original user payload instead of replaying an internal envelope. Adds a durable-execution sample request and documents the feature in the README and in-app documentation.",
+        "Fix --durable-time-skip defaulting to false (timers were never skipped); it now defaults to true and accepts an explicit value (--durable-time-skip false). Add a live 'Time-skip timers' toggle to the Durable Execution page. Completed WAIT operations now show SUCCEEDED in the timeline instead of remaining STARTED after their timer elapses."
+      ]
+    }
+  ]
+}

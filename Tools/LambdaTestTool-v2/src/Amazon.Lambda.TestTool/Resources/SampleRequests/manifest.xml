@@ -231,4 +231,8 @@
     <name>Lex BookTrip - Book Hotel</name>
     <filename>lex-book-hotel.json</filename>
   </request>
+  <request category="Durable Execution">
+    <name>Durable Execution - Order (user payload)</name>
+    <filename>durable-execution-order.json</filename>
+  </request>
 </requests>
