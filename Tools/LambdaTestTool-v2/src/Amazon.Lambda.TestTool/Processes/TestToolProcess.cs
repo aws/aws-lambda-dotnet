@@ -50,24 +50,26 @@ public class TestToolProcess
 
         Utils.ConfigureWebApplicationBuilder(builder);
 
-#if NET9_0_OR_GREATER
-        // On .NET 9+ the Blazor framework files (_framework/blazor.web.js) and the scoped-CSS
-        // bundle (Amazon.Lambda.TestTool.styles.css) are served by the endpoint-routing static
-        // assets pipeline (app.MapStaticAssets, added below), which reads the bytes from the web
-        // host's WebRootFileProvider. When running from a build output (dotnet run / dotnet build)
-        // those framework assets do not physically live under wwwroot; they live in the NuGet
-        // cache and are mapped in via the *.staticwebassets.runtime.json manifest. ASP.NET Core
-        // only composes that manifest into the WebRootFileProvider automatically in the
-        // Development environment, but this tool runs in the Production environment by default, so
-        // without the call below the WebRootFileProvider is a bare wwwroot provider, MapStaticAssets
-        // cannot find the framework files, and it serves an empty (0-byte) HTTP 200 response. That
-        // leaves window.Blazor undefined and the interactive server circuit never starts, so the
-        // whole UI renders as non-interactive. Calling UseStaticWebAssets forces the manifest to be
-        // composed regardless of environment. When running as an installed global tool the manifest
-        // is absent (the framework files are published directly into wwwroot instead), so this is a
-        // harmless no-op there and MapStaticAssets serves the files straight from wwwroot.
+        // Static web assets (the *.staticwebassets.runtime.json manifest) map two kinds of files
+        // that do NOT physically live under wwwroot when running from a build output (dotnet run /
+        // dotnet build): the Blazor framework files (_framework/blazor.web.js) and Razor class
+        // library content such as BlazorMonaco's _content/BlazorMonaco/** editor assets. Both live
+        // in the NuGet cache and are surfaced via that manifest. ASP.NET Core only composes the
+        // manifest into the WebRootFileProvider automatically in the Development environment, but
+        // this tool runs in the Production environment by default, so without the call below the
+        // WebRootFileProvider is a bare wwwroot provider and those assets are unreachable.
+        //
+        // On .NET 9+ that leaves MapStaticAssets (added below) unable to find the framework files —
+        // it serves an empty (0-byte) HTTP 200, window.Blazor is never defined, and the whole UI is
+        // non-interactive. On .NET 8 the framework files are served by Blazor's own middleware, but
+        // the RCL _content/** assets are served through UseStaticFiles + WebRootFileProvider, so
+        // without the manifest the Monaco editor assets 404 and the code editor never initializes
+        // (e.g. selecting an example request cannot populate the input). Either way the fix is the
+        // same, so this runs on all target frameworks.
+        //
+        // When running as an installed global tool the manifest is absent (the framework and RCL
+        // content are published directly into wwwroot instead), so this is a harmless no-op there.
         builder.WebHost.UseStaticWebAssets();
-#endif
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
@@ -120,14 +122,35 @@ public class TestToolProcess
             app.UseDeveloperExceptionPage();
         }
 
-        // Always use the explicit file provider to serve static files from the tool's install
-        // directory. Without this, non-Production environments attempt to use the static web
-        // assets manifest which contains absolute paths from the build machine and will fail
-        // when running as an installed global tool on a different machine.
+        // Serve classic static files from the tool's install directory (wwwroot). This is the
+        // authoritative provider for an installed global tool, where every asset — app.css, the
+        // Blazor framework files, and RCL _content/** (e.g. BlazorMonaco) — is published directly
+        // into wwwroot. Pinning an explicit provider (rather than the default WebRootFileProvider)
+        // also avoids depending on the static-web-assets manifest, whose absolute build-machine
+        // paths would not resolve on another machine.
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = wwwrootFileProvider
         });
+
+#if !NET9_0_OR_GREATER
+        // On .NET 8 there is no MapStaticAssets endpoint pipeline (added below for net9+), and the
+        // explicit provider above sees only the physical wwwroot. When running from a build output
+        // (dotnet run / dotnet build), RCL _content/** assets are NOT physically in wwwroot — they
+        // are surfaced through the static-web-assets manifest that UseStaticWebAssets() composes
+        // into the WebRootFileProvider. Without a second pass over that provider, BlazorMonaco's
+        // _content/BlazorMonaco/** editor assets 404 and the code editor never initializes (so, for
+        // example, selecting an example request cannot populate the input). Serve from the
+        // WebRootFileProvider as well to cover that case. For an installed tool the WebRootFile
+        // provider resolves to the same wwwroot as above, so this is a harmless second lookup.
+        if (app.Environment.WebRootFileProvider is not null)
+        {
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = app.Environment.WebRootFileProvider
+            });
+        }
+#endif
 
 #if NET9_0_OR_GREATER
         // On .NET 9+ the Blazor framework files (_framework/blazor.web.js) and the scoped-CSS
