@@ -21,14 +21,16 @@ namespace Amazon.Lambda.TestTool.Services.DurableExecution;
 internal sealed class CheckpointProcessor
 {
     private readonly InMemoryOperationStore _store;
-    private readonly bool _skipTime;
+    // Read on each checkpoint (not captured) so the durable-execution store's time-skip toggle
+    // can be flipped at runtime from the UI and take effect for subsequent checkpoints.
+    private readonly Func<bool> _skipTimeProvider;
     private readonly object _pendingGate = new();
     private readonly List<PendingInvoke> _pendingInvokes = new();
 
-    public CheckpointProcessor(InMemoryOperationStore store, bool skipTime)
+    public CheckpointProcessor(InMemoryOperationStore store, Func<bool> skipTimeProvider)
     {
         _store = store;
-        _skipTime = skipTime;
+        _skipTimeProvider = skipTimeProvider;
     }
 
     /// <summary>
@@ -89,7 +91,7 @@ internal sealed class CheckpointProcessor
         var action = update.Action;
         ApplyAction(operation, action, update);
 
-        if (_skipTime)
+        if (_skipTimeProvider())
             ApplyTimeSkipping(operation, action);
 
         // A chained-invoke START suspends the workflow until an external system resolves it.

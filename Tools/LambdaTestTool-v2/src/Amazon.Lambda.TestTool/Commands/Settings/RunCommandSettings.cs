@@ -110,10 +110,18 @@ public sealed class RunCommandSettings : CommandSettings
     /// <summary>
     /// When the durable-execution emulator is enabled, resolves timers (WaitAsync, retry
     /// backoff) immediately instead of waiting for wall-clock time. Defaults to <c>true</c> so
-    /// local workflows advance without real delays.
+    /// local workflows advance without real delays. Use <c>--durable-time-skip false</c> to wait
+    /// real wall-clock time.
     /// </summary>
-    [CommandOption("--durable-time-skip")]
+    /// <remarks>
+    /// Declared as a nullable bool with an explicit <see cref="DefaultValueAttribute"/> so the
+    /// Spectre.Console.Cli binder honors the "default true" behavior. A plain <c>bool</c> option
+    /// binds presence→true / absence→false regardless of a C# field initializer, which would make
+    /// the default effectively <c>false</c> and prevent <c>--durable-time-skip false</c> from parsing.
+    /// </remarks>
+    [CommandOption("--durable-time-skip <TRUE_OR_FALSE>")]
     [Description("When durable execution is enabled, resolve timers/retry backoff immediately rather than waiting for wall-clock time. Default: true.")]
+    [DefaultValue(true)]
     public bool DurableTimeSkip { get; set; } = true;
 
     /// <summary>

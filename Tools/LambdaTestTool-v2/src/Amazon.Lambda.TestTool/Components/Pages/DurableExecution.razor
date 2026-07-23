@@ -22,6 +22,18 @@
             <code>DurableExecutionName</code>) to start one.
         </p>
 
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="timeSkipSwitch"
+                   checked="@_skipTime" @onchange="OnSkipTimeToggled" />
+            <label class="form-check-label" for="timeSkipSwitch">
+                <b>Time-skip timers</b>
+                <span class="text-body-secondary">
+                    — when on, <code>WaitAsync</code> and retry backoff resolve immediately instead of
+                    waiting real time. Applies to subsequent checkpoints.
+                </span>
+            </label>
+        </div>
+
         <div class="row">
             <div class="col-4">
                 <h5>Executions</h5>

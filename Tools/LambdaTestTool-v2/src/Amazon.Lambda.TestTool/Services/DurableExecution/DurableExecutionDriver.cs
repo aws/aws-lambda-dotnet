@@ -148,6 +148,17 @@ internal sealed class DurableExecutionDriver
     public IReadOnlyList<Operation> GetOperations(string arn) => _store.GetAllOperations(arn);
 
     /// <summary>
+    /// Whether timers/retry backoff are time-skipped (resolved immediately) rather than waiting
+    /// for real wall-clock time. Toggleable at runtime from the web UI; affects subsequent
+    /// checkpoints across all executions.
+    /// </summary>
+    public bool SkipTime
+    {
+        get => _store.SkipTime;
+        set => _store.SkipTime = value;
+    }
+
+    /// <summary>
     /// Resolves a pending callback and wakes the parked drive loop. Used by the web UI's
     /// "Send Callback" action (the same effect as an external SendDurableExecutionCallback* call,
     /// without an HTTP round-trip). Returns the resolution outcome.
@@ -337,6 +348,11 @@ internal sealed class DurableExecutionDriver
                 {
                     await Task.Delay(delay);
                 }
+
+                // Stamp any now-elapsed WAITs as SUCCEEDED (mirroring the service firing the timer)
+                // before the next replay, so the store and UI timeline show the wait completed
+                // rather than a perpetual STARTED. No-op when time-skip already resolved them.
+                _store.CompleteElapsedWaits(arn);
             }
         }
         catch (Exception ex)

@@ -31,14 +31,26 @@ public partial class DurableExecution : ComponentBase, IDisposable
     private string _callbackResult = "\"approved\"";
     private string? _callbackFeedback;
 
+    // Mirrors the driver's runtime time-skip setting for the toggle.
+    private bool _skipTime;
+
     protected override void OnInitialized()
     {
         Driver = (DurableExecutionDriver?)ServiceProvider.GetService(typeof(DurableExecutionDriver));
         if (Driver is not null)
         {
+            _skipTime = Driver.SkipTime;
             Driver.StateChange += OnDriverStateChange;
             Refresh();
         }
+    }
+
+    private void OnSkipTimeToggled(ChangeEventArgs e)
+    {
+        _skipTime = e.Value is true;
+        if (Driver is not null)
+            Driver.SkipTime = _skipTime;
+        StateHasChanged();
     }
 
     private void OnDriverStateChange(object? sender, EventArgs e) => InvokeAsync(() =>

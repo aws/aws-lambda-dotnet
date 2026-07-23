@@ -27,9 +27,15 @@ internal sealed class DurableExecutionStore
     /// </summary>
     internal const int StatePageSize = 100;
 
-    private readonly bool _skipTime;
     private readonly ConcurrentDictionary<string, ExecutionContext> _executions = new();
     private long _executionCounter;
+
+    /// <summary>
+    /// When true (the default), timers (WaitAsync) and retry backoff are resolved immediately at
+    /// checkpoint time rather than waiting for wall-clock time. Mutable so the web UI can toggle it
+    /// at runtime; the per-execution checkpoint processors read it live on each checkpoint.
+    /// </summary>
+    public bool SkipTime { get; set; }
 
     // CallbackId -> (arn, operationId). Populated as checkpoints mint CALLBACK ops so the callback
     // HTTP endpoints can resolve a callback back onto the right operation of the right execution.
@@ -42,7 +48,7 @@ internal sealed class DurableExecutionStore
 
     public DurableExecutionStore(bool skipTime)
     {
-        _skipTime = skipTime;
+        SkipTime = skipTime;
     }
 
     private sealed class ExecutionContext
@@ -59,7 +65,7 @@ internal sealed class DurableExecutionStore
             return new ExecutionContext
             {
                 Store = store,
-                Processor = new CheckpointProcessor(store, _skipTime)
+                Processor = new CheckpointProcessor(store, () => SkipTime)
             };
         });
     }
@@ -171,6 +177,34 @@ internal sealed class DurableExecutionStore
             op.ChainedInvokeDetails.Error = error;
         }
         ctx.Store.Upsert(arn, op);
+    }
+
+    /// <summary>
+    /// Marks any WAIT operation whose scheduled end time has elapsed as SUCCEEDED. The real durable
+    /// service stamps a timer SUCCEEDED once it fires; when time-skip is off the SDK proceeds on an
+    /// elapsed deadline without emitting that checkpoint, which would otherwise leave the operation
+    /// showing STARTED forever. Called by the driver before re-invoking so the stored state — and
+    /// the UI timeline — reflect that the wait completed. Returns true if any op changed.
+    /// </summary>
+    public bool CompleteElapsedWaits(string arn)
+    {
+        var ctx = GetOrCreate(arn);
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var changed = false;
+        foreach (var op in ctx.Store.GetAllOperations(arn))
+        {
+            if (op.Type == OperationTypes.Wait
+                && op.Status == OperationStatuses.Started
+                && op.WaitDetails?.ScheduledEndTimestamp is { } end
+                && now >= end)
+            {
+                op.Status = OperationStatuses.Succeeded;
+                op.EndTimestamp = now;
+                ctx.Store.Upsert(arn, op);
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     /// <summary>Marks the top-level EXECUTION operation STOPPED (used by StopDurableExecution).</summary>
