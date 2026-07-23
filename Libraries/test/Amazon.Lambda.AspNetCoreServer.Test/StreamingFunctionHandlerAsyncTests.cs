@@ -57,6 +57,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 EnableResponseStreaming = true;
             }
 
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
+
             // Expose MarshallRequest publicly so tests can call it after the host is started
             public void PublicMarshallRequest(InvokeFeatures features,
                 APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
@@ -123,7 +126,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task RequestMarshalling_ProducesSameHttpRequestFeatureState_AsBufferedMode()
         {
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             var context = new TestLambdaContext();
             var request = MakeRequest(
                 method: "POST",
@@ -156,7 +159,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task RequestMarshalling_PreservesHeaders_InStreamingMode()
         {
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             var context = new TestLambdaContext();
             var request = MakeRequest(
                 headers: new Dictionary<string, string>
@@ -188,7 +191,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             IHttpResponseBodyFeature capturedBodyFeature = null;
 
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.PipelineSetupAction = features =>
             {
                 var responseFeature = (IHttpResponseFeature)features;
@@ -215,7 +218,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             IHttpResponseBodyFeature capturedBodyFeature = null;
 
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.PipelineSetupAction = features =>
             {
                 var responseFeature = (IHttpResponseFeature)features;
@@ -247,7 +250,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task FunctionHandlerAsync_BufferedMode_StillReturnsResponse_ViaMarshallResponse()
         {
             // Buffered mode: EnableResponseStreaming defaults to false
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest();
@@ -263,7 +266,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task FunctionHandlerAsync_BufferedMode_ReturnsStatusCode_FromPipeline()
         {
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest(path: "/api/values");
@@ -276,7 +279,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task FunctionHandlerAsync_BufferedMode_DoesNotOpenLambdaStream()
         {
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest();
@@ -296,7 +299,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             bool callbackFired = false;
 
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.PipelineSetupAction = features =>
             {
                 var responseFeature = (IHttpResponseFeature)features;
@@ -321,7 +324,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             int firedCount = 0;
 
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.PipelineSetupAction = features =>
             {
                 var responseFeature = (IHttpResponseFeature)features;
@@ -349,7 +352,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             bool onCompletedFired = false;
 
-            using var function = new ThrowingBeforeStreamOpenFunction(
+            var function = new ThrowingBeforeStreamOpenFunction(
                 onCompleted: () => onCompletedFired = true);
 
             var context = new TestLambdaContext();
@@ -368,7 +371,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             const string exceptionMessage = "Deliberate test failure for 500 response";
 
-            using var function = new ThrowingBeforeStreamOpenFunction(
+            var function = new ThrowingBeforeStreamOpenFunction(
                 exceptionMessage: exceptionMessage,
                 onCompleted: null)
             {
@@ -391,7 +394,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task ExceptionBeforeStreamOpen_WithoutIncludeExceptionDetail_NoStreamOpened()
         {
-            using var function = new ThrowingBeforeStreamOpenFunction(
+            var function = new ThrowingBeforeStreamOpenFunction(
                 exceptionMessage: "Should not appear in response",
                 onCompleted: null)
             {
@@ -415,7 +418,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             bool onCompletedFired = false;
 
-            using var function = new ThrowingAfterStreamOpenFunction(
+            var function = new ThrowingAfterStreamOpenFunction(
                 onCompleted: () => onCompletedFired = true);
 
             var context = new TestLambdaContext();
@@ -432,7 +435,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task ExceptionAfterStreamOpen_DoesNotWriteNewErrorBody()
         {
-            using var function = new ThrowingAfterStreamOpenFunction(onCompleted: null)
+            var function = new ThrowingAfterStreamOpenFunction(onCompleted: null)
             {
                 IncludeUnhandledExceptionDetailInResponse = true
             };
@@ -466,7 +469,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public void EnableResponseStreaming_Property_DefaultsToFalse()
         {
-            using var function = new TestableStreamingFunction();
+            var function = new TestableStreamingFunction();
             function.EnableResponseStreaming = false; // reset to default
             Assert.False(function.EnableResponseStreaming);
         }
@@ -514,6 +517,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             {
                 EnableResponseStreaming = true;
             }
+
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
 
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)

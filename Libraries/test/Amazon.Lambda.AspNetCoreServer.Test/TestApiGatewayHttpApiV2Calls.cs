@@ -294,7 +294,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var cts = new CancellationTokenSource();
 
-            using var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
+            var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
             using var bootstrap = LambdaBootstrapBuilder.Create<APIGatewayHttpApiV2ProxyRequest>(
                     lambdaFunction.FunctionHandlerAsync,
                     new DefaultLambdaJsonSerializer())
@@ -323,7 +323,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent, bool configureApiToReturnExceptionDetail = false)
         {
-            using var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
+            var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
             if (configureApiToReturnExceptionDetail)
                 lambdaFunction.IncludeUnhandledExceptionDetailInResponse = true;
             var requestStream = new MemoryStream(System.Text.UTF8Encoding.UTF8.GetBytes(requestContent));

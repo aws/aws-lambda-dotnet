@@ -41,20 +41,12 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// </summary>
     /// <typeparam name="TREQUEST"></typeparam>
     /// <typeparam name="TRESPONSE"></typeparam>
-    public abstract class AbstractAspNetCoreFunction<TREQUEST, TRESPONSE> : AbstractAspNetCoreFunction, IDisposable
+    public abstract class AbstractAspNetCoreFunction<TREQUEST, TRESPONSE> : AbstractAspNetCoreFunction
     {
         private protected IServiceProvider _hostServices;
         private protected LambdaServer _server;
         private protected ILogger _logger;
         private protected StartupMode _startupMode;
-
-        // The IHost created and owned by this instance in Start(). Retained so it can be disposed,
-        // releasing resources such as the configuration file-change watchers (inotify instances on Linux)
-        // that Host.CreateDefaultBuilder registers. Null when the function is constructed from an
-        // externally-owned IServiceProvider, in which case this instance does not own the host.
-        private IHost _host;
-
-        private bool _disposed;
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
@@ -365,7 +357,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             });
 
             var host = builder.Build();
-            _host = host;
             PostCreateHost(host);
 
             host.Start();
@@ -822,38 +813,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 ((IHttpResponseFeature)features).StatusCode = 500;
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Disposes the IHost created and owned by this instance in <see cref="Start"/>, releasing
-        /// resources it holds such as the configuration file-change watchers (inotify instances on Linux)
-        /// registered by Host.CreateDefaultBuilder. When the function was constructed from an
-        /// externally-owned IServiceProvider this instance does not own a host and disposal is a no-op.
-        /// </summary>
-        /// <param name="disposing"><c>true</c> when called from <see cref="Dispose()"/>.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
-            {
-                _host?.Dispose();
-                _host = null;
-            }
-
-            _disposed = true;
-        }
-
-        /// <summary>
-        /// Disposes the resources owned by this function, including the IHost created in <see cref="Start"/>.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

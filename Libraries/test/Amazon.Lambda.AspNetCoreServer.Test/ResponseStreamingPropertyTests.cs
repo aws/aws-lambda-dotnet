@@ -37,6 +37,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 EnableResponseStreaming = true;
             }
 
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
+
             public void PublicMarshallRequest(InvokeFeatures features,
                 APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
                 => MarshallRequest(features, request, context);
@@ -107,7 +110,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task Property1_RequestMarshalling_IdenticalInStreamingAndBufferedModes(
             string method, string path, Dictionary<string, string> headers, string body)
         {
-            using var function = new PropertyTestStreamingFunction();
+            var function = new PropertyTestStreamingFunction();
             var context = new TestLambdaContext();
 
             // Warm up so the host is started
@@ -152,7 +155,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             string method, string path, Dictionary<string, string> headers, string body)
         {
             // Use a fresh function with streaming OFF
-            using var function = new PropertyTestStreamingFunction();
+            var function = new PropertyTestStreamingFunction();
             function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
 
@@ -358,7 +361,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var completedSequences = new List<int>();
             int streamClosedSequence = -1;
 
-            using var function = new OnCompletedTrackingFunction(
+            var function = new OnCompletedTrackingFunction(
                 cbCount: cbCount,
                 completedSequences: completedSequences,
                 getAndIncrementCounter: () => sequenceCounter++,
@@ -426,6 +429,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 _getAndIncrementCounter = getAndIncrementCounter;
                 _onStreamClosed = onStreamClosed;
             }
+
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
 
             protected override void PostMarshallItemsFeatureFeature(
                 IItemsFeature aspNetCoreItemFeature,

@@ -11,6 +11,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 /// <summary>
 /// Tests for service registration in <see cref="ServiceCollectionExtensions"/>
 /// </summary>
+[Collection(EnvironmentVariableCollection.Name)]
 public class ServiceCollectionExtensionsTests
 {
     [Fact]

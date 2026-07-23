@@ -12,8 +12,6 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <NoWarn>1701;1702;1705;CS0618;CS1591</NoWarn>
-    <!-- Applied automatically by "dotnet test" so DOTNET_USE_POLLING_FILE_WATCHER is set before the test host starts. See test.runsettings. -->
-    <RunSettingsFilePath>$(MSBuildProjectDirectory)\test.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>
