@@ -46,6 +46,17 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
     <ProjectReference Include="..\TestWebApp\TestWebApp.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
+    <!-- TestMinimalAPI executes the compiled TestMinimalAPIApp assembly directly (see TestMinimalAPI.cs).
+         Reference it for build ordering only so it is always compiled before these tests run. The app
+         targets net10.0 only, so ReferenceOutputAssembly/SkipGetTargetFrameworkProperties are set to make
+         this a pure build dependency that does not participate in this project's assembly reference set or
+         target-framework negotiation (this project also builds for net8.0). -->
+    <ProjectReference Include="..\TestMinimalAPIApp\TestMinimalAPIApp.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      SetTargetFramework="TargetFramework=net10.0"
+                      Private="false"
+                      Targets="Build" />
   </ItemGroup>
 
   <ItemGroup>

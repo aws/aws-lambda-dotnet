@@ -49,46 +49,28 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 var requestFilePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), eventFilePath);
                 var responseFilePath = Path.GetTempFileName();
 
-                // Invoke "dotnet" directly rather than through a shell. Routing "dotnet run ..." through a
-                // shell as a single Arguments string is not portable: on Unix .NET splits the string into an
-                // argv array, so "sh -c dotnet run <req> <resp>" makes the shell run just "dotnet" (with the
-                // rest as positional parameters $0/$1/...), which prints the dotnet usage text and exits 129.
-                // Passing each argument via ArgumentList lets the runtime quote them correctly on every OS.
-                //
-                // "dotnet run" builds the app first, which by default spawns persistent build-server
-                // processes: reusable MSBuild worker nodes ("MSBuild.dll /nodemode:1 /nodeReuse:true") and
-                // the Roslyn "VBCSCompiler" shared-compilation server. These inherit the redirected
-                // stdout/stderr pipe handles below and linger ~15 minutes after "dotnet run" exits. The
-                // test runner waits for those inherited pipe handles to close before the test host process
-                // can exit, so a leftover build server makes the whole "dotnet test" invocation hang
-                // (observed as a multi-hour stall in CI until it is killed). The disabling below (build
-                // property + environment variables) ensures nothing outlives "dotnet run" holding the pipes
-                // open. UseSharedCompilation is an MSBuild property, so it must be passed as a build property
-                // (not an environment variable) to take effect; the app arguments are separated with "--" so
-                // they are not parsed as "dotnet run" options.
+                // Execute the already-built TestMinimalAPIApp assembly directly with "dotnet <app>.dll"
+                // rather than "dotnet run". "dotnet run" builds the app at test time, which caused a series
+                // of CI problems: it spins up persistent build-server processes (reusable MSBuild worker
+                // nodes and the Roslyn shared-compilation server) that inherit the redirected stdout/stderr
+                // pipes and linger, hanging "dotnet test" for hours; and its build step races the launched
+                // app over the app's runtimeconfig.json ("The process cannot access the file ...
+                // runtimeconfig.json because it is being used by another process"). The app is a member of
+                // Libraries.sln, so it is already compiled by the solution build before the tests run;
+                // invoking the built DLL needs no build step and avoids all of the above.
+                var appDll = GetTestAppAssemblyPath();
                 ProcessStartInfo processStartInfo = new ProcessStartInfo();
                 processStartInfo.FileName = "dotnet";
-                processStartInfo.ArgumentList.Add("run");
-                processStartInfo.ArgumentList.Add("--property:UseSharedCompilation=false");
-                processStartInfo.ArgumentList.Add("--");
+                processStartInfo.ArgumentList.Add(appDll);
                 processStartInfo.ArgumentList.Add(requestFilePath);
                 processStartInfo.ArgumentList.Add(responseFilePath);
-                processStartInfo.WorkingDirectory = GetTestAppDirectory();
+                processStartInfo.WorkingDirectory = Path.GetDirectoryName(appDll);
 
-                // Capture stdout/stderr from the "dotnet run" child process so that, when it exits non-zero, the
-                // underlying build/runtime output is surfaced in the test failure instead of just an exit code.
+                // Capture stdout/stderr from the child process so that, when it exits non-zero, the
+                // underlying runtime output is surfaced in the test failure instead of just an exit code.
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardOutput = true;
                 processStartInfo.RedirectStandardError = true;
-
-                // Also disable the persistent build-server processes (env-controlled) so none of them inherit
-                // the redirected pipe handles and linger; see the build-server note above.
-                //   MSBUILDDISABLENODEREUSE stops the reusable MSBuild worker nodes ("MSBuild.dll
-                //     /nodemode:1 /nodeReuse:true"), which otherwise stay alive ~15 minutes. These were the
-                //     processes observed lingering and holding the pipe open, causing the hang.
-                //   DOTNET_CLI_USE_MSBUILD_SERVER disables the newer persistent MSBuild server.
-                processStartInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
-                processStartInfo.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
 
 
                 lock (lock_process)
@@ -140,15 +122,41 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                        $"{Environment.NewLine}--- STDERR ---{Environment.NewLine}{stderr}";
             }
 
-            private string GetTestAppDirectory()
+            // Locates the compiled TestMinimalAPIApp assembly. TestMinimalAPIApp targets net10.0 only and is
+            // built by the solution build into bin/{Configuration}/net10.0. The configuration is taken from
+            // this test assembly's own path (…/bin/{Configuration}/{tfm}/…) so the Debug or Release build is
+            // matched regardless of how the tests were launched.
+            private string GetTestAppAssemblyPath()
+            {
+                var testDir = FindAncestorDirectory("test");
+                var configuration =
+#if DEBUG
+                    "Debug";
+#else
+                    "Release";
+#endif
+                var appDll = Path.GetFullPath(Path.Combine(
+                    testDir, "TestMinimalAPIApp", "bin", configuration, "net10.0", "TestMinimalAPIApp.dll"));
+
+                if (!File.Exists(appDll))
+                {
+                    throw new FileNotFoundException(
+                        $"TestMinimalAPIApp was not found at '{appDll}'. It should have been compiled by the " +
+                        "solution build before the tests run.", appDll);
+                }
+
+                return appDll;
+            }
+
+            private string FindAncestorDirectory(string directoryName)
             {
                 var path = GetType().GetTypeInfo().Assembly.Location;
-                while(!string.Equals(new DirectoryInfo(path).Name, "test"))
+                while (!string.Equals(new DirectoryInfo(path).Name, directoryName))
                 {
                     path = Directory.GetParent(path).FullName;
                 }
 
-                return Path.GetFullPath(Path.Combine(path, "TestMinimalAPIApp"));
+                return path;
             }
         }
     }
