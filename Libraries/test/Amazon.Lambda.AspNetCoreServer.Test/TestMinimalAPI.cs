@@ -54,16 +54,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 // argv array, so "sh -c dotnet run <req> <resp>" makes the shell run just "dotnet" (with the
                 // rest as positional parameters $0/$1/...), which prints the dotnet usage text and exits 129.
                 // Passing each argument via ArgumentList lets the runtime quote them correctly on every OS.
-                // "dotnet run" builds the app first, which by default spins up persistent build-server
-                // processes (the MSBuild node and the Roslyn "VBCSCompiler" shared-compilation server).
-                // Those servers inherit the redirected stdout/stderr pipe handles below and linger for
-                // ~15 minutes after "dotnet run" exits. The test runner waits for those inherited pipe
-                // handles to close before the test host process can exit, so a leftover build server makes
-                // the whole "dotnet test" invocation hang (observed as a multi-hour stall in CI until it is
-                // killed). Disable both persistent servers so nothing outlives "dotnet run" holding the
-                // pipes open. UseSharedCompilation is an MSBuild property, so it must be passed as a build
-                // property (not an environment variable) for it to take effect; the app arguments are
-                // separated with "--" so they are not parsed as "dotnet run" options.
+                //
+                // "dotnet run" builds the app first, which by default spawns persistent build-server
+                // processes: reusable MSBuild worker nodes ("MSBuild.dll /nodemode:1 /nodeReuse:true") and
+                // the Roslyn "VBCSCompiler" shared-compilation server. These inherit the redirected
+                // stdout/stderr pipe handles below and linger ~15 minutes after "dotnet run" exits. The
+                // test runner waits for those inherited pipe handles to close before the test host process
+                // can exit, so a leftover build server makes the whole "dotnet test" invocation hang
+                // (observed as a multi-hour stall in CI until it is killed). The disabling below (build
+                // property + environment variables) ensures nothing outlives "dotnet run" holding the pipes
+                // open. UseSharedCompilation is an MSBuild property, so it must be passed as a build property
+                // (not an environment variable) to take effect; the app arguments are separated with "--" so
+                // they are not parsed as "dotnet run" options.
                 ProcessStartInfo processStartInfo = new ProcessStartInfo();
                 processStartInfo.FileName = "dotnet";
                 processStartInfo.ArgumentList.Add("run");
@@ -79,8 +81,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 processStartInfo.RedirectStandardOutput = true;
                 processStartInfo.RedirectStandardError = true;
 
-                // Also disable the persistent MSBuild node server (env-controlled) so it does not inherit
+                // Also disable the persistent build-server processes (env-controlled) so none of them inherit
                 // the redirected pipe handles and linger; see the build-server note above.
+                //   MSBUILDDISABLENODEREUSE stops the reusable MSBuild worker nodes ("MSBuild.dll
+                //     /nodemode:1 /nodeReuse:true"), which otherwise stay alive ~15 minutes. These were the
+                //     processes observed lingering and holding the pipe open, causing the hang.
+                //   DOTNET_CLI_USE_MSBUILD_SERVER disables the newer persistent MSBuild server.
+                processStartInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
                 processStartInfo.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
 
 
