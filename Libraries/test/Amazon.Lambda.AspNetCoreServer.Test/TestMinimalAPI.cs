@@ -49,21 +49,75 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 var requestFilePath = Path.Combine(Path.GetDirectoryName(GetType().GetTypeInfo().Assembly.Location), eventFilePath);
                 var responseFilePath = Path.GetTempFileName();
 
-                var comamndArgument = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? $"/c" : $"-c";
+                // Invoke "dotnet" directly rather than through a shell. Routing "dotnet run ..." through a
+                // shell as a single Arguments string is not portable: on Unix .NET splits the string into an
+                // argv array, so "sh -c dotnet run <req> <resp>" makes the shell run just "dotnet" (with the
+                // rest as positional parameters $0/$1/...), which prints the dotnet usage text and exits 129.
+                // Passing each argument via ArgumentList lets the runtime quote them correctly on every OS.
+                //
+                // "dotnet run" builds the app first, which by default spawns persistent build-server
+                // processes: reusable MSBuild worker nodes ("MSBuild.dll /nodemode:1 /nodeReuse:true") and
+                // the Roslyn "VBCSCompiler" shared-compilation server. These inherit the redirected
+                // stdout/stderr pipe handles below and linger ~15 minutes after "dotnet run" exits. The
+                // test runner waits for those inherited pipe handles to close before the test host process
+                // can exit, so a leftover build server makes the whole "dotnet test" invocation hang
+                // (observed as a multi-hour stall in CI until it is killed). The disabling below (build
+                // property + environment variables) ensures nothing outlives "dotnet run" holding the pipes
+                // open. UseSharedCompilation is an MSBuild property, so it must be passed as a build property
+                // (not an environment variable) to take effect; the app arguments are separated with "--" so
+                // they are not parsed as "dotnet run" options.
                 ProcessStartInfo processStartInfo = new ProcessStartInfo();
-                processStartInfo.FileName = GetSystemShell();
-                processStartInfo.Arguments = $"{comamndArgument} dotnet run \"{requestFilePath}\" \"{responseFilePath}\"";
+                processStartInfo.FileName = "dotnet";
+                processStartInfo.ArgumentList.Add("run");
+                processStartInfo.ArgumentList.Add("--property:UseSharedCompilation=false");
+                processStartInfo.ArgumentList.Add("--");
+                processStartInfo.ArgumentList.Add(requestFilePath);
+                processStartInfo.ArgumentList.Add(responseFilePath);
                 processStartInfo.WorkingDirectory = GetTestAppDirectory();
+
+                // Capture stdout/stderr from the "dotnet run" child process so that, when it exits non-zero, the
+                // underlying build/runtime output is surfaced in the test failure instead of just an exit code.
+                processStartInfo.UseShellExecute = false;
+                processStartInfo.RedirectStandardOutput = true;
+                processStartInfo.RedirectStandardError = true;
+
+                // Also disable the persistent build-server processes (env-controlled) so none of them inherit
+                // the redirected pipe handles and linger; see the build-server note above.
+                //   MSBUILDDISABLENODEREUSE stops the reusable MSBuild worker nodes ("MSBuild.dll
+                //     /nodemode:1 /nodeReuse:true"), which otherwise stay alive ~15 minutes. These were the
+                //     processes observed lingering and holding the pipe open, causing the hang.
+                //   DOTNET_CLI_USE_MSBUILD_SERVER disables the newer persistent MSBuild server.
+                processStartInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+                processStartInfo.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
 
 
                 lock (lock_process)
                 {
                     using var process = Process.Start(processStartInfo);
-                    process.WaitForExit(15000);
+
+                    // Read both streams asynchronously; reading them synchronously can deadlock if one pipe's
+                    // buffer fills while we're blocked waiting on the other.
+                    var stdout = new StringBuilder();
+                    var stderr = new StringBuilder();
+                    process.OutputDataReceived += (sender, e) => { if (e.Data != null) stdout.AppendLine(e.Data); };
+                    process.ErrorDataReceived += (sender, e) => { if (e.Data != null) stderr.AppendLine(e.Data); };
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    if (!process.WaitForExit(45000))
+                    {
+                        try { process.Kill(entireProcessTree: true); } catch { /* best effort */ }
+                        throw new Exception(
+                            "Process timed out after 45000ms." + BuildProcessOutput(stdout, stderr));
+                    }
+
+                    // Ensure the asynchronous output handlers have flushed all buffered data before we read it.
+                    process.WaitForExit();
 
                     if (process.ExitCode != 0)
                     {
-                        throw new Exception("Process failed with exit code: " + process.ExitCode);
+                        throw new Exception(
+                            "Process failed with exit code: " + process.ExitCode + BuildProcessOutput(stdout, stderr));
                     }
 
                     if(!File.Exists(responseFilePath))
@@ -80,6 +134,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 }
             }
 
+            private static string BuildProcessOutput(StringBuilder stdout, StringBuilder stderr)
+            {
+                return $"{Environment.NewLine}--- STDOUT ---{Environment.NewLine}{stdout}" +
+                       $"{Environment.NewLine}--- STDERR ---{Environment.NewLine}{stderr}";
+            }
+
             private string GetTestAppDirectory()
             {
                 var path = GetType().GetTypeInfo().Assembly.Location;
@@ -89,28 +149,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 }
 
                 return Path.GetFullPath(Path.Combine(path, "TestMinimalAPIApp"));
-            }
-
-            private string GetSystemShell()
-            {
-                if (TryGetEnvironmentVariable("COMSPEC", out var comspec))
-                {
-                    return comspec!;
-                }
-
-                if (TryGetEnvironmentVariable("SHELL", out var shell))
-                {
-                    return shell!;
-                }
-
-                // fallback to defaults
-                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/sh";
-            }
-
-            private bool TryGetEnvironmentVariable(string variable, out string value)
-            {
-                value = Environment.GetEnvironmentVariable(variable);
-                return !string.IsNullOrEmpty(value);
             }
         }
     }

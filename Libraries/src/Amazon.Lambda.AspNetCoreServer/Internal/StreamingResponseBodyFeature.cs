@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.IO.Pipelines;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +19,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// <see cref="MemoryStream"/>; after <see cref="StartAsync"/> all writes go directly to the
     /// <see cref="LambdaResponseStream"/> obtained from the stream opener delegate.
     /// </summary>
-    [RequiresPreviewFeatures(AbstractAspNetCoreFunction.ParameterizedPreviewMessage)]
     internal class StreamingResponseBodyFeature : IHttpResponseBodyFeature
     {
         private readonly ILogger _logger;

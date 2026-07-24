@@ -1,0 +1,49 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Lambda response streaming is now available as GA. The RequiresPreviewFeatures attribute has been removed",
+		"The LambdaLogger.ConfigureStructuredLogging API has been deployed to the managed runtime. The RequiresPreviewFeatures attribute has been removed"
+      ]
+    },
+	{
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+      ]		
+	},
+	{
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Minor",
+      "ChangelogMessages": [
+		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.",
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+      ]		
+	},
+	{
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Minor",
+      "ChangelogMessages": [
+		"Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.",
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+      ]		
+	},
+	{
+      "Name": "Amazon.Lambda.PowerShellHost",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+      ]		
+	},
+	{
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
+      ]		
+	}
+  ]
+}

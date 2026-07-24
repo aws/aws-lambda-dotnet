@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 using System;
 using System.IO;
-using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.AspNetCoreServer.Internal;
@@ -11,7 +10,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
-    [RequiresPreviewFeatures]
     public class StreamingResponseBodyFeatureTests
     {
         // Helper: creates a StreamingResponseBodyFeature backed by a MemoryStream stand-in.
