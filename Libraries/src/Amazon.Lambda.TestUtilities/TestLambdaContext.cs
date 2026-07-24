@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -87,11 +86,6 @@ namespace Amazon.Lambda.TestUtilities
         /// to mirror the serializer that the Lambda runtime support library would attach
         /// in production.
         /// </summary>
-        /// <remarks>
-        /// <b>Preview API.</b> Mirrors the experimental <c>ILambdaContext.Serializer</c>
-        /// surface so test code opts in via the same <c>AWSLAMBDA001</c> diagnostic.
-        /// </remarks>
-        [Experimental("AWSLAMBDA001")]
         public ILambdaSerializer Serializer { get; set; }
     }
 }

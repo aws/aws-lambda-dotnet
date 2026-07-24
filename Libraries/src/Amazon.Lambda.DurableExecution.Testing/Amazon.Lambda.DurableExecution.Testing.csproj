@@ -6,14 +6,13 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <Description>Testing utilities for Amazon Lambda Durable Execution - test durable workflows locally without deploying to AWS.</Description>
     <AssemblyTitle>Amazon.Lambda.DurableExecution.Testing</AssemblyTitle>
-    <Version>0.1.0-preview</Version>
+    <Version>1.0.0</Version>
     <AssemblyName>Amazon.Lambda.DurableExecution.Testing</AssemblyName>
     <PackageId>Amazon.Lambda.DurableExecution.Testing</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Durable;Workflow;Testing</PackageTags>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);AWSLAMBDA001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

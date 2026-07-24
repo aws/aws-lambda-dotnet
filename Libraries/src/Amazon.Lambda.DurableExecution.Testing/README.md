@@ -1,7 +1,5 @@
 # AWS Lambda Durable Execution Testing for .NET
 
-> **Preview.** `Amazon.Lambda.DurableExecution.Testing` tracks the `Amazon.Lambda.DurableExecution` runtime package (0.x). Public APIs may change before 1.0.
-
 `Amazon.Lambda.DurableExecution.Testing` lets you test [durable workflows](../Amazon.Lambda.DurableExecution/README.md) without deploying to AWS. It drives your workflow handler to a terminal state in-process using the real durable runtime engine backed by an in-memory store, and then exposes the result and every recorded operation for assertions.
 
 You write a test against the `IDurableTestRunner<TInput, TOutput>` interface; the same test runs unchanged against the in-memory `DurableTestRunner` (fast, no AWS) or the `CloudDurableTestRunner` (a deployed function).

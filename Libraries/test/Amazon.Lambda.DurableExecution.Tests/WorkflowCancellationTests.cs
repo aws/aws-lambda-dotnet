@@ -17,9 +17,7 @@ namespace Amazon.Lambda.DurableExecution.Tests;
 public class WorkflowCancellationTests
 {
     private static TestLambdaContext CreateLambdaContext() =>
-#pragma warning disable AWSLAMBDA001 // TestLambdaContext.Serializer is experimental.
         new() { Serializer = new DefaultLambdaJsonSerializer() };
-#pragma warning restore AWSLAMBDA001
 
     private sealed record Harness(
         DurableContext Context,

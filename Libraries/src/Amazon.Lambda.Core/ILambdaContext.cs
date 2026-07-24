@@ -1,7 +1,6 @@
 namespace Amazon.Lambda.Core
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Object that allows you to access useful information available within
@@ -107,13 +106,6 @@ namespace Amazon.Lambda.Core
         /// Can be null when the function did not register a serializer (e.g., raw-stream
         /// handlers).
         /// </summary>
-        /// <remarks>
-        /// <para><b>Preview API.</b> Class-library mode requires an updated managed
-        /// Lambda runtime to populate this property; until that ships, the value will
-        /// be null when running in class-library mode. The <see cref="ExperimentalAttribute"/>
-        /// is applied to surface this caveat at the call site.</para>
-        /// </remarks>
-        [Experimental("AWSLAMBDA001")]
         ILambdaSerializer Serializer { get { return null; } }
 #endif
     }
