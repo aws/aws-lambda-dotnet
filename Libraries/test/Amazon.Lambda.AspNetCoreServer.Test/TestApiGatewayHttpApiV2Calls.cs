@@ -283,51 +283,51 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         /// <summary>
-        /// Verifies that <see cref="HttpV2LambdaFunction.GetBeforeSnapshotRequests"/> is invoked during startup.
+        /// Verifies that <see cref="HttpV2LambdaFunction.GetBeforeSnapshotRequests"/> is invoked during startup:
+        /// constructing the function registers a before-snapshot callback with
+        /// <see cref="Amazon.Lambda.Core.SnapshotRestore"/>, and invoking that callback runs the configured
+        /// warm-up request (GET api/SnapStart) through the ASP.NET Core pipeline, which reaches
+        /// <see cref="SnapStartController"/> and flips <see cref="SnapStartController.Invoked"/> to true.
+        ///
+        /// This intentionally does NOT drive the callback through a real <c>LambdaBootstrap</c>. LambdaBootstrap
+        /// calls <c>Console.SetOut(...)</c> to install RuntimeSupport's synchronized console writer process-wide,
+        /// which deadlocks with ASP.NET Core's ConsoleLoggerProcessor when other tests in the same process log
+        /// through the pipeline (it hung the whole test host for hours on the Linux CI machines). The
+        /// LambdaBootstrap-driven SnapStart wiring is covered separately by Amazon.Lambda.RuntimeSupport.UnitTests
+        /// (SnapstartTests). Here we drain the callbacks Core collected into a real
+        /// <see cref="SnapshotRestore.Registry.RestoreHooksRegistry"/> — the same registry type and
+        /// InvokeBeforeSnapshotCallbacks path the runtime uses — and invoke them directly.
         /// </summary>
-        /// <returns></returns>
-        [Fact(Skip = "Temporary diagnosing hanging issue.")]
+        [Fact]
         public async Task TestSnapStartInitialization()
         {
             using var e1 = new EnvironmentVariableHelper("AWS_LAMBDA_FUNCTION_NAME", nameof(TestSnapStartInitialization));
             using var e2 = new EnvironmentVariableHelper("AWS_LAMBDA_INITIALIZATION_TYPE", "snap-start");
 
-            var cts = new CancellationTokenSource();
+            // Reset the shared static so the assertion is deterministic regardless of test ordering.
+            SnapStartController.Invoked = false;
 
-            // LambdaBootstrap.RunAsync installs its own writers as the process-wide Console.Out/Console.Error
-            // (via Console.SetOut) to format Lambda log output. That is global, shared state: once this test
-            // swaps it in, every other test's logging (the ASP.NET pipeline logs through Amazon.Lambda.Core's
-            // LambdaLogger) goes through the bootstrap's synchronized writer. Combined with the background
-            // bootstrap loop that keeps running against the deliberately-unreachable runtime endpoint, this
-            // caused other tests to deadlock on the writer's lock, hanging the whole test host (a multi-hour
-            // stall on the Linux CI hosts). Capture the real Console writers up front and restore them in the
-            // finally below so the bootstrap's global changes do not leak into any other test.
-            var originalOut = Console.Out;
-            var originalError = Console.Error;
-            try
-            {
-                var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
-                using var bootstrap = LambdaBootstrapBuilder.Create<APIGatewayHttpApiV2ProxyRequest>(
-                        lambdaFunction.FunctionHandlerAsync,
-                        new DefaultLambdaJsonSerializer())
-                    .ConfigureOptions(opt => opt.RuntimeApiEndpoint = "localhost:123")
-                    .Build();
+            // Constructing the function runs Start() -> AddRegisterBeforeSnapshot(), which enqueues the
+            // before-snapshot callback into Amazon.Lambda.Core.SnapshotRestore's internal registry.
+            var lambdaFunction = new HttpV2LambdaFunction();
 
-                // RunAsync performs the SnapStart initialization (which invokes the before-snapshot callbacks,
-                // setting SnapStartController.Invoked) and then returns once the SnapStart restore call to the
-                // unreachable endpoint fails. Cancel first so that, in the event it does reach the processing
-                // loop, the loop exits promptly, and bound the wait so a stuck endpoint can never hang the test.
-                cts.Cancel();
-                var runTask = bootstrap.RunAsync(cts.Token);
-                await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(10)));
+            // Move the callbacks Core collected into a RestoreHooksRegistry, exactly as the runtime does. Core's
+            // drain method is internal and this test assembly is not in Core's InternalsVisibleTo (and the shipping
+            // Core assembly must not be modified), so reach it via reflection.
+            var registry = new SnapshotRestore.Registry.RestoreHooksRegistry();
+            var copyBeforeSnapshotCallbacks = typeof(Amazon.Lambda.Core.SnapshotRestore).GetMethod(
+                "CopyBeforeSnapshotCallbacksToRegistry",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(copyBeforeSnapshotCallbacks);
+            copyBeforeSnapshotCallbacks.Invoke(null, new object[] { (Action<Func<ValueTask>>)registry.RegisterBeforeSnapshot });
 
-                Assert.True(SnapStartController.Invoked);
-            }
-            finally
-            {
-                Console.SetOut(originalOut);
-                Console.SetError(originalError);
-            }
+            // Invoking the before-snapshot callbacks runs the warm-up request through the ASP.NET Core pipeline,
+            // which routes to SnapStartController and sets Invoked = true.
+            await registry.InvokeBeforeSnapshotCallbacks();
+
+            Assert.True(SnapStartController.Invoked);
+
+            GC.KeepAlive(lambdaFunction);
         }
 
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)
