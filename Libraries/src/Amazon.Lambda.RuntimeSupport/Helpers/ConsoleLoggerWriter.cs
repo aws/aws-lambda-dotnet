@@ -142,13 +142,22 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 InternalLogger.GetDefaultLogger().LogInformation("Using stdout and stderr for logging.");
             }
 
-            // SetOut will wrap our WrapperTextWriter with a synchronized TextWriter. Pass in the new synchronized
-            // TextWriter into our writer to make sure we obtain a lock on that instance before writing to the stdout.
-            Console.SetOut(_wrappedStdOutWriter);
-            _wrappedStdOutWriter.LockObject = Console.Out;
+            // Capturing stdout/stderr replaces the process-wide Console.Out/Console.Error with our synchronized
+            // writers. That global change is problematic when running unit/integ tests: the writer (and the
+            // background bootstrap loop that installs it) leaks across tests in the same process and can deadlock
+            // other tests' logging. When the AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE environment variable is set
+            // to true, skip the capture. The wrapper writers still write to the stdout/stderr captured during
+            // Initialize (using their default private LockObject), so log formatting continues to work.
+            if (!IsConsoleCaptureDisabled())
+            {
+                // SetOut will wrap our WrapperTextWriter with a synchronized TextWriter. Pass in the new synchronized
+                // TextWriter into our writer to make sure we obtain a lock on that instance before writing to the stdout.
+                Console.SetOut(_wrappedStdOutWriter);
+                _wrappedStdOutWriter.LockObject = Console.Out;
 
-            Console.SetError(_wrappedStdErrorWriter);
-            _wrappedStdErrorWriter.LockObject = Console.Error;
+                Console.SetError(_wrappedStdErrorWriter);
+                _wrappedStdErrorWriter.LockObject = Console.Error;
+            }
 
             ConfigureLoggingActionField();
         }
@@ -168,6 +177,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         {
             _wrappedStdOutWriter = new WrapperTextWriter(_environmentVariables, stdOutWriter, LogLevel.Information.ToString());
             _wrappedStdErrorWriter = new WrapperTextWriter(_environmentVariables, stdErrorWriter, LogLevel.Error.ToString());
+        }
+
+        /// <summary>
+        /// Determines whether capturing of stdout/stderr (replacing Console.Out and Console.Error process-wide)
+        /// should be skipped. This is controlled by the AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE environment
+        /// variable and is intended for test runs where the global Console changes cause cross-test interference.
+        /// </summary>
+        private bool IsConsoleCaptureDisabled()
+        {
+            return string.Equals(
+                _environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE),
+                "true",
+                StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

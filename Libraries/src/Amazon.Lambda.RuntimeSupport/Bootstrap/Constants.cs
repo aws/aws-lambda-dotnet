@@ -24,6 +24,10 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         // variable should never be set when function is deployed to Lambda.
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE = "AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE";
 
+        // When running unit/integ tests for Runtime Support capturing the console output and error output can be problematic.
+        // This environment variable can be set to disable the capturing of console output and error output.
+        internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE = "AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE";
+
         // Lambda Environment variable used to check if user has configured the function to run in multi concurrency mode.
         // To be in multi concurrency mode the environment has to exist and have an int value greater then 1.
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY = "AWS_LAMBDA_MAX_CONCURRENCY";
