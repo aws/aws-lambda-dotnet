@@ -1,3 +1,21 @@
+## Release 2026-07-29
+
+### Amazon.Lambda.Core (3.3.0)
+* Lambda response streaming is now available as GA. The RequiresPreviewFeatures attribute has been removed
+* The LambdaLogger.ConfigureStructuredLogging API has been deployed to the managed runtime. The RequiresPreviewFeatures attribute has been removed
+### Amazon.Lambda.Annotations (2.4.0)
+* Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support.
+### Amazon.Lambda.AspNetCoreServer (10.2.0)
+* Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.
+* Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support.
+### Amazon.Lambda.AspNetCoreServer.Hosting (2.2.0)
+* Removed RequiresPreviewFeatures attribute for Lambda Response Streaming.
+* Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support.
+### Amazon.Lambda.PowerShellHost (4.1.0)
+* Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support.
+### Amazon.Lambda.RuntimeSupport (2.1.3)
+* Added the AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE environment variable to disable capturing stdout/stderr. This is intended for test scenarios where replacing the process-wide Console output causes cross-test interference.
+
 ## Release 2026-07-22
 
 ### Amazon.Lambda.Core (3.2.0)
