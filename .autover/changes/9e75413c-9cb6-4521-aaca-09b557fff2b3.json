@@ -40,10 +40,10 @@
 	},
 	{
       "Name": "Amazon.Lambda.RuntimeSupport",
-      "Type": "Minor",
+      "Type": "Patch",
       "ChangelogMessages": [
-        "Updated Amazon.Lambda.Core dependency to include Lambda Response Streaming support."
-      ]		
+        "Added the AWS_LAMBDA_DOTNET_DISABLE_CONSOLE_CAPTURE environment variable to disable capturing stdout/stderr. This is intended for test scenarios where replacing the process-wide Console output causes cross-test interference."
+      ]
 	}
   ]
 }
