@@ -225,7 +225,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <inheritdoc/>
-        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         protected override HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature) => throw new NotImplementedException();
 
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)

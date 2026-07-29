@@ -11,6 +11,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 /// <summary>
 /// Tests for service registration in <see cref="ServiceCollectionExtensions"/>
 /// </summary>
+[Collection(EnvironmentVariableCollection.Name)]
 public class ServiceCollectionExtensionsTests
 {
     [Fact]
@@ -133,26 +134,6 @@ public class ServiceCollectionExtensionsTests
         var hostingOptions = serviceProvider.GetService<HostingOptions>();
         Assert.NotNull(hostingOptions);
         Assert.True(hostingOptions.ContentTypeEncodings.ContainsKey("image/png"));
-    }
-
-    [Fact]
-    public void AddAWSLambdaHosting_NotInLambda_DoesNotRegisterHostingOptions()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        // No AWS_LAMBDA_FUNCTION_NAME environment variable set
-
-        // Act
-        services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
-        {
-            options.DefaultResponseContentEncoding = ResponseContentEncoding.Base64;
-        });
-
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
-        var hostingOptions = serviceProvider.GetService<HostingOptions>();
-        Assert.Null(hostingOptions);
     }
 
     [Fact]

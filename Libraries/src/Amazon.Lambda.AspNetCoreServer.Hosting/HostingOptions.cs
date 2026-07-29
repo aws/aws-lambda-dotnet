@@ -39,7 +39,6 @@ public class HostingOptions
     /// <c>FunctionHandlerAsync</c> writes directly to the Lambda response stream and
     /// returns <c>null</c>. Requires net8.0 or later.
     /// </summary>
-    [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
     public bool EnableResponseStreaming { get; set; } = false;
 
     /// <summary>

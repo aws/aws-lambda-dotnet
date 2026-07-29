@@ -1,8 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.Versioning;
-
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
@@ -14,7 +12,6 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 
-[RequiresPreviewFeatures]
 public class ResponseStreamingPropertyTests
 {
     private static IServiceProvider BuildServiceProvider(HostingOptions hostingOptions)

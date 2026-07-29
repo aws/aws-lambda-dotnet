@@ -4,9 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Versioning;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
@@ -30,7 +28,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
     /// a <see cref="MemoryStream"/> instead of calling <c>LambdaResponseStreamFactory.CreateHttpStream</c>,
     /// allowing tests to run without the Lambda runtime.
     /// </summary>
-    [RequiresPreviewFeatures]
     public class StreamingFunctionHandlerAsyncTests
     {
         // -----------------------------------------------------------------------
@@ -60,6 +57,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 EnableResponseStreaming = true;
             }
 
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
+
             // Expose MarshallRequest publicly so tests can call it after the host is started
             public void PublicMarshallRequest(InvokeFeatures features,
                 APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
@@ -75,7 +75,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 base.PostMarshallItemsFeatureFeature(aspNetCoreItemFeature, lambdaRequest, lambdaContext);
             }
 
-            [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {
@@ -468,18 +467,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public void EnableResponseStreaming_Property_HasRequiresPreviewFeaturesAttribute()
-        {
-            var prop = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetProperty(nameof(APIGatewayHttpApiV2ProxyFunction.EnableResponseStreaming));
-
-            Assert.NotNull(prop);
-
-            var attr = prop.GetCustomAttribute<RequiresPreviewFeaturesAttribute>();
-            Assert.NotNull(attr);
-        }
-
-        [Fact]
         public void EnableResponseStreaming_Property_DefaultsToFalse()
         {
             var function = new TestableStreamingFunction();
@@ -531,7 +518,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 EnableResponseStreaming = true;
             }
 
-            [RequiresPreviewFeatures]
+            protected override void Init(Microsoft.Extensions.Hosting.IHostBuilder builder)
+                => TestWebApp.DisableConfigFileWatching.Apply(builder);
+
             protected override Stream CreateLambdaResponseStream(
                 Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
             {

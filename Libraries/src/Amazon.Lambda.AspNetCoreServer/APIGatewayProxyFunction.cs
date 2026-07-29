@@ -113,7 +113,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="responseFeature">The ASP.NET Core response feature for the current invocation.</param>
         /// <returns>A populated <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/>.</returns>
-        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         protected override Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
         {
             var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude

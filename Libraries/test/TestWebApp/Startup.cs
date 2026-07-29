@@ -19,9 +19,13 @@ namespace TestWebApp
 #pragma warning disable CS0618
         public Startup(IHostingEnvironment env)
         {
+            // reloadOnChange is intentionally false: the tests never need to react to appsettings.json
+            // changes, and on Linux each watched file consumes an inotify instance. The tests create many
+            // hosts, so watching would exhaust the per-user inotify limit ("The configured user limit (128)
+            // on the number of inotify instances has been reached").
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 
             builder.AddEnvironmentVariables();

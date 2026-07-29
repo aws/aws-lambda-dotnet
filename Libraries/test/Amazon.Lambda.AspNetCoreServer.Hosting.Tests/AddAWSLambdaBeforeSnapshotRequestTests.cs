@@ -12,6 +12,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 /// <summary>
 /// Tests for <see cref="ServiceCollectionExtensions.AddAWSLambdaBeforeSnapshotRequest"/>
 /// </summary>
+[Collection(EnvironmentVariableCollection.Name)]
 public class AddAWSLambdaBeforeSnapshotRequestTests
 {
     [Theory]
