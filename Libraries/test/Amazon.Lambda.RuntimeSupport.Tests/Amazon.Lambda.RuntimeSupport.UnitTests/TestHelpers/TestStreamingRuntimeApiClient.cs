@@ -91,13 +91,28 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public new Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
+            return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+        }
+
+        public string LastInvocationId { get; private set; }
+
+        public new Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
             LastRecordedException = exception;
             ReportInvocationErrorAsyncExceptionCalled = true;
             return Task.CompletedTask;
         }
 
-        public new async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
+        public new Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
+            return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+        }
+
+        public new async Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
+
             if (outputStream != null)
             {
                 LastOutputStream = new MemoryStream((int)outputStream.Length);

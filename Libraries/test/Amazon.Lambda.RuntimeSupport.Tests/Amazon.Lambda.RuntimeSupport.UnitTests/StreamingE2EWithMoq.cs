@@ -123,7 +123,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new NoOpDisposable();
             }
 
-            public new async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
+            public new Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
+            {
+                return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+            }
+
+            public new async Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
             {
                 SendResponseCalled = true;
                 if (outputStream != null)
@@ -136,6 +141,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
 
             public new Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
+            {
+                return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+            }
+
+            public new Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
             {
                 ReportInvocationErrorCalled = true;
                 return Task.CompletedTask;

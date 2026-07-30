@@ -380,11 +380,17 @@ namespace Amazon.Lambda.RuntimeSupport
 
             Func<Task> processingFunc = async () =>
             {
+                // Per-invocation id echoed back on /response and /error for cross-wiring protection.
+                // Null when the Runtime API did not send the Lambda-Runtime-Invocation-Id header, in
+                // which case nothing is echoed. Captured as a local so concurrent invocations in
+                // multi-concurrency mode each carry their own id.
+                string invocationId = null;
                 if (invocation.LambdaContext is LambdaContext impl)
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
                     SetSerializerOnContext(impl);
+                    invocationId = impl.InvocationId;
                 }
 
                 // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
@@ -420,7 +426,7 @@ namespace Amazon.Lambda.RuntimeSupport
                         }
                         else
                         {
-                        await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+                        await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, invocationId, exception, cancellationToken);
                     }
                     }
                     finally
@@ -450,7 +456,7 @@ namespace Amazon.Lambda.RuntimeSupport
                         _logger.LogInformation("Starting sending response");
                         try
                         {
-                            await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream, cancellationToken);
+                            await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, invocationId, response?.OutputStream, cancellationToken);
                         }
                         finally
                         {
@@ -464,6 +470,15 @@ namespace Amazon.Lambda.RuntimeSupport
                     }
 
                     _logger.LogInformation("Finished InvokeOnceAsync");
+                }
+                catch (RuntimeApiInvokeTimeoutException timeout)
+                {
+                    // The Runtime API rejected the response or error with HTTP 410 Gone because the
+                    // invocation had already timed out (cross-wiring protection). This is expected and
+                    // not fatal — the response would have been discarded anyway. Log via the internal
+                    // logger (not the customer log) and loop back to /next in both on-demand and
+                    // multi-concurrency modes rather than crashing the process.
+                    _logger.LogInformation($"Invocation {timeout.AwsRequestId} timed out before its response was submitted; the Runtime API rejected it. Continuing to the next invocation.");
                 }
                 catch(Exception ex)
                 {
