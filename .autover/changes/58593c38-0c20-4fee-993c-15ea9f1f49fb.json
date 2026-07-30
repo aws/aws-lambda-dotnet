@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix JSON structured logs whose state values use a different order than their message template."
+      ]
+    }
+  ]
+}
