@@ -85,5 +85,12 @@ namespace Amazon.Lambda.RuntimeSupport
         public ILambdaSerializer Serializer { get; internal set; }
 
         internal IRuntimeApiHeaders RuntimeApiHeaders => _runtimeApiHeaders;
+
+        /// <summary>
+        /// The unique-per-invocation identifier echoed back to the Runtime API on the response
+        /// and error calls for cross-wiring protection. Null when the Runtime API did not provide
+        /// the <c>Lambda-Runtime-Invocation-Id</c> header, in which case nothing is echoed.
+        /// </summary>
+        internal string InvocationId => _runtimeApiHeaders.InvocationId;
     }
 }

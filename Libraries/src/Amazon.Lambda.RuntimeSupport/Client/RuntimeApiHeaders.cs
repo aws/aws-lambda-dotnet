@@ -39,6 +39,15 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Gets the tenant id for the Lambda function.
         /// </summary>
         string TenantId { get; }
+
+        /// <summary>
+        /// A unique-per-invocation identifier used for cross-wiring protection.
+        /// Unlike <see cref="AwsRequestId"/>, this value is never reused across retries.
+        /// It is echoed back on the response and error calls so the Runtime API can reject
+        /// responses that belong to a timed-out invocation. May be null when the Runtime API
+        /// does not provide the header, in which case nothing is echoed back.
+        /// </summary>
+        string InvocationId { get; }
     }
 
     internal class RuntimeApiHeaders : IRuntimeApiHeaders
@@ -50,6 +59,7 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string HeaderDeadlineMs = "Lambda-Runtime-Deadline-Ms";
         internal const string HeaderInvokedFunctionArn = "Lambda-Runtime-Invoked-Function-Arn";
         internal const string HeaderAwsTenantId = "Lambda-Runtime-Aws-Tenant-Id";
+        internal const string HeaderInvocationId = "Lambda-Runtime-Invocation-Id";
 
         public RuntimeApiHeaders(Dictionary<string, IEnumerable<string>> headers)
         {
@@ -62,6 +72,7 @@ namespace Amazon.Lambda.RuntimeSupport
             InvokedFunctionArn = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvokedFunctionArn);
             TraceId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderTraceId);
             TenantId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderAwsTenantId);
+            InvocationId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvocationId);
         }
 
         public string AwsRequestId { get; private set; }
@@ -71,6 +82,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public string CognitoIdentityJson { get; private set; }
         public string DeadlineMs { get; private set; }
         public string TenantId { get; private set; }
+        public string InvocationId { get; private set; }
 
         private string GetHeaderValueRequired(Dictionary<string, IEnumerable<string>> headers, string header)
         {
