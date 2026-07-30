@@ -40,12 +40,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
             => Task.FromResult(EmptyStatusResponse);
 
         public Task<SwaggerResponse<StatusResponse>> ResponseAsync(
-            string awsRequestId, Stream outputStream, CancellationToken cancellationToken)
+            string awsRequestId, Stream outputStream, string invocationId, CancellationToken cancellationToken)
             => Task.FromResult(EmptyStatusResponse);
 
         public Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(
             string awsRequestId, string lambda_Runtime_Function_Error_Type,
-            string errorJson, string xrayCause, CancellationToken cancellationToken)
+            string errorJson, string xrayCause, string invocationId, CancellationToken cancellationToken)
             => Task.FromResult(EmptyStatusResponse);
 
         public Task<SwaggerResponse<Stream>> RestoreNextAsync(CancellationToken cancellationToken)

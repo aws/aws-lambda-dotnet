@@ -100,6 +100,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
+            return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+        }
+
+        public Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
+        {
             if (ProcessInvocationEvents.TryGetValue(awsRequestId, out var data))
             {
                 data.Complete = true;
@@ -137,6 +142,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
         }
 
         public Task ReportInvocationErrorAsync(string awsRequestId, string errorType, CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() => { });
+        }
+
+        public Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
         {
             return Task.Run(() => { });
         }

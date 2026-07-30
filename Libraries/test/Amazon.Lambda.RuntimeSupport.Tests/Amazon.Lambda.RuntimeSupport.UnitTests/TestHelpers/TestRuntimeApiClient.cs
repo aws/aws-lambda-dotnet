@@ -124,6 +124,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
+            return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+        }
+
+        public string LastInvocationId { get; private set; }
+
+        public Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
             LastRecordedException = exception;
             ReportInvocationErrorAsyncExceptionCalled = true;
             return Task.Run(() => { });
@@ -144,6 +152,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
+            return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+        }
+
+        public Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
+
             if (outputStream != null)
             {
                 // copy the stream because it gets disposed by the bootstrap
