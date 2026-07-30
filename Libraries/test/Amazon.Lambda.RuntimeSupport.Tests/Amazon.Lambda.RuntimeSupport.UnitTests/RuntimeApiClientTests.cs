@@ -84,7 +84,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-1", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-1", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.Contains(StreamingConstants.ResponseModeHeader));
@@ -107,7 +107,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-2", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-2", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.TransferEncodingChunked);
@@ -128,7 +128,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-3", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-3", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.Contains("Trailer"));
@@ -301,7 +301,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => client.StartStreamingResponseAsync(null, stream, CancellationToken.None));
+                () => client.StartStreamingResponseAsync(null, null, stream, CancellationToken.None));
         }
 
         [Fact]
@@ -311,7 +311,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => client.StartStreamingResponseAsync("req-5", null, CancellationToken.None));
+                () => client.StartStreamingResponseAsync("req-5", null, null, CancellationToken.None));
         }
     }
 }

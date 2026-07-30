@@ -401,7 +401,8 @@ namespace Amazon.Lambda.RuntimeSupport
                         invocation.LambdaContext.AwsRequestId,
                         isMultiConcurrency,
                         runtimeApiClient,
-                        cancellationToken);
+                        cancellationToken,
+                        invocationId);
                 }
 
                 try

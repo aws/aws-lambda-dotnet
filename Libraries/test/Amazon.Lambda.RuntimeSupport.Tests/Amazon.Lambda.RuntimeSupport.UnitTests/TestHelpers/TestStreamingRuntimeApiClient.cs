@@ -124,9 +124,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         internal override async Task<IDisposable> StartStreamingResponseAsync(
-            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+            string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             StartStreamingResponseAsyncCalled = true;
+            LastInvocationId = invocationId;
             LastStreamingResponseStream = responseStream;
 
             // Simulate the HTTP stream being available

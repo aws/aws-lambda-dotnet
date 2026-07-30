@@ -31,6 +31,12 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         public string AwsRequestId { get; set; }
 
         /// <summary>
+        /// The unique-per-invocation id echoed back on the streaming response for cross-wiring
+        /// protection. Null when the Runtime API did not provide it, in which case nothing is echoed.
+        /// </summary>
+        public string InvocationId { get; set; }
+
+        /// <summary>
         /// Whether CreateStream() has been called for this invocation.
         /// </summary>
         public bool StreamCreated { get; set; }

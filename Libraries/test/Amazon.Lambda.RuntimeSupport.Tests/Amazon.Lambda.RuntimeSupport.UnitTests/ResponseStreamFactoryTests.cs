@@ -49,11 +49,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             {
             }
 
+            public string LastInvocationId { get; private set; }
+
             internal override async Task<IDisposable> StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 StartStreamingCalled = true;
                 LastAwsRequestId = awsRequestId;
+                LastInvocationId = invocationId;
                 LastResponseStream = responseStream;
                 await SendTaskCompletion.Task;
                 return new NoOpDisposable();
@@ -147,6 +150,24 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.True(mock.StartStreamingCalled);
             Assert.Equal("req-start", mock.LastAwsRequestId);
             Assert.NotNull(mock.LastResponseStream);
+        }
+
+        /// <summary>
+        /// Validates that the invocation id stored on the context is passed through to
+        /// StartStreamingResponseAsync so the streaming response echoes it for cross-wiring protection.
+        /// </summary>
+        [Fact]
+        public void CreateStream_PassesInvocationIdToStartStreaming()
+        {
+            var mock = new MockStreamingRuntimeApiClient();
+            ResponseStreamFactory.InitializeInvocation(
+                "req-inv", isMultiConcurrency: false,
+                mock, CancellationToken.None, "invocation_id");
+
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+
+            Assert.True(mock.StartStreamingCalled);
+            Assert.Equal("invocation_id", mock.LastInvocationId);
         }
 
         // --- GetSendTask ---
