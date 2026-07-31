@@ -23,8 +23,6 @@ using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
-// RuntimeApiHeaders lives in the Amazon.Lambda.RuntimeSupport namespace, which encloses this one,
-// so its HeaderInvocationId constant is in scope without an extra using.
 {
     /// <summary>
     /// A raw HTTP/1.1 client for sending streaming responses to the Lambda Runtime API
@@ -91,8 +89,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             headers.Append("Transfer-Encoding: chunked\r\n");
             headers.Append($"Trailer: {StreamingConstants.ErrorTypeTrailer}, {StreamingConstants.ErrorBodyTrailer}\r\n");
             // Echo the per-invocation id back for cross-wiring protection. Only sent when the
-            // Runtime API provided it on /next. Must be added before the terminating blank line
-            // so it stays part of the header block rather than the body.
+            // Runtime API provided it on /next.
             if (!string.IsNullOrEmpty(invocationId))
                 headers.Append($"{RuntimeApiHeaders.HeaderInvocationId}: {invocationId}\r\n");
             headers.Append("\r\n");
