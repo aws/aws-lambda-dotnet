@@ -132,8 +132,6 @@ namespace Amazon.Lambda.RuntimeSupport
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
-
             return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
         }
 
