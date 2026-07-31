@@ -468,6 +468,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambda_Runtime_Function_Error_Type"></param>
         /// <param name="errorJson"></param>
         /// <param name="xrayCause"></param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(string awsRequestId, string lambda_Runtime_Function_Error_Type, string errorJson, string xrayCause, string invocationId, System.Threading.CancellationToken cancellationToken)
