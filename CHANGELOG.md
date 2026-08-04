@@ -1,3 +1,8 @@
+## Release 2026-08-04
+
+### Amazon.Lambda.RuntimeSupport (2.2.0)
+* Add support for the Lambda-Runtime-Invocation-Id header for cross-wiring invoke protection. The runtime echoes the header back on the response and error calls when the Runtime API provides it, and treats an HTTP 410 Gone (invoke timeout) response as a non-fatal condition, logging it and continuing to the next invocation.
+
 ## Release 2026-07-29
 
 ### Amazon.Lambda.Core (3.3.0)
