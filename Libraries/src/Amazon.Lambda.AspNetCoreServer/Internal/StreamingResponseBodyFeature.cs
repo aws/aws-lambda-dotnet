@@ -85,7 +85,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         /// </remarks>
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            _logger?.LogInformation("Starting response streaming");
+            _logger?.LogDebug("Starting response streaming");
 
             if (_started)
                 return;
