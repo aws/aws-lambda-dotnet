@@ -105,10 +105,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 };
             }
 
+            public string LastInvocationId { get; private set; }
+
             internal override async Task<IDisposable> StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 StartStreamingCalled = true;
+                LastInvocationId = invocationId;
                 LastResponseStream = responseStream;
 
                 // Use a real MemoryStream as the HTTP output stream so we capture actual bytes
@@ -123,7 +126,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 return new NoOpDisposable();
             }
 
-            public new async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
+            public new Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
+            {
+                return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+            }
+
+            public new async Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
             {
                 SendResponseCalled = true;
                 if (outputStream != null)
@@ -136,6 +144,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
 
             public new Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
+            {
+                return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+            }
+
+            public new Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
             {
                 ReportInvocationErrorCalled = true;
                 return Task.CompletedTask;
@@ -394,7 +407,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 : base(new TestEnvironmentVariables(), new NoOpInternalRuntimeApiClient()) { }
 
             internal override async Task<IDisposable> StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 // Provide the HTTP output stream so writes don't block
                 await responseStream.SetHttpOutputStreamAsync(new MemoryStream());

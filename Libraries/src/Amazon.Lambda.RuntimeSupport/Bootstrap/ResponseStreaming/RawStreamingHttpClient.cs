@@ -62,11 +62,13 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// for error reporting.
         /// </summary>
         /// <param name="awsRequestId">The Lambda request ID.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="responseStream">The response stream that provides data and error state.</param>
         /// <param name="userAgent">The User-Agent header value.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         public async Task SendStreamingResponseAsync(
             string awsRequestId,
+            string invocationId,
             ResponseStream responseStream,
             string userAgent,
             CancellationToken cancellationToken = default)
@@ -86,6 +88,10 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             headers.Append($"{StreamingConstants.ResponseModeHeader}: {StreamingConstants.StreamingResponseMode}\r\n");
             headers.Append("Transfer-Encoding: chunked\r\n");
             headers.Append($"Trailer: {StreamingConstants.ErrorTypeTrailer}, {StreamingConstants.ErrorBodyTrailer}\r\n");
+            // Echo the per-invocation id back for cross-wiring protection. Only sent when the
+            // Runtime API provided it on /next.
+            if (!string.IsNullOrEmpty(invocationId))
+                headers.Append($"{RuntimeApiHeaders.HeaderInvocationId}: {invocationId}\r\n");
             headers.Append("\r\n");
 
             var headerBytes = Encoding.ASCII.GetBytes(headers.ToString());

@@ -55,5 +55,40 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal("my-function-arn", context.InvokedFunctionArn);
             Assert.Equal("tenant-generated-id", context.TenantId);
         }
+
+        [Fact]
+        public void InvocationIdIsReadWhenHeaderPresent()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["Lambda-Runtime-Aws-Request-Id"] = new[] { "request-generated-id" },
+                ["Lambda-Runtime-Invocation-Id"] = new[] { "invocation-generated-id" }
+            };
+
+            var runtimeApiHeaders = new RuntimeApiHeaders(headers);
+            var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
+
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+
+            Assert.Equal("invocation-generated-id", runtimeApiHeaders.InvocationId);
+            Assert.Equal("invocation-generated-id", context.InvocationId);
+        }
+
+        [Fact]
+        public void InvocationIdIsNullWhenHeaderAbsent()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["Lambda-Runtime-Aws-Request-Id"] = new[] { "request-generated-id" }
+            };
+
+            var runtimeApiHeaders = new RuntimeApiHeaders(headers);
+            var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
+
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+
+            Assert.Null(runtimeApiHeaders.InvocationId);
+            Assert.Null(context.InvocationId);
+        }
     }
 }

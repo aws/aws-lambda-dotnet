@@ -132,12 +132,33 @@ namespace Amazon.Lambda.RuntimeSupport
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
+            return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+        }
+
+        /// <summary>
+        /// Report an invocation error as an asynchronous operation, echoing the invocation id for
+        /// cross-wiring protection.
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back to the Runtime API. When null, the header is not sent.</param>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the error was submitted (cross-wiring protection).</exception>
+        public Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
+        {
+            if (awsRequestId == null)
+                throw new ArgumentNullException(nameof(awsRequestId));
+
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
             var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
 
             var exceptionInfoJson = LambdaJsonExceptionWriter.WriteJson(exceptionInfo);
             var exceptionInfoXRayJson = LambdaXRayExceptionWriter.WriteJson(exceptionInfo);
 
-            return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
+            return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, invocationId, cancellationToken);
         }
 
         /// <summary>
@@ -175,11 +196,12 @@ namespace Amazon.Lambda.RuntimeSupport
         /// This Task completes when the stream is finalized (MarkCompleted or error).
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the in-flight HTTP POST. The returned IDisposable is the RawStreamingHttpClient that owns the TCP connection.</returns>
         internal virtual async Task<IDisposable> StartStreamingResponseAsync(
-            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+            string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
             if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));
@@ -187,7 +209,7 @@ namespace Amazon.Lambda.RuntimeSupport
             var userAgent = _httpClient.DefaultRequestHeaders.UserAgent.ToString();
             var rawClient = new RawStreamingHttpClient(LambdaEnvironment.RuntimeServerHostAndPort);
 
-            await rawClient.SendStreamingResponseAsync(awsRequestId, responseStream, userAgent, cancellationToken);
+            await rawClient.SendStreamingResponseAsync(awsRequestId, invocationId, responseStream, userAgent, cancellationToken);
 
             return rawClient;
         }
@@ -201,7 +223,22 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns></returns>
         public async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
-            await _internalClient.ResponseAsync(awsRequestId, outputStream, cancellationToken);
+            await SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+        }
+
+        /// <summary>
+        /// Send a response to a function invocation to the Runtime API as an asynchronous operation,
+        /// echoing the invocation id for cross-wiring protection.
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back to the Runtime API. When null, the header is not sent.</param>
+        /// <param name="outputStream">The content of the response to the function invocation.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns></returns>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the response was submitted (cross-wiring protection).</exception>
+        public async Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
+        {
+            await _internalClient.ResponseAsync(awsRequestId, outputStream, invocationId, cancellationToken);
         }
     }
 }

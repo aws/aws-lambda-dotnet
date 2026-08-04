@@ -48,6 +48,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public bool ReportInvocationErrorAsyncTypeCalled { get; private set; }
         public bool SendResponseAsyncCalled { get; private set; }
 
+        /// <summary>When set, SendResponseAsync throws RuntimeApiInvokeTimeoutException to simulate a 410 Gone.</summary>
+        public bool ThrowInvokeTimeoutOnResponse { get; set; }
+
+        /// <summary>When set, ReportInvocationErrorAsync throws RuntimeApiInvokeTimeoutException to simulate a 410 Gone.</summary>
+        public bool ThrowInvokeTimeoutOnError { get; set; }
+
         public string LastTraceId { get; private set; }
         public byte[] FunctionInput { get; set; }
         public Stream LastOutputStream { get; internal set; }
@@ -124,8 +130,20 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
+            return ReportInvocationErrorAsync(awsRequestId, null, exception, cancellationToken);
+        }
+
+        public string LastInvocationId { get; private set; }
+
+        public Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
             LastRecordedException = exception;
             ReportInvocationErrorAsyncExceptionCalled = true;
+            if (ThrowInvokeTimeoutOnError)
+            {
+                throw new RuntimeApiInvokeTimeoutException(awsRequestId, "{\"errorMessage\":\"Invoke timeout\",\"errorType\":\"InvokeTimeout\"}");
+            }
             return Task.Run(() => { });
         }
 
@@ -144,6 +162,19 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
+            return SendResponseAsync(awsRequestId, null, outputStream, cancellationToken);
+        }
+
+        public Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default)
+        {
+            LastInvocationId = invocationId;
+
+            if (ThrowInvokeTimeoutOnResponse)
+            {
+                SendResponseAsyncCalled = true;
+                throw new RuntimeApiInvokeTimeoutException(awsRequestId, "{\"errorMessage\":\"Invoke timeout\",\"errorType\":\"InvokeTimeout\"}");
+            }
+
             if (outputStream != null)
             {
                 // copy the stream because it gets disposed by the bootstrap

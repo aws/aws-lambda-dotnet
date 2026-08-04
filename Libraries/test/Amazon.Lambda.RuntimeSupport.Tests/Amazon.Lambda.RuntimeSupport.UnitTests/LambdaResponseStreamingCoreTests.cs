@@ -429,7 +429,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 : base(envVars, new TestHelpers.NoOpInternalRuntimeApiClient()) { }
 
             internal override async Task<IDisposable> StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, string invocationId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 // Provide the HTTP output stream so writes don't block
                 await responseStream.SetHttpOutputStreamAsync(new MemoryStream(), cancellationToken);

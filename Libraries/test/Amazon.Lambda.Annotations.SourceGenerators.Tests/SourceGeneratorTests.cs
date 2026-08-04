@@ -2389,18 +2389,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             return new[]
             {
                 // These are here because the System.Text.Json source generator isn't included in test compilations, so these members aren't generated.
-                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
-                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 85, 30, 85, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
-                DiagnosticResult.CompilerError("CS7036").WithSpan(clientFile, 85, 30, 85, 60).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 157, 136, 157, 143).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 172, 135, 172, 142).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 275, 131, 275, 138).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 371, 135, 371, 142).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 386, 135, 386, 142).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 401, 135, 401, 142).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 510, 136, 510, 143).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 525, 135, 525, 142).WithArguments(runtimeApiContext, "Default"),
-                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 540, 135, 540, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 89, 30, 89, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
+                DiagnosticResult.CompilerError("CS0534").WithSpan(clientFile, 89, 30, 89, 60).WithArguments(runtimeApiContext, "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
+                DiagnosticResult.CompilerError("CS7036").WithSpan(clientFile, 89, 30, 89, 60).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 161, 136, 161, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 176, 135, 176, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 279, 131, 279, 138).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 393, 135, 393, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 408, 135, 408, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 423, 135, 423, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 539, 136, 539, 143).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 563, 135, 563, 142).WithArguments(runtimeApiContext, "Default"),
+                DiagnosticResult.CompilerError("CS0117").WithSpan(clientFile, 578, 135, 578, 142).WithArguments(runtimeApiContext, "Default"),
 
 
                 // These are here because the internalvisibleto attribute isn't included in test compilations, so these types are inaccessible.

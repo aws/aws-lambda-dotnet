@@ -65,7 +65,19 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default);
-        
+
+        /// <summary>
+        /// Report an invocation error as an asynchronous operation, echoing the invocation id for
+        /// cross-wiring protection.
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back to the Runtime API. When null, the header is not sent.</param>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the error was submitted (cross-wiring protection).</exception>
+        Task ReportInvocationErrorAsync(string awsRequestId, string invocationId, Exception exception, CancellationToken cancellationToken = default);
+
         /// <summary>
         ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
         /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
@@ -91,5 +103,17 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns></returns>
         Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Send a response to a function invocation to the Runtime API as an asynchronous operation,
+        /// echoing the invocation id for cross-wiring protection.
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back to the Runtime API. When null, the header is not sent.</param>
+        /// <param name="outputStream">The content of the response to the function invocation.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns></returns>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the response was submitted (cross-wiring protection).</exception>
+        Task SendResponseAsync(string awsRequestId, string invocationId, Stream outputStream, CancellationToken cancellationToken = default);
     }
 }

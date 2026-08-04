@@ -182,6 +182,60 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public async Task InvocationIdIsEchoedOnResponse()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                { RuntimeApiHeaders.HeaderAwsRequestId, new List<string> { "request_id" } },
+                { RuntimeApiHeaders.HeaderInvocationId, new List<string> { "invocation_id" } }
+            };
+            var client = new TestRuntimeApiClient(_environmentVariables, headers);
+
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, null, null, _environmentVariables))
+            {
+                bootstrap.Client = client;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.True(client.SendResponseAsyncCalled);
+            Assert.Equal("invocation_id", client.LastInvocationId);
+        }
+
+        [Fact]
+        public async Task InvokeTimeoutOnResponseDoesNotThrow()
+        {
+            _testRuntimeApiClient.ThrowInvokeTimeoutOnResponse = true;
+
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, null, null, _environmentVariables))
+            {
+                bootstrap.Client = _testRuntimeApiClient;
+
+                // A 410 Gone on the response POST must be swallowed (logged and continue), not thrown.
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.True(_testRuntimeApiClient.SendResponseAsyncCalled);
+            Assert.True(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
+        public async Task InvokeTimeoutOnErrorDoesNotThrow()
+        {
+            _testRuntimeApiClient.ThrowInvokeTimeoutOnError = true;
+
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null, null, _environmentVariables))
+            {
+                bootstrap.Client = _testRuntimeApiClient;
+
+                // A 410 Gone on the error POST must be swallowed (logged and continue), not thrown.
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.True(_testRuntimeApiClient.ReportInvocationErrorAsyncExceptionCalled);
+            Assert.True(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
         public async Task HandlerInputAndOutputWork()
         {
             const string testInput = "a MiXeD cAsE sTrInG";

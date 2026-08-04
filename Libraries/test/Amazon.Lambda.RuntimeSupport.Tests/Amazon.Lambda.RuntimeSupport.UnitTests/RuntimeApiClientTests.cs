@@ -84,7 +84,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-1", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-1", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.Contains(StreamingConstants.ResponseModeHeader));
@@ -107,7 +107,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-2", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-2", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.TransferEncodingChunked);
@@ -128,7 +128,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
-            await client.StartStreamingResponseAsync("req-3", stream, CancellationToken.None);
+            await client.StartStreamingResponseAsync("req-3", null, stream, CancellationToken.None);
 
             Assert.NotNull(handler.CapturedRequest);
             Assert.True(handler.CapturedRequest.Headers.Contains("Trailer"));
@@ -186,6 +186,114 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         // --- Argument validation ---
 
+        // --- Cross-wiring: Lambda-Runtime-Invocation-Id echo + 410 handling ---
+
+        /// <summary>
+        /// Mock handler that captures the request and returns a configurable status code.
+        /// </summary>
+        private class ConfigurableMockHttpMessageHandler : HttpMessageHandler
+        {
+            public HttpRequestMessage CapturedRequest { get; private set; }
+            private readonly HttpStatusCode _statusCode;
+            private readonly string _body;
+
+            public ConfigurableMockHttpMessageHandler(HttpStatusCode statusCode, string body = null)
+            {
+                _statusCode = statusCode;
+                _body = body;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                CapturedRequest = request;
+                var response = new HttpResponseMessage(_statusCode);
+                if (_body != null)
+                {
+                    response.Content = new StringContent(_body);
+                }
+                return Task.FromResult(response);
+            }
+        }
+
+        private static RuntimeApiClient CreateClientWith(ConfigurableMockHttpMessageHandler handler)
+        {
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            return new RuntimeApiClient(envVars, httpClient);
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_WithInvocationId_EchoesHeader()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            var outputStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            await client.SendResponseAsync("req-1", "inv-uuid-abc", outputStream, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.True(handler.CapturedRequest.Headers.Contains("Lambda-Runtime-Invocation-Id"));
+            Assert.Equal("inv-uuid-abc",
+                handler.CapturedRequest.Headers.GetValues("Lambda-Runtime-Invocation-Id").Single());
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_WithoutInvocationId_OmitsHeader()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            var outputStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            await client.SendResponseAsync("req-1", null, outputStream, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.False(handler.CapturedRequest.Headers.Contains("Lambda-Runtime-Invocation-Id"),
+                "Response should not include the invocation id header when none was provided.");
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_410Gone_ThrowsRuntimeApiInvokeTimeoutException()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Gone,
+                "{\"errorMessage\":\"Invoke timeout\",\"errorType\":\"InvokeTimeout\"}");
+            var client = CreateClientWith(handler);
+
+            var outputStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            var ex = await Assert.ThrowsAsync<RuntimeApiInvokeTimeoutException>(
+                () => client.SendResponseAsync("req-timeout", "inv-uuid-abc", outputStream, CancellationToken.None));
+
+            Assert.Equal("req-timeout", ex.AwsRequestId);
+        }
+
+        [Fact]
+        public async Task ReportInvocationErrorAsync_WithInvocationId_EchoesHeader()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted, "{}");
+            var client = CreateClientWith(handler);
+
+            await client.ReportInvocationErrorAsync("req-1", "inv-uuid-abc", new Exception("boom"), CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.True(handler.CapturedRequest.Headers.Contains("Lambda-Runtime-Invocation-Id"));
+            Assert.Equal("inv-uuid-abc",
+                handler.CapturedRequest.Headers.GetValues("Lambda-Runtime-Invocation-Id").Single());
+        }
+
+        [Fact]
+        public async Task ReportInvocationErrorAsync_410Gone_ThrowsRuntimeApiInvokeTimeoutException()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Gone,
+                "{\"errorMessage\":\"Invoke timeout\",\"errorType\":\"InvokeTimeout\"}");
+            var client = CreateClientWith(handler);
+
+            var ex = await Assert.ThrowsAsync<RuntimeApiInvokeTimeoutException>(
+                () => client.ReportInvocationErrorAsync("req-timeout", "inv-uuid-abc", new Exception("boom"), CancellationToken.None));
+
+            Assert.Equal("req-timeout", ex.AwsRequestId);
+        }
+
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {
@@ -193,7 +301,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => client.StartStreamingResponseAsync(null, stream, CancellationToken.None));
+                () => client.StartStreamingResponseAsync(null, null, stream, CancellationToken.None));
         }
 
         [Fact]
@@ -203,7 +311,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => client.StartStreamingResponseAsync("req-5", null, CancellationToken.None));
+                () => client.StartStreamingResponseAsync("req-5", null, null, CancellationToken.None));
         }
     }
 }

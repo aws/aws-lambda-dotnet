@@ -59,10 +59,12 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the response was submitted (cross-wiring protection).</exception>
         /// <param name="awsRequestId"></param>
         /// <param name="outputStream"></param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, string invocationId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Runtime makes this request in order to submit an error response. It can be either a function error, or a runtime error. Error will be served in response to the invoke.
@@ -71,9 +73,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambda_Runtime_Function_Error_Type"></param>
         /// <param name="errorJson"></param>
         /// <param name="xrayCause"></param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(string awsRequestId, string lambda_Runtime_Function_Error_Type, string errorJson, string xrayCause, System.Threading.CancellationToken cancellationToken);
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the error was submitted (cross-wiring protection).</exception>
+        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(string awsRequestId, string lambda_Runtime_Function_Error_Type, string errorJson, string xrayCause, string invocationId, System.Threading.CancellationToken cancellationToken);
 
 
     }
@@ -311,16 +315,18 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream)
         {
-            return ResponseAsync(awsRequestId, outputStream, System.Threading.CancellationToken.None);
+            return ResponseAsync(awsRequestId, outputStream, null, System.Threading.CancellationToken.None);
         }
 
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        /// <exception cref="RuntimeApiInvokeTimeoutException">The invocation timed out before the response was submitted (cross-wiring protection).</exception>
         /// <param name="awsRequestId"></param>
         /// <param name="outputStream"></param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, string invocationId, System.Threading.CancellationToken cancellationToken)
         {
             _logger.LogInformation("Starting InternalClient.ResponseAsync");
 
@@ -343,6 +349,12 @@ namespace Amazon.Lambda.RuntimeSupport
                         request_.Method = new System.Net.Http.HttpMethod("POST");
                         request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
+                        // Echo the per-invocation id back for cross-wiring protection. Only sent when the
+                        // Runtime API provided it on /next; added to this request message (never the shared
+                        // HttpClient) so concurrent invocations cannot echo each other's id.
+                        if (!string.IsNullOrEmpty(invocationId))
+                            request_.Headers.TryAddWithoutValidation(RuntimeApiHeaders.HeaderInvocationId, invocationId);
+
                         var url_ = $"{BaseUrl.TrimEnd('/')}/runtime/invocation/{awsRequestId}/response";
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
 
@@ -360,6 +372,16 @@ namespace Amazon.Lambda.RuntimeSupport
                             if (response_.StatusCode == HttpStatusCode.Accepted)
                             {
                                 return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, new StatusResponse());
+                            }
+                            else
+                            if (response_.StatusCode == HttpStatusCode.Gone)
+                            {
+                                // 410 Gone means the invocation timed out before this response was submitted.
+                                // The Runtime API rejects the response to prevent it being cross-wired to a
+                                // different invocation reusing the same request id. This is not a fatal error;
+                                // the caller logs it and moves on to the next invocation.
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiInvokeTimeoutException(awsRequestId, responseData_);
                             }
                             else
                             if (response_.StatusCode == HttpStatusCode.BadRequest)
@@ -446,9 +468,10 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="lambda_Runtime_Function_Error_Type"></param>
         /// <param name="errorJson"></param>
         /// <param name="xrayCause"></param>
+        /// <param name="invocationId">The unique-per-invocation id to echo back for cross-wiring protection. When null, the header is not sent.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(string awsRequestId, string lambda_Runtime_Function_Error_Type, string errorJson, string xrayCause, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorWithXRayCauseAsync(string awsRequestId, string lambda_Runtime_Function_Error_Type, string errorJson, string xrayCause, string invocationId, System.Threading.CancellationToken cancellationToken)
         {
             if (awsRequestId == null)
                 throw new System.ArgumentNullException("awsRequestId");
@@ -464,6 +487,12 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     if (lambda_Runtime_Function_Error_Type != null)
                         request_.Headers.TryAddWithoutValidation("Lambda-Runtime-Function-Error-Type", ConvertToString(lambda_Runtime_Function_Error_Type, System.Globalization.CultureInfo.InvariantCulture));
+
+                    // Echo the per-invocation id back for cross-wiring protection. Only sent when the
+                    // Runtime API provided it on /next; added to this request message (never the shared
+                    // HttpClient) so concurrent invocations cannot echo each other's id.
+                    if (!string.IsNullOrEmpty(invocationId))
+                        request_.Headers.TryAddWithoutValidation(RuntimeApiHeaders.HeaderInvocationId, invocationId);
 
                     // This is the unmodeled X-Ray header to report back the cause of errors.
                     if (xrayCause != null && System.Text.Encoding.UTF8.GetByteCount(xrayCause) < MAX_HEADER_SIZE_BYTES)
@@ -514,6 +543,15 @@ namespace Amazon.Lambda.RuntimeSupport
                                 {
                                     throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                                 }
+                            }
+                            else
+                            if (response_.StatusCode == HttpStatusCode.Gone)
+                            {
+                                // 410 Gone means the invocation timed out before this error was submitted.
+                                // The Runtime API rejects it to prevent cross-wiring to a different invocation
+                                // reusing the same request id. Not fatal; the caller logs it and moves on.
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiInvokeTimeoutException(awsRequestId, responseData_);
                             }
                             else
                             if (response_.StatusCode == HttpStatusCode.BadRequest)
@@ -683,6 +721,42 @@ namespace Amazon.Lambda.RuntimeSupport
             : base(message, statusCode, response, headers, innerException)
         {
             Result = result;
+        }
+    }
+
+    /// <summary>
+    /// Thrown when the Runtime API responds to a /response or /error call with HTTP 410 Gone,
+    /// indicating the invocation had already timed out. This is part of the cross-wiring protection:
+    /// the Runtime API rejects the late response so it cannot be delivered to a different invocation
+    /// that reused the same request id. It is not a fatal error — the invoke loop logs it and
+    /// continues to the next invocation.
+    /// </summary>
+    /// <remarks>
+    /// Intentionally derives directly from <see cref="System.Exception"/> rather than
+    /// <see cref="RuntimeApiClientException"/>, whose constructor dereferences the response body.
+    /// </remarks>
+    public class RuntimeApiInvokeTimeoutException : System.Exception
+    {
+        /// <summary>
+        /// The AWS request id of the invocation that timed out.
+        /// </summary>
+        public string AwsRequestId { get; private set; }
+
+        /// <summary>
+        /// The raw response body returned by the Runtime API, if any.
+        /// </summary>
+        public string Response { get; private set; }
+
+        /// <summary>
+        /// Constructs a new <see cref="RuntimeApiInvokeTimeoutException"/>.
+        /// </summary>
+        /// <param name="awsRequestId">The AWS request id of the invocation that timed out.</param>
+        /// <param name="response">The raw response body returned by the Runtime API, if any.</param>
+        public RuntimeApiInvokeTimeoutException(string awsRequestId, string response)
+            : base($"The invocation with request id '{awsRequestId}' timed out before its response was submitted. The Runtime API rejected the response with HTTP 410 Gone to prevent cross-wiring to another invocation.")
+        {
+            AwsRequestId = awsRequestId;
+            Response = response;
         }
     }
 

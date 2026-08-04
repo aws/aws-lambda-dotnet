@@ -62,7 +62,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // This runs concurrently — SerializeToStreamAsync will block
             // until the handler finishes writing or reports an error.
             context.SendTask = context.RuntimeApiClient.StartStreamingResponseAsync(
-                context.AwsRequestId, lambdaStream, context.CancellationToken);
+                context.AwsRequestId, context.InvocationId, lambdaStream, context.CancellationToken);
 
             return lambdaStream;
         }
@@ -71,11 +71,13 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
         internal static void InitializeInvocation(
             string awsRequestId, bool isMultiConcurrency,
-            RuntimeApiClient runtimeApiClient, CancellationToken cancellationToken)
+            RuntimeApiClient runtimeApiClient, CancellationToken cancellationToken,
+            string invocationId = null)
         {
             var context = new ResponseStreamContext
             {
                 AwsRequestId = awsRequestId,
+                InvocationId = invocationId,
                 StreamCreated = false,
                 Stream = null,
                 RuntimeApiClient = runtimeApiClient,
