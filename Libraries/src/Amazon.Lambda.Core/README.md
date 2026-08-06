@@ -84,6 +84,41 @@ public string ToUpper(string input, ILambdaContext context)
 }
 ```
 
+## Response Streaming
+
+This package includes types under the `Amazon.Lambda.Core.ResponseStreaming` namespace that let a handler stream its response back incrementally instead of buffering the entire payload. This raises the maximum response size beyond the standard 6 MB buffered limit and lets callers receive data as soon as it is produced.
+
+Use `LambdaResponseStreamFactory` to create a write-only `LambdaResponseStream` (a `System.IO.Stream`) and write to it with any standard stream consumer, such as `StreamWriter`. Once a handler creates a response stream, all output must be written to the stream and the handler's return value is ignored.
+
+```csharp
+using Amazon.Lambda.Core.ResponseStreaming;
+
+public async Task StreamHandler(string input, ILambdaContext context)
+{
+    await using var responseStream = LambdaResponseStreamFactory.CreateStream();
+    using var writer = new StreamWriter(responseStream);
+
+    for (var i = 0; i < 5; i++)
+    {
+        await writer.WriteLineAsync($"Chunk {i}");
+        await writer.FlushAsync();
+    }
+}
+```
+
+When the function is invoked through a Lambda Function URL or API Gateway, use `CreateHttpStream(HttpResponseStreamPrelude)` instead. The prelude sets the HTTP status code, headers, and cookies and is sent as the first chunk before the response body.
+
+```csharp
+var prelude = new HttpResponseStreamPrelude
+{
+    StatusCode = HttpStatusCode.OK,
+    Headers = { ["Content-Type"] = "text/plain" }
+};
+await using var responseStream = LambdaResponseStreamFactory.CreateHttpStream(prelude);
+```
+
+Response streaming also requires a current version of the `Amazon.Lambda.RuntimeSupport` package. For more details and end-to-end examples, see [Announcing response streaming for .NET on AWS Lambda](https://aws.amazon.com/blogs/developer/announcing-response-streaming-for-net-on-aws-lambda/).
+
 ## ILambdaSerializer
 
 The `Amazon.Lambda.Core.ILambdaSerializer` interface allows you to implement a custom serializer to convert between arbitrary types and Lambda streams.

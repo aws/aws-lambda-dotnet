@@ -87,6 +87,37 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
 });
 ```
 
+### Response streaming
+
+You can stream the ASP.NET Core response back to the caller incrementally instead of buffering the entire payload. This raises the maximum response size beyond the standard 6 MB buffered limit and lets clients start receiving data sooner. Enable it by setting `EnableResponseStreaming` to `true`:
+
+```csharp
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, options =>
+{
+    options.EnableResponseStreaming = true;
+});
+```
+
+When enabled, the hosting layer builds the HTTP prelude from the response's status code, headers, and cookies and streams the body through the Lambda response stream. Standard results such as `Results.Json(...)` and `Results.Text(...)` continue to work unchanged.
+
+#### Configuring API Gateway for streaming
+
+A streaming function requires a different API Gateway integration than a buffered one. In your CloudFormation/`serverless.template`, the `x-amazon-apigateway-integration` must point the integration URI at the `/response-streaming-invocations` path (instead of the buffered `/invocations` path) and set `responseTransferMode` to `STREAM`:
+
+```json
+"x-amazon-apigateway-integration": {
+  "type": "aws_proxy",
+  "httpMethod": "POST",
+  "payloadFormatVersion": "1.0",
+  "uri": {
+    "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2021-11-15/functions/${AspNetCoreFunction.Arn}/response-streaming-invocations"
+  },
+  "responseTransferMode": "STREAM"
+}
+```
+
+For more details and end-to-end examples, see [Announcing response streaming for .NET on AWS Lambda](https://aws.amazon.com/blogs/developer/announcing-response-streaming-for-net-on-aws-lambda/).
+
 ### Customizing request and response marshalling
 
 Callbacks let you inspect or modify the ASP.NET Core feature objects after the Lambda event has been marshalled into them. The second parameter is the raw Lambda request or response object — cast it to the appropriate type for your event source (`APIGatewayHttpApiV2ProxyRequest` for `HttpApi`, `APIGatewayProxyRequest` for `RestApi`, `ApplicationLoadBalancerRequest` for `ApplicationLoadBalancer`).
