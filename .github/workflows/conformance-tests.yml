@@ -90,7 +90,7 @@ jobs:
           # SAM-capable deploy role (CloudFormation / S3 / IAM / Lambda / DynamoDB).
           role-to-assume: ${{ secrets.CONFORMANCE_DEPLOY_ROLE_ARN }}
           role-session-name: githubConformanceTest
-          aws-region: ${{ vars.CONFORMANCE_AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.CONFORMANCE_AWS_REGION || 'us-west-2' }}
 
       - name: Inject Lambda execution role into template
         env:
@@ -120,7 +120,7 @@ jobs:
             --language dotnet \
             --suite ${{ matrix.suite }} \
             --name conformance-dotnet-${SUITE_SLUG} \
-            --region ${{ vars.CONFORMANCE_AWS_REGION || 'us-east-1' }} \
+            --region ${{ vars.CONFORMANCE_AWS_REGION || 'us-west-2' }} \
             --history-dir history-${{ matrix.suite }} \
             --report junit \
             --report-file report-${{ matrix.suite }} \
