@@ -1,0 +1,351 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Map)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+# Coverage note: .NET's MapConfig exposes MaxConcurrency, CompletionConfig,
+# NestingType, and ItemNamer, but no item-level or whole-result serdes slots
+# (per-item checkpoint payloads use the registered ILambdaSerializer). Tests
+# 9-14 (per-item serdes), 9-19 and 9-20 (operation-level serdes) therefore have
+# no .NET example and are left uncovered by design, matching the Java approach.
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+
+  MapBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-1"]
+      NotImplemented:
+        - id: "9-14"
+          reason: "Per-item serdes: .NET MapConfig has no item-level serializer slot; all payloads use the one registered ILambdaSerializer (matches the Java approach)."
+        - id: "9-19"
+          reason: "Operation-level serdes: .NET MapConfig has no whole-result serializer slot; all payloads use the one registered ILambdaSerializer."
+        - id: "9-20"
+          reason: "Operation-level serdes across replay: same gap as 9-19 — no whole-result serializer slot in .NET MapConfig."
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapBasic/
+      Handler: bootstrap
+      Description: Map basic (one step per item, all succeed)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapItemsOnly:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapItemsOnly/
+      Handler: bootstrap
+      Description: Map items-only form (no operation name)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapItemIndex:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapItemIndex/
+      Handler: bootstrap
+      Description: Map function receives item and index
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapEmpty:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapEmpty/
+      Handler: bootstrap
+      Description: Map with an empty items list
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapFailFast:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapFailFast/
+      Handler: bootstrap
+      Description: Map fail-fast (tolerated-failure-count=0) stops after first failure
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapThrowIfError:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapThrowIfError/
+      Handler: bootstrap
+      Description: Map throw-if-error propagates an item failure to the execution
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapMinSuccessful:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapMinSuccessful/
+      Handler: bootstrap
+      Description: Map min-successful early completion
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapToleratedWithin:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapToleratedWithin/
+      Handler: bootstrap
+      Description: Map tolerated-failure-count within tolerance (all items complete)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapToleratedExceeded:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapToleratedExceeded/
+      Handler: bootstrap
+      Description: Map tolerated-failure-count exceeded (stops early)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapToleratedPct:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapToleratedPct/
+      Handler: bootstrap
+      Description: Map tolerated-failure-percentage exceeded (stops early)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapConcurrent:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapConcurrent/
+      Handler: bootstrap
+      Description: Map real concurrency preserves index-ordered results
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapFlat:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapFlat/
+      Handler: bootstrap
+      Description: Map with FLAT nesting (virtual iteration contexts)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapItemNamer:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapItemNamer/
+      Handler: bootstrap
+      Description: Map with a custom item namer
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapSuspendIteration:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapSuspendIteration/
+      Handler: bootstrap
+      Description: Map suspends inside an iteration; replay skips the completed iteration
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapLargeResult:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-16"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapLargeResult/
+      Handler: bootstrap
+      Description: Map with a large aggregate result (exceeds checkpoint size threshold)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapThenWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-17"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapThenWait/
+      Handler: bootstrap
+      Description: Suspension after a successful map (replay skips the completed map)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  MapFailThenWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["9-18"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/MapFailThenWait/
+      Handler: bootstrap
+      Description: Suspension after a map that completed with a failure
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300

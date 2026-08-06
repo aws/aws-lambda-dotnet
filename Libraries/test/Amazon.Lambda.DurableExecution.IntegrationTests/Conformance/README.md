@@ -42,14 +42,37 @@ Conformance/
 
 ## Coverage
 
-| Suite | Requirements | Handlers implemented |
-|-------|-------------|----------------------|
-| `step` | 1-1 .. 1-20 | ✅ all 20 |
-| `wait`, `child`, `callback`, `invoke`, `parallel`, `map`, `wait_for_callback`, `wait_for_condition` | — | not yet scaffolded |
+All nine suites are implemented (one handler project per requirement id):
 
-Retry requirements (`1-11`, `1-13`, `1-14`, `1-15`, `1-18`) count attempts
-across separate invocations, which the replay model cannot hold in memory, so
-those handlers use the `AttemptsTable` DynamoDB table declared in the template.
+| Suite | Ids | Handlers |
+|-------|-----|----------|
+| `step` | 1-1 .. 1-20 | 20 |
+| `wait` | 2-1 .. 2-5 | 5 |
+| `child` | 3-1 .. 3-13, 3-15 .. 3-18 | 17 |
+| `callback` | 4-1 .. 4-19 | 19 |
+| `invoke` | 5-1 .. 5-15 | 15 (+2 target functions, +1 tenancy alias) |
+| `wait_for_condition` | 6-1 .. 6-13 | 13 |
+| `wait_for_callback` | 7-1 .. 7-15 | 15 |
+| `parallel` | 8-1 .. 8-22 (8-15 n/a) | 21 |
+| `map` | 9-1 .. 9-18 (9-14 n/a) | 17 |
+
+A few requirement ids have no .NET handler because the SDK intentionally lacks
+the feature they exercise (e.g. per-item / whole-result serdes slots in `map`);
+those are documented in the relevant `template_<suite>.yaml` and reported as
+`NOT_IMPLEMENTED` (non-blocking) rather than silently omitted.
+
+### Handlers that need extra resources
+
+- **Retry-across-invocation tests** (`step` 1-11/1-13/1-14/1-15/1-18, `child`
+  3-7/3-12) count attempts across separate invocations, which the replay model
+  cannot hold in memory, so they use the `AttemptsTable` DynamoDB table declared
+  in the template (`AWSSDK.DynamoDBv2`).
+- **`invoke` targets** — the suite deploys two callee functions
+  (`InvokeEchoTarget`, `InvokeFailTarget`) that the workflow handlers invoke via
+  `AWSSDK.Lambda`; ARNs are wired through env vars with `Fn::GetAtt`. The
+  tenancy test (5-8) reuses the echo target's binary under a second logical id
+  (`InvokeEchoTargetTenant`, `PER_TENANT` isolation) — `build_examples.sh`
+  produces that publish dir by aliasing (there is no separate source project).
 
 ## Prerequisites
 
@@ -64,13 +87,14 @@ those handlers use the `AttemptsTable` DynamoDB table declared in the template.
 
 ## Running locally
 
-From this directory:
+From this directory (swap `step` for any suite name):
 
 ```bash
-# 1. Publish the step handlers into publish/<Fn>/
+# 1. Publish the suite's handlers into publish/<Fn>/
+#    (omit the arg to publish every suite)
 ./scripts/build_examples.sh step
 
-# 2. Deploy + invoke + validate the step suite
+# 2. Deploy + invoke + validate the suite
 unset AWS_PROFILE
 python -m aws_durable_execution_conformance_tests.app \
   --template template_step.yaml \
@@ -81,6 +105,9 @@ python -m aws_durable_execution_conformance_tests.app \
   --history-dir history-step \
   --report console
 ```
+
+> On Windows, set `PYTHONUTF8=1` — the runner prints `✅`/`❌`, which crashes the
+> summary printer under the default cp1252 console encoding.
 
 The checked-in template is self-contained (it creates its own
 `DurableFunctionRole`). CI instead injects a pre-existing execution role with

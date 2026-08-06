@@ -80,5 +80,29 @@ MKEOF
     echo "" >&2
 done
 
+# --- Alias binaries reused under a second function logical id ---
+# Some templates register the same binary as a second Lambda (e.g. a tenancy-
+# enabled echo target). SAM's makefile build target is keyed on the function
+# logical id, so each alias needs its own publish dir + matching Makefile target.
+# Format: "<source-project>:<alias-name>". Only aliased when the source was
+# actually published in this run (i.e. its suite was selected).
+ALIASES=("InvokeEchoTarget:InvokeEchoTargetTenant")
+for pair in "${ALIASES[@]}"; do
+    src="${pair%%:*}"
+    alias="${pair##*:}"
+    if [[ -d "${PUBLISH_DIR}/${src}" ]]; then
+        echo "  Aliasing ${src} -> ${alias}..." >&2
+        rm -rf "${PUBLISH_DIR}/${alias}"
+        cp -r "${PUBLISH_DIR}/${src}" "${PUBLISH_DIR}/${alias}"
+        cat > "${PUBLISH_DIR}/${alias}/Makefile" <<MKEOF
+.PHONY: build-${alias}
+
+build-${alias}:
+	cp -r . \$(ARTIFACTS_DIR)/
+	rm -f \$(ARTIFACTS_DIR)/Makefile
+MKEOF
+    fi
+done
+
 echo "Build completed successfully!" >&2
 echo "  Published to: ${PUBLISH_DIR}" >&2
