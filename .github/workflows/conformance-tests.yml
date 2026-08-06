@@ -1,0 +1,137 @@
+name: Durable Execution Conformance Tests
+
+# Full-integration conformance run for the .NET Durable Execution SDK: publishes
+# the .NET handlers, installs the language-agnostic runner from the
+# aws-durable-execution-conformance-tests repo, then deploys + invokes +
+# validates one SAM stack per suite. Suites are discovered from the
+# template_<suite>.yaml files under the Conformance directory (see
+# scripts/discover_suites.py) and each runs as its own parallel matrix job, so
+# adding a suite only requires shipping its template + handlers.
+
+on:
+  pull_request:
+    branches: [dev, master]
+    paths:
+      - "Libraries/src/Amazon.Lambda.DurableExecution/**"
+      - "Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests/Conformance/**"
+      - ".github/workflows/conformance-tests.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.head_ref || github.ref_name || github.run_id }}-conformance
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # Required for AWS OIDC credentials
+
+env:
+  CONFORMANCE_DIR: Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests/Conformance
+  RUNNER_PIP_SPEC: "git+https://github.com/aws/aws-durable-execution-conformance-tests.git@main#subdirectory=packages/aws-durable-execution-conformance-tests"
+
+jobs:
+  discover_suites:
+    name: discover conformance suites
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.discover.outputs.suites }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Discover suites from templates
+        id: discover
+        working-directory: ${{ env.CONFORMANCE_DIR }}
+        run: echo "suites=$(python3 scripts/discover_suites.py)" >> "$GITHUB_OUTPUT"
+
+  conformance:
+    name: conformance (${{ matrix.suite }})
+    needs: discover_suites
+    runs-on: ubuntu-latest
+    # Global lock per suite stack: runs from different branches/PRs share the
+    # persistent conformance-dotnet-<suite> stacks, so deploys to the same stack
+    # must never overlap. Queued (not cancelled) so every run still executes.
+    concurrency:
+      group: conformance-stack-${{ matrix.suite }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.discover_suites.outputs.suites) }}
+    defaults:
+      run:
+        working-directory: Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests/Conformance
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Publish conformance handlers
+        run: ./scripts/build_examples.sh ${{ matrix.suite }}
+
+      - name: Install conformance runner
+        run: pip install "${RUNNER_PIP_SPEC}"
+
+      - name: Get AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          # SAM-capable deploy role (CloudFormation / S3 / IAM / Lambda / DynamoDB).
+          role-to-assume: ${{ secrets.CONFORMANCE_DEPLOY_ROLE_ARN }}
+          role-session-name: githubConformanceTest
+          aws-region: ${{ vars.CONFORMANCE_AWS_REGION || 'us-east-1' }}
+
+      - name: Inject Lambda execution role into template
+        env:
+          ROLE_ARN: ${{ secrets.CONFORMANCE_LAMBDA_EXECUTION_ROLE_ARN }}
+        run: |
+          if [ -z "$ROLE_ARN" ]; then
+            echo "CONFORMANCE_LAMBDA_EXECUTION_ROLE_ARN not set; template will create its own role."
+            exit 0
+          fi
+          # Point every function at the pre-existing execution role and drop the
+          # self-created DurableFunctionRole. Mutates only the CI checkout; the
+          # checked-in template stays self-contained for local runs.
+          python3 scripts/inject_execution_role.py \
+            --template template_${{ matrix.suite }}.yaml \
+            --role-arn "$ROLE_ARN"
+
+      - name: Compute stack-safe suite slug
+        run: |
+          # CloudFormation stack names allow only [a-zA-Z][-a-zA-Z0-9]*;
+          # suite names like wait_for_condition contain underscores.
+          echo "SUITE_SLUG=$(echo '${{ matrix.suite }}' | tr '_' '-')" >> "$GITHUB_ENV"
+
+      - name: Run conformance suite
+        run: |
+          python -m aws_durable_execution_conformance_tests.app \
+            --template template_${{ matrix.suite }}.yaml \
+            --language dotnet \
+            --suite ${{ matrix.suite }} \
+            --name conformance-dotnet-${SUITE_SLUG} \
+            --region ${{ vars.CONFORMANCE_AWS_REGION || 'us-east-1' }} \
+            --history-dir history-${{ matrix.suite }} \
+            --report junit \
+            --report-file report-${{ matrix.suite }} \
+            --no-cleanup
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report-${{ matrix.suite }}
+          path: |
+            ${{ env.CONFORMANCE_DIR }}/report-${{ matrix.suite }}.xml
+            ${{ env.CONFORMANCE_DIR }}/history-${{ matrix.suite }}/
+          if-no-files-found: warn
