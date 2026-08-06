@@ -114,6 +114,13 @@ jobs:
           echo "SUITE_SLUG=$(echo '${{ matrix.suite }}' | tr '_' '-')" >> "$GITHUB_ENV"
 
       - name: Run conformance suite
+        # --fail-on failed+uncovered: the runner (and its test-requirements) are
+        # pinned to @main, so when upstream adds a new requirement to a suite it
+        # is pulled automatically. Without this, a new requirement with no .NET
+        # handler reports UNCOVERED and the run stays green — silently missing
+        # coverage. failed+uncovered turns that red so we notice and either add a
+        # handler or declare it under TestingMetadata.NotImplemented. Declared
+        # gaps report NOT_IMPLEMENTED, which never blocks.
         run: |
           python -m aws_durable_execution_conformance_tests.app \
             --template template_${{ matrix.suite }}.yaml \
@@ -124,6 +131,7 @@ jobs:
             --history-dir history-${{ matrix.suite }} \
             --report junit \
             --report-file report-${{ matrix.suite }} \
+            --fail-on failed+uncovered \
             --no-cleanup
 
       - name: Upload conformance report

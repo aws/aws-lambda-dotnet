@@ -118,8 +118,23 @@ The checked-in template is self-contained (it creates its own
 `.github/workflows/conformance-tests.yml` runs one matrix job per discovered
 suite: publish handlers → install the runner → assume the deploy role via OIDC →
 inject the execution role → run the suite → upload the JUnit report. It requires
-the repository secrets `TEST_ROLE_ARN` (SAM-capable deploy role) and
-`TEST_LAMBDA_EXECUTION_ROLE_ARN`, plus the `AWS_REGION` variable.
+the repository secret `CONFORMANCE_DEPLOY_ROLE_ARN` (a SAM-capable deploy role;
+provisioned by the `aws-dotnet-ci` CDK), and optionally
+`CONFORMANCE_LAMBDA_EXECUTION_ROLE_ARN` (a pre-created Lambda execution role) and
+the `CONFORMANCE_AWS_REGION` variable (defaults to `us-west-2`).
+
+### Coverage gate (keeping up with upstream)
+
+The runner and its `test-requirements/` are pinned to
+[`aws-durable-execution-conformance-tests@main`](https://github.com/aws/aws-durable-execution-conformance-tests),
+so **new upstream requirements are pulled automatically** on every run. CI runs
+with `--fail-on failed+uncovered`, so a newly-added requirement that has no .NET
+handler reports `UNCOVERED` and **turns the run red** — that's the signal to add
+a handler (or declare it `NotImplemented`). Without that flag the default only
+blocks on `FAILED`, and missing coverage would pass silently. Requirements
+declared under `TestingMetadata.NotImplemented` report `NOT_IMPLEMENTED`, which
+never blocks — so intentional SDK gaps stay green while genuinely-new
+requirements fail loudly.
 
 ## Adding a suite
 
@@ -129,3 +144,14 @@ the repository secrets `TEST_ROLE_ARN` (SAM-capable deploy role) and
    `TestingMetadata.NotImplemented` (reported `NOT_IMPLEMENTED`, non-blocking).
 
 `discover_suites.py` picks it up automatically, so it becomes a new CI matrix job.
+
+## When CI goes red on a new upstream requirement
+
+`--fail-on failed+uncovered` means an `UNCOVERED` requirement fails the run.
+When that happens, for the reported id (e.g. a new `1-21`):
+
+1. Read its spec in the runner's `test-requirements/<suite>/<id>.yaml`.
+2. Either **add a handler** — a new `<suite>/<Name>/` project + a resource in
+   `template_<suite>.yaml` with `TestDescription: ["<id>"]` — or, if the .NET SDK
+   genuinely can't satisfy it, **declare it** under any function's
+   `TestingMetadata.NotImplemented` with a reason.
