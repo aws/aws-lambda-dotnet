@@ -36,7 +36,7 @@ jobs:
     outputs:
       suites: ${{ steps.discover.outputs.suites }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Discover suites from templates
         id: discover
@@ -61,20 +61,20 @@ jobs:
       run:
         working-directory: Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests/Conformance
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
         with:
           dotnet-version: "8.0.x"
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.14"
 
       - name: Setup SAM CLI
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17 # v2
         with:
           use-installer: true
 
@@ -136,7 +136,7 @@ jobs:
 
       - name: Upload conformance report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: conformance-report-${{ matrix.suite }}
           path: |
