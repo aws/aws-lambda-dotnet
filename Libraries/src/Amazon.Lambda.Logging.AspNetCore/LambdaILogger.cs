@@ -75,6 +75,37 @@ namespace Microsoft.Extensions.Logging
                     messageTemplate = formatter.Invoke(state, exception);
                 }
 
+                // Append structured scope key/value pairs to the template and parameters so they
+                // are emitted as named JSON properties by the Lambda JSON formatter.
+                if (_options.IncludeScopes && ScopeProvider != null)
+                {
+                    var scopeEntries = new List<KeyValuePair<string, object>>();
+                    ScopeProvider.ForEachScope((scope, list) =>
+                    {
+                        if (scope is IEnumerable<KeyValuePair<string, object>> scopeKvps)
+                        {
+                            foreach (var kvp in scopeKvps)
+                            {
+                                if (kvp.Key != null && kvp.Key != "{OriginalFormat}")
+                                {
+                                    list.Add(kvp);
+                                }
+                            }
+                        }
+                    }, scopeEntries);
+
+                    if (scopeEntries.Count > 0)
+                    {
+                        var sb = new System.Text.StringBuilder(messageTemplate);
+                        foreach (var entry in scopeEntries)
+                        {
+                            sb.Append($" {{{entry.Key}}}");
+                            parameters.Add(entry.Value);
+                        }
+                        messageTemplate = sb.ToString();
+                    }
+                }
+
                 Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters.ToArray());
             }
             else
