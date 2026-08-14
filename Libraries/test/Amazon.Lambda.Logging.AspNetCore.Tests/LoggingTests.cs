@@ -614,6 +614,191 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void JsonLogging_SingleStructuredScope_IncludedInParameters()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("User {Name} logged in", "Alice");
+                    }
+
+                    var text = writer.ToString();
+                    // scope param + 1 message param = 2
+                    Assert.Contains("parameter count: 2", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NestedStructuredScopes_AllIncludedInParameters()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var outerScope = new Dictionary<string, object> { { "TraceId", "trace-1" } };
+                    var innerScope = new Dictionary<string, object> { { "UserId", "user-99" } };
+                    using (logger.BeginScope(outerScope))
+                    {
+                        using (logger.BeginScope(innerScope))
+                        {
+                            logger.LogInformation("Processed {Item}", "order");
+                        }
+                    }
+
+                    var text = writer.ToString();
+                    // outer (1) + inner (1) + message param (1) = 3
+                    Assert.Contains("parameter count: 3", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_ScopesDisabled_ScopePropertiesNotIncluded()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = false };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("User {Name} logged in", "Alice");
+                    }
+
+                    var text = writer.ToString();
+                    // only 1 message param, scope excluded
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NoScopes_MessageTemplatePropertiesPreserved()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    logger.LogInformation("Order {OrderId} placed for {Customer}", 42, "Bob");
+
+                    var text = writer.ToString();
+                    Assert.Contains("parameter count: 2", text);
+                    Assert.Contains("Order {OrderId} placed for {Customer}", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_ScopeWithNullValue_DoesNotCrash()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "NullProp", null } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("Null scope value test");
+                    }
+
+                    var text = writer.ToString();
+                    // 1 scope param (null) + 0 message params = 1
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NonStructuredScope_DoesNotCrash()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    using (logger.BeginScope("plain string scope"))
+                    {
+                        logger.LogInformation("Message {Param}", "value");
+                    }
+
+                    var text = writer.ToString();
+                    // non-structured scope ignored; only 1 message param
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
         private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
