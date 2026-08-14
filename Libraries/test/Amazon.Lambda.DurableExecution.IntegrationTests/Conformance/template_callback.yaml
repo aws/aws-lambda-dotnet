@@ -1,0 +1,375 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Callback)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+
+  CallbackBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-1"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackBasic/
+      Handler: bootstrap
+      Description: Create callback basic
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackWithName:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackWithName/
+      Handler: bootstrap
+      Description: Create callback with explicit name
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackTimeout:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackTimeout/
+      Handler: bootstrap
+      Description: Create callback timeout
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackHeartbeatTimeout:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackHeartbeatTimeout/
+      Handler: bootstrap
+      Description: Create callback heartbeat timeout
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackHeartbeatAlive:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackHeartbeatAlive/
+      Handler: bootstrap
+      Description: Heartbeat keeps callback alive
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackFailure:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackFailure/
+      Handler: bootstrap
+      Description: Callback failure
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackThenStep:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackThenStep/
+      Handler: bootstrap
+      Description: CreateCallback then step then await
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackTimeoutAfterStep:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackTimeoutAfterStep/
+      Handler: bootstrap
+      Description: CreateCallback (5s timeout) then step then await - times out
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackAfterWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackAfterWait/
+      Handler: bootstrap
+      Description: CreateCallback then wait then await callback
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackDuringWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackDuringWait/
+      Handler: bootstrap
+      Description: CreateCallback then 5s wait then await
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackTimeoutAfterWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackTimeoutAfterWait/
+      Handler: bootstrap
+      Description: CreateCallback (3s timeout) then 6s wait then await
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackResolvesFirst:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackResolvesFirst/
+      Handler: bootstrap
+      Description: Callback resolves first, then wait, then return
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackFailureCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackFailureCaught/
+      Handler: bootstrap
+      Description: Catch callback failure and continue
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackTimeoutCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackTimeoutCaught/
+      Handler: bootstrap
+      Description: Catch callback timeout and continue
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackCustomSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackCustomSerdes/
+      Handler: bootstrap
+      Description: Custom serdes (JSON object)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackCustomSerdesNumber:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-16"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackCustomSerdesNumber/
+      Handler: bootstrap
+      Description: Custom serdes (string to number)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackSequential:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-17"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackSequential/
+      Handler: bootstrap
+      Description: Sequential callbacks (A then B)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackConcurrent:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-18"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackConcurrent/
+      Handler: bootstrap
+      Description: Concurrent callbacks (create A, create B, await A, await B)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  CallbackConcurrentReversed:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["4-19"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/CallbackConcurrentReversed/
+      Handler: bootstrap
+      Description: Concurrent callbacks reversed (create A, create B, await B, await A)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300

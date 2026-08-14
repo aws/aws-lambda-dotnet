@@ -1,0 +1,303 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (WaitForCallback)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+
+  WaitForCallbackBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-1"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackBasic/
+      Handler: bootstrap
+      Description: WaitForCallback basic success via external callback
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackWithName:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackWithName/
+      Handler: bootstrap
+      Description: WaitForCallback with explicit name
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackNoName:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackNoName/
+      Handler: bootstrap
+      Description: WaitForCallback with no name (anonymous)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackFailure:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackFailure/
+      Handler: bootstrap
+      Description: WaitForCallback external failure uncaught
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackTimeout:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackTimeout/
+      Handler: bootstrap
+      Description: WaitForCallback timeout uncaught
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackFailureCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackFailureCaught/
+      Handler: bootstrap
+      Description: WaitForCallback failure caught and recovered
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackSubmitterRetry:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackSubmitterRetry/
+      Handler: bootstrap
+      Description: WaitForCallback submitter retry exhaustion
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackInChild:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackInChild/
+      Handler: bootstrap
+      Description: WaitForCallback inside a child context
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackSequential:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackSequential/
+      Handler: bootstrap
+      Description: WaitForCallback sequential (two in sequence)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackAfterWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackAfterWait/
+      Handler: bootstrap
+      Description: WaitForCallback after wait and step
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackComplexResult:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackComplexResult/
+      Handler: bootstrap
+      Description: WaitForCallback with complex JSON result
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackHeartbeatTimeout:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackHeartbeatTimeout/
+      Handler: bootstrap
+      Description: WaitForCallback heartbeat timeout uncaught
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackHeartbeatAlive:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackHeartbeatAlive/
+      Handler: bootstrap
+      Description: WaitForCallback heartbeat keeps callback alive
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackTimeoutCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackTimeoutCaught/
+      Handler: bootstrap
+      Description: WaitForCallback timeout caught and handled
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  WaitForCallbackNullResult:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["7-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/WaitForCallbackNullResult/
+      Handler: bootstrap
+      Description: WaitForCallback success with null payload
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300

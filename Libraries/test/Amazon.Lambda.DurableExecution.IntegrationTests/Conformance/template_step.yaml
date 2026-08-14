@@ -1,0 +1,452 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Step)
+
+# Each function is published ahead of time into publish/<FunctionName>/ by
+# build_examples.sh, then SAM copies the pre-built bootstrap into the artifact
+# directory via the makefile BuildMethod. Functions run on the dotnet8 managed
+# runtime with Handler=bootstrap (executable model).
+#
+# TestingMetadata.TestDescription maps each function to the conformance
+# requirement id(s) it exercises. The runner reads this block, loads the
+# matching test-requirements/step/<id>.yaml, deploys + invokes the function,
+# and validates the durable execution result and history.
+
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  # Self-created execution role for local runs. CI replaces this with a
+  # pre-existing role via scripts/inject_execution_role.py.
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+      - PolicyName: DynamoDBPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            Resource:
+              Fn::GetAtt:
+              - AttemptsTable
+              - Arn
+
+  # Cross-invocation attempt counter used by the retry tests. Retry semantics
+  # require observing "attempt N" across separate Lambda invocations, which the
+  # replay model cannot track in-memory — a durable store is required.
+  AttemptsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: executionId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: executionId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  StepBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-1"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepBasic/
+      Handler: bootstrap
+      Description: Step basic (succeeds on first attempt)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepWithName:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepWithName/
+      Handler: bootstrap
+      Description: Step with explicit name parameter
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepNested:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepNested/
+      Handler: bootstrap
+      Description: Sequential steps where second depends on first
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepComplexObject:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepComplexObject/
+      Handler: bootstrap
+      Description: Returning complex object with nested structure
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepNullResult:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepNullResult/
+      Handler: bootstrap
+      Description: Undefined/null result
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepCustomSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepCustomSerdes/
+      Handler: bootstrap
+      Description: Custom serdes (per-step) transforms to uppercase
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepLogging:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepLogging/
+      Handler: bootstrap
+      Description: Step with context logger
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepAndWaitReplay:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepAndWaitReplay/
+      Handler: bootstrap
+      Description: Step and wait with replay
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepReplaySkipsSucceeded:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepReplaySkipsSucceeded/
+      Handler: bootstrap
+      Description: Replay skips succeeded step
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepReplayRethrowsFailed:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepReplayRethrowsFailed/
+      Handler: bootstrap
+      Description: Replay re-throws failed step
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepWithRetry:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepWithRetry/
+      Handler: bootstrap
+      Description: Step with retry (fails then succeeds)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          ATTEMPTS_TABLE_NAME:
+            Ref: AttemptsTable
+
+  StepRetryExhaustion:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepRetryExhaustion/
+      Handler: bootstrap
+      Description: Retry exhaustion (max attempts)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepDefaultRetry:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepDefaultRetry/
+      Handler: bootstrap
+      Description: Default retry strategy
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          ATTEMPTS_TABLE_NAME:
+            Ref: AttemptsTable
+
+  StepRetryCustomConfig:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepRetryCustomConfig/
+      Handler: bootstrap
+      Description: Retry with custom config (fixed interval and backoff)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          ATTEMPTS_TABLE_NAME:
+            Ref: AttemptsTable
+
+  StepRetrySpecificException:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepRetrySpecificException/
+      Handler: bootstrap
+      Description: Retry specific exception
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          ATTEMPTS_TABLE_NAME:
+            Ref: AttemptsTable
+
+  StepRetryNonRetryable:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-16"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepRetryNonRetryable/
+      Handler: bootstrap
+      Description: Retry specific exception (non-retryable fails)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepAtMostOnceNoRetry:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-17"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepAtMostOnceNoRetry/
+      Handler: bootstrap
+      Description: Step with AtMostOncePerRetry semantics (interrupted, no retry)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepAtMostOnceWithRetry:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-18"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepAtMostOnceWithRetry/
+      Handler: bootstrap
+      Description: AtMostOnce interrupted (with retry, succeeds on second attempt)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          ATTEMPTS_TABLE_NAME:
+            Ref: AttemptsTable
+
+  StepWithError:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-19"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepWithError/
+      Handler: bootstrap
+      Description: Step with error (fails permanently)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  StepErrorCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["1-20"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepErrorCaught/
+      Handler: bootstrap
+      Description: Error caught and handled (try/catch)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300

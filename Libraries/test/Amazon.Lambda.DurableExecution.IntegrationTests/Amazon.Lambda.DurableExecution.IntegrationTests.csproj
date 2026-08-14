@@ -18,6 +18,10 @@
     <None Remove="TestFunction\**" />
     <Compile Remove="TestFunctions\**" />
     <None Remove="TestFunctions\**" />
+    <!-- Conformance handler projects are standalone Lambda executables built via
+         scripts/build_examples.sh; keep their sources out of the test assembly. -->
+    <Compile Remove="Conformance\**" />
+    <None Remove="Conformance\**" />
   </ItemGroup>
 
   <ItemGroup>

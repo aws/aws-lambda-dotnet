@@ -1,0 +1,15 @@
+# Published handler artifacts produced by scripts/build_examples.sh
+publish/
+
+# Conformance runner output
+history-*/
+report-*.xml
+report-*.json
+
+# SAM build/deploy scratch
+.aws-sam/
+samconfig.toml
+
+# .NET build output
+**/bin/
+**/obj/

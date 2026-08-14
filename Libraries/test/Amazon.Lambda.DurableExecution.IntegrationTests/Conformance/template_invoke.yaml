@@ -1,0 +1,417 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Invoke)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            - lambda:InvokeFunction
+            Resource: '*'
+
+  InvokeEchoTarget:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeEchoTarget/
+      Handler: bootstrap
+      Description: Echo target function - returns whatever input it receives
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  InvokeFailTarget:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeFailTarget/
+      Handler: bootstrap
+      Description: Fail target function - always throws an error
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  InvokeBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-1"]
+      NotImplemented:
+        - id: "5-16"
+          reason: "Invoke with custom result serdes: .NET has no per-operation serdes slot; the invoke result is deserialized via the one registered ILambdaSerializer (matches the Java approach)."
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeBasic/
+      Handler: bootstrap
+      Description: Invoke basic (target function succeeds)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeWithName:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeWithName/
+      Handler: bootstrap
+      Description: Invoke with explicit name parameter
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeComplexObject:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeComplexObject/
+      Handler: bootstrap
+      Description: Invoke returning complex object (nested JSON)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeNull:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeNull/
+      Handler: bootstrap
+      Description: Invoke returning null (target echoes null input)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeTargetFails:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeTargetFails/
+      Handler: bootstrap
+      Description: Invoke target fails (execution fails with InvokeError)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FAIL_FUNCTION_NAME:
+            !Sub "${InvokeFailTarget.Arn}:$LATEST"
+
+  InvokeTargetFailsCaught:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeTargetFailsCaught/
+      Handler: bootstrap
+      Description: Invoke target fails, caught (try/catch, execution succeeds)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FAIL_FUNCTION_NAME:
+            !Sub "${InvokeFailTarget.Arn}:$LATEST"
+
+  InvokeLargePayload:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeLargePayload/
+      Handler: bootstrap
+      Description: Invoke large payload (payload near size limit)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeEchoTargetTenant:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeEchoTargetTenant/
+      Handler: bootstrap
+      Description: Echo target function with tenancy enabled
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  InvokeWithTenantId:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeWithTenantId/
+      Handler: bootstrap
+      Description: Invoke with tenantId (tenant-isolated invocation)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTargetTenant.Arn}:$LATEST"
+
+  InvokeReplaySkips:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeReplaySkips/
+      Handler: bootstrap
+      Description: Invoke replay skips (invoke result cached on replay)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeReplayRethrows:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeReplayRethrows/
+      Handler: bootstrap
+      Description: Invoke replay re-throws (failed invoke error re-thrown from cache)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FAIL_FUNCTION_NAME:
+            !Sub "${InvokeFailTarget.Arn}:$LATEST"
+
+  StepThenInvoke:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/StepThenInvoke/
+      Handler: bootstrap
+      Description: Step then invoke (sequential operations)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeThenStep:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeThenStep/
+      Handler: bootstrap
+      Description: Invoke then step (invoke result used by subsequent step)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeInChildContext:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeInChildContext/
+      Handler: bootstrap
+      Description: Invoke inside child context
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeSequential:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeSequential/
+      Handler: bootstrap
+      Description: Multiple sequential invokes
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeCustomPayloadSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeCustomPayloadSerdes/
+      Handler: bootstrap
+      Description: Invoke with custom payload serdes (uppercases outgoing payload)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"

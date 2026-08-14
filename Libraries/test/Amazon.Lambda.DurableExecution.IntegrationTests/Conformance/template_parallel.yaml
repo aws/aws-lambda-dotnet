@@ -1,0 +1,414 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Parallel)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+
+  ParallelBasic:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-1"]
+      NotImplemented:
+        - id: "8-15"
+          reason: "Parallel with custom per-item serdes: .NET ParallelConfig has no item serializer slot; all branch payloads use the one registered ILambdaSerializer (matches the Java approach)."
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelBasic/
+      Handler: bootstrap
+      Description: Parallel basic with steps in branches
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelBranchesOnly:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelBranchesOnly/
+      Handler: bootstrap
+      Description: Parallel branches only (no inner steps)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelNamedBranches:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-3"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelNamedBranches/
+      Handler: bootstrap
+      Description: Parallel with named branches using DurableBranch
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelHeterogeneous:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-4"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelHeterogeneous/
+      Handler: bootstrap
+      Description: Parallel with heterogeneous return types
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelEmpty:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-5"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelEmpty/
+      Handler: bootstrap
+      Description: Parallel with empty branches list
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelFailFast:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-6"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelFailFast/
+      Handler: bootstrap
+      Description: Parallel fail-fast with ToleratedFailureCount=0
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelRethrow:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-7"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelRethrow/
+      Handler: bootstrap
+      Description: Parallel rethrow (ThrowIfError propagates failure)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelMinSuccessful:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-8"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelMinSuccessful/
+      Handler: bootstrap
+      Description: Parallel with MinSuccessful completion config
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelToleratedFailure:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-9"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelToleratedFailure/
+      Handler: bootstrap
+      Description: Parallel with ToleratedFailureCount=1 (one failure tolerated)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelFailureExceedsTolerance:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-10"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelFailureExceedsTolerance/
+      Handler: bootstrap
+      Description: Parallel where failures exceed tolerance
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelConcurrent:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-11"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelConcurrent/
+      Handler: bootstrap
+      Description: Parallel with maxConcurrency=2
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelFlat:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-12"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelFlat/
+      Handler: bootstrap
+      Description: Parallel with flat nesting type
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelFailurePercentage:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-13"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelFailurePercentage/
+      Handler: bootstrap
+      Description: Parallel with ToleratedFailurePercentage exceeded
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelWithWait:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelWithWait/
+      Handler: bootstrap
+      Description: Parallel with WaitAsync in a branch
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelAllFail:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-16"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelAllFail/
+      Handler: bootstrap
+      Description: Parallel where all branches fail
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelMinNotReached:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-17"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelMinNotReached/
+      Handler: bootstrap
+      Description: Parallel where MinSuccessful is not reached
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelCombinedConfig:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-18"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelCombinedConfig/
+      Handler: bootstrap
+      Description: Parallel with combined MinSuccessful and ToleratedFailureCount
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelBadConcurrency:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-19"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelBadConcurrency/
+      Handler: bootstrap
+      Description: Parallel with invalid MaxConcurrency=0 (throws)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelAccessors:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-20"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelAccessors/
+      Handler: bootstrap
+      Description: Parallel result accessors (HasFailure, Succeeded, Failed, GetErrors)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelNested:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-21"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelNested/
+      Handler: bootstrap
+      Description: Nested parallel (outer parallel contains inner parallel)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelFailurePercentageExact:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-22"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelFailurePercentageExact/
+      Handler: bootstrap
+      Description: Parallel with ToleratedFailurePercentage at exact threshold (not exceeded)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300

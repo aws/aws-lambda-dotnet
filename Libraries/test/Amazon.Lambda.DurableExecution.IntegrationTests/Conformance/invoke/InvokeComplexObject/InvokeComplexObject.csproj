@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AssemblyName>bootstrap</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../../../src/Amazon.Lambda.Core/Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="../../../../../src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="../../../../../src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" />
+    <ProjectReference Include="../../../../../src/Amazon.Lambda.Serialization.SystemTextJson/Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
+  </ItemGroup>
+
+</Project>
