@@ -1,3 +1,10 @@
+## Release 2026-08-14
+
+### Amazon.Lambda.AspNetCoreServer (10.2.1)
+* Change log level for starting response streaming from info to debug
+### Amazon.Lambda.AspNetCoreServer.Hosting (2.2.1)
+* Change log level for starting response streaming from info to debug
+
 ## Release 2026-08-04
 
 ### Amazon.Lambda.RuntimeSupport (2.2.0)
