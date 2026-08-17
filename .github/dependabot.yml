@@ -6,6 +6,10 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every quarter
       interval: "quarterly"
+    # Wait a few days after a release before opening an update PR, to avoid
+    # picking up versions that are pulled shortly after publishing.
+    cooldown:
+      default-days: 7
     labels:
       - "Release Not Needed"
     target-branch: "dev"

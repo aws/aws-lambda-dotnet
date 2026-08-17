@@ -7,6 +7,14 @@
 **/*.min.js
 **/env.configs.yml
 
+# Ignore the ASP.NET integration-test host app. Its controllers are intentionally
+# unauthenticated fixtures used to exercise the Lambda bridge and are never shipped.
+**/test/TestWebApp/**
+
+# Ignore the v1 (preview) test tool's Blazor debug UI. It intentionally shows the
+# developer exception page since its purpose is local debugging of Lambda code.
+**/Amazon.Lambda.TestTool.BlazorTester/**
+
 # Ignore third-party libraries
 **/node_modules/**
 **/vendor/**

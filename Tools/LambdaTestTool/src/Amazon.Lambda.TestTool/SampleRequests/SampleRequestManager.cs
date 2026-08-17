@@ -102,7 +102,8 @@ namespace Amazon.Lambda.TestTool.SampleRequests
             if(name.StartsWith(SAVED_REQUEST_DIRECTORY + "@"))
             {
                 name = name.Substring(name.IndexOf("@") + 1);
-                var path = Path.Combine(this.GetSavedRequestDirectory(), name);
+                // Use only the file name so a crafted request name cannot escape the saved-request directory.
+                var path = Path.Combine(this.GetSavedRequestDirectory(), Path.GetFileName(name));
                 return File.ReadAllText(path);
             }
             return GetEmbeddedResource(name);

@@ -85,7 +85,8 @@ public class LambdaRequestManager(IOptions<LambdaOptions> lambdaOptions, IDirect
         if(requestName.StartsWith(Constants.SavedRequestDirectory + "@"))
         {
             requestName = requestName.Substring(requestName.IndexOf("@", StringComparison.Ordinal) + 1);
-            var path = Path.Combine(requestDirectory, requestName);
+            // Use only the file name so a crafted request name cannot escape requestDirectory.
+            var path = Path.Combine(requestDirectory, Path.GetFileName(requestName));
             return File.ReadAllText(path);
         }
         return GetEmbeddedResource(requestName);
