@@ -1,3 +1,20 @@
+## Release 2026-08-17
+
+### Amazon.Lambda.Serialization.SystemTextJson (3.0.1)
+* Fixed NativeAOT IL3050/IL3053 analysis warnings by marking all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable.
+### Amazon.Lambda.APIGatewayEvents (3.0.1)
+* Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable.
+### Amazon.Lambda.SQSEvents (3.0.1)
+* Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable.
+### Amazon.Lambda.SNSEvents (3.0.1)
+* Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable.
+### Amazon.Lambda.SimpleEmailEvents (4.0.1)
+* Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable.
+### Amazon.Lambda.AspNetCoreServer (10.2.1)
+* Change log level for starting response streaming from info to debug
+### Amazon.Lambda.AspNetCoreServer.Hosting (2.2.1)
+* Change log level for starting response streaming from info to debug
+
 ## Release 2026-08-04
 
 ### Amazon.Lambda.RuntimeSupport (2.2.0)
