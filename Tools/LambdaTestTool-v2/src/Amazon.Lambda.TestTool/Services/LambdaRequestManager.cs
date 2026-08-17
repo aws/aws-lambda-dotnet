@@ -82,7 +82,7 @@ public class LambdaRequestManager(IOptions<LambdaOptions> lambdaOptions, IDirect
         if (requestDirectory is null)
             return string.Empty;
 
-        if(requestName.StartsWith(Constants.SavedRequestDirectory + "@"))
+        if(requestName.StartsWith(Constants.SavedRequestDirectory + "@", StringComparison.Ordinal))
         {
             requestName = requestName.Substring(requestName.IndexOf("@", StringComparison.Ordinal) + 1);
             // Use only the file name so a crafted request name cannot escape requestDirectory.

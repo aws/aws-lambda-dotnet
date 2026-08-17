@@ -99,9 +99,9 @@ namespace Amazon.Lambda.TestTool.SampleRequests
 
         public string GetRequest(string name)
         {
-            if(name.StartsWith(SAVED_REQUEST_DIRECTORY + "@"))
+            if(name.StartsWith(SAVED_REQUEST_DIRECTORY + "@", StringComparison.Ordinal))
             {
-                name = name.Substring(name.IndexOf("@") + 1);
+                name = name.Substring(name.IndexOf('@') + 1);
                 // Use only the file name so a crafted request name cannot escape the saved-request directory.
                 var path = Path.Combine(this.GetSavedRequestDirectory(), Path.GetFileName(name));
                 return File.ReadAllText(path);
