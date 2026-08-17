@@ -1,0 +1,39 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Serialization.SystemTextJson",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed NativeAOT IL3050/IL3053 analysis warnings by marking all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SQSEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SNSEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.SimpleEmailEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Marked all target frameworks as trimmable. Previously only the net8.0 target was marked, so the net10.0 assembly was not trimmable."
+      ]
+    }
+  ]
+}

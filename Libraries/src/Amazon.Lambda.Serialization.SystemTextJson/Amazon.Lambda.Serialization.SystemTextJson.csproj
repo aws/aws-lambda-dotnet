@@ -26,7 +26,7 @@
         <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     </ItemGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+	<PropertyGroup>
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
