@@ -17,7 +17,7 @@ For a history of releases view the [release change log](CHANGELOG.md)
     - [Amazon.Lambda.TestUtilities](#amazonlambdatestutilities)
     - [Amazon.Lambda.DurableExecution](#amazonlambdadurableexecution)
   - [Blueprints](#blueprints)
-    - [Dotnet CLI Templates](#dotnet-cli-templates)
+    - [Dotnet CLI Templates](#dotnet-cli-templates)fdafdas
     - [Yeoman (Deprecated)](#yeoman-deprecated)
   - [Getting Help](#getting-help)
   - [Feedback and Contributing](#feedback-and-contributing)
