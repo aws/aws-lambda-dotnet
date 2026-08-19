@@ -2,7 +2,7 @@ param(
     [ValidateSet('amd64','arm64')]
     [string]$Architecture = "amd64",
 
-    [ValidateSet('net6', 'net8', 'net9')]
+    [ValidateSet('net8', 'net9', 'net10', 'net11')]
     [string]$TargetFramework = "net6"
 )
 
