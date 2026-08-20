@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# PQC TLS keyshares are enabled by default via the AL2023 base-OS crypto policy. Customers can opt
+# out by setting AWS_LAMBDA_DISABLE_PQC_KEYSHARES (presence-based, including an empty value), which
+# selects the shipped classical-only openssl_non_pqc.cnf and takes precedence over a customer OPENSSL_CONF.
+if [ -n "${AWS_LAMBDA_DISABLE_PQC_KEYSHARES+x}" ]; then
+  export OPENSSL_CONF=/var/runtime/openssl_conf/openssl_non_pqc.cnf
+fi
+
 # This script is used to locate 2 files in the /var/task folder, where the end-user assembly is located
 # The 2 files are <assembly name>.deps.json and <assembly name>.runtimeconfig.json
 # These files are used to add the end-user assembly into context and make the code reachable to the dotnet process
