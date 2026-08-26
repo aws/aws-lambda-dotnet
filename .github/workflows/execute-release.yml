@@ -1,0 +1,154 @@
+# Manually triggered to cut a release. Bumps the version and changelog in place on
+# the trunk (no release PR), commits to the trunk, then starts the CodePipelines.
+# Replaces "Create Release PR" + "Sync dev and the trunk". This workflow creates the
+# git tag + GitHub Release (computed by AutoVer while the change files still exist),
+# then starts the pipelines to publish to NuGet.
+#
+# aws-lambda-dotnet has three pipelines fed by this one repo/branch (the main library,
+# the PowerShell module, and the test tool). One version bump + changelog + tag covers
+# the repo; all three pipelines are started from the single pushed commit.
+name: Execute Release
+
+# Dispatch from the trunk (master). Check "hold" to stage the release at the pipeline
+# Hold gate for a timed go-ahead instead of publishing right away.
+on:
+  workflow_dispatch:
+    inputs:
+      hold:
+        description: "Stage at the Hold gate for a timed go-ahead (do not auto-publish)"
+        type: boolean
+        default: false
+      OVERRIDE_VERSION:
+        description: "Override Version"
+        type: string
+        required: false
+
+# Least-privilege at the workflow level; the one job below grants only what it needs.
+permissions: {}
+
+# Only one release may run at a time. Do not cancel an in-progress release: it may be
+# mid-push to the trunk or mid-pipeline-start, and cancelling could leave things half-done.
+concurrency:
+  group: execute-release
+  cancel-in-progress: false
+
+env:
+  # The CodePipelines to start (space-separated). The target account is the one the
+  # assumed role lives in; the role must allow StartPipelineExecution on all of them.
+  PIPELINE_NAMES: "aws-lambda-dotnet aws-lambda-dotnet-powershell aws-lambda-testtool"
+  AWS_REGION: us-west-2
+  INPUT_OVERRIDE_VERSION: ${{ github.event.inputs.OVERRIDE_VERSION }}
+
+jobs:
+  execute-release:
+    name: Execute Release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # mint the OIDC token used to assume the AWS roles below
+      contents: write   # push the version + changelog commit to the trunk
+    steps:
+      # Assume an AWS role that can read the deploy key and start the pipelines.
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          # zizmor: ignore[secrets-outside-env] secret is a role ARN (an identifier, not
+          # a credential); access is gated by the role's AWS OIDC trust policy, so a
+          # dedicated GitHub environment adds no meaningful protection here.
+          role-to-assume: ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_ROLE_ARN }}
+          aws-region: us-west-2
+      # Retrieve the per-repo deploy key from Secrets Manager (push to the trunk runs over SSH).
+      - name: Retrieve secrets from AWS Secrets Manager
+        uses: aws-actions/aws-secretsmanager-get-secrets@2cb1a461cbd4865ac4299648312e4704c646cd53 #v3
+        with:
+          secret-ids: |
+            DEPLOY_KEY, prod/devops/aws-lambda-dotnet-deploy-key
+      # Full clone of the trunk using the deploy key.
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          ref: master
+          fetch-depth: '0'
+          ssh-key: ${{ env.DEPLOY_KEY }}
+          # Keep the SSH deploy-key config in the local git config so the later
+          # "git push origin HEAD:master" can authenticate with it. (There is no
+          # GITHUB_TOKEN persisted here to worry about - auth is the deploy key.)
+          persist-credentials: true
+      # .NET 9 is needed for AutoVer.
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 #v5
+        with:
+          dotnet-version: 9.0.x
+      - name: Install AutoVer
+        run: dotnet tool install --global AutoVer --version 0.0.24
+      - name: Setup Git User
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+      # Bump the version from the change files (or an explicit override). autover commits the
+      # version bump itself.
+      - name: Increment Version
+        run: autover version
+        if: env.INPUT_OVERRIDE_VERSION == ''
+      - name: Increment Version (override)
+        run: autover version --use-version "$INPUT_OVERRIDE_VERSION"
+        if: env.INPUT_OVERRIDE_VERSION != ''
+      # Capture the release tag/name/notes from AutoVer NOW, while the change files still
+      # exist - autover derives these from the pending change files. The next step consumes
+      # them, after which autover would only see the previous release. (--tag-name /
+      # --release-name / --output-to-console are read-only and do not consume.)
+      - name: Compute release metadata
+        id: relmeta
+        run: |
+          {
+            echo "tag=$(autover changelog --tag-name)"
+            echo "name=$(autover changelog --release-name)"
+          } >> "$GITHUB_OUTPUT"
+          autover changelog --output-to-console > "$RUNNER_TEMP/release_notes.md"
+      # autover changelog updates CHANGELOG.md, deletes the consumed change files, and commits both.
+      - name: Update Changelog
+        run: autover changelog
+      # autover already committed the version bump + changelog (incl. the change-file deletions),
+      # so just push those commits straight to the trunk. No release PR, and no tag push here:
+      # the pipeline tags and creates the GitHub Release after publish.
+      - name: Push version and changelog
+        run: git push origin HEAD:master
+      # Switch identities: assume the pipeline account's Execute Release role (GitHub OIDC)
+      # so the pipeline calls below run same-account. The role above (release-workflow) only
+      # reads the deploy key; this one only starts these pipelines.
+      - name: Configure AWS Credentials for the pipeline account
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          # zizmor: ignore[secrets-outside-env] role ARN, gated by AWS OIDC trust policy.
+          role-to-assume: ${{ secrets.EXECUTE_RELEASE_ROLE_ARN }}
+          aws-region: us-west-2
+      # Freeze-aware, per pipeline: if a pipeline's Release-stage transition is disabled
+      # (re:Invent or a staging embargo), skip starting that pipeline. Start passes HOLD so
+      # the auto-approve Lambda knows whether to publish immediately (hold=false) or wait
+      # at the gate (hold=true).
+      - name: Start pipelines
+        env:
+          # Route the workflow input through an env var instead of interpolating
+          # ${{ github.* }} directly into the shell, to avoid script injection.
+          HOLD: ${{ github.event.inputs.hold }}
+        run: |
+          for p in $PIPELINE_NAMES; do
+            enabled=$(aws codepipeline get-pipeline-state --name "$p" --region "$AWS_REGION" \
+              --query "stageStates[?stageName=='Release'].inboundTransitionState.enabled | [0]" --output text)
+            if [ "$enabled" = "False" ]; then
+              echo "::warning::$p Release-stage transition is disabled (frozen); skipping."
+              continue
+            fi
+            echo "Starting $p (HOLD=$HOLD)"
+            aws codepipeline start-pipeline-execution --name "$p" --region "$AWS_REGION" \
+              --variables "name=HOLD,value=$HOLD"
+          done
+      # Create the tag + GitHub Release at the pushed commit, using the metadata captured
+      # before the change files were consumed.
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.relmeta.outputs.tag }}" \
+            --title "${{ steps.relmeta.outputs.name }}" \
+            --notes-file "$RUNNER_TEMP/release_notes.md" \
+            --target "$(git rev-parse HEAD)"
