@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.CloudWatchEvents",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add Step Functions Execution Status Change event model (StepFunctionsExecutionStatusChangeEvent) for EventBridge-delivered Step Functions execution events"
+      ]
+    }
+  ]
+}
