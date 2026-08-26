@@ -63,7 +63,7 @@ jobs:
           secret-ids: |
             DEPLOY_KEY, prod/devops/aws-lambda-dotnet-deploy-key
       # Full clone of the trunk using the deploy key.
-      - name: Checkout
+      - name: Checkout # zizmor: ignore[artipacked] persist-credentials must stay true for the deploy-key push
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
         with:
           ref: master
@@ -147,8 +147,10 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.relmeta.outputs.tag }}
+          RELEASE_NAME: ${{ steps.relmeta.outputs.name }}
         run: |
-          gh release create "${{ steps.relmeta.outputs.tag }}" \
-            --title "${{ steps.relmeta.outputs.name }}" \
+          gh release create "$RELEASE_TAG" \
+            --title "$RELEASE_NAME" \
             --notes-file "$RUNNER_TEMP/release_notes.md" \
             --target "$(git rev-parse HEAD)"
