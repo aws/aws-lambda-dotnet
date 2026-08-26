@@ -3799,6 +3799,26 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void CloudWatchStepFunctionsExecutionStatusChangeRedriven(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-stepfunctionsexecutionstatuschange-redriven.json"))
+            {
+                var request = serializer.Deserialize<StepFunctionsExecutionStatusChangeEvent>(fileStream);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal(1, detail.RedriveCount);
+                // redriveDate is delivered as Unix epoch milliseconds (a JSON number), not a string.
+                Assert.Equal(1551225271984, detail.RedriveDate);
+                Assert.Equal("REDRIVE_IN_PROGRESS", detail.RedriveStatus);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
         public void CloudWatchTranslateTextTranslationJobStateChange(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;

@@ -78,10 +78,10 @@ namespace Amazon.Lambda.CloudWatchEvents.StepFunctionsEvents
         public int RedriveCount { get; set; }
 
         /// <summary>
-        /// The date the execution was last redriven.
+        /// The date the execution was last redriven, in Unix epoch milliseconds.
         /// This is null if the execution has not been redriven.
         /// </summary>
-        public string RedriveDate { get; set; }
+        public long? RedriveDate { get; set; }
 
         /// <summary>
         /// Indicates whether the execution can be redriven.
