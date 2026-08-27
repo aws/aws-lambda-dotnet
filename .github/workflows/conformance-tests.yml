@@ -10,7 +10,7 @@ name: Durable Execution Conformance Tests
 
 on:
   pull_request:
-    branches: [dev, master]
+    branches: [master]
     paths:
       - "Libraries/src/Amazon.Lambda.DurableExecution/**"
       - "Libraries/test/Amazon.Lambda.DurableExecution.IntegrationTests/Conformance/**"

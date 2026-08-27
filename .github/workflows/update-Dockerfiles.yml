@@ -89,7 +89,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
-          ref: 'dev'
+          ref: 'master'
 
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
@@ -193,7 +193,7 @@ jobs:
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5 # v2
         with:
           source_branch: ${{ steps.commit-push.outputs.BRANCH }}
-          destination_branch: "dev"
+          destination_branch: "master"
           pr_title: 'chore: ASP.NET Core version update in Dockerfiles'
           pr_body: "This PR updates the Dockerfiles to use the latest ASP.NET Core version.
             Verify listed Dockerfiles that they have correct version and matching SHA512 checksum for ASP.NET Core runtime.
