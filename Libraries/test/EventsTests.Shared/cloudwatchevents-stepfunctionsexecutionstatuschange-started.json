@@ -1,0 +1,34 @@
+{
+    "version": "0",
+    "id": "315c1398-40ff-a850-213b-158f73e60175",
+    "detail-type": "Step Functions Execution Status Change",
+    "source": "aws.states",
+    "account": "123456789012",
+    "time": "2019-02-26T19:42:21Z",
+    "region": "us-east-2",
+    "resources": [
+        "arn:aws:states:us-east-2:123456789012:execution:state-machine-name:execution-name"
+    ],
+    "detail": {
+        "executionArn": "arn:aws:states:us-east-2:123456789012:execution:state-machine-name:execution-name",
+        "stateMachineArn": "arn:aws:states:us-east-2:123456789012:stateMachine:state-machine",
+        "name": "execution-name",
+        "status": "RUNNING",
+        "startDate": 1551225271984,
+        "stopDate": null,
+        "input": "{}",
+        "inputDetails": {
+            "included": true
+        },
+        "output": null,
+        "outputDetails": null,
+        "stateMachineVersionArn": null,
+        "stateMachineAliasArn": null,
+        "redriveCount": 0,
+        "redriveDate": null,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is RUNNING and cannot be redriven",
+        "error": null,
+        "cause": null
+    }
+}

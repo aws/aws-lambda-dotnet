@@ -6,6 +6,7 @@ using Amazon.Lambda.CloudWatchEvents.ECSEvents;
 using Amazon.Lambda.CloudWatchEvents.S3Events;
 using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
 using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
+using Amazon.Lambda.CloudWatchEvents.StepFunctionsEvents;
 using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
 using Amazon.Lambda.CloudWatchLogsEvents;
 using Amazon.Lambda.CognitoEvents;
@@ -3729,6 +3730,88 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("d43d0b58-2129-46ba-b2e2-b53ec9d1b210", detail.TranscriptionJobName);
                 Assert.Equal("FAILED", detail.TranscriptionJobStatus);
                 Assert.Equal("The media format that you specified doesn't match the detected media format. Check the media format and try your request again.", detail.FailureReason);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void CloudWatchStepFunctionsExecutionStatusChangeStarted(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-stepfunctionsexecutionstatuschange-started.json"))
+            {
+                var request = serializer.Deserialize<StepFunctionsExecutionStatusChangeEvent>(fileStream);
+                Assert.Equal("315c1398-40ff-a850-213b-158f73e60175", request.Id);
+                Assert.Equal("Step Functions Execution Status Change", request.DetailType);
+                Assert.Equal("aws.states", request.Source);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("arn:aws:states:us-east-2:123456789012:execution:state-machine-name:execution-name", detail.ExecutionArn);
+                Assert.Equal("arn:aws:states:us-east-2:123456789012:stateMachine:state-machine", detail.StateMachineArn);
+                Assert.Equal("execution-name", detail.Name);
+                Assert.Equal("RUNNING", detail.Status);
+                Assert.Equal(1551225271984, detail.StartDate);
+                Assert.Null(detail.StopDate);
+                Assert.Equal("{}", detail.Input);
+                Assert.NotNull(detail.InputDetails);
+                Assert.True(detail.InputDetails.Included);
+                Assert.Null(detail.Output);
+                Assert.Null(detail.OutputDetails);
+                Assert.Null(detail.StateMachineVersionArn);
+                Assert.Null(detail.StateMachineAliasArn);
+                Assert.Equal(0, detail.RedriveCount);
+                Assert.Null(detail.RedriveDate);
+                Assert.Equal("NOT_REDRIVABLE", detail.RedriveStatus);
+                Assert.Equal("Execution is RUNNING and cannot be redriven", detail.RedriveStatusReason);
+                Assert.Null(detail.Error);
+                Assert.Null(detail.Cause);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void CloudWatchStepFunctionsExecutionStatusChangeFailed(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-stepfunctionsexecutionstatuschange-failed.json"))
+            {
+                var request = serializer.Deserialize<StepFunctionsExecutionStatusChangeEvent>(fileStream);
+                Assert.Equal("315c1398-40ff-a850-213b-158f73e60175", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("execution-name", detail.Name);
+                Assert.Equal("FAILED", detail.Status);
+                Assert.Equal(1551225146847, detail.StartDate);
+                Assert.Equal(1551225151881, detail.StopDate);
+                Assert.Equal("REDRIVABLE", detail.RedriveStatus);
+                Assert.Equal("ErrorCode", detail.Error);
+                Assert.Equal("An error occurred.", detail.Cause);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void CloudWatchStepFunctionsExecutionStatusChangeRedriven(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-stepfunctionsexecutionstatuschange-redriven.json"))
+            {
+                var request = serializer.Deserialize<StepFunctionsExecutionStatusChangeEvent>(fileStream);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal(1, detail.RedriveCount);
+                // redriveDate is delivered as Unix epoch milliseconds (a JSON number), not a string.
+                Assert.Equal(1551225271984, detail.RedriveDate);
+                Assert.Equal("REDRIVE_IN_PROGRESS", detail.RedriveStatus);
             }
         }
 
