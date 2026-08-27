@@ -1,3 +1,8 @@
+## Release 2026-08-27
+
+### Amazon.Lambda.CloudWatchEvents (5.1.0)
+* Add Step Functions Execution Status Change event model (StepFunctionsExecutionStatusChangeEvent) for EventBridge-delivered Step Functions execution events
+
 ## Release 2026-08-17
 
 ### Amazon.Lambda.Serialization.SystemTextJson (3.0.1)
