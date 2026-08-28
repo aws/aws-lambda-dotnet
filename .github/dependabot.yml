@@ -8,7 +8,6 @@ updates:
       interval: "quarterly"
     labels:
       - "Release Not Needed"
-    target-branch: "dev"
     # Group all github-actions updates into a single PR
     groups:
       all-github-actions:
