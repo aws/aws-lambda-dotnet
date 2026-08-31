@@ -49,7 +49,7 @@ jobs:
     steps:
       # Assume an AWS role that can read the deploy key and start the pipelines.
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           # zizmor: ignore[secrets-outside-env] secret is a role ARN (an identifier, not
           # a credential); access is gated by the role's AWS OIDC trust policy, so a
@@ -64,7 +64,7 @@ jobs:
             DEPLOY_KEY, prod/devops/aws-lambda-dotnet-deploy-key
       # Full clone of the trunk using the deploy key.
       - name: Checkout # zizmor: ignore[artipacked] persist-credentials must stay true for the deploy-key push
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
         with:
           ref: master
           fetch-depth: '0'
@@ -75,7 +75,7 @@ jobs:
           persist-credentials: true
       # .NET 9 is needed for AutoVer.
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 #v5
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 #v6.0.0
         with:
           dotnet-version: 9.0.x
       - name: Install AutoVer
@@ -116,7 +116,7 @@ jobs:
       # so the pipeline calls below run same-account. The role above (release-workflow) only
       # reads the deploy key; this one only starts these pipelines.
       - name: Configure AWS Credentials for the pipeline account
-        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           # zizmor: ignore[secrets-outside-env] role ARN, gated by AWS OIDC trust policy.
           role-to-assume: ${{ secrets.EXECUTE_RELEASE_ROLE_ARN }}
