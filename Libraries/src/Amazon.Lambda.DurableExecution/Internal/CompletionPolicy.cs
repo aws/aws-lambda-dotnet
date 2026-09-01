@@ -44,8 +44,8 @@ internal readonly struct CompletionPolicy
     /// failed. Reads slightly-stale counters by design (see the dispatch loop);
     /// <see cref="Evaluate"/> is the authoritative verdict.
     /// </summary>
-    public bool ShouldStopDispatching(int succeeded, int failed, int totalBranches)
-        => MinSuccessfulReached(succeeded) || FailureToleranceExceeded(failed, totalBranches);
+    public bool ShouldStopDispatching(int succeeded, int failed, int totalBranches, bool evaluatePercentage = true)
+        => MinSuccessfulReached(succeeded) || FailureToleranceExceeded(failed, totalBranches, evaluatePercentage);
 
     /// <summary>
     /// Final verdict once all dispatched branches have settled. Failure tolerance
@@ -77,7 +77,7 @@ internal readonly struct CompletionPolicy
     // ToleratedFailureCount = 0) and the empty config are therefore equivalent;
     // CompletionConfig.AllCompleted() sets ToleratedFailureCount = int.MaxValue to
     // stay lenient.
-    private bool FailureToleranceExceeded(int failed, int totalBranches)
+    private bool FailureToleranceExceeded(int failed, int totalBranches, bool evaluatePercentage = true)
     {
         if (_failFastOnAnyFailure)
             return failed > 0;
@@ -85,7 +85,7 @@ internal readonly struct CompletionPolicy
         if (_toleratedFailureCount is { } tfc && failed > tfc)
             return true;
 
-        if (_toleratedFailurePercentage is { } tfp && totalBranches > 0 &&
+        if (evaluatePercentage && _toleratedFailurePercentage is { } tfp && totalBranches > 0 &&
             (double)failed / totalBranches > tfp)
         {
             return true;
