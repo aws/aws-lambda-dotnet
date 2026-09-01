@@ -99,6 +99,15 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
         Name = name;
         _serializer = serializer;
         _childSubType = childSubType;
+
+        // Per-branch failures are intentionally consumed via CompleteAsync, so a
+        // caller may never await this handle. Observe the fault here so a discarded
+        // failed handle can never surface as an UnobservedTaskException.
+        _ = _result.Task.ContinueWith(
+            static t => { _ = t.Exception; },
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     public string Name { get; }
@@ -280,9 +289,9 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
     private int _failed;
     private int _registeredCount;
     private bool _sealed;
-    private bool _completed;
+    private volatile bool _sealedVolatile;
     private bool _disposed;
-    private IBatchResult? _cachedResult;
+    private Task<IBatchResult>? _completion;
 
     public IncrementalParallelOperation(
         string operationId,
@@ -321,33 +330,48 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         _state.TrackReplay(_operationId);
 
         var existing = _state.GetOperation(_operationId);
-        var terminal = existing != null &&
-            (existing.Status == OperationStatuses.Succeeded || existing.Status == OperationStatuses.Failed);
-
-        if (terminal)
+        if (existing == null)
         {
-            _mode = ParallelExecutionMode.Terminal;
-            _frozenSummary = BatchSummaryCodec.ParseSummary(existing!.ContextDetails?.Result);
-            _startTask = Task.CompletedTask;
+            // Fresh: emit the parent CONTEXT START so the service has a parent
+            // record if a branch suspends. Enqueued once here so it is ordered
+            // before any branch's child START.
+            _mode = ParallelExecutionMode.Run;
+            _startTask = EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = _operationId,
+                ParentId = _parentId,
+                Type = OperationTypes.Context,
+                Action = OperationAction.START,
+                SubType = OperationSubTypes.Parallel,
+                Name = _name
+            });
         }
         else
         {
-            _mode = ParallelExecutionMode.Run;
-            // Fresh (no checkpoint) emits the parent CONTEXT START so the service
-            // has a parent record if a branch suspends. STARTED/PENDING replay does
-            // not re-emit it (the original is authoritative). Enqueued once here so
-            // it is ordered before any branch's child START.
-            _startTask = existing == null
-                ? EnqueueAsync(new SdkOperationUpdate
-                {
-                    Id = _operationId,
-                    ParentId = _parentId,
-                    Type = OperationTypes.Context,
-                    Action = OperationAction.START,
-                    SubType = OperationSubTypes.Parallel,
-                    Name = _name
-                })
-                : Task.CompletedTask;
+            // Mirror ConcurrentOperation.ReplayAsync: only SUCCEEDED reconstructs,
+            // only STARTED/PENDING re-run, and any other status is a replay
+            // mismatch. The parent parallel only ever checkpoints SUCCEED, so a
+            // FAILED/CANCELLED/STOPPED/TIMED_OUT parent must never be silently
+            // re-run (which would overwrite the prior terminal outcome).
+            switch (existing.Status)
+            {
+                case OperationStatuses.Succeeded:
+                    _mode = ParallelExecutionMode.Terminal;
+                    _frozenSummary = BatchSummaryCodec.ParseSummary(existing.ContextDetails?.Result);
+                    _startTask = Task.CompletedTask;
+                    break;
+                case OperationStatuses.Started:
+                case OperationStatuses.Pending:
+                    // Children replay from their own checkpoints; the parent START
+                    // is not re-emitted (the original is authoritative).
+                    _mode = ParallelExecutionMode.Run;
+                    _startTask = Task.CompletedTask;
+                    break;
+                default:
+                    throw new NonDeterministicExecutionException(
+                        $"Parallel operation '{_name ?? _operationId}' has unexpected status " +
+                        $"'{existing.Status}' on replay.");
+            }
         }
     }
 
@@ -397,12 +421,30 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         }
     }
 
-    public async Task<IBatchResult> CompleteAsync(CancellationToken cancellationToken = default)
+    public Task<IBatchResult> CompleteAsync(CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            if (_cachedResult != null) return _cachedResult;
+            // Cache the in-progress task (not just the finished result) so two
+            // concurrent CompleteAsync calls — or DisposeAsync racing one — share a
+            // single completion and enqueue exactly one parent SUCCEED.
+            if (_completion != null) return _completion;
             _sealed = true;
+            _sealedVolatile = true;
+            _completion = CompleteCoreAsync(cancellationToken);
+            return _completion;
+        }
+    }
+
+    private async Task<IBatchResult> CompleteCoreAsync(CancellationToken cancellationToken)
+    {
+        // Registration is sealed: the denominator is now known, so re-evaluate the
+        // completion policy (including percentage-based tolerance, which is
+        // suppressed pre-seal) and signal any in-flight branches to bail.
+        if (ShouldStopDispatchingNow())
+        {
+            try { _shortCircuitCts.Cancel(); }
+            catch (ObjectDisposedException) { }
         }
 
         // Ensure the parent START is durably enqueued even for an empty operation.
@@ -440,33 +482,35 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             ? BuildTerminalResult(controllers)
             : await BuildAndCheckpointRunResultAsync(controllers, cancellationToken).ConfigureAwait(false);
 
-        lock (_lock)
-        {
-            _completed = true;
-            _cachedResult = result;
-        }
         return result;
     }
 
     public async ValueTask DisposeAsync()
     {
-        bool needComplete;
+        Task<IBatchResult>? completion;
         lock (_lock)
         {
             if (_disposed) return;
             _disposed = true;
-            needComplete = !_completed;
+            // If CompleteAsync was never called, complete now so the parent's
+            // terminal checkpoint is written — otherwise replay would see a STARTED
+            // parent forever and re-run the whole operation.
+            completion = _completion;
         }
 
         try
         {
-            // Guarantee the parent's terminal checkpoint is written even if the
-            // caller forgot CompleteAsync — otherwise replay would see a STARTED
-            // parent forever and re-run the whole operation.
-            if (needComplete)
-            {
-                await CompleteAsync(CancellationToken.None).ConfigureAwait(false);
-            }
+            completion ??= CompleteAsync(CancellationToken.None);
+            await completion.ConfigureAwait(false);
+        }
+        catch
+        {
+            // DisposeAsync must never throw. A completion fault (e.g. a
+            // NonDeterministicExecutionException, or the secondary effect of a
+            // BranchAsync that already threw during registration) is either
+            // already surfaced to a caller that awaited CompleteAsync, or will
+            // resurface on the next invocation's replay. Swallow it here so
+            // `await using` teardown stays clean.
         }
         finally
         {
@@ -562,8 +606,15 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
     // During incremental registration the "total" is the number registered so far;
     // percentage-based tolerance is evaluated against that running total. MinSuccessful
     // and count-based tolerance don't depend on the total.
+    // During incremental registration the denominator is unknown, so percentage-based
+    // failure tolerance must NOT drive short-circuiting (a premature ratio like 1/1
+    // could skip branches that would have lowered the final ratio). MinSuccessful and
+    // absolute-count tolerance are denominator-independent and always apply; the
+    // percentage component is enabled only once registration is sealed, and the final
+    // verdict (ComputeCompletionReason) always uses the true total.
     private bool ShouldStopDispatchingNow() => _policy.ShouldStopDispatching(
-        Volatile.Read(ref _succeeded), Volatile.Read(ref _failed), Volatile.Read(ref _registeredCount));
+        Volatile.Read(ref _succeeded), Volatile.Read(ref _failed), Volatile.Read(ref _registeredCount),
+        evaluatePercentage: _sealedVolatile);
 
     private async Task<IBatchResult> BuildAndCheckpointRunResultAsync(
         IReadOnlyList<IParallelBranchController> controllers,
@@ -697,6 +748,18 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         // Fall back to the registered controllers when the payload is missing/corrupt.
         if (_frozenSummary != null)
         {
+            // Positional replay contract: the same branches must be registered in the
+            // same order every invocation. A different count (a branch added or removed
+            // vs. the sealed run) would silently skip or double-count units, so reject it.
+            if (_registeredCount != _frozenSummary.Units.Count)
+            {
+                throw new NonDeterministicExecutionException(
+                    $"Non-deterministic execution detected for parallel operation " +
+                    $"'{_name ?? _operationId}': registered {_registeredCount} branch(es) on replay " +
+                    $"but the checkpoint recorded {_frozenSummary.Units.Count}. Code must register the " +
+                    $"same branches in the same order between deployments.");
+            }
+
             var succeeded = 0;
             var failed = 0;
             var started = 0;

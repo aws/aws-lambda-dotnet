@@ -87,6 +87,15 @@ public interface IDurableParallel : IAsyncDisposable
     /// <see cref="IBatchResult.CompletionReason"/>, or await individual branch
     /// handles, to observe failures. It does propagate workflow-level errors (for
     /// example <see cref="NonDeterministicExecutionException"/>) and cancellation.
+    /// <para>
+    /// The <paramref name="cancellationToken"/> governs sealing and awaiting: it
+    /// stops this call from waiting further. Because branches begin executing when
+    /// they are registered (before <c>CompleteAsync</c> is called), this token is
+    /// not retroactively linked into already-running branch bodies — those observe
+    /// the SDK's workflow-shutdown signal (and the completion-policy short-circuit)
+    /// instead. Dispatched branches always run to a terminal checkpoint so replay
+    /// stays deterministic, matching <see cref="IDurableContext.ParallelAsync{T}(System.Collections.Generic.IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>.
+    /// </para>
     /// </remarks>
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
     /// <returns>The aggregate <see cref="IBatchResult"/> summarizing branch outcomes.</returns>

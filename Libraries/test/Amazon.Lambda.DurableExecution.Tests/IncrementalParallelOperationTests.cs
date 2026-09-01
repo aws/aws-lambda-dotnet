@@ -526,4 +526,87 @@ public class IncrementalParallelOperationTests
         Assert.DoesNotContain("START", parentActions);
         Assert.Contains("SUCCEED", parentActions);
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Replay guardrails from review (issue #2519 Copilot feedback)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CreateParallel_ReplayUnexpectedParentStatus_Throws()
+    {
+        // The parent parallel only ever checkpoints SUCCEED. A terminal status the
+        // SDK never writes (CANCELLED/STOPPED/TIMED_OUT/FAILED) is a replay mismatch
+        // and must not silently re-run and overwrite the prior outcome.
+        var parentOpId = IdAt(1);
+        var (context, _, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = "CANCELLED",
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout"
+                }
+            }
+        });
+
+        Assert.Throws<NonDeterministicExecutionException>(() => context.CreateParallel(name: "fanout"));
+    }
+
+    [Fact]
+    public async Task CreateParallel_ReplayBranchCountMismatch_Throws()
+    {
+        // Registering a different number of branches than the frozen summary recorded
+        // violates the positional replay contract.
+        var parentOpId = IdAt(1);
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"inventory","Status":"SUCCEEDED","Result":"1"},
+                {"Index":1,"Name":"payment","Status":"SUCCEEDED","Result":"2"}
+            ]}
+            """;
+
+        var (context, _, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+            }
+        });
+
+        var parallel = context.CreateParallel(name: "fanout");
+        _ = parallel.BranchAsync("inventory", async (_, _) => { await Task.Yield(); return 1; });
+        // Only one branch registered, but the checkpoint recorded two.
+        await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () => await parallel.CompleteAsync());
+        await parallel.DisposeAsync(); // must not throw a secondary exception
+    }
+
+    [Fact]
+    public void CompletionPolicy_PercentageTolerance_NotEvaluatedBeforeSeal()
+    {
+        // A percentage-based tolerance must not short-circuit against an incomplete
+        // denominator: 1 failure out of 1 registered-so-far is 100%, but with two
+        // more registrations pending the true ratio may be under threshold.
+        var policy = new CompletionPolicy(new CompletionConfig { ToleratedFailurePercentage = 0.5 });
+
+        // Pre-seal: percentage suppressed → do NOT stop dispatching.
+        Assert.False(policy.ShouldStopDispatching(succeeded: 0, failed: 1, totalBranches: 1, evaluatePercentage: false));
+
+        // Post-seal with the true denominator: 1/3 <= 0.5 → still do not stop.
+        Assert.False(policy.ShouldStopDispatching(succeeded: 0, failed: 1, totalBranches: 3, evaluatePercentage: true));
+
+        // Post-seal, genuinely over threshold: 2/3 > 0.5 → stop.
+        Assert.True(policy.ShouldStopDispatching(succeeded: 0, failed: 2, totalBranches: 3, evaluatePercentage: true));
+    }
 }
