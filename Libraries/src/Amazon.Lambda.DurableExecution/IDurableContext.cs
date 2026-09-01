@@ -391,9 +391,11 @@ public interface IDurableContext
     /// <see cref="ParallelConfig.NestingType"/> as the homogeneous API.
     /// </remarks>
     /// <param name="name">
-    /// An optional name for the parallel operation, used for observability and to
-    /// derive the deterministic operation ID. Defaults to a name inferred from the
-    /// call site.
+    /// Optional human-readable name for the parallel operation, used only for
+    /// observability — it surfaces on the wire <c>OperationUpdate.Name</c> field and
+    /// in execution traces. The deterministic operation ID is positional (derived
+    /// from the call order, not from this name), so a name change across deployments
+    /// does not break replay. Defaults to <c>null</c>.
     /// </param>
     /// <param name="config">
     /// Optional parallel configuration. Defaults are used when null.
