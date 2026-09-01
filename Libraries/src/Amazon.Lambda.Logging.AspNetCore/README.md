@@ -94,3 +94,25 @@ using(defaultLogger.BeginScope(awsRequestId))
     }
 }
 ```
+
+## Structured scopes in Lambda JSON mode
+
+When the `AWS_LAMBDA_LOG_FORMAT` environment variable is set to `JSON` and `IncludeScopes` is `true`, scope state objects that implement `IEnumerable<KeyValuePair<string, object>>` (such as `Dictionary<string, object>`) will have their key/value entries included as structured parameters in the emitted JSON log entry.
+
+```csharp
+var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+
+var scopeProperties = new Dictionary<string, object>
+{
+    { "RequestId", "abc-123" },
+    { "UserId",    42 }
+};
+
+using (logger.BeginScope(scopeProperties))
+{
+    logger.LogInformation("Order {OrderId} placed", orderId);
+    // Emits JSON with RequestId, UserId, and OrderId as structured properties.
+}
+```
+
+Nested structured scopes are supported. The scope properties are prepended to the parameter list (outermost scope first), followed by the message-template parameters. Non-structured scopes (e.g. plain strings) are silently ignored in JSON mode.
