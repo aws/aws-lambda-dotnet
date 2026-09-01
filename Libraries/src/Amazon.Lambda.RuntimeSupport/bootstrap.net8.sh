@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# PQC TLS keyshares are enabled by default via the AL2023 base-OS crypto policy. Customers can opt
-# out by setting AWS_LAMBDA_DISABLE_PQC_KEYSHARES (presence-based, including an empty value), which
-# selects the shipped classical-only openssl_non_pqc.cnf and takes precedence over a customer OPENSSL_CONF.
-if [ -n "${AWS_LAMBDA_DISABLE_PQC_KEYSHARES+x}" ]; then
-  export OPENSSL_CONF=/var/runtime/openssl_conf/openssl_non_pqc.cnf
-fi
-
 # .NET on Linux uses OpenSSL to handle certificates. The .NET runtime will load the certs by first reading
 # the default cert bundle file which can be overriden by the SSL_CERT_FILE env var. Then it will load the
 # certs in the default cert directory which can be overriden by the SSL_CERT_DIR env var. On AL2023
