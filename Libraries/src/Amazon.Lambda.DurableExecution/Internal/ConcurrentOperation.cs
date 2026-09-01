@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using SdkContextOptions = Amazon.Lambda.Model.ContextOptions;
@@ -390,7 +389,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var summary = ParseSummary(frozen.ContextDetails?.Result);
+        var summary = BatchSummaryCodec.ParseSummary(frozen.ContextDetails?.Result);
         var unitCount = UnitCount;
 
         var items = new List<IBatchItem<T>>(unitCount);
@@ -401,7 +400,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
             // Frozen per-unit status is authoritative.
             var status = summaryEntry != null
-                ? DeserializeStatus(summaryEntry.Status)
+                ? BatchSummaryCodec.DeserializeStatus(summaryEntry.Status)
                 : BatchItemStatus.Started;
 
             // Same unit-name drift check as ReconstructFromCheckpoints: code must
@@ -459,7 +458,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // Completion reason is pinned from the frozen summary; fall back to
         // recomputing only if the summary is absent/corrupt.
         var completionReason = summary != null
-            ? DeserializeCompletionReason(summary.CompletionReason)
+            ? BatchSummaryCodec.DeserializeCompletionReason(summary.CompletionReason)
             : ComputeCompletionReason(items, unitCount);
 
         // No re-checkpoint: the parent is already terminal in state. Return the
@@ -707,7 +706,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
             var s = new BatchSummary
             {
-                CompletionReason = SerializeCompletionReason(completionReason),
+                CompletionReason = BatchSummaryCodec.SerializeCompletionReason(completionReason),
                 Units = new List<BatchUnitSummary>(UnitCount)
             };
             for (var i = 0; i < UnitCount; i++)
@@ -718,7 +717,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                 {
                     Index = i,
                     Name = item?.Name ?? unitName,
-                    Status = SerializeStatus(item?.Status ?? BatchItemStatus.Started)
+                    Status = BatchSummaryCodec.SerializeStatus(item?.Status ?? BatchItemStatus.Started)
                 };
                 // Persist each unit's result/error inline on the parent summary —
                 // for BOTH Nested and Flat units. The service collapses completed
@@ -741,18 +740,18 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         }
 
         var summary = BuildSummary(includeInline: true);
-        var payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+        var payload = BatchSummaryCodec.ToPayload(summary);
 
         // Overflow: the inline per-unit results pushed the summary over the
         // checkpoint limit. Re-emit a stripped summary (statuses only) and flag
         // ReplayChildren so replay reconstructs the values by re-executing units.
         // Applies to both Nested and Flat now that both inline their results.
         var overflow =
-            Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+            BatchSummaryCodec.IsOverflow(payload);
         if (overflow)
         {
             summary = BuildSummary(includeInline: false);
-            payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+            payload = BatchSummaryCodec.ToPayload(summary);
         }
 
         // Always checkpoint as SUCCEED — even when FailureToleranceExceeded.
@@ -776,7 +775,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
     private IBatchResult<T> ReconstructFromCheckpoints(Operation parent)
     {
-        var summary = ParseSummary(parent.ContextDetails?.Result);
+        var summary = BatchSummaryCodec.ParseSummary(parent.ContextDetails?.Result);
 
         var items = new List<IBatchItem<T>>(UnitCount);
         for (var i = 0; i < UnitCount; i++)
@@ -787,7 +786,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             var summaryEntry = summary?.Units.FirstOrDefault(b => b.Index == i);
 
             BatchItemStatus status = summaryEntry != null
-                ? DeserializeStatus(summaryEntry.Status)
+                ? BatchSummaryCodec.DeserializeStatus(summaryEntry.Status)
                 : InferStatusFromChildOp(childOp);
 
             // Prefer the name that was checkpointed at the moment the batch
@@ -866,7 +865,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         }
 
         var completionReason = summary != null
-            ? DeserializeCompletionReason(summary.CompletionReason)
+            ? BatchSummaryCodec.DeserializeCompletionReason(summary.CompletionReason)
             : ComputeCompletionReason(items, UnitCount);
 
         return new BatchResult<T>(items, completionReason);
@@ -882,53 +881,6 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             _                           => BatchItemStatus.Started
         };
     }
-
-    private static BatchSummary? ParseSummary(string? payload)
-    {
-        if (string.IsNullOrEmpty(payload)) return null;
-        try
-        {
-            return JsonSerializer.Deserialize(payload, BatchJsonContext.Default.BatchSummary);
-        }
-        catch (JsonException)
-        {
-            // Tolerate older / corrupted payloads — fall back to inferring status
-            // from per-unit checkpoints.
-            return null;
-        }
-    }
-
-    private static string SerializeStatus(BatchItemStatus status) => status switch
-    {
-        BatchItemStatus.Succeeded => "SUCCEEDED",
-        BatchItemStatus.Failed    => "FAILED",
-        BatchItemStatus.Started   => "STARTED",
-        _ => throw new ArgumentOutOfRangeException(nameof(status))
-    };
-
-    private static BatchItemStatus DeserializeStatus(string? wire) => wire switch
-    {
-        "SUCCEEDED" => BatchItemStatus.Succeeded,
-        "FAILED"    => BatchItemStatus.Failed,
-        "STARTED"   => BatchItemStatus.Started,
-        _           => BatchItemStatus.Started
-    };
-
-    private static string SerializeCompletionReason(CompletionReason reason) => reason switch
-    {
-        CompletionReason.AllCompleted             => "ALL_COMPLETED",
-        CompletionReason.MinSuccessfulReached     => "MIN_SUCCESSFUL_REACHED",
-        CompletionReason.FailureToleranceExceeded => "FAILURE_TOLERANCE_EXCEEDED",
-        _ => throw new ArgumentOutOfRangeException(nameof(reason))
-    };
-
-    private static CompletionReason DeserializeCompletionReason(string? wire) => wire switch
-    {
-        "ALL_COMPLETED"              => CompletionReason.AllCompleted,
-        "MIN_SUCCESSFUL_REACHED"     => CompletionReason.MinSuccessfulReached,
-        "FAILURE_TOLERANCE_EXCEEDED" => CompletionReason.FailureToleranceExceeded,
-        _                            => CompletionReason.AllCompleted
-    };
 
     private T DeserializeResult(string serialized)
     {
