@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Report missing Test Tool startup options as a user error"
+      ]
+    }
+  ]
+}
