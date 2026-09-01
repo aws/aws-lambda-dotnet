@@ -1,3 +1,11 @@
+## Release 2026-09-01
+
+### Amazon.Lambda.TestTool (0.15.1)
+* Fix Blazor web UI being non-interactive on .NET 9+/net10.0. Framework static assets (_framework/blazor.web.js) and the scoped-CSS bundle are now served via MapStaticAssets, the static web assets manifest is composed regardless of hosting environment, and the content root is pinned to the tool's install directory so the assets resolve correctly when running as an installed global tool.
+* Fix Razor class library content (e.g. the BlazorMonaco code-editor assets under _content/**) returning 404 on .NET 8 when running from a build output (dotnet run), which left the request/response editor uninitialized so selecting an example request could not populate the input. The static web assets manifest is now composed on all target frameworks, and .NET 8 additionally serves static files from the web root file provider so manifest-mapped _content/** assets resolve. Verified across .NET 8/.NET 10, Development/Production, and dotnet-run/installed-tool.
+### Amazon.Lambda.Logging.AspNetCore (5.0.1)
+* Fixed the JSON log formatter ignoring IncludeCategory
+
 ## Release 2026-08-27
 
 ### Amazon.Lambda.CloudWatchEvents (5.1.0)
