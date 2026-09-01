@@ -195,6 +195,19 @@ internal sealed class DurableContext : IDurableContext
         return op.ExecuteAsync(cancellationToken);
     }
 
+    public IDurableParallel CreateParallel(
+        string? name = null,
+        ParallelConfig? config = null)
+    {
+        var effectiveConfig = config ?? new ParallelConfig();
+        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+
+        var operationId = _idGenerator.NextId();
+        return new Internal.IncrementalParallelOperation(
+            operationId, name, _idGenerator.ParentId, effectiveConfig, serializer, MakeChildFactory(),
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+    }
+
     public Task<IBatchResult<T>> ParallelAsync<T>(
         IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches,
         string? name = null,
