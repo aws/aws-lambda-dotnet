@@ -575,6 +575,131 @@ namespace Amazon.Lambda.Tests
         }
 
         [Fact]
+        public void JsonLoggingOrdersParametersByTemplatePlaceholderName()
+        {
+            const string template =
+                "Request starting {Protocol} {Method} {Scheme}://{Host}{PathBase}{Path}{QueryString} - {ContentType} {ContentLength}";
+
+            var state = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Protocol", "HTTP/1.1"),
+                new KeyValuePair<string, object>("Method", "DELETE"),
+                new KeyValuePair<string, object>("ContentType", "application/json"),
+                new KeyValuePair<string, object>("ContentLength", 0L),
+                new KeyValuePair<string, object>("Scheme", "https"),
+                new KeyValuePair<string, object>("Host", "api.example.com"),
+                new KeyValuePair<string, object>("PathBase", string.Empty),
+                new KeyValuePair<string, object>("Path", "/events/123"),
+                new KeyValuePair<string, object>("QueryString", "?preserve=true"),
+                new KeyValuePair<string, object>("{OriginalFormat}", template)
+            };
+
+            var capturedLog = CaptureJsonLog(state);
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(
+                new object[]
+                {
+                    "HTTP/1.1",
+                    "DELETE",
+                    "https",
+                    "api.example.com",
+                    string.Empty,
+                    "/events/123",
+                    "?preserve=true",
+                    "application/json",
+                    0L
+                },
+                capturedLog.Parameters);
+        }
+
+        [Fact]
+        public void JsonLoggingPreservesOrderedDuplicateParameters()
+        {
+            const string template = "{Name} then {Name}";
+            var capturedLog = CaptureJsonLog(logger =>
+                logger.LogInformation(template, "first", "second"));
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(new object[] { "first", "second" }, capturedLog.Parameters);
+        }
+
+        [Fact]
+        public void JsonLoggingHandlesTemplateSyntaxAndMissingProperties()
+        {
+            const string template = "{{literal}} {@Payload} {$Cost} {Count,8:N0} {Missing} {Tail}";
+            var payload = new object();
+            var state = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Tail", "done"),
+                new KeyValuePair<string, object>("Extra", "unused"),
+                new KeyValuePair<string, object>("Count", 1234),
+                new KeyValuePair<string, object>("Payload", payload),
+                new KeyValuePair<string, object>("Cost", 9.5m),
+                new KeyValuePair<string, object>("{OriginalFormat}", template)
+            };
+
+            var capturedLog = CaptureJsonLog(state);
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(
+                new object[] { payload, 9.5m, 1234, null, "done", "unused" },
+                capturedLog.Parameters);
+        }
+
+        [Fact]
+        public void JsonLoggingReusesSingleValueForRepeatedPlaceholder()
+        {
+            const string template = "{Name} {Tail} {Name}";
+            var state = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Tail", "done"),
+                new KeyValuePair<string, object>("Name", "reused"),
+                new KeyValuePair<string, object>("{OriginalFormat}", template)
+            };
+
+            var capturedLog = CaptureJsonLog(state);
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(new object[] { "reused", "done", "reused" }, capturedLog.Parameters);
+        }
+
+        [Fact]
+        public void JsonLoggingOrdersMultipleValuesForRepeatedPlaceholder()
+        {
+            const string template = "{Name} {Tail} {Name}";
+            var state = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("Tail", "done"),
+                new KeyValuePair<string, object>("Name", "first"),
+                new KeyValuePair<string, object>("Name", "second"),
+                new KeyValuePair<string, object>("{OriginalFormat}", template)
+            };
+
+            var capturedLog = CaptureJsonLog(state);
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(new object[] { "first", "done", "second" }, capturedLog.Parameters);
+        }
+
+        [Fact]
+        public void JsonLoggingPreservesPositionalParameterOrder()
+        {
+            const string template = "{1} before {0}";
+            var state = new List<KeyValuePair<string, object>>
+            {
+                new KeyValuePair<string, object>("1", "first argument"),
+                new KeyValuePair<string, object>("0", "second argument"),
+                new KeyValuePair<string, object>("{OriginalFormat}", template)
+            };
+
+            var capturedLog = CaptureJsonLog(state);
+
+            Assert.Equal(template, capturedLog.MessageTemplate);
+            Assert.Equal(new object[] { "first argument", "second argument" }, capturedLog.Parameters);
+        }
+
+        [Fact]
         public void JsonLoggingWithNoOriginalFormat()
         {
             Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
@@ -618,6 +743,50 @@ namespace Amazon.Lambda.Tests
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
 		}
+
+        private static (string MessageTemplate, object[] Parameters) CaptureJsonLog(
+            IReadOnlyList<KeyValuePair<string, object>> state)
+        {
+            return CaptureJsonLog(logger =>
+                logger.Log(LogLevel.Information, new EventId(0), state, null, (value, error) => string.Empty));
+        }
+
+        private static (string MessageTemplate, object[] Parameters) CaptureJsonLog(Action<ILogger> writeLog)
+        {
+            var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            var loggingField = lambdaLoggerType
+                .GetTypeInfo()
+                .GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(loggingField);
+
+            var previousLogFormat = Environment.GetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT");
+            var previousLoggingAction = loggingField.GetValue(null);
+            string capturedTemplate = null;
+            object[] capturedParameters = null;
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+                loggingField.SetValue(null, new Action<string, Exception, string, object[]>((level, exception, message, parameters) =>
+                {
+                    capturedTemplate = message;
+                    capturedParameters = parameters;
+                }));
+
+                var logger = new TestLoggerFactory()
+                    .AddLambdaLogger(new LambdaLoggerOptions())
+                    .CreateLogger("JSONLogging");
+
+                writeLog(logger);
+                return (capturedTemplate, capturedParameters);
+            }
+            finally
+            {
+                loggingField.SetValue(null, previousLoggingAction);
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", previousLogFormat);
+            }
+        }
+
 		private static void ConnectLoggingActionToLogger(Action<string> loggingAction)
 		{
 			var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);

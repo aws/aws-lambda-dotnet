@@ -1,10 +1,19 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Microsoft.Extensions.Logging
 {
     internal class LambdaILogger : ILogger
     {
+        private const string ORIGINAL_FORMAT_KEY = "{OriginalFormat}";
+        private const int MESSAGE_TEMPLATE_PARSE_CACHE_MAXSIZE = 1024;
+
+        private static readonly ConcurrentDictionary<string, IReadOnlyList<string>> MESSAGE_TEMPLATE_PARSE_CACHE =
+            new ConcurrentDictionary<string, IReadOnlyList<string>>();
+        private static readonly char[] PROPERTY_NAME_DELIMITERS = { ',', ':' };
+
         // Private fields
         private readonly string _categoryName;
         private readonly LambdaLoggerOptions _options;
@@ -57,25 +66,31 @@ namespace Microsoft.Extensions.Logging
             if (IsLambdaJsonFormatEnabled && state is IEnumerable<KeyValuePair<string, object>> structure)
             {
                 string messageTemplate = null;
-                var parameters = new List<object>();
+                var properties = new List<KeyValuePair<string, object>>();
                 foreach (var property in structure)
                 {
-                    if (property is { Key: "{OriginalFormat}", Value: string value })
+                    if (property is { Key: ORIGINAL_FORMAT_KEY, Value: string value })
                     {
                         messageTemplate = value;
                     }
                     else
                     {
-                        parameters.Add(property.Value);
+                        properties.Add(property);
                     }
                 }
 
+                object[] parameters;
                 if (messageTemplate == null)
                 {
                     messageTemplate = formatter.Invoke(state, exception);
+                    parameters = GetPropertyValues(properties);
+                }
+                else
+                {
+                    parameters = OrderParametersByMessageTemplate(messageTemplate, properties);
                 }
 
-                Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters.ToArray());
+                Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters);
             }
             else
             {
@@ -112,6 +127,231 @@ namespace Microsoft.Extensions.Logging
 
                 Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, finalText);
             }
+        }
+
+        private static object[] OrderParametersByMessageTemplate(
+            string messageTemplate,
+            IReadOnlyList<KeyValuePair<string, object>> properties)
+        {
+            var templateProperties = ParseTemplateProperties(messageTemplate);
+            if (templateProperties.Count == 0)
+            {
+                return GetPropertyValues(properties);
+            }
+
+            if (PropertiesMatchTemplateOrder(templateProperties, properties))
+            {
+                return GetPropertyValues(properties);
+            }
+
+            if (UsesPositionalArguments(templateProperties))
+            {
+                return GetPropertyValues(properties);
+            }
+
+            var parameters = new List<object>(Math.Max(templateProperties.Count, properties.Count));
+            var consumedProperties = new bool[properties.Count];
+            var propertyIndexes = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            var propertyOccurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            for (var i = 0; i < properties.Count; i++)
+            {
+                if (properties[i].Key == null)
+                {
+                    continue;
+                }
+
+                if (!propertyIndexes.TryGetValue(properties[i].Key, out var indexes))
+                {
+                    indexes = new List<int>();
+                    propertyIndexes.Add(properties[i].Key, indexes);
+                }
+
+                indexes.Add(i);
+            }
+
+            foreach (var templateProperty in templateProperties)
+            {
+                var propertyName = GetStatePropertyName(templateProperty);
+                if (!propertyIndexes.TryGetValue(propertyName, out var indexes) &&
+                    (propertyName.Length <= 1 ||
+                     (propertyName[0] != '@' && propertyName[0] != '$') ||
+                     !propertyIndexes.TryGetValue(propertyName.Substring(1), out indexes)))
+                {
+                    // Keep the slot so a missing value cannot shift subsequent properties.
+                    parameters.Add(null);
+                    continue;
+                }
+
+                var matchedName = properties[indexes[0]].Key;
+                propertyOccurrences.TryGetValue(matchedName, out var occurrence);
+                propertyOccurrences[matchedName] = occurrence + 1;
+
+                // A custom state can expose one value for a repeated placeholder. Reuse
+                // that sole value; multiple same-name values are consumed in order.
+                var propertyIndex = indexes.Count == 1
+                    ? indexes[0]
+                    : occurrence < indexes.Count ? indexes[occurrence] : -1;
+                if (propertyIndex < 0)
+                {
+                    parameters.Add(null);
+                    continue;
+                }
+
+                consumedProperties[propertyIndex] = true;
+                parameters.Add(properties[propertyIndex].Value);
+            }
+
+            // Preserve state values that are not represented in the template. The JSON
+            // formatter ignores trailing arguments, but custom LambdaLogger callbacks may
+            // still inspect them.
+            for (var i = 0; i < properties.Count; i++)
+            {
+                if (!consumedProperties[i])
+                {
+                    parameters.Add(properties[i].Value);
+                }
+            }
+
+            return parameters.ToArray();
+        }
+
+        private static bool PropertiesMatchTemplateOrder(
+            IReadOnlyList<string> templateProperties,
+            IReadOnlyList<KeyValuePair<string, object>> properties)
+        {
+            if (templateProperties.Count != properties.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < templateProperties.Count; i++)
+            {
+                var propertyName = GetStatePropertyName(templateProperties[i]);
+                if (string.Equals(properties[i].Key, propertyName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (propertyName.Length <= 1 ||
+                    (propertyName[0] != '@' && propertyName[0] != '$') ||
+                    !string.Equals(properties[i].Key, propertyName.Substring(1), StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static object[] GetPropertyValues(IReadOnlyList<KeyValuePair<string, object>> properties)
+        {
+            var parameters = new object[properties.Count];
+            for (var i = 0; i < properties.Count; i++)
+            {
+                parameters[i] = properties[i].Value;
+            }
+
+            return parameters;
+        }
+
+        private static IReadOnlyList<string> ParseTemplateProperties(string messageTemplate)
+        {
+            if (MESSAGE_TEMPLATE_PARSE_CACHE.TryGetValue(messageTemplate, out var cachedProperties))
+            {
+                return cachedProperties;
+            }
+
+            var properties = new List<string>();
+            var parserState = LogFormatParserState.InMessage;
+            var propertyStartIndex = -1;
+
+            for (var i = 0; i < messageTemplate.Length; i++)
+            {
+                switch (messageTemplate[i])
+                {
+                    case '{':
+                        if (parserState == LogFormatParserState.InMessage)
+                        {
+                            parserState = LogFormatParserState.PossiblePropertyOpen;
+                        }
+                        else if (parserState == LogFormatParserState.PossiblePropertyOpen)
+                        {
+                            // Escaped "{{" is message text, not a property.
+                            parserState = LogFormatParserState.InMessage;
+                        }
+                        break;
+                    case '}':
+                        if (parserState != LogFormatParserState.InMessage)
+                        {
+                            if (propertyStartIndex >= 0)
+                            {
+                                properties.Add(messageTemplate.Substring(propertyStartIndex, i - propertyStartIndex));
+                            }
+
+                            parserState = LogFormatParserState.InMessage;
+                            propertyStartIndex = -1;
+                        }
+                        break;
+                    default:
+                        if (parserState == LogFormatParserState.PossiblePropertyOpen)
+                        {
+                            propertyStartIndex = i;
+                            parserState = LogFormatParserState.InProperty;
+                        }
+                        break;
+                }
+            }
+
+            var parsedProperties = properties.AsReadOnly();
+            if (MESSAGE_TEMPLATE_PARSE_CACHE.Count < MESSAGE_TEMPLATE_PARSE_CACHE_MAXSIZE)
+            {
+                MESSAGE_TEMPLATE_PARSE_CACHE.TryAdd(messageTemplate, parsedProperties);
+            }
+
+            return parsedProperties;
+        }
+
+        private static string GetStatePropertyName(string templateProperty)
+        {
+            var delimiterIndex = templateProperty.IndexOfAny(PROPERTY_NAME_DELIMITERS);
+            var propertyName = delimiterIndex >= 0
+                ? templateProperty.Substring(0, delimiterIndex)
+                : templateProperty;
+            return propertyName.Trim();
+        }
+
+        private static bool UsesPositionalArguments(IReadOnlyList<string> templateProperties)
+        {
+            var minimumPosition = int.MaxValue;
+            var maximumPosition = int.MinValue;
+            var positions = new HashSet<int>();
+
+            foreach (var templateProperty in templateProperties)
+            {
+                var propertyName = templateProperty;
+                if (propertyName.Length > 0 && propertyName[0] == '@')
+                {
+                    propertyName = propertyName.Substring(1);
+                }
+
+                var formatDelimiterIndex = propertyName.IndexOf(':');
+                if (formatDelimiterIndex >= 0)
+                {
+                    propertyName = propertyName.Substring(0, formatDelimiterIndex);
+                }
+
+                if (!int.TryParse(propertyName.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var position))
+                {
+                    return false;
+                }
+
+                positions.Add(position);
+                minimumPosition = Math.Min(minimumPosition, position);
+                maximumPosition = Math.Max(maximumPosition, position);
+            }
+
+            return minimumPosition == 0 && positions.Count == maximumPosition + 1;
         }
 
         private static Amazon.Lambda.Core.LogLevel ConvertLogLevel(LogLevel logLevel)
@@ -161,6 +401,13 @@ namespace Microsoft.Extensions.Logging
             {
                 return string.Equals(Environment.GetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT"), "JSON", StringComparison.InvariantCultureIgnoreCase);
             }
+        }
+
+        private enum LogFormatParserState : byte
+        {
+            InMessage,
+            PossiblePropertyOpen,
+            InProperty
         }
 
         // Private classes	       
