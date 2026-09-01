@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Added an incremental, branch-oriented parallel API (IDurableContext.CreateParallel, IDurableParallel, IParallelBranch<T>) supporting heterogeneous per-branch result types and incremental branch registration, alongside the existing homogeneous ParallelAsync<T> overloads. Each branch declares its own result type and returns an awaitable typed handle; branches start on registration (respecting MaxConcurrency) and the operation is sealed with CompleteAsync. Honors the existing MaxConcurrency, CompletionConfig, NestingType, cancellation, deterministic replay, and ILambdaSerializer behavior."
+      ]
+    }
+  ]
+}
