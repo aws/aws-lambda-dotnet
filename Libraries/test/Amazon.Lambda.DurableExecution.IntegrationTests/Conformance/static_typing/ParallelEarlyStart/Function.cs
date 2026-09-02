@@ -1,4 +1,4 @@
-// 8-24: Parallel branch starts before registration is sealed
+// 12-2: Parallel branch starts before registration is sealed
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.RuntimeSupport;

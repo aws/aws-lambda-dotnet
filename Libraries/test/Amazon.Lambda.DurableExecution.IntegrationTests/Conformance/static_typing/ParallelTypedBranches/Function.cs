@@ -1,4 +1,4 @@
-// 8-23: Parallel with independently typed heterogeneous branch handles
+// 12-1: Parallel with independently typed heterogeneous branch handles
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.RuntimeSupport;

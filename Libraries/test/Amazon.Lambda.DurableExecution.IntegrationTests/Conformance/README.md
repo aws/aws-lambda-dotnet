@@ -42,7 +42,7 @@ Conformance/
 
 ## Coverage
 
-All nine suites are implemented (one handler project per requirement id):
+All ten suites are implemented (one handler project per requirement id):
 
 | Suite | Ids | Handlers |
 |-------|-----|----------|
@@ -53,8 +53,9 @@ All nine suites are implemented (one handler project per requirement id):
 | `invoke` | 5-1 .. 5-15 | 15 (+2 target functions, +1 tenancy alias) |
 | `wait_for_condition` | 6-1 .. 6-13 | 13 |
 | `wait_for_callback` | 7-1 .. 7-15 | 15 |
-| `parallel` | 8-1 .. 8-24 (8-15 n/a) | 23 |
+| `parallel` | 8-1 .. 8-22 (8-15 n/a) | 21 |
 | `map` | 9-1 .. 9-18 (9-14 n/a) | 17 |
+| `static_typing` | 12-1 .. 12-2 | 2 |
 
 A few requirement ids have no .NET handler because the SDK intentionally lacks
 the feature they exercise (e.g. per-item / whole-result serdes slots in `map`);

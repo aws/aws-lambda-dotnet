@@ -412,39 +412,3 @@ Resources:
       DurableConfig:
         RetentionPeriodInDays: 7
         ExecutionTimeout: 300
-
-  ParallelTypedBranches:
-    Type: AWS::Serverless::Function
-    TestingMetadata:
-      TestDescription: ["8-23"]
-    Metadata:
-      BuildMethod: makefile
-    Properties:
-      CodeUri: publish/ParallelTypedBranches/
-      Handler: bootstrap
-      Description: Parallel with independently typed heterogeneous branch handles
-      Role:
-        Fn::GetAtt:
-        - DurableFunctionRole
-        - Arn
-      DurableConfig:
-        RetentionPeriodInDays: 7
-        ExecutionTimeout: 300
-
-  ParallelEarlyStart:
-    Type: AWS::Serverless::Function
-    TestingMetadata:
-      TestDescription: ["8-24"]
-    Metadata:
-      BuildMethod: makefile
-    Properties:
-      CodeUri: publish/ParallelEarlyStart/
-      Handler: bootstrap
-      Description: Parallel branch completes before later branches are registered
-      Role:
-        Fn::GetAtt:
-        - DurableFunctionRole
-        - Arn
-      DurableConfig:
-        RetentionPeriodInDays: 7
-        ExecutionTimeout: 300
