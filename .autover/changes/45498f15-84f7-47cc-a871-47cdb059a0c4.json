@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add optional per-item serializer override (ItemSerializer) on MapConfig and ParallelConfig; when null the globally-registered ILambdaSerializer is used for item/branch results."
+      ]
+    }
+  ]
+}

@@ -135,3 +135,7 @@ if (batch.HasFailure)
     batch.ThrowIfError(); // rethrow the first branch's DurableExecutionException, if desired
 }
 ```
+
+## Custom serializer
+
+Set `ParallelConfig.ItemSerializer` (and, for maps, `MapConfig<TItem>.ItemSerializer`) to serialize each branch/item **result** with a specific `ILambdaSerializer`. When `null` (default), the globally-registered serializer on `ILambdaContext.Serializer` is used. This controls only the per-branch/per-item result — both the inline copy on the operation's checkpoint and each nested unit's own checkpoint. It does **not** change the aggregated `IBatchResult<T>` envelope (per-unit statuses and completion reason), which is an SDK-internal, source-generated structure; and durable operations inside a branch/item body use their own configuration. See [Steps → Custom serializer](steps.md#custom-serializer) for replay/AOT notes.

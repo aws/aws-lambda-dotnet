@@ -1,3 +1,5 @@
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -9,11 +11,12 @@ namespace Amazon.Lambda.DurableExecution;
 /// receives the strongly-typed item rather than <c>object</c>.
 /// </typeparam>
 /// <remarks>
-/// Per-item checkpoint payloads are serialized via the
-/// <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> registered on
-/// <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/> (typically
-/// configured via <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>);
-/// this config does not expose a serializer slot.
+/// Per-item result payloads are serialized via the
+/// <see cref="ILambdaSerializer"/> registered on
+/// <see cref="ILambdaContext.Serializer"/> (typically configured via
+/// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>), unless overridden per
+/// operation via <see cref="ItemSerializer"/>. The aggregated batch envelope (per-item
+/// statuses and completion reason) is SDK-internal and is not user-serialized.
 /// </remarks>
 public sealed class MapConfig<TItem>
 {
@@ -77,4 +80,15 @@ public sealed class MapConfig<TItem>
     /// named by index (<c>"0"</c>, <c>"1"</c>, ...).
     /// </summary>
     public Func<TItem, int, string>? ItemNamer { get; set; }
+
+    /// <summary>
+    /// Optional serializer for each item's <b>result</b> payload. When <c>null</c>
+    /// (default), item results are serialized with the <see cref="ILambdaSerializer"/>
+    /// registered on <see cref="ILambdaContext.Serializer"/>. This controls only the
+    /// per-item result — both the inline copy on the map's checkpoint and each nested
+    /// item's own checkpoint. It does not change the aggregated batch envelope
+    /// (statuses / completion reason), and durable operations inside an item's body use
+    /// their own configuration.
+    /// </summary>
+    public ILambdaSerializer? ItemSerializer { get; set; }
 }

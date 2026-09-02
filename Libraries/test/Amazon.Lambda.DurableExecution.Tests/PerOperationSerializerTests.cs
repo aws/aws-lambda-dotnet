@@ -225,4 +225,63 @@ public class PerOperationSerializerTests
         Assert.True(perOp.SerializeCount >= 1);
         Assert.Equal(0, global.SerializeCount);
     }
+
+    // ---------------------------------------------------------------- Map / Parallel (ItemSerializer)
+
+    [Fact]
+    public async Task Map_WithItemSerializer_UsesItForItemResults()
+    {
+        var global = new SpySerializer();
+        var itemSer = new SpySerializer();
+        var ctx = CreateContext(global);
+
+        var result = await ctx.MapAsync(
+            new[] { "a", "b" },
+            async (_, item, _, _, _) => { await Task.CompletedTask; return item.ToUpperInvariant(); },
+            name: "map",
+            config: new MapConfig<string> { ItemSerializer = itemSer });
+
+        Assert.Equal(2, result.SuccessCount);
+        Assert.Equal(new[] { "A", "B" }, result.GetResults());
+        Assert.True(itemSer.SerializeCount >= 2);   // each item result serialized via the item serializer
+        Assert.Equal(0, global.SerializeCount);
+    }
+
+    [Fact]
+    public async Task Map_NoItemSerializer_UsesGlobal()
+    {
+        var global = new SpySerializer();
+        var ctx = CreateContext(global);
+
+        var result = await ctx.MapAsync(
+            new[] { "a" },
+            async (_, item, _, _, _) => { await Task.CompletedTask; return item; },
+            name: "map");
+
+        Assert.Equal(1, result.SuccessCount);
+        Assert.True(global.SerializeCount >= 1);
+    }
+
+    [Fact]
+    public async Task Parallel_WithItemSerializer_UsesItForBranchResults()
+    {
+        var global = new SpySerializer();
+        var itemSer = new SpySerializer();
+        var ctx = CreateContext(global);
+
+        var branches = new Func<IDurableContext, CancellationToken, Task<string>>[]
+        {
+            async (_, _) => { await Task.CompletedTask; return "x"; },
+            async (_, _) => { await Task.CompletedTask; return "y"; },
+        };
+
+        var result = await ctx.ParallelAsync(
+            branches,
+            name: "par",
+            config: new ParallelConfig { ItemSerializer = itemSer });
+
+        Assert.Equal(2, result.SuccessCount);
+        Assert.True(itemSer.SerializeCount >= 2);   // each branch result serialized via the item serializer
+        Assert.Equal(0, global.SerializeCount);
+    }
 }

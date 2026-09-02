@@ -242,7 +242,11 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new ParallelConfig();
 
-        var serializer = LambdaContext.Serializer
+        // Per-branch result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaContext.Serializer
             ?? throw new InvalidOperationException(
                 "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
                 "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
@@ -275,7 +279,11 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new MapConfig<TItem>();
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        // Per-item result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.MapOperation<TItem, TResult>(
