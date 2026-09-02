@@ -84,7 +84,7 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
@@ -147,7 +147,7 @@ internal sealed class DurableContext : IDurableContext
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(config.WaitStrategy);
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
@@ -161,7 +161,7 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
 
@@ -183,7 +183,7 @@ internal sealed class DurableContext : IDurableContext
         CallbackConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new CallbackOperation<T>(
@@ -495,7 +495,7 @@ internal sealed class DurableContext : IDurableContext
         if (string.IsNullOrWhiteSpace(functionName))
             throw new ArgumentException("Function name must not be empty or whitespace.", nameof(functionName));
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         cancellationToken.ThrowIfCancellationRequested();
 

@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -54,4 +56,11 @@ public sealed class ChildContextConfig
     /// </para>
     /// </remarks>
     public NestingType NestingType { get; set; } = NestingType.Nested;
+
+    /// <summary>
+    /// Optional serializer for this child context's result payload. When <c>null</c>
+    /// (default), the globally-registered <see cref="ILambdaSerializer"/> on
+    /// <see cref="ILambdaContext.Serializer"/> is used.
+    /// </summary>
+    public ILambdaSerializer? Serializer { get; set; }
 }
