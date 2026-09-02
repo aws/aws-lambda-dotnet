@@ -253,6 +253,19 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                     ? new SdkContextOptions { ReplayChildren = true }
                     : null
             }, cancellationToken);
+
+            // Non-overflow: round-trip the just-written checkpoint so the value the
+            // workflow observes on this fresh execution matches replay (where the
+            // result is always deserialized from the checkpoint). This makes a
+            // custom (possibly non-round-tripping) ChildContextConfig.Serializer's
+            // transform visible in the child-context result on the first run.
+            // Behavior change: the returned object is no longer the same instance
+            // the child body produced. See the AutoVer change note. Overflow skips
+            // this (the payload was stripped; the value is recovered by replay).
+            if (!overflow)
+            {
+                return DeserializeResult(serialized);
+            }
         }
 
         return result;
