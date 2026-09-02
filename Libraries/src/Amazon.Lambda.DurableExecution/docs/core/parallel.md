@@ -58,6 +58,25 @@ PaymentAuthorization authorizedPayment = await payment;
 
 The homogeneous `ParallelAsync<T>` overloads remain the simplest choice for a fixed set of same-typed branches and convenient `GetResults()` usage.
 
+### Per-branch serialization
+
+Because each branch declares its own result type, each may also use its own serializer. `BranchAsync<T>` takes an optional `ILambdaSerializer? serializer`; when omitted a branch uses the operation-level default — `ParallelConfig.ItemSerializer` if set on `CreateParallel`, otherwise the globally-registered `ILambdaContext.Serializer`. This lets one branch opt into a bespoke serializer (for example a source-generated `JsonSerializerContext` for Native AOT) without affecting sibling branches.
+
+```csharp
+await using var parallel = ctx.CreateParallel(name: "process-order");
+
+// Uses the operation-level / global serializer.
+var inventory = parallel.BranchAsync("inventory", async (b, ct) => await ReserveAsync(b, ct));
+
+// Overrides serialization for just this branch.
+var payment = parallel.BranchAsync(
+    "payment",
+    async (b, ct) => await AuthorizeAsync(b, ct),
+    serializer: PaymentSerializerContext.Default.CreateLambdaSerializer());
+```
+
+Like every other part of the workflow definition, a branch's serializer is re-resolved on replay, so a branch must be able to deserialize a result it previously serialized — keep the serializer stable at a given branch index across deployments.
+
 ## Example
 
 Fan out three independent lookups and collect the results:

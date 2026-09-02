@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
 /// A typed handle to a single branch registered on an <see cref="IDurableParallel"/>
-/// via <see cref="IDurableParallel.BranchAsync{T}(string, System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}})"/>.
+/// via <see cref="IDurableParallel.BranchAsync{T}"/>.
 /// Unlike the homogeneous <see cref="IDurableContext.ParallelAsync{T}(System.Collections.Generic.IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>
 /// API — where every branch shares one result type <c>T</c> — each branch on an
 /// <see cref="IDurableParallel"/> declares its own result type, so a single

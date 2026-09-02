@@ -200,7 +200,10 @@ internal sealed class DurableContext : IDurableContext
         ParallelConfig? config = null)
     {
         var effectiveConfig = config ?? new ParallelConfig();
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        // Operation-level default for per-branch result serialization: the config's
+        // ItemSerializer if set, else the globally-registered serializer. Individual
+        // branches may still override this via BranchAsync's serializer parameter.
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         return new Internal.IncrementalParallelOperation(
