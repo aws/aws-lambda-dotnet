@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// An incremental, branch-oriented parallel operation created by
 /// <see cref="IDurableContext.CreateParallel(string?, ParallelConfig?)"/>. Branches
 /// are registered one at a time via
-/// <see cref="BranchAsync{T}(string, System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}})"/>,
+/// <see cref="BranchAsync{T}"/>,
 /// each with its own result type (heterogeneous), and each begins executing
 /// immediately (subject to <see cref="ParallelConfig.MaxConcurrency"/>). Call
 /// <see cref="CompleteAsync(System.Threading.CancellationToken)"/> to seal
@@ -23,7 +23,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// checkpointed plan) and earlier branches should start before later ones are known.
 /// <para>
 /// <b>Deterministic replay.</b> Branch identity is positional: the n-th
-/// <see cref="BranchAsync{T}(string, System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}})"/>
+/// <see cref="BranchAsync{T}"/>
 /// call reuses the n-th deterministic operation ID. Workflow code must therefore
 /// register the same branches in the same order across invocations — produce any
 /// dynamic branch list inside a checkpointed <see cref="IDurableContext.StepAsync{T}(System.Func{IStepContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
@@ -66,6 +66,19 @@ public interface IDurableParallel : IAsyncDisposable
     /// workflow-shutdown signal with the operation's completion-policy
     /// short-circuit, and returns the branch's result.
     /// </param>
+    /// <param name="serializer">
+    /// Optional serializer for <em>this branch's</em> result payload. When
+    /// <c>null</c> (default), the branch uses the operation-level serializer —
+    /// <see cref="ParallelConfig.ItemSerializer"/> if set on
+    /// <see cref="IDurableContext.CreateParallel(string?, ParallelConfig?)"/>, otherwise
+    /// the globally-registered <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> on
+    /// <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/>. Because each branch
+    /// declares its own result type, a per-branch serializer lets one branch use a
+    /// bespoke serializer (for example a source-generated context for AOT) without
+    /// affecting sibling branches. It is part of the deterministic definition: the same
+    /// branch must be able to deserialize a result it previously serialized, so pass the
+    /// same serializer at a given branch index across replays.
+    /// </param>
     /// <returns>A typed handle for awaiting the branch's result.</returns>
     /// <exception cref="System.InvalidOperationException">
     /// The operation has already been sealed by
@@ -73,7 +86,8 @@ public interface IDurableParallel : IAsyncDisposable
     /// </exception>
     IParallelBranch<T> BranchAsync<T>(
         string name,
-        Func<IDurableContext, CancellationToken, Task<T>> func);
+        Func<IDurableContext, CancellationToken, Task<T>> func,
+        Amazon.Lambda.Core.ILambdaSerializer? serializer = null);
 
     /// <summary>
     /// Seals registration (no further branches may be added), awaits the

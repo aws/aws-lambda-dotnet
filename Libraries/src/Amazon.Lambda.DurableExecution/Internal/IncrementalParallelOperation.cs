@@ -377,7 +377,8 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
 
     public IParallelBranch<T> BranchAsync<T>(
         string name,
-        Func<IDurableContext, CancellationToken, Task<T>> func)
+        Func<IDurableContext, CancellationToken, Task<T>> func,
+        ILambdaSerializer? serializer = null)
     {
         if (name == null) throw new ArgumentNullException(nameof(name));
         if (func == null) throw new ArgumentNullException(nameof(func));
@@ -391,7 +392,10 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
 
             var index = _branches.Count;                 // zero-based branch index
             var childOpId = OperationIdGenerator.HashOperationId($"{_operationId}-{index + 1}");
-            var handle = new IncrementalParallelBranch<T>(index, name, _serializer, OperationSubTypes.ParallelBranch);
+            // Per-branch serializer override, else the operation-level default
+            // (ParallelConfig.ItemSerializer ?? the globally-registered serializer).
+            var branchSerializer = serializer ?? _serializer;
+            var handle = new IncrementalParallelBranch<T>(index, name, branchSerializer, OperationSubTypes.ParallelBranch);
 
             var summaryEntry = FindSummaryUnit(index);
 
@@ -408,11 +412,11 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
 
             if (_mode == ParallelExecutionMode.Terminal)
             {
-                ResolveTerminalBranch(handle, name, childOpId, func, summaryEntry);
+                ResolveTerminalBranch(handle, name, childOpId, func, summaryEntry, branchSerializer);
             }
             else
             {
-                LaunchRunBranch(handle, name, childOpId, func);
+                LaunchRunBranch(handle, name, childOpId, func, branchSerializer);
             }
 
             _branches.Add(handle);
@@ -527,6 +531,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         string name,
         string childOpId,
         Func<IDurableContext, CancellationToken, Task<T>> func,
+        ILambdaSerializer branchSerializer,
         BatchItemStatus? frozenStatus = null)
     {
         async Task<T> Run()
@@ -550,7 +555,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                     _operationId,
                     func,
                     new ChildContextConfig { SubType = OperationSubTypes.ParallelBranch },
-                    _serializer,
+                    branchSerializer,
                     _childContextFactory,
                     _state,
                     _termination,
@@ -709,7 +714,8 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         string name,
         string childOpId,
         Func<IDurableContext, CancellationToken, Task<T>> func,
-        BatchUnitSummary? summaryEntry)
+        BatchUnitSummary? summaryEntry,
+        ILambdaSerializer branchSerializer)
     {
         // A branch registered now but absent from the frozen summary (registered
         // after the original seal) never ran — surface it as skipped.
@@ -734,7 +740,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                 // Overflow: the inline value/error was stripped. Re-run the branch to
                 // recover it from the branch's own checkpoint; the frozen status stays
                 // authoritative.
-                LaunchRunBranch(handle, name, childOpId, func, frozenStatus: status);
+                LaunchRunBranch(handle, name, childOpId, func, branchSerializer, frozenStatus: status);
                 break;
             default:
                 handle.ResolveFromInline(BatchItemStatus.Started, null, null);
