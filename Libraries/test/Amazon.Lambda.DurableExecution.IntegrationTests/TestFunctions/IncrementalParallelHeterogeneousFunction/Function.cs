@@ -38,17 +38,17 @@ public class Function
         await using var parallel = context.CreateParallel(name: "process-order");
 
         // Each branch declares its own result type — string, int, and Money.
-        IParallelBranch<string> inventory = parallel.BranchAsync(
+        IParallelBranch<string> inventory = parallel.Branch(
             "inventory",
             async (branch, ct) => await branch.StepAsync(
                 (_, _) => Task.FromResult($"reserved-{orderId}"), name: "reserve"));
 
-        IParallelBranch<int> payment = parallel.BranchAsync(
+        IParallelBranch<int> payment = parallel.Branch(
             "payment",
             async (branch, ct) => await branch.StepAsync(
                 (_, _) => Task.FromResult(200), name: "charge"));
 
-        IParallelBranch<Money> shipping = parallel.BranchAsync(
+        IParallelBranch<Money> shipping = parallel.Branch(
             "shipping",
             async (branch, ct) => await branch.StepAsync(
                 (_, _) => Task.FromResult(new Money { Currency = "USD", Amount = 4200 }), name: "quote"));

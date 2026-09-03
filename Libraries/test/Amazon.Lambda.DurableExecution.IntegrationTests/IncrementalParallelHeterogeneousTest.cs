@@ -16,7 +16,7 @@ public class IncrementalParallelHeterogeneousTest
 
     /// <summary>
     /// End-to-end incremental, heterogeneous parallel: three branches registered
-    /// one at a time via <c>CreateParallel</c>/<c>BranchAsync</c> return three
+    /// one at a time via <c>CreateParallel</c>/<c>Branch</c> return three
     /// unrelated types (string, int, POCO), each retrieved through its own typed
     /// handle. Validates the parent CONTEXT and per-branch CONTEXT checkpoints all
     /// land in the service-side history with the correct names, and that the
@@ -43,7 +43,12 @@ public class IncrementalParallelHeterogeneousTest
 
         // Each heterogeneous branch's typed result surfaces in the user payload.
         Assert.Contains("reserved-p1", responsePayload); // string branch
-        Assert.Contains("200", responsePayload);          // int branch
+        // Distinguishing token for the int branch: a bare "200" is tautologically
+        // satisfied by the POCO branch's "USD:4200" substring, so assert the
+        // property-qualified value instead. OrderResult is serialized with
+        // DefaultLambdaJsonSerializer (PascalCase property names), so Payment=200
+        // renders as "Payment":200.
+        Assert.Contains("\"Payment\":200", responsePayload); // int branch
         Assert.Contains("USD:4200", responsePayload);      // POCO branch
 
         // History is eventually consistent — wait until the parent CONTEXT and all

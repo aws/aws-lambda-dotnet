@@ -120,6 +120,64 @@ public class PerOperationSerializerTests
         Assert.Equal(0, global.DeserializeCount);
     }
 
+    // ---------------------------------------------------------------- Step round-trip failure (fresh success)
+
+    /// <summary>
+    /// Serializer that serializes normally but throws on deserialize — models a
+    /// custom serializer that cannot round-trip its own just-written payload.
+    /// </summary>
+    private sealed class DeserializeThrowingSerializer : ILambdaSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+        public sealed class CannotDeserialize : Exception { }
+
+        public T Deserialize<T>(Stream requestStream) => throw new CannotDeserialize();
+        public void Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
+    }
+
+    [Fact]
+    public async Task Step_FreshSuccess_RoundTripDeserializeFailure_FailsTerminallyWithoutRetry()
+    {
+        // The fresh-success round-trip (serialize + deserialize) runs BEFORE the
+        // SUCCEED checkpoint is emitted. A serializer that cannot deserialize its own
+        // just-written payload is a terminal failure: the step body already ran to
+        // completion, so re-running it under the retry strategy would duplicate side
+        // effects. Instead the fault is funneled through FailStepTerminallyAsync,
+        // which emits a FAIL checkpoint and throws StepException WITHOUT consulting
+        // the retry strategy. Because the deserialize runs before SUCCEED, no terminal
+        // SUCCEED is ever committed for the poison payload.
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = new TestLambdaContext { Serializer = new DefaultLambdaJsonSerializer() };
+        var recorder = new RecordingBatcher();
+        var ctx = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, TestArn, lambdaContext, recorder.Batcher);
+
+        var perOp = new DeserializeThrowingSerializer();
+
+        // The deserialize fault is wrapped in a StepException by FailStepTerminallyAsync;
+        // the original CannotDeserialize is preserved as the inner exception.
+        var ex = await Assert.ThrowsAsync<StepException>(async () =>
+            await ctx.StepAsync(
+                async (_, _) => { await Task.CompletedTask; return 42; },
+                name: "s",
+                config: new StepConfig { Serializer = perOp }));
+        Assert.IsType<DeserializeThrowingSerializer.CannotDeserialize>(ex.InnerException);
+
+        await recorder.Batcher.DrainAsync();
+        var stepActions = recorder.Flushed
+            .Where(o => o.Type == OperationTypes.Step)
+            .Select(o => o.Action)
+            .ToList();
+
+        // A terminal FAIL was emitted, and crucially NO SUCCEED (the round-trip failed
+        // before SUCCEED) and NO RETRY (the side-effecting body already ran).
+        Assert.Contains(OperationAction.FAIL, stepActions);
+        Assert.DoesNotContain(OperationAction.SUCCEED, stepActions);
+        Assert.DoesNotContain(OperationAction.RETRY, stepActions);
+    }
+
     // ---------------------------------------------------------------- Callback (deserialize side)
 
     [Fact]

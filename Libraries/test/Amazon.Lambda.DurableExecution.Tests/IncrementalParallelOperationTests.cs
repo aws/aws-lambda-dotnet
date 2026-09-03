@@ -59,9 +59,9 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "process-order"))
         {
-            inventory = parallel.BranchAsync("inventory", async (_, _) => { await Task.Yield(); return "reserved"; });
-            payment = parallel.BranchAsync("payment", async (_, _) => { await Task.Yield(); return 200; });
-            shipping = parallel.BranchAsync("shipping", async (_, _) =>
+            inventory = parallel.Branch("inventory", async (_, _) => { await Task.Yield(); return "reserved"; });
+            payment = parallel.Branch("payment", async (_, _) => { await Task.Yield(); return 200; });
+            shipping = parallel.Branch("shipping", async (_, _) =>
             {
                 await Task.Yield();
                 return new Money { Currency = "USD", Amount = 4200 };
@@ -104,8 +104,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel())
         {
-            _ = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return "a"; });
-            _ = parallel.BranchAsync("b", async (_, _) => { await Task.Yield(); return "b"; });
+            _ = parallel.Branch("a", async (_, _) => { await Task.Yield(); return "a"; });
+            _ = parallel.Branch("b", async (_, _) => { await Task.Yield(); return "b"; });
             await parallel.CompleteAsync();
         }
 
@@ -147,8 +147,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "fanout"))
         {
-            var a = parallel.BranchAsync("alpha", async (_, _) => { await Task.Yield(); return 1; });
-            var b = parallel.BranchAsync("beta", async (_, _) => { await Task.Yield(); return 2; });
+            var a = parallel.Branch("alpha", async (_, _) => { await Task.Yield(); return 1; });
+            var b = parallel.Branch("beta", async (_, _) => { await Task.Yield(); return 2; });
             await parallel.CompleteAsync();
             Assert.Equal("alpha", a.Name);
             Assert.Equal("beta", b.Name);
@@ -169,8 +169,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "fanout"))
         {
-            _ = parallel.BranchAsync("i", async (_, _) => { await Task.Yield(); return 100; });
-            _ = parallel.BranchAsync("p", async (_, _) => { await Task.Yield(); return 200; });
+            _ = parallel.Branch("i", async (_, _) => { await Task.Yield(); return 100; });
+            _ = parallel.Branch("p", async (_, _) => { await Task.Yield(); return 200; });
             await parallel.CompleteAsync();
         }
 
@@ -198,8 +198,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel())
         {
-            ok = parallel.BranchAsync("ok", async (_, _) => { await Task.Yield(); return 1; });
-            bad = parallel.BranchAsync<int>("bad", async (_, _) =>
+            ok = parallel.Branch("ok", async (_, _) => { await Task.Yield(); return 1; });
+            bad = parallel.Branch<int>("bad", async (_, _) =>
             {
                 await Task.Yield();
                 throw new InvalidOperationException("branch boom");
@@ -227,8 +227,8 @@ public class IncrementalParallelOperationTests
         await using (var parallel = context.CreateParallel(
             config: new ParallelConfig { CompletionConfig = CompletionConfig.AllCompleted() }))
         {
-            _ = parallel.BranchAsync("ok", async (_, _) => { await Task.Yield(); return 1; });
-            _ = parallel.BranchAsync<int>("bad", async (_, _) => { await Task.Yield(); throw new InvalidOperationException("x"); });
+            _ = parallel.Branch("ok", async (_, _) => { await Task.Yield(); return 1; });
+            _ = parallel.Branch<int>("bad", async (_, _) => { await Task.Yield(); throw new InvalidOperationException("x"); });
             summary = await parallel.CompleteAsync();
         }
 
@@ -255,7 +255,7 @@ public class IncrementalParallelOperationTests
         {
             for (var i = 0; i < 6; i++)
             {
-                _ = parallel.BranchAsync<int>($"b{i}", async (_, ct) =>
+                _ = parallel.Branch<int>($"b{i}", async (_, ct) =>
                 {
                     lock (gate) { inFlight++; maxObserved = Math.Max(maxObserved, inFlight); }
                     await Task.Delay(20, ct);
@@ -283,9 +283,9 @@ public class IncrementalParallelOperationTests
             CompletionConfig = CompletionConfig.FirstSuccessful()
         }))
         {
-            _ = parallel.BranchAsync("b0", async (_, _) => { await Task.Yield(); return 1; });
-            _ = parallel.BranchAsync("b1", async (_, _) => { await Task.Yield(); return 2; });
-            last = parallel.BranchAsync("b2", async (_, _) => { await Task.Yield(); return 3; });
+            _ = parallel.Branch("b0", async (_, _) => { await Task.Yield(); return 1; });
+            _ = parallel.Branch("b1", async (_, _) => { await Task.Yield(); return 2; });
+            last = parallel.Branch("b2", async (_, _) => { await Task.Yield(); return 3; });
             summary = await parallel.CompleteAsync();
         }
 
@@ -320,11 +320,11 @@ public class IncrementalParallelOperationTests
         var (context, _, _, _) = CreateContext();
 
         var parallel = context.CreateParallel();
-        _ = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return 1; });
+        _ = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; });
         await parallel.CompleteAsync();
 
         Assert.Throws<InvalidOperationException>(() =>
-            _ = parallel.BranchAsync("late", async (_, _) => { await Task.Yield(); return 2; }));
+            _ = parallel.Branch("late", async (_, _) => { await Task.Yield(); return 2; }));
 
         await parallel.DisposeAsync();
     }
@@ -335,7 +335,7 @@ public class IncrementalParallelOperationTests
         var (context, recorder, _, _) = CreateContext();
 
         var parallel = context.CreateParallel();
-        _ = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return 1; });
+        _ = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; });
         var first = await parallel.CompleteAsync();
         var second = await parallel.CompleteAsync();
         Assert.Same(first, second);
@@ -354,7 +354,7 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "auto"))
         {
-            _ = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return 1; });
+            _ = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; });
             // No explicit CompleteAsync — DisposeAsync must seal + checkpoint.
         }
 
@@ -401,8 +401,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "process-order"))
         {
-            inventory = parallel.BranchAsync("inventory", async (_, _) => { executed = true; await Task.Yield(); return "LIVE"; });
-            payment = parallel.BranchAsync("payment", async (_, _) => { executed = true; await Task.Yield(); return -1; });
+            inventory = parallel.Branch("inventory", async (_, _) => { executed = true; await Task.Yield(); return "LIVE"; });
+            payment = parallel.Branch("payment", async (_, _) => { executed = true; await Task.Yield(); return -1; });
             summary = await parallel.CompleteAsync();
         }
 
@@ -449,8 +449,8 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(name: "fanout"))
         {
-            ok = parallel.BranchAsync("ok", async (_, _) => { await Task.Yield(); return -1; });
-            bad = parallel.BranchAsync<int>("bad", async (_, _) => { await Task.Yield(); return -1; });
+            ok = parallel.Branch("ok", async (_, _) => { await Task.Yield(); return -1; });
+            bad = parallel.Branch<int>("bad", async (_, _) => { await Task.Yield(); return -1; });
             summary = await parallel.CompleteAsync();
         }
 
@@ -490,7 +490,7 @@ public class IncrementalParallelOperationTests
         var parallel = context.CreateParallel(name: "fanout");
         // Registered a branch whose name drifted from the checkpointed "inventory".
         Assert.Throws<NonDeterministicExecutionException>(() =>
-            _ = parallel.BranchAsync("renamed", async (_, _) => { await Task.Yield(); return 1; }));
+            _ = parallel.Branch("renamed", async (_, _) => { await Task.Yield(); return 1; }));
         await parallel.DisposeAsync();
     }
 
@@ -521,8 +521,8 @@ public class IncrementalParallelOperationTests
         IBatchResult summary;
         await using (var parallel = context.CreateParallel(name: "fanout"))
         {
-            _ = parallel.BranchAsync("a", async (_, _) => { Interlocked.Increment(ref runCount); await Task.Yield(); return 1; });
-            _ = parallel.BranchAsync("b", async (_, _) => { Interlocked.Increment(ref runCount); await Task.Yield(); return 2; });
+            _ = parallel.Branch("a", async (_, _) => { Interlocked.Increment(ref runCount); await Task.Yield(); return 1; });
+            _ = parallel.Branch("b", async (_, _) => { Interlocked.Increment(ref runCount); await Task.Yield(); return 2; });
             summary = await parallel.CompleteAsync();
         }
 
@@ -597,7 +597,7 @@ public class IncrementalParallelOperationTests
         });
 
         var parallel = context.CreateParallel(name: "fanout");
-        _ = parallel.BranchAsync("inventory", async (_, _) => { await Task.Yield(); return 1; });
+        _ = parallel.Branch("inventory", async (_, _) => { await Task.Yield(); return 1; });
         // Only one branch registered, but the checkpoint recorded two.
         await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () => await parallel.CompleteAsync());
         await parallel.DisposeAsync(); // must not throw a secondary exception
@@ -636,8 +636,8 @@ public class IncrementalParallelOperationTests
         await using (var parallel = context.CreateParallel())
         {
             // Branch "a" overrides its serializer; branch "b" uses the global default.
-            a = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return 7; }, serializer: custom);
-            b = parallel.BranchAsync("b", async (_, _) => { await Task.Yield(); return 8; });
+            a = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 7; }, serializer: custom);
+            b = parallel.Branch("b", async (_, _) => { await Task.Yield(); return 8; });
             await parallel.CompleteAsync();
         }
 
@@ -657,14 +657,100 @@ public class IncrementalParallelOperationTests
 
         await using (var parallel = context.CreateParallel(config: new ParallelConfig { ItemSerializer = shared }))
         {
-            _ = parallel.BranchAsync("a", async (_, _) => { await Task.Yield(); return 1; });
-            _ = parallel.BranchAsync("b", async (_, _) => { await Task.Yield(); return 2; });
+            _ = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; });
+            _ = parallel.Branch("b", async (_, _) => { await Task.Yield(); return 2; });
             var summary = await parallel.CompleteAsync();
             Assert.Equal(2, summary.SuccessCount);
         }
 
         // The operation-level ItemSerializer served both branches.
         Assert.True(shared.SerializeCount >= 2, "ItemSerializer should serialize every branch result by default");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Deferred operation-level serializer resolution (comment 4)
+    // ──────────────────────────────────────────────────────────────────────
+
+    private static DurableContext CreateContextNoGlobalSerializer(out RecordingBatcher recorder)
+    {
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = new TestLambdaContext(); // NO Serializer registered
+        recorder = new RecordingBatcher();
+        return new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
+    }
+
+    [Fact]
+    public async Task CreateParallel_NoGlobalSerializer_AllBranchesOverride_DoesNotThrow()
+    {
+        // AOT / per-branch scenario: with no global serializer registered,
+        // CreateParallel and Branch must not eagerly demand one. Resolution of the
+        // operation-level default (LambdaSerializerHelper.GetRequired) is deferred and
+        // never reached when every branch supplies its own serializer.
+        var context = CreateContextNoGlobalSerializer(out _);
+        var custom = new CountingSerializer();
+
+        IParallelBranch<int> a;
+        IParallelBranch<int> b;
+        await using (var parallel = context.CreateParallel()) // must NOT throw
+        {
+            a = parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; }, serializer: custom);
+            b = parallel.Branch("b", async (_, _) => { await Task.Yield(); return 2; }, serializer: custom);
+            var summary = await parallel.CompleteAsync();
+            Assert.Equal(2, summary.SuccessCount);
+        }
+
+        Assert.Equal(1, await a);
+        Assert.Equal(2, await b);
+    }
+
+    [Fact]
+    public async Task CreateParallel_NoGlobalSerializer_BranchWithoutOverride_ThrowsOnThatBranch()
+    {
+        // The deferral does not swallow the requirement: a branch that omits its
+        // serializer falls back to the operation-level default, which resolves
+        // GetRequired and throws when no global serializer exists — but only then,
+        // not at CreateParallel time.
+        var context = CreateContextNoGlobalSerializer(out _);
+
+        await using var parallel = context.CreateParallel(); // deferred: does NOT throw here
+        Assert.Throws<InvalidOperationException>(() =>
+            parallel.Branch("a", async (_, _) => { await Task.Yield(); return 1; }));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Workflow-level fault surfaces on the handle rather than hanging (comment 7)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateParallel_BranchThrowsWorkflowError_AwaitingHandleFaults_NotHangs()
+    {
+        // A workflow-level fault (NonDeterministicExecutionException) is rethrown out
+        // of the branch's ExecuteAsync. _result must be faulted before the rethrow so
+        // a caller that catches the fault out of CompleteAsync and then awaits the
+        // branch handle observes the same fault instead of hanging on a handle whose
+        // result was never completed.
+        var (context, _, _, _) = CreateContext();
+
+        await using var parallel = context.CreateParallel();
+        var bad = parallel.Branch<int>("bad", async (_, _) =>
+        {
+            await Task.Yield();
+            throw new NonDeterministicExecutionException("boom");
+        });
+
+        // The workflow-level fault propagates out of CompleteAsync.
+        await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () => await parallel.CompleteAsync());
+
+        // Awaiting the handle must COMPLETE (faulted), not hang. Guard with a timeout
+        // so a regression fails the test deterministically instead of blocking it.
+        async Task<int> AwaitHandle() => await bad;
+        var handleTask = AwaitHandle();
+        var finished = await Task.WhenAny(handleTask, Task.Delay(TimeSpan.FromSeconds(10)));
+        Assert.Same(handleTask, finished);
+        await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () => await handleTask);
     }
 
     /// <summary>

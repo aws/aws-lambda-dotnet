@@ -174,19 +174,33 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
             _result.TrySetException(ex);
             return BranchOutcome.Failure(Index, Name, ErrorObject.FromException(ex));
         }
-        catch (DurableExecutionException)
+        catch (DurableExecutionException ex)
         {
             // Workflow-level error (e.g. NonDeterministicExecutionException): not a
             // graceful per-branch failure. Fault the settlement so the orchestrator
-            // surfaces it out of CompleteAsync.
+            // surfaces it out of CompleteAsync. Also fault _result before rethrowing
+            // so a caller that catches the workflow-level fault out of CompleteAsync
+            // and then awaits this branch handle observes the same fault instead of
+            // hanging forever on a never-completed result (every other arm below
+            // completes _result).
+            _result.TrySetException(ex);
             throw;
         }
         catch (OperationCanceledException)
-            when (shortCircuitToken.IsCancellationRequested && !controlToken.IsCancellationRequested)
+            when (shortCircuitToken.IsCancellationRequested && !controlToken.IsCancellationRequested
+                  && _frozenStatus is null)
         {
             // Cooperative bail: a sibling satisfied the CompletionConfig before this
             // branch acquired its concurrency slot (or its body honored the bail
             // token). Record it as skipped — never a failure.
+            //
+            // Excluded when _frozenStatus is set: an overflow-recovery re-run is
+            // launched only to recover a value the frozen summary already recorded
+            // as Succeeded/Failed. It is isolated from _shortCircuitCts (see
+            // LaunchRunBranch), so this arm should not fire for it — but guard
+            // regardless so a stray short-circuit can never resolve _result to a
+            // SkippedError while Status reports the frozen terminal verdict, which
+            // would make `await branch` throw for a branch whose Status==Succeeded.
             if (_frozenStatus is null) _status = (int)BatchItemStatus.Started;
             _result.TrySetException(SkippedError());
             return BranchOutcome.Skipped(Index, Name);
@@ -253,7 +267,9 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
 /// Incremental, heterogeneous parallel orchestrator implementing
 /// <see cref="IDurableParallel"/>. Each branch runs as a
 /// <see cref="ChildContextOperation{T}"/> under the SAME deterministic child
-/// operation-ID scheme (<c>hash("{parentId}-{index}")</c>) and the SAME parent
+/// operation-ID scheme (<c>hash("{parentId}-{index+1}")</c>, where <c>index</c> is
+/// the zero-based branch registration order, so the ID suffix is one-based —
+/// positions <c>1..n</c>) and the SAME parent
 /// <see cref="BatchSummary"/> checkpoint shape as the batch
 /// <see cref="ParallelOperation{T}"/>, so a checkpoint written by one is
 /// reconstructable by the other. Branch identity is positional: register the same
@@ -267,7 +283,14 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
     private readonly CompletionPolicy _policy;
     private readonly int? _maxConcurrency;
     private readonly bool _isVirtual;
-    private readonly ILambdaSerializer _serializer;
+    // Operation-level default serializer, resolved LAZILY. A workflow that overrides
+    // the serializer on every Branch must not be forced to register a global
+    // serializer just to construct the operation (the AOT/per-branch scenario), so
+    // the factory — which may call LambdaSerializerHelper.GetRequired and throw when
+    // no global serializer exists — is invoked only when a branch actually falls back
+    // to this default. Memoized in _defaultSerializer under _lock.
+    private readonly Func<ILambdaSerializer> _defaultSerializerFactory;
+    private ILambdaSerializer? _defaultSerializer;
     private readonly Func<string, string?, bool, IDurableContext> _childContextFactory;
     private readonly ExecutionState _state;
     private readonly TerminationManager _termination;
@@ -298,7 +321,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         string? name,
         string? parentId,
         ParallelConfig config,
-        ILambdaSerializer serializer,
+        Func<ILambdaSerializer> defaultSerializerFactory,
         Func<string, string?, bool, IDurableContext> childContextFactory,
         ExecutionState state,
         TerminationManager termination,
@@ -312,7 +335,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         _policy = new CompletionPolicy(config.CompletionConfig);
         _maxConcurrency = config.MaxConcurrency;
         _isVirtual = config.NestingType == NestingType.Flat;
-        _serializer = serializer;
+        _defaultSerializerFactory = defaultSerializerFactory;
         _childContextFactory = childContextFactory;
         _state = state;
         _termination = termination;
@@ -375,7 +398,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         }
     }
 
-    public IParallelBranch<T> BranchAsync<T>(
+    public IParallelBranch<T> Branch<T>(
         string name,
         Func<IDurableContext, CancellationToken, Task<T>> func,
         ILambdaSerializer? serializer = null)
@@ -393,8 +416,10 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             var index = _branches.Count;                 // zero-based branch index
             var childOpId = OperationIdGenerator.HashOperationId($"{_operationId}-{index + 1}");
             // Per-branch serializer override, else the operation-level default
-            // (ParallelConfig.ItemSerializer ?? the globally-registered serializer).
-            var branchSerializer = serializer ?? _serializer;
+            // (ParallelConfig.ItemSerializer ?? the globally-registered serializer),
+            // resolved lazily here so a workflow overriding the serializer on every
+            // branch never triggers the global-serializer lookup. Memoized under _lock.
+            var branchSerializer = serializer ?? (_defaultSerializer ??= _defaultSerializerFactory());
             var handle = new IncrementalParallelBranch<T>(index, name, branchSerializer, OperationSubTypes.ParallelBranch);
 
             var summaryEntry = FindSummaryUnit(index);
@@ -511,7 +536,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         {
             // DisposeAsync must never throw. A completion fault (e.g. a
             // NonDeterministicExecutionException, or the secondary effect of a
-            // BranchAsync that already threw during registration) is either
+            // Branch that already threw during registration) is either
             // already surfaced to a caller that awaited CompleteAsync, or will
             // resurface on the next invocation's replay. Swallow it here so
             // `await using` teardown stays clean.
@@ -534,6 +559,19 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         ILambdaSerializer branchSerializer,
         BatchItemStatus? frozenStatus = null)
     {
+        // An overflow-recovery re-run (frozenStatus set) exists only to recover a
+        // value the frozen summary already recorded as terminal; it MUST run to
+        // completion. A completion-policy short-circuit (OnBranchSettled →
+        // _shortCircuitCts.Cancel()) must never cancel it — a cancelled recovery
+        // branch would hit the cooperative-bail arm and lose the recovered value
+        // even though its Status is the frozen Succeeded/Failed. So isolate it from
+        // _shortCircuitCts/_dispatchCts: it observes only workflow shutdown, and is
+        // never handed a bail token. Regular Run-mode branches honor the
+        // short-circuit exactly as before.
+        var isRecovery = frozenStatus.HasValue;
+        var dispatchToken = isRecovery ? _workflowCancellation.Token : _dispatchCts.Token;
+        var bailToken = isRecovery ? CancellationToken.None : _shortCircuitCts.Token;
+
         async Task<T> Run()
         {
             // Parent START must be enqueued before this branch's child START.
@@ -541,13 +579,13 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
 
             if (_semaphore != null)
             {
-                await _semaphore.WaitAsync(_dispatchCts.Token).ConfigureAwait(false);
+                await _semaphore.WaitAsync(dispatchToken).ConfigureAwait(false);
             }
 
             try
             {
                 // A short-circuit may have fired while waiting on the semaphore.
-                _dispatchCts.Token.ThrowIfCancellationRequested();
+                dispatchToken.ThrowIfCancellationRequested();
 
                 var childOp = new ChildContextOperation<T>(
                     childOpId,
@@ -562,7 +600,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                     _workflowCancellation,
                     _durableExecutionArn,
                     _batcher,
-                    _shortCircuitCts.Token,
+                    bailToken,
                     isVirtual: _isVirtual);
 
                 // Branch child ops receive CancellationToken.None here — they re-link
@@ -576,7 +614,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             }
         }
 
-        handle.Launch(Run, _shortCircuitCts.Token, _workflowCancellation.Token, frozenStatus);
+        handle.Launch(Run, bailToken, _workflowCancellation.Token, frozenStatus);
         ObserveSettlement(handle.Settlement);
     }
 
