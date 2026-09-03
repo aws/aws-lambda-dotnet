@@ -430,9 +430,9 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             {
                 throw new NonDeterministicExecutionException(
                     $"Non-deterministic execution detected for parallel branch {index} of operation " +
-                    $"'{_name ?? _operationId}': expected name '{name}' but found '{summaryEntry.Name}' " +
-                    $"from a previous invocation. Code must not change the order or name of branches " +
-                    $"between deployments.");
+                    $"'{_name ?? _operationId}': expected checkpointed name '{summaryEntry.Name}' but " +
+                    $"the current registration used '{name}'. Code must not change the order or name of " +
+                    $"branches between deployments.");
             }
 
             if (_mode == ParallelExecutionMode.Terminal)
