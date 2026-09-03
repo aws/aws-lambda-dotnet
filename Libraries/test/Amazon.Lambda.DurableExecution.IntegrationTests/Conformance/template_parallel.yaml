@@ -36,9 +36,6 @@ Resources:
     Type: AWS::Serverless::Function
     TestingMetadata:
       TestDescription: ["8-1"]
-      NotImplemented:
-        - id: "8-15"
-          reason: "Parallel with custom per-item serdes: .NET ParallelConfig has no item serializer slot; all branch payloads use the one registered ILambdaSerializer (matches the Java approach)."
     Metadata:
       BuildMethod: makefile
     Properties:
@@ -405,6 +402,24 @@ Resources:
       CodeUri: publish/ParallelFailurePercentageExact/
       Handler: bootstrap
       Description: Parallel with ToleratedFailurePercentage at exact threshold (not exceeded)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelCustomSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["8-15"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelCustomSerdes/
+      Handler: bootstrap
+      Description: Parallel with a custom per-branch serde (ItemSerializer wraps/unwraps each branch result)
       Role:
         Fn::GetAtt:
         - DurableFunctionRole
