@@ -61,7 +61,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     /// verbatim, rather than re-serializing the (already round-tripped) return value.
     /// Re-serializing the return value double-transforms a non-round-tripping serializer
     /// (fresh vs replay diverge) and, for a context-aware serializer such as
-    /// <c>FileSystemSerializer</c>, writes a SECOND file at the parent's per-unit id
+    /// <see cref="FileSystemSerializer"/>, writes a SECOND file at the parent's per-unit id
     /// that orphans the child's file. <c>null</c> for virtual (Flat) children, for
     /// overflow-replay re-execution, and before a fresh success has been serialized.
     /// </summary>
