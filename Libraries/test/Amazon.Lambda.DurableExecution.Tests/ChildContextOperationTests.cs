@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -29,6 +30,133 @@ public class ChildContextOperationTests
         var recorder = new RecordingBatcher();
         var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
         return (context, recorder, tm, state);
+    }
+
+    /// <summary>
+    /// A non-round-tripping serializer: serialize is plain JSON, but deserialize marks a
+    /// string result with a "[rt]" prefix. Lets a test observe whether the fresh-success
+    /// round-trip transform was applied.
+    /// </summary>
+    private sealed class MarkingSerializer : ILambdaSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+        public void Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
+        public T Deserialize<T>(Stream requestStream)
+        {
+            var value = _inner.Deserialize<T>(requestStream);
+            if (value is string s) return (T)(object)("[rt]" + s);
+            return value;
+        }
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_CustomSerializerTransform_AppliedInline_SkippedOnOverflow()
+    {
+        // Pins the documented size-dependent limitation on ChildContextConfig.Serializer:
+        // the fresh-success round-trip transform is reflected in the returned result ONLY
+        // when the payload fits inline. On overflow the result is recovered by re-running
+        // the body (round-trip skipped), so a non-round-tripping serializer diverges by size.
+        var marking = new MarkingSerializer();
+
+        // Small result: fits inline -> round-trip transform is applied.
+        var (smallCtx, _, _, _) = CreateContext();
+        var small = await smallCtx.RunInChildContextAsync(
+            async (_, _) => { await Task.CompletedTask; return "x"; },
+            name: "small",
+            config: new ChildContextConfig { Serializer = marking });
+        Assert.Equal("[rt]x", small);
+
+        // Large result: overflows the checkpoint -> transform is NOT applied (value raw).
+        var big = new string('a', DurableConstants.MaxOperationCheckpointBytes + 1024);
+        var (bigCtx, bigRecorder, _, _) = CreateContext();
+        var large = await bigCtx.RunInChildContextAsync(
+            async (_, _) => { await Task.CompletedTask; return big; },
+            name: "big",
+            config: new ChildContextConfig { Serializer = marking });
+        Assert.Equal(big, large);                 // NOT "[rt]" + big
+        Assert.DoesNotContain("[rt]", large);
+
+        // Confirm it really took the overflow path: empty payload + ReplayChildren.
+        await bigRecorder.Batcher.DrainAsync();
+        var succeed = bigRecorder.Flushed.Single(o => o.Type == "CONTEXT" && o.Action == "SUCCEED");
+        Assert.Equal(string.Empty, succeed.Payload);
+    }
+
+    /// <summary>
+    /// A serializer that serializes normally (plain JSON) but ALWAYS throws on deserialize —
+    /// simulates an asymmetric/broken ChildContextConfig.Serializer that cannot read back its
+    /// own output.
+    /// </summary>
+    private sealed class ThrowOnDeserializeSerializer : ILambdaSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+        public void Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
+        public T Deserialize<T>(Stream requestStream) =>
+            throw new InvalidOperationException("ThrowOnDeserializeSerializer: cannot deserialize");
+    }
+
+    [Fact]
+    public async Task RunInChildContextAsync_RoundTripDeserializeFails_CheckpointsFailAndBodyNotReRunOnReplay()
+    {
+        // Comment 2(b): when a non-virtual child's fresh-success round-trip DESERIALIZE fails,
+        // the child fails TERMINALLY — emitting CONTEXT FAIL — so the op is terminal in the
+        // store and its side-effecting body is NOT re-run on replay. Previously this threw
+        // with NO FAIL checkpoint, leaving the child STARTED (body re-runs on replay).
+        var (context, recorder, _, _) = CreateContext();
+
+        var executed = 0;
+        var ex = await Assert.ThrowsAsync<ChildContextException>(() =>
+            context.RunInChildContextAsync(
+                async (_, _) => { executed++; await Task.CompletedTask; return "x"; },
+                name: "phase",
+                config: new ChildContextConfig { Serializer = new ThrowOnDeserializeSerializer() }));
+
+        Assert.Equal(1, executed);                                   // body ran exactly once
+        Assert.Equal("System.InvalidOperationException", ex.ErrorType);
+        Assert.NotNull(ex.OriginalStackTrace);
+        Assert.NotEmpty(ex.OriginalStackTrace!);
+
+        await recorder.Batcher.DrainAsync();
+        var contextActions = recorder.Flushed
+            .Where(o => o.Type == "CONTEXT")
+            .Select(o => o.Action.ToString())
+            .ToArray();
+        // START then FAIL — never SUCCEED. The FAIL is the new terminal record.
+        Assert.Equal(new[] { "START", "FAIL" }, contextActions);
+
+        // ---- Replay from that FAILED checkpoint: the body is NOT re-run. ----
+        var (replayCtx, replayRec, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = IdAt(1),
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Failed,
+                    Name = "phase",
+                    ContextDetails = new ContextDetails
+                    {
+                        Error = new ErrorObject
+                        {
+                            ErrorType = "System.InvalidOperationException",
+                            ErrorMessage = "ThrowOnDeserializeSerializer: cannot deserialize"
+                        }
+                    }
+                }
+            }
+        });
+
+        var reran = false;
+        await Assert.ThrowsAsync<ChildContextException>(() =>
+            replayCtx.RunInChildContextAsync(
+                async (_, _) => { reran = true; await Task.CompletedTask; return "x"; },
+                name: "phase",
+                config: new ChildContextConfig { Serializer = new ThrowOnDeserializeSerializer() }));
+
+        Assert.False(reran);                                         // poison body never re-runs
+        await replayRec.Batcher.DrainAsync();
+        Assert.Empty(replayRec.Flushed);                             // already terminal — no new checkpoint
     }
 
     [Fact]

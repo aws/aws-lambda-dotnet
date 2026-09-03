@@ -93,5 +93,21 @@ public sealed class MapConfig<TItem>
     /// (statuses / completion reason), and durable operations inside an item's body use
     /// their own configuration.
     /// </summary>
+    /// <remarks>
+    /// <b>Size-dependent transform on overflow (Flat only).</b> Under
+    /// <see cref="NestingType.Flat"/> each item's result is round-tripped through this
+    /// serializer on a fresh (non-replay) success before it enters the result, so a
+    /// serializer that transforms the value (e.g. redaction, canonicalization) has that
+    /// transform reflected in the returned item — but <em>only</em> while the aggregated
+    /// per-item payloads fit inline in a single checkpoint (≈256&#160;KB). If they are
+    /// large enough to overflow, the inline results are stripped and each value is instead
+    /// recovered by re-running the item body on replay, which does <em>not</em> apply the
+    /// round-trip transform. A serializer whose <c>Deserialize</c> is not a pure inverse of
+    /// its <c>Serialize</c> will therefore observe a size-dependent difference (transform
+    /// applied for small results, skipped for overflowed ones). Prefer a round-tripping
+    /// serializer, or do not depend on the transform being applied to results large enough
+    /// to overflow the checkpoint. (Under <see cref="NestingType.Nested"/> the same
+    /// size-dependent caveat is documented on each item's child-context result.)
+    /// </remarks>
     public ILambdaSerializer? ItemSerializer { get; set; }
 }

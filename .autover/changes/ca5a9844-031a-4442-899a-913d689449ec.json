@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Behavior change: under NestingType.Flat, Map and Parallel per-item/branch results are now round-tripped through the configured ItemSerializer on a fresh (non-replay) success -- deserializing the just-serialized inline payload before it enters the result -- matching what replay reconstructs from that payload. A non-round-tripping ItemSerializer transform is now reflected in the item/branch result on the first execution, not only on replay, eliminating a fresh-vs-replay divergence. As with steps and child contexts, the returned value is a fresh deserialized instance, and overflow (replay-children) results are unaffected (recovered by re-running the body)."
+      ]
+    }
+  ]
+}

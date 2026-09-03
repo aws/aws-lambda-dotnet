@@ -308,7 +308,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         if (serialized == null) return default!;
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
-        return _serializer.Deserialize<TState>(ms);
+        return LambdaSerializerHelper.Deserialize<TState>(
+            _serializer, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
     }
 
     private TState DeserializeStateOrInitial(string? serialized)
@@ -318,7 +319,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         {
             var bytes = Encoding.UTF8.GetBytes(serialized);
             using var ms = new MemoryStream(bytes);
-            return _serializer.Deserialize<TState>(ms);
+            return LambdaSerializerHelper.Deserialize<TState>(
+                _serializer, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
         }
         catch (Exception ex)
         {
@@ -336,7 +338,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
     private string SerializeState(TState value)
     {
         using var ms = new MemoryStream();
-        _serializer.Serialize(value, ms);
+        LambdaSerializerHelper.Serialize(
+            _serializer, value, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
         return Encoding.UTF8.GetString(ms.ToArray());
     }
 
@@ -361,7 +364,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
                 {
                     var bytes = Encoding.UTF8.GetBytes(lastStatePayload);
                     using var ms = new MemoryStream(bytes);
-                    lastState = _serializer.Deserialize<TState>(ms);
+                    lastState = LambdaSerializerHelper.Deserialize<TState>(
+                        _serializer, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
                 }
                 catch (Exception deserEx)
                 {

@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Behavior change: when a step\u0027s fresh-success serializer round-trip fails (e.g. an asymmetric/broken StepConfig.Serializer that cannot deserialize its own output), the step now fails TERMINALLY (FAIL checkpoint \u002B StepException) instead of being routed through the configured RetryStrategy. Previously a non-null RetryStrategy would re-invoke the already-succeeded, side-effecting step body on each attempt (duplicating side effects) until attempts exhausted. This mirrors ChildContextOperation\u0027s terminal handling of a round-trip failure."
+      ]
+    }
+  ]
+}
