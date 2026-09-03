@@ -1,9 +1,11 @@
 // 5-16: Invoke with custom result serdes (custom deserializer for the returned result)
-// The target (echo) returns the input unchanged; the custom result serializer uppercases
-// the deserialized result. Input is serialized normally (so the checkpointed input /
-// ChainedInvokeSucceeded result stay "hello"), and the workflow returns the uppercased
-// "HELLO" after the custom serde runs on replay.
+// The custom serializer serializes the OUTBOUND request payload normally on the initial
+// execution (its Serialize delegates to the default JSON serializer, so the checkpointed
+// input and the ChainedInvokeSucceeded result both stay "hello"). It uppercases the value
+// when the result is deserialized — which, for a chained invoke, happens on the replay
+// that observes the completed invocation — so the workflow returns the uppercased "HELLO".
 using System.IO;
+using System.Text;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.RuntimeSupport;
@@ -51,7 +53,10 @@ public sealed class UppercaseResultSerializer : ILambdaSerializer
 
     public T Deserialize<T>(Stream requestStream)
     {
-        using var reader = new StreamReader(requestStream);
+        if (typeof(T) != typeof(string))
+            throw new NotSupportedException(
+                $"{nameof(UppercaseResultSerializer)} only supports string results; got {typeof(T)}.");
+        using var reader = new StreamReader(requestStream, Encoding.UTF8);
         var raw = reader.ReadToEnd();
         return (T)(object)raw.ToUpperInvariant();
     }

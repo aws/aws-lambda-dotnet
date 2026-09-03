@@ -56,7 +56,10 @@ public sealed class WrapJsonSerializer : ILambdaSerializer
 {
     public T Deserialize<T>(Stream requestStream)
     {
-        using var reader = new StreamReader(requestStream);
+        if (typeof(T) != typeof(string))
+            throw new NotSupportedException(
+                $"{nameof(WrapJsonSerializer)} only supports string results; got {typeof(T)}.");
+        using var reader = new StreamReader(requestStream, Encoding.UTF8);
         var text = reader.ReadToEnd();
         using var doc = JsonDocument.Parse(text);
         var value = doc.RootElement.GetProperty("wrapped").GetString() ?? string.Empty;

@@ -50,7 +50,10 @@ public sealed class UppercaseSerializer : ILambdaSerializer
 {
     public T Deserialize<T>(Stream requestStream)
     {
-        using var reader = new StreamReader(requestStream);
+        if (typeof(T) != typeof(string))
+            throw new NotSupportedException(
+                $"{nameof(UppercaseSerializer)} only supports string results; got {typeof(T)}.");
+        using var reader = new StreamReader(requestStream, Encoding.UTF8);
         return (T)(object)reader.ReadToEnd();
     }
 

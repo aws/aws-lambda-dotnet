@@ -31,7 +31,7 @@ public class Function
     {
         var result = await context.MapAsync<string, string>(
             new List<string> { "x", "y" },
-            async (ctx, item, index, all, ct) => item.ToUpperInvariant(),
+            (ctx, item, index, all, ct) => Task.FromResult(item.ToUpperInvariant()),
             name: "serdes",
             config: new MapConfig<string>
             {
@@ -54,7 +54,10 @@ public sealed class WrapSerializer : ILambdaSerializer
 
     public T Deserialize<T>(Stream requestStream)
     {
-        using var reader = new StreamReader(requestStream);
+        if (typeof(T) != typeof(string))
+            throw new NotSupportedException(
+                $"{nameof(WrapSerializer)} only supports string results; got {typeof(T)}.");
+        using var reader = new StreamReader(requestStream, Encoding.UTF8);
         var text = reader.ReadToEnd();
         if (text.StartsWith(Prefix, StringComparison.Ordinal))
         {
