@@ -246,11 +246,7 @@ internal sealed class DurableContext : IDurableContext
         // globally-registered serializer. This is the only serializer ConcurrentOperation
         // uses (per-unit child results + inline summary results); the aggregate batch
         // envelope is a source-generated structure and is unaffected.
-        var serializer = effectiveConfig.ItemSerializer ?? LambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
-                "(or in tests, set TestLambdaContext.Serializer).");
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.ParallelOperation<T>(

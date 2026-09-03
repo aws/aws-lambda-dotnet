@@ -22,6 +22,9 @@ public class PerOperationSerializerTests
 
     private static string IdAt(int position) => OperationIdGenerator.HashOperationId(position.ToString());
 
+    private static string ChildIdAt(string parentOpId, int position) =>
+        OperationIdGenerator.HashOperationId($"{parentOpId}-{position}");
+
     private static DurableContext CreateContext(ILambdaSerializer globalSerializer, InitialExecutionState? initialState = null)
     {
         var state = new ExecutionState();
@@ -178,6 +181,41 @@ public class PerOperationSerializerTests
         Assert.Equal(0, global.DeserializeCount);
     }
 
+    [Fact]
+    public async Task Invoke_FreshExecution_UsesPerOpSerializerToSerializeRequestPayload()
+    {
+        // Comment (Copilot): InvokeConfig.Serializer applies to the outbound request
+        // payload on the initial (non-replay) execution as well as to the replay result.
+        // This covers the outbound-serialize path (the replay-deserialize path is above).
+        var global = new SpySerializer();
+        var perOp = new SpySerializer();
+
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var tm = new TerminationManager();
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = new TestLambdaContext { Serializer = global };
+        var recorder = new RecordingBatcher();
+        var ctx = new DurableContext(
+            state, tm, new WorkflowCancellation(tm), idGen, TestArn, lambdaContext, recorder.Batcher);
+
+        // Fresh chained invoke: the request payload is serialized (via the per-op
+        // serializer), the CHAINED_INVOKE START is flushed, then the workflow suspends.
+        // The returned task never completes on the fresh path.
+        var task = ctx.InvokeAsync<string, string>(
+            "arn:aws:lambda:us-east-1:123:function:callee:1",
+            "payload",
+            name: "inv",
+            config: new InvokeConfig { Serializer = perOp });
+
+        await tm.WaitForTerminationAsync();
+        Assert.False(task.IsCompleted);
+
+        // The outbound request payload used the per-op serializer, not the global one.
+        Assert.Equal(1, perOp.SerializeCount);
+        Assert.Equal(0, global.SerializeCount);
+    }
+
     // ---------------------------------------------------------------- ChildContext
 
     [Fact]
@@ -283,5 +321,138 @@ public class PerOperationSerializerTests
         Assert.Equal(2, result.SuccessCount);
         Assert.True(itemSer.SerializeCount >= 2);   // each branch result serialized via the item serializer
         Assert.Equal(0, global.SerializeCount);
+    }
+
+    // ---------------------------------------------------------------- Map / Parallel replay (deserialize)
+
+    [Fact]
+    public async Task Map_Replay_UsesItemSerializerToDeserializeItemResults()
+    {
+        // Comment (Copilot): also cover that ItemSerializer is used for replay
+        // deserialization of cached per-item results (not just fresh serialization).
+        var global = new SpySerializer();
+        var itemSer = new SpySerializer();
+
+        var parentOpId = IdAt(1);
+        var i0 = ChildIdAt(parentOpId, 1);
+        var i1 = ChildIdAt(parentOpId, 2);
+
+        var summaryJson =
+            "{\"CompletionReason\":\"ALL_COMPLETED\",\"Units\":[" +
+            "{\"Index\":0,\"Name\":\"0\",\"Status\":\"SUCCEEDED\"}," +
+            "{\"Index\":1,\"Name\":\"1\",\"Status\":\"SUCCEEDED\"}]}";
+
+        var ctx = CreateContext(global, new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "map",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                },
+                new()
+                {
+                    Id = i0,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.MapIteration,
+                    Name = "0",
+                    ContextDetails = new ContextDetails { Result = "\"A\"" }
+                },
+                new()
+                {
+                    Id = i1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.MapIteration,
+                    Name = "1",
+                    ContextDetails = new ContextDetails { Result = "\"B\"" }
+                }
+            }
+        });
+
+        var calls = 0;
+        var result = await ctx.MapAsync(
+            new[] { "a", "b" },
+            async (_, item, _, _, _) => { calls++; await Task.CompletedTask; return item.ToUpperInvariant(); },
+            name: "map",
+            config: new MapConfig<string> { ItemSerializer = itemSer });
+
+        Assert.Equal(0, calls);                                  // cached — callback not re-run
+        Assert.Equal(new[] { "A", "B" }, result.GetResults());
+        Assert.True(itemSer.DeserializeCount >= 2);              // each cached item result deserialized via the item serializer
+        Assert.Equal(0, global.DeserializeCount);                // aggregate summary uses source-gen, not the ILambdaSerializer
+    }
+
+    [Fact]
+    public async Task Parallel_Replay_UsesItemSerializerToDeserializeBranchResults()
+    {
+        var global = new SpySerializer();
+        var itemSer = new SpySerializer();
+
+        var parentOpId = IdAt(1);
+        var b0 = ChildIdAt(parentOpId, 1);
+        var b1 = ChildIdAt(parentOpId, 2);
+
+        var summaryJson =
+            "{\"CompletionReason\":\"ALL_COMPLETED\",\"Units\":[" +
+            "{\"Index\":0,\"Name\":\"0\",\"Status\":\"SUCCEEDED\"}," +
+            "{\"Index\":1,\"Name\":\"1\",\"Status\":\"SUCCEEDED\"}]}";
+
+        var ctx = CreateContext(global, new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "par",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                },
+                new()
+                {
+                    Id = b0,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "0",
+                    ContextDetails = new ContextDetails { Result = "\"x\"" }
+                },
+                new()
+                {
+                    Id = b1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "1",
+                    ContextDetails = new ContextDetails { Result = "\"y\"" }
+                }
+            }
+        });
+
+        var executed = false;
+        var branches = new Func<IDurableContext, CancellationToken, Task<string>>[]
+        {
+            async (_, _) => { executed = true; await Task.CompletedTask; return "x"; },
+            async (_, _) => { executed = true; await Task.CompletedTask; return "y"; },
+        };
+
+        var result = await ctx.ParallelAsync(
+            branches,
+            name: "par",
+            config: new ParallelConfig { ItemSerializer = itemSer });
+
+        Assert.False(executed);                                  // cached — branches not re-run
+        Assert.Equal(new[] { "x", "y" }, result.GetResults());
+        Assert.True(itemSer.DeserializeCount >= 2);              // each cached branch result deserialized via the item serializer
+        Assert.Equal(0, global.DeserializeCount);
     }
 }
