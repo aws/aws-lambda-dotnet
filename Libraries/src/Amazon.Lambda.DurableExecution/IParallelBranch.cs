@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
 /// A typed handle to a single branch registered on an <see cref="IDurableParallel"/>
-/// via <see cref="IDurableParallel.BranchAsync{T}"/>.
+/// via <see cref="IDurableParallel.Branch{T}"/>.
 /// Unlike the homogeneous <see cref="IDurableContext.ParallelAsync{T}(System.Collections.Generic.IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>
 /// API — where every branch shares one result type <c>T</c> — each branch on an
 /// <see cref="IDurableParallel"/> declares its own result type, so a single
@@ -41,8 +41,9 @@ public interface IParallelBranch<T>
 
     /// <summary>
     /// Zero-based registration order of this branch within its parallel
-    /// operation. Stable across replays and used to derive the branch's
-    /// deterministic operation ID.
+    /// operation. Stable across replays. The branch's deterministic operation ID
+    /// is derived from the <em>one-based</em> position (<c>hash("{parentId}-{Index+1}")</c>),
+    /// so the first branch (<c>Index</c> 0) uses suffix 1.
     /// </summary>
     int Index { get; }
 

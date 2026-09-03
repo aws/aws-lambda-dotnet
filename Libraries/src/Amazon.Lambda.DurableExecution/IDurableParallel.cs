@@ -7,7 +7,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// An incremental, branch-oriented parallel operation created by
 /// <see cref="IDurableContext.CreateParallel(string?, ParallelConfig?)"/>. Branches
 /// are registered one at a time via
-/// <see cref="BranchAsync{T}"/>,
+/// <see cref="Branch{T}"/>,
 /// each with its own result type (heterogeneous), and each begins executing
 /// immediately (subject to <see cref="ParallelConfig.MaxConcurrency"/>). Call
 /// <see cref="CompleteAsync(System.Threading.CancellationToken)"/> to seal
@@ -23,7 +23,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// checkpointed plan) and earlier branches should start before later ones are known.
 /// <para>
 /// <b>Deterministic replay.</b> Branch identity is positional: the n-th
-/// <see cref="BranchAsync{T}"/>
+/// <see cref="Branch{T}"/>
 /// call reuses the n-th deterministic operation ID. Workflow code must therefore
 /// register the same branches in the same order across invocations — produce any
 /// dynamic branch list inside a checkpointed <see cref="IDurableContext.StepAsync{T}(System.Func{IStepContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}, string?, StepConfig?, System.Threading.CancellationToken)"/>
@@ -80,11 +80,21 @@ public interface IDurableParallel : IAsyncDisposable
     /// same serializer at a given branch index across replays.
     /// </param>
     /// <returns>A typed handle for awaiting the branch's result.</returns>
+    /// <exception cref="System.ArgumentNullException">
+    /// <paramref name="name"/> or <paramref name="func"/> is <c>null</c>.
+    /// </exception>
     /// <exception cref="System.InvalidOperationException">
     /// The operation has already been sealed by
-    /// <see cref="CompleteAsync(System.Threading.CancellationToken)"/> or disposal.
+    /// <see cref="CompleteAsync(System.Threading.CancellationToken)"/>.
     /// </exception>
-    IParallelBranch<T> BranchAsync<T>(
+    /// <exception cref="System.ObjectDisposedException">
+    /// The operation has already been disposed.
+    /// </exception>
+    /// <exception cref="NonDeterministicExecutionException">
+    /// On replay, the <paramref name="name"/> at this branch index differs from the
+    /// name recorded in the checkpoint for a previous invocation (branch name drift).
+    /// </exception>
+    IParallelBranch<T> Branch<T>(
         string name,
         Func<IDurableContext, CancellationToken, Task<T>> func,
         Amazon.Lambda.Core.ILambdaSerializer? serializer = null);

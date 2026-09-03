@@ -30,11 +30,11 @@ public class Function
             name: "early-start",
             config: new ParallelConfig { MaxConcurrency = 1 }))
         {
-            IParallelBranch<string> first = parallel.BranchAsync(
+            IParallelBranch<string> first = parallel.Branch(
                 "first", (_, _) => Task.FromResult("ready"));
             firstResult = await first;
 
-            second = parallel.BranchAsync(
+            second = parallel.Branch(
                 "second", (_, _) => Task.FromResult(firstResult + "-second"));
             await parallel.CompleteAsync();
         }

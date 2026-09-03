@@ -31,11 +31,11 @@ public class Function
             name: "typed-branches",
             config: new ParallelConfig { MaxConcurrency = 1 }))
         {
-            inventory = parallel.BranchAsync(
+            inventory = parallel.Branch(
                 "inventory", (_, _) => Task.FromResult("reserved"));
-            payment = parallel.BranchAsync(
+            payment = parallel.Branch(
                 "payment", (_, _) => Task.FromResult(200));
-            quote = parallel.BranchAsync(
+            quote = parallel.Branch(
                 "quote", (_, _) => Task.FromResult(new Dictionary<string, string>
                 {
                     ["currency"] = "USD"

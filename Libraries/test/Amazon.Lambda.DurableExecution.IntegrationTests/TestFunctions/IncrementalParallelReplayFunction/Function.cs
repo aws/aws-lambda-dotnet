@@ -46,9 +46,9 @@ public class Function
     {
         await using var parallel = context.CreateParallel(name: "fanout");
 
-        IParallelBranch<string> a = parallel.BranchAsync("a", BranchAsync);
-        IParallelBranch<string> b = parallel.BranchAsync("b", BranchAsync);
-        IParallelBranch<string> c = parallel.BranchAsync("c", BranchAsync);
+        IParallelBranch<string> a = parallel.Branch("a", BranchAsync);
+        IParallelBranch<string> b = parallel.Branch("b", BranchAsync);
+        IParallelBranch<string> c = parallel.Branch("c", BranchAsync);
 
         var summary = await parallel.CompleteAsync();
 

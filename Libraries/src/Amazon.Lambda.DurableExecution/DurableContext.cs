@@ -202,12 +202,19 @@ internal sealed class DurableContext : IDurableContext
         var effectiveConfig = config ?? new ParallelConfig();
         // Operation-level default for per-branch result serialization: the config's
         // ItemSerializer if set, else the globally-registered serializer. Individual
-        // branches may still override this via BranchAsync's serializer parameter.
-        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        // branches may still override this via Branch's serializer parameter.
+        //
+        // Resolved LAZILY: a workflow that overrides the serializer on every Branch
+        // call (the AOT/per-branch scenario) must not be forced to register a global
+        // serializer. GetRequired is deferred to the factory below and invoked only
+        // when a branch actually falls back to this operation-level default.
+        var lambdaContext = LambdaContext;
+        Func<Amazon.Lambda.Core.ILambdaSerializer> defaultSerializerFactory =
+            () => effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(lambdaContext);
 
         var operationId = _idGenerator.NextId();
         return new Internal.IncrementalParallelOperation(
-            operationId, name, _idGenerator.ParentId, effectiveConfig, serializer, MakeChildFactory(),
+            operationId, name, _idGenerator.ParentId, effectiveConfig, defaultSerializerFactory, MakeChildFactory(),
             _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
     }
 

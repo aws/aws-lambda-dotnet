@@ -373,7 +373,7 @@ public interface IDurableContext
     /// overloads — which take a complete branch list up front and share one result
     /// type — the returned <see cref="IDurableParallel"/> lets you register branches
     /// one at a time via
-    /// <see cref="IDurableParallel.BranchAsync{T}"/>,
+    /// <see cref="IDurableParallel.Branch{T}"/>,
     /// each with its own result type (heterogeneous), starting each branch as it is
     /// registered. Call <see cref="IDurableParallel.CompleteAsync(CancellationToken)"/>
     /// to seal registration and obtain the aggregate <see cref="IBatchResult"/>.
