@@ -377,6 +377,40 @@ public class FileSystemSerializerTests : IDisposable
         Assert.Equal(new Poco { Id = 1, Name = "orig" }, read);
     }
 
+    [Fact]
+    public void InnerLessConstructor_BoundToDefaultInner_RoundTrips()
+    {
+        // The inner-less constructor defers to the globally-registered serializer, which the
+        // durable runtime binds via IDefaultInnerSerializer.WithDefaultInner before use.
+        var innerLess = new FileSystemSerializer(_base, FileSystemStorageMode.Always);
+        var bound = (FileSystemSerializer)((IDefaultInnerSerializer)innerLess).WithDefaultInner(_json);
+        var value = new Poco { Id = 9, Name = "bound" };
+
+        var envelope = Serialize(bound, value, DurableArnCtx());
+
+        Assert.Contains("\"file\"", envelope);
+        Assert.Equal(value, Deserialize<Poco>(bound, envelope, DurableArnCtx()));
+    }
+
+    [Fact]
+    public void WithDefaultInner_ExplicitInnerWins_ReturnsSameInstance()
+    {
+        // A caller-supplied inner is never overridden by the runtime's default.
+        var explicitInner = new FileSystemSerializer(_json, _base);
+        var result = ((IDefaultInnerSerializer)explicitInner).WithDefaultInner(new DefaultLambdaJsonSerializer());
+        Assert.Same(explicitInner, result);
+    }
+
+    [Fact]
+    public void InnerLessConstructor_WithoutBinding_Throws()
+    {
+        // Used without the runtime binding a default inner (e.g. outside a durable operation
+        // slot), there is no serializer to convert the value — fail with a clear message.
+        var innerLess = new FileSystemSerializer(_base, FileSystemStorageMode.Always);
+        Assert.Throws<InvalidOperationException>(
+            () => Serialize(innerLess, new Poco { Id = 1, Name = "x" }, DurableArnCtx()));
+    }
+
     private sealed class GzipJsonSerializer : ILambdaSerializer
     {
         private readonly ILambdaSerializer _json;

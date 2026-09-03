@@ -56,7 +56,9 @@ public enum FileSystemPathEncoding
 /// serialized durable operation results on a filesystem, keeping only a small pointer in
 /// the checkpoint. It wraps an <em>inner</em> serializer that performs the actual
 /// value&#8596;bytes conversion (JSON, compressed JSON, a custom format, …), so the choice
-/// of on-the-wire format is fully in the caller's control.
+/// of on-the-wire format is fully in the caller's control. Construct it without an inner
+/// serializer (<see cref="FileSystemSerializer(string, FileSystemStorageMode, FileSystemPathEncoding)"/>)
+/// to reuse the durable execution's globally-registered serializer as the inner.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -88,7 +90,7 @@ public enum FileSystemPathEncoding
 /// throws, because there is then no execution/entity identity to build a safe path.
 /// </para>
 /// </remarks>
-public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSerializer
+public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSerializer, IDefaultInnerSerializer
 {
     // The durable execution checkpoint size limit is ~256 KB; leave 1 KB of headroom for
     // the envelope wrapper and other checkpoint metadata.
@@ -99,7 +101,7 @@ public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSeri
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(1));
 
-    private readonly ILambdaSerializer _inner;
+    private readonly ILambdaSerializer? _inner;
     private readonly string _basePath;
     private readonly FileSystemStorageMode _storageMode;
     private readonly FileSystemPathEncoding _pathEncoding;
@@ -129,6 +131,48 @@ public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSeri
         _basePath = Path.GetFullPath(basePath ?? throw new ArgumentNullException(nameof(basePath)));
         _storageMode = storageMode;
         _pathEncoding = pathEncoding;
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="FileSystemSerializer"/> that uses the durable execution's
+    /// globally-registered <see cref="ILambdaSerializer"/> (the assembly-level
+    /// <c>[assembly: LambdaSerializer(...)]</c> serializer, or the one passed to
+    /// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>) as its inner serializer.
+    /// </summary>
+    /// <remarks>
+    /// The inner serializer is supplied by the durable runtime when this instance is used
+    /// through a per-operation serializer slot (for example <c>StepConfig.Serializer</c>).
+    /// It saves you from having to thread <c>ctx.Serializer</c> in yourself when the
+    /// on-the-wire format is just the function's normal serializer.
+    /// </remarks>
+    /// <param name="basePath">
+    /// Directory under which result files are written (for example <c>/mnt/efs/durable</c>).
+    /// Use a durable, shared mount — see the type remarks.
+    /// </param>
+    /// <param name="storageMode">When to write to a file. Defaults to <see cref="FileSystemStorageMode.Always"/>.</param>
+    /// <param name="pathEncoding">How to encode path segments. Defaults to <see cref="FileSystemPathEncoding.Uri"/>.</param>
+    public FileSystemSerializer(
+        string basePath,
+        FileSystemStorageMode storageMode = FileSystemStorageMode.Always,
+        FileSystemPathEncoding pathEncoding = FileSystemPathEncoding.Uri)
+    {
+        _inner = null;
+        // Normalize once (see the inner-taking constructor) so a stored file pointer is
+        // absolute and stable across invocations, independent of the current directory.
+        _basePath = Path.GetFullPath(basePath ?? throw new ArgumentNullException(nameof(basePath)));
+        _storageMode = storageMode;
+        _pathEncoding = pathEncoding;
+    }
+
+    // When constructed without an explicit inner serializer, the durable runtime binds the
+    // globally-registered serializer here before the operation runs (see the parameterless-inner
+    // constructor). Returns a bound copy; a caller-supplied inner always wins and is left as-is.
+    ILambdaSerializer IDefaultInnerSerializer.WithDefaultInner(ILambdaSerializer inner)
+    {
+        if (inner is null) throw new ArgumentNullException(nameof(inner));
+        return _inner is not null
+            ? this
+            : new FileSystemSerializer(inner, _basePath, _storageMode, _pathEncoding);
     }
 
     // ---- context-aware path (used by durable execution) ----
@@ -193,9 +237,10 @@ public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSeri
             // non-Linux readers from blocking the atomic replace; the atomic-replace
             // concurrency-safety itself is a POSIX/Linux property. (Prod runs Linux, but
             // dev/test frequently run Windows/macOS.)
+            var inner = RequireInner();
             using var fileStream = new FileStream(
                 envelope.File, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
-            return _inner.Deserialize<T>(fileStream);
+            return inner.Deserialize<T>(fileStream);
         }
 
         if (envelope.Data is not null)
@@ -235,27 +280,41 @@ public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSeri
 
     // ---- helpers ----
 
+    // The inner serializer is either the one passed to the constructor or, for the
+    // inner-less constructor, the globally-registered serializer bound by the durable
+    // runtime via IDefaultInnerSerializer. If neither is present it means this instance
+    // was used outside a durable operation slot, where no global serializer is available.
+    private ILambdaSerializer RequireInner() =>
+        _inner ?? throw new InvalidOperationException(
+            "FileSystemSerializer was constructed without an inner serializer and the durable " +
+            "runtime did not supply a globally-registered ILambdaSerializer to use as the inner. " +
+            "Either pass an inner serializer to the constructor, or register one via " +
+            "[assembly: LambdaSerializer(typeof(...))] / LambdaBootstrapBuilder.Create(handler, serializer).");
+
     private byte[] InnerSerialize<T>(T value)
     {
+        var inner = RequireInner();
         using var ms = new MemoryStream();
-        _inner.Serialize(value, ms);
+        inner.Serialize(value, ms);
         return ms.ToArray();
     }
 
     private T InnerDeserialize<T>(byte[] bytes)
     {
+        var inner = RequireInner();
         using var ms = new MemoryStream(bytes);
-        return _inner.Deserialize<T>(ms);
+        return inner.Deserialize<T>(ms);
     }
 
     private string WriteStreamingToFile<T>(T value, DurableSerializationContext context)
     {
+        var inner = RequireInner();
         var (path, tmp) = ResolveTargetPaths(context);
         try
         {
             using (var fileStream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                _inner.Serialize(value, fileStream);
+                inner.Serialize(value, fileStream);
             }
             File.Move(tmp, path, overwrite: true);
         }
