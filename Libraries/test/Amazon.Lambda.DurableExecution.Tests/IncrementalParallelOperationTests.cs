@@ -462,6 +462,132 @@ public class IncrementalParallelOperationTests
     }
 
     [Fact]
+    public async Task CreateParallel_ReplaySucceeded_OverflowStrippedResult_ReRunsBranchToRecoverValue()
+    {
+        // Overflow-recovery arm of ResolveTerminalBranch: the parent checkpointed
+        // SUCCEEDED, but the summary exceeded the payload cap so it was written with
+        // the inline per-branch Result stripped (unit Status=SUCCEEDED, Result=null).
+        // On replay such a unit is routed through LaunchRunBranch(frozenStatus), which
+        // RE-RUNS the branch body to recover the stripped value while keeping the
+        // frozen SUCCEEDED verdict authoritative and NOT re-checkpointing the parent.
+        var parentOpId = IdAt(1);
+        var summaryJson = """
+            {"CompletionReason":"ALL_COMPLETED","Units":[
+                {"Index":0,"Name":"inventory","Status":"SUCCEEDED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "process-order",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+            }
+        });
+
+        var executed = false;
+        IParallelBranch<string> inventory;
+        IBatchResult summary;
+
+        await using (var parallel = context.CreateParallel(name: "process-order"))
+        {
+            inventory = parallel.Branch("inventory", async (_, _) =>
+            {
+                executed = true;                 // the recovered value can only come from a re-run
+                await Task.Yield();
+                return "recovered-reserved";
+            });
+            summary = await parallel.CompleteAsync();
+        }
+
+        // (a) The stripped value is not inline, so the branch body had to re-run.
+        Assert.True(executed);
+        // (b) The handle resolves to the value the re-run recovered — not the default
+        //     a broken (inline-null) resolution would have produced.
+        Assert.Equal("recovered-reserved", await inventory);
+        // (c) The frozen verdict wins even though the body re-executed.
+        Assert.Equal(BatchItemStatus.Succeeded, inventory.Status);
+        Assert.Equal(1, summary.SuccessCount);
+        Assert.Equal(0, summary.FailureCount);
+        Assert.Equal(CompletionReason.AllCompleted, summary.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        // (d) A terminal parent is never re-checkpointed: no parent Parallel SUCCEED.
+        Assert.DoesNotContain(recorder.Flushed, o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel" && o.Action == "SUCCEED");
+    }
+
+    [Fact]
+    public async Task CreateParallel_ReplayFailed_OverflowStrippedError_ReRunsBranchToRecoverFailure()
+    {
+        // Same overflow-recovery arm for a FAILED unit whose inline Error was stripped
+        // (unit Status=FAILED, Error=null). The body re-runs (and fails again), the
+        // recovered failure surfaces on the handle, the frozen FAILED verdict stays
+        // authoritative, and the parent is not re-checkpointed.
+        var parentOpId = IdAt(1);
+        var summaryJson = """
+            {"CompletionReason":"FAILURE_TOLERANCE_EXCEEDED","Units":[
+                {"Index":0,"Name":"bad","Status":"FAILED"}
+            ]}
+            """;
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "fanout",
+                    ContextDetails = new ContextDetails { Result = summaryJson }
+                }
+            }
+        });
+
+        var executed = false;
+        IParallelBranch<int> bad;
+        IBatchResult summary;
+
+        await using (var parallel = context.CreateParallel(name: "fanout"))
+        {
+            bad = parallel.Branch<int>("bad", async (_, _) =>
+            {
+                executed = true;
+                await Task.Yield();
+                throw new InvalidOperationException("recovered-boom");
+            });
+            summary = await parallel.CompleteAsync();
+        }
+
+        // (a) The stripped error is not inline, so the branch body had to re-run.
+        Assert.True(executed);
+        // (b) The recovered failure surfaces on the handle with the re-run's message.
+        var ex = await Assert.ThrowsAsync<ChildContextException>(async () => await bad);
+        Assert.Contains("recovered-boom", ex.Message);
+        // (c) The frozen FAILED verdict wins.
+        Assert.Equal(BatchItemStatus.Failed, bad.Status);
+        Assert.Equal(1, summary.FailureCount);
+        Assert.True(summary.HasFailure);
+        Assert.Equal(CompletionReason.FailureToleranceExceeded, summary.CompletionReason);
+
+        await recorder.Batcher.DrainAsync();
+        // (d) A terminal parent is never re-checkpointed: no parent Parallel SUCCEED.
+        Assert.DoesNotContain(recorder.Flushed, o =>
+            o.Type == "CONTEXT" && o.SubType == "Parallel" && o.Action == "SUCCEED");
+    }
+
+    [Fact]
     public async Task CreateParallel_ReplayNameDrift_Throws()
     {
         var parentOpId = IdAt(1);

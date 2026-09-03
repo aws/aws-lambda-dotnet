@@ -112,13 +112,16 @@ public interface IDurableParallel : IAsyncDisposable
     /// handles, to observe failures. It does propagate workflow-level errors (for
     /// example <see cref="NonDeterministicExecutionException"/>) and cancellation.
     /// <para>
-    /// The <paramref name="cancellationToken"/> governs sealing and awaiting: it
-    /// stops this call from waiting further. Because branches begin executing when
-    /// they are registered (before <c>CompleteAsync</c> is called), this token is
-    /// not retroactively linked into already-running branch bodies — those observe
-    /// the SDK's workflow-shutdown signal (and the completion-policy short-circuit)
-    /// instead. Dispatched branches always run to a terminal checkpoint so replay
-    /// stays deterministic, matching <see cref="IDurableContext.ParallelAsync{T}(System.Collections.Generic.IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>.
+    /// The <paramref name="cancellationToken"/> does not interrupt in-flight branch
+    /// settlement. Because branches begin executing when they are registered (before
+    /// <c>CompleteAsync</c> is called), this token is neither retroactively linked
+    /// into already-running branch bodies nor into the wait for them to settle —
+    /// those observe the SDK's workflow-shutdown signal (and the completion-policy
+    /// short-circuit) instead. This call blocks until every dispatched branch reaches
+    /// its terminal checkpoint; the token is observed only after that, so cancellation
+    /// is surfaced just before the aggregate result would be returned rather than
+    /// cutting the wait short. Dispatched branches always run to a terminal checkpoint
+    /// so replay stays deterministic, matching <see cref="IDurableContext.ParallelAsync{T}(System.Collections.Generic.IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>.
     /// </para>
     /// </remarks>
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
