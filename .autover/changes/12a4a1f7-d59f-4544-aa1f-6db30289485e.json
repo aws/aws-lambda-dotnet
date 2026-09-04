@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Behavior change: steps and child contexts now round-trip their result through the configured serializer on a fresh (non-replay) success, deserializing the just-written checkpoint before returning \u2014 matching replay semantics. A custom per-operation serializer\u0027s transform is now reflected in the operation result on the first execution, not only on replay. The returned value is a fresh deserialized instance rather than the exact object the step/child body produced. Overflow (replay-children) results are unaffected."
+      ]
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -59,6 +61,15 @@ public class CallbackConfig
             _heartbeatTimeout = value;
         }
     }
+
+    /// <summary>
+    /// Optional serializer used to <b>deserialize</b> the callback payload delivered by the
+    /// external system. When <c>null</c> (default), the globally-registered
+    /// <see cref="ILambdaSerializer"/> on <see cref="ILambdaContext.Serializer"/> is used.
+    /// Only the deserialize path is used for callbacks — the SDK never serializes a callback
+    /// result (the external system provides the payload).
+    /// </summary>
+    public ILambdaSerializer? Serializer { get; set; }
 
     private static void ValidateTimeout(TimeSpan value, string paramName)
     {

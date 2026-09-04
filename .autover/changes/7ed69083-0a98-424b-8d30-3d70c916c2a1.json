@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add optional per-operation serializer override (Serializer) on StepConfig, CallbackConfig, InvokeConfig, WaitForConditionConfig, and ChildContextConfig; when null the globally-registered ILambdaSerializer is used."
+      ]
+    }
+  ]
+}

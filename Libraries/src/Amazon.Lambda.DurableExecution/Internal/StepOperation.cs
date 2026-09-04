@@ -234,6 +234,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 result = await _func(stepContext, linked.Token);
             }
 
+            var serialized = SerializeResult(result);
             await EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
@@ -242,10 +243,17 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 Action = OperationAction.SUCCEED,
                 SubType = OperationSubTypes.Step,
                 Name = Name,
-                Payload = SerializeResult(result)
+                Payload = serialized
             }, cancellationToken);
 
-            return result;
+            // Round-trip the just-written checkpoint so the value the workflow
+            // observes on this fresh execution is the deserialized-from-checkpoint
+            // value, exactly as it would be on replay. This makes a custom
+            // (possibly non-round-tripping) StepConfig.Serializer's transform
+            // visible in the step result on the first run, not just on replay.
+            // Behavior change: the returned object is no longer the same instance
+            // the step body produced. See the AutoVer change note.
+            return DeserializeResult(serialized);
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {

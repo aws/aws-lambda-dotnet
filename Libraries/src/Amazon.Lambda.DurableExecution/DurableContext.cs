@@ -84,7 +84,7 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
@@ -147,7 +147,7 @@ internal sealed class DurableContext : IDurableContext
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(config.WaitStrategy);
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
@@ -161,7 +161,7 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
 
@@ -183,7 +183,7 @@ internal sealed class DurableContext : IDurableContext
         CallbackConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new CallbackOperation<T>(
@@ -242,11 +242,11 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new ParallelConfig();
 
-        var serializer = LambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
-                "(or in tests, set TestLambdaContext.Serializer).");
+        // Per-branch result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.ParallelOperation<T>(
@@ -275,7 +275,11 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new MapConfig<TItem>();
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        // Per-item result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.MapOperation<TItem, TResult>(
@@ -495,7 +499,7 @@ internal sealed class DurableContext : IDurableContext
         if (string.IsNullOrWhiteSpace(functionName))
             throw new ArgumentException("Function name must not be empty or whitespace.", nameof(functionName));
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         cancellationToken.ThrowIfCancellationRequested();
 

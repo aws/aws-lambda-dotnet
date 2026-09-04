@@ -183,3 +183,7 @@ public class WaitForCallbackConfig : CallbackConfig
     public IRetryStrategy? RetryStrategy { get; set; } // applied to the submitter step only
 }
 ```
+
+## Custom serializer
+
+Set `CallbackConfig.Serializer` to override the `ILambdaSerializer` used to **deserialize** the callback payload delivered by the external system. When `null` (default), the globally-registered serializer on `ILambdaContext.Serializer` is used. Only the deserialize path is used for callbacks — the SDK never serializes a callback result. See [Steps → Custom serializer](steps.md#custom-serializer) for details and replay/AOT notes.
