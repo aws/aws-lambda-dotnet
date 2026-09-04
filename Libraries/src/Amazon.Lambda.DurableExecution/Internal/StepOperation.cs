@@ -215,6 +215,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken, _workflowCancellation.Token);
 
+        T result;
         try
         {
             var stepContext = new StepContext(OperationId, attemptNumber, _logger);
@@ -223,7 +224,6 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             // lines with the operation id, name, and current attempt. Wrap
             // only the user-func call — checkpoint emission shouldn't carry
             // step metadata into any side-channel logging.
-            T result;
             using (_logger.BeginScope(new Dictionary<string, object>
             {
                 ["operationId"] = OperationId,
@@ -233,27 +233,6 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             {
                 result = await _func(stepContext, linked.Token);
             }
-
-            var serialized = SerializeResult(result);
-            await EnqueueAsync(new SdkOperationUpdate
-            {
-                Id = OperationId,
-                ParentId = ParentId,
-                Type = OperationTypes.Step,
-                Action = OperationAction.SUCCEED,
-                SubType = OperationSubTypes.Step,
-                Name = Name,
-                Payload = serialized
-            }, cancellationToken);
-
-            // Round-trip the just-written checkpoint so the value the workflow
-            // observes on this fresh execution is the deserialized-from-checkpoint
-            // value, exactly as it would be on replay. This makes a custom
-            // (possibly non-round-tripping) StepConfig.Serializer's transform
-            // visible in the step result on the first run, not just on replay.
-            // Behavior change: the returned object is no longer the same instance
-            // the step body produced. See the AutoVer change note.
-            return DeserializeResult(serialized);
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
@@ -266,12 +245,87 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         }
         catch (Exception ex)
         {
-            // Funnel into the retry/fail decision tree. May checkpoint RETRY and
-            // suspend (Pending), or checkpoint FAIL and rethrow to user. A user-
-            // thrown OperationCanceledException unrelated to our linked token
-            // falls through here and is treated as a normal step failure.
+            // The user step body itself threw. Funnel into the retry/fail decision
+            // tree: may checkpoint RETRY and suspend (Pending), or checkpoint FAIL
+            // and rethrow to user. A user-thrown OperationCanceledException unrelated
+            // to our linked token falls through here and is treated as a normal
+            // step failure. Retry is safe here precisely because the body has NOT
+            // recorded a success — re-running it is the intended behavior.
             return await HandleStepFailureAsync(ex, attemptNumber, cancellationToken);
         }
+
+        // The user step body succeeded. Serialize the result and round-trip it
+        // through the (possibly custom) serializer so the value the workflow
+        // observes on this fresh execution is the deserialized-from-checkpoint
+        // value, exactly as it would be on replay. This makes a custom (possibly
+        // non-round-tripping) StepConfig.Serializer's transform visible in the step
+        // result on the first run, not just on replay. Behavior change: the returned
+        // object is no longer the same instance the step body produced. See the
+        // AutoVer change note.
+        //
+        // CRITICAL: a failure from here on is TERMINAL and must NOT enter the retry
+        // decision. The side-effecting body has already run to completion; routing a
+        // serialize/round-trip failure through HandleStepFailureAsync (with a non-null
+        // RetryStrategy) would re-invoke the already-succeeded body on the next
+        // attempt — duplicating side effects and looping until attempts exhaust. We
+        // mirror ChildContextOperation, which catches its round-trip deserialize
+        // distinctly and fails terminally (no retry). Deserialize BEFORE emitting the
+        // SUCCEED so a broken serializer surfaces as a terminal failure with no
+        // terminal checkpoint recorded, rather than throwing against an already-
+        // SUCCEEDED operation (which would emit a second terminal checkpoint and
+        // diverge from replay, which returns the cached success).
+        string serialized;
+        T roundTripped;
+        try
+        {
+            serialized = SerializeResult(result);
+            roundTripped = DeserializeResult(serialized);
+        }
+        catch (Exception ex)
+        {
+            return await FailStepTerminallyAsync(ex, cancellationToken);
+        }
+
+        // The post-round-trip SUCCEED enqueue. This sits AFTER the retryable
+        // try/catch, so a failure here must NOT re-enter the retry strategy — the
+        // side-effecting body has already run to completion. Route a non-OCE
+        // failure through the SAME terminal path as the round-trip failure just
+        // above (FailStepTerminallyAsync: FAIL checkpoint + StepException) so a
+        // post-success enqueue failure is handled consistently rather than
+        // propagating raw with no terminal record.
+        //
+        // Recursion guard: FailStepTerminallyAsync emits the terminal FAIL via this
+        // same EnqueueAsync. If the batcher is broken and that FAIL emit ALSO throws,
+        // its exception propagates straight out of FailStepTerminallyAsync — it never
+        // re-enters this SUCCEED path — so a broken batcher surfaces its error
+        // instead of looping.
+        try
+        {
+            await EnqueueAsync(new SdkOperationUpdate
+            {
+                Id = OperationId,
+                ParentId = ParentId,
+                Type = OperationTypes.Step,
+                Action = OperationAction.SUCCEED,
+                SubType = OperationSubTypes.Step,
+                Name = Name,
+                Payload = serialized
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller-cancel during the SUCCEED flush owns the outcome — propagate
+            // untouched; do NOT synthesize a terminal FAIL. This enqueue observes only
+            // the caller token (not the linked workflow-shutdown token), so a
+            // workflow-shutdown OCE cannot originate here.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return await FailStepTerminallyAsync(ex, cancellationToken);
+        }
+
+        return roundTripped;
     }
 
     /// <summary>
@@ -313,6 +367,20 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             }
         }
 
+        return await FailStepTerminallyAsync(ex, cancellationToken);
+    }
+
+    /// <summary>
+    /// Fails the step terminally: emits a FAIL checkpoint and throws
+    /// <see cref="StepException"/> WITHOUT consulting the retry strategy. Used both
+    /// as the terminal tail of <see cref="HandleStepFailureAsync"/> (retries
+    /// exhausted / no strategy) and directly for a post-success failure (an
+    /// asymmetric serializer whose serialize/round-trip throws). Retry must not be
+    /// consulted for the latter: the side-effecting step body has already run, so
+    /// re-invoking it would duplicate side effects.
+    /// </summary>
+    private async Task<T> FailStepTerminallyAsync(Exception ex, CancellationToken cancellationToken)
+    {
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
@@ -335,13 +403,15 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         if (serialized == null) return default!;
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
-        return _serializer.Deserialize<T>(ms);
+        return LambdaSerializerHelper.Deserialize<T>(
+            _serializer, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
     }
 
     private string SerializeResult(T value)
     {
         using var ms = new MemoryStream();
-        _serializer.Serialize(value, ms);
+        LambdaSerializerHelper.Serialize(
+            _serializer, value, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
         return Encoding.UTF8.GetString(ms.ToArray());
     }
 
