@@ -165,3 +165,32 @@ var report = await ctx.StepAsync(
 The serializer is part of the workflow's deterministic definition: it is re-resolved on every replay, so a step must be able to deserialize a result it previously serialized. Changing a step's serializer for an in-flight execution in a way that cannot read the stored payload will break replay. The override is Native-AOT safe as long as the serializer you supply is (for example `SourceGeneratorLambdaJsonSerializer<TContext>`).
 
 > The same optional `Serializer` property is available on `CallbackConfig` (used to deserialize the callback payload), `InvokeConfig` (payload and result), `WaitForConditionConfig<TState>` (the checkpointed state), and `ChildContextConfig` (the child result). `MapConfig<TItem>` and `ParallelConfig` expose `ItemSerializer` for each item/branch **result** (the aggregated batch envelope — per-item statuses and completion reason — is SDK-internal and not user-serialized). In every case, `null` means the globally-registered serializer is used.
+
+#### Offloading large results with `FileSystemSerializer`
+
+When a step's result would be too large to keep in the checkpoint (the durable execution checkpoint size limit is ~256&nbsp;KB), assign a `FileSystemSerializer` to the per-operation `Serializer` slot. It writes the serialized result to a durable, shared mount (Amazon EFS or Amazon S3 Files — **not** Lambda's ephemeral `/tmp`, which does not survive replay) and keeps only a small file pointer in the checkpoint. `FileSystemSerializer` wraps an *inner* `ILambdaSerializer` that does the actual value↔bytes conversion, so you stay in control of the on-the-wire format.
+
+```csharp
+var report = await ctx.StepAsync(
+    async (_, ct) => await BuildLargeReportAsync(ct),
+    name: "report",
+    config: new StepConfig
+    {
+        // Inner serializer supplied explicitly.
+        Serializer = new FileSystemSerializer(
+            inner: new SourceGeneratorLambdaJsonSerializer<ReportContext>(),
+            basePath: "/mnt/efs/durable")
+    });
+```
+
+When the on-the-wire format is just the function's normal serializer, use the inner-less constructor and let the durable runtime supply the globally-registered `ILambdaSerializer` (the assembly-level `[assembly: LambdaSerializer(...)]`, or the one passed to `LambdaBootstrapBuilder.Create(handler, serializer)`) as the inner — you no longer have to thread `ctx.Serializer` in yourself:
+
+```csharp
+config: new StepConfig
+{
+    // No inner: the durable runtime binds the global serializer as the inner.
+    Serializer = new FileSystemSerializer(basePath: "/mnt/efs/durable")
+}
+```
+
+An explicitly-supplied inner always wins over the global one. The inner is bound only when `FileSystemSerializer` is used through a per-operation serializer slot; used without a bound inner (for example as the assembly-registered serializer) it throws `InvalidOperationException`. `FileSystemStorageMode` (`Always` vs. `Overflow`) controls whether every value is written to a file or only those that would overflow the inline checkpoint; `FileSystemPathEncoding` controls how paths are derived. `FileSystemSerializer` never deletes result files, so pair the base path with an external retention policy (an EFS lifecycle policy, an S3 lifecycle rule, or a scheduled cleanup). This works the same way for any per-operation serializer slot — `CallbackConfig`/`InvokeConfig`/`WaitForConditionConfig<TState>`/`ChildContextConfig.Serializer` and `MapConfig<TItem>`/`ParallelConfig.ItemSerializer`.
