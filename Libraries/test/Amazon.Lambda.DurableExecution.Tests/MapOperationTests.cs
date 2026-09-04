@@ -1,3 +1,4 @@
+using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -486,8 +487,233 @@ public class MapOperationTests
         Assert.Empty(recorder.Flushed);
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Argument validation
+    /// <summary>
+    /// A Flat unit's body result is returned RAW from the child context (a virtual child
+    /// suppresses its own SUCCEED and the round-trip a Nested child performs), whereas on
+    /// replay each value is reconstructed by DESERIALIZING the inline payload. With a
+    /// non-round-tripping (asymmetric) ItemSerializer those two paths diverged before the
+    /// fix. This pins fresh == replay: the fresh run must observe the round-tripped value,
+    /// exactly what replay rebuilds from the same inline payload.
+    /// </summary>
+    [Fact]
+    public async Task MapAsync_Flat_NonRoundTrippingItemSerializer_FreshMatchesReplay()
+    {
+        var ser = new AppendOnDeserializeSerializer();
+
+        // ---- Fresh run ----
+        var (freshCtx, freshRec, _, _) = CreateContext();
+        var fresh = await freshCtx.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { NestingType = NestingType.Flat, ItemSerializer = ser });
+
+        await freshRec.Batcher.DrainAsync();
+
+        // Fresh observed values already reflect the deserialize transform (round-tripped),
+        // which is what replay reconstructs from the inline payload.
+        Assert.Equal(new[] { "a-rt", "b-rt" }, fresh.GetResults());
+
+        // Capture the exact Map SUCCEED payload the fresh run checkpointed.
+        var parentPayload = freshRec.Flushed
+            .Single(o => o.Type == "CONTEXT" && o.SubType == "Map" && $"{o.Action}" == "SUCCEED")
+            .Payload;
+
+        // ---- Replay from that checkpoint ----
+        var parentOpId = IdAt(1);
+        var (replayCtx, replayRec, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "m",
+                    ContextDetails = new ContextDetails { Result = parentPayload }
+                }
+            }
+        });
+
+        var executed = false;
+        var replay = await replayCtx.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { executed = true; await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { NestingType = NestingType.Flat, ItemSerializer = ser });
+
+        Assert.False(executed); // replay does not re-run bodies
+        Assert.Equal(fresh.GetResults(), replay.GetResults());
+        Assert.Equal(new[] { "a-rt", "b-rt" }, replay.GetResults());
+    }
+
+    /// <summary>
+    /// Nested (the DEFAULT NestingType) counterpart to the Flat fresh==replay test. A Nested
+    /// unit is a NON-virtual child: it round-trips its result inside ChildContextOperation,
+    /// and the parent now inlines the child's ORIGINAL serialized checkpoint payload
+    /// (<c>S(body)</c>) rather than re-serializing the round-tripped return value. With a
+    /// non-round-tripping serializer the pre-fix parent re-serialized <c>D(S(body))</c> and
+    /// replay deserialized it AGAIN, double-transforming (fresh "a-rt" vs replay "a-rt-rt").
+    /// This pins fresh == replay for Nested on the default path.
+    /// </summary>
+    [Fact]
+    public async Task MapAsync_Nested_NonRoundTrippingItemSerializer_FreshMatchesReplay()
+    {
+        var ser = new AppendOnDeserializeSerializer();
+
+        // ---- Fresh run (Nested = default NestingType) ----
+        var (freshCtx, freshRec, _, _) = CreateContext();
+        var fresh = await freshCtx.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { ItemSerializer = ser });
+
+        await freshRec.Batcher.DrainAsync();
+
+        // The Nested child round-trips internally, so the fresh observed value already
+        // reflects the deserialize transform — exactly what replay rebuilds from the inline
+        // payload (which is now the child's own S(body), deserialized once).
+        Assert.Equal(new[] { "a-rt", "b-rt" }, fresh.GetResults());
+
+        var parentPayload = freshRec.Flushed
+            .Single(o => o.Type == "CONTEXT" && o.SubType == "Map" && $"{o.Action}" == "SUCCEED")
+            .Payload;
+
+        // ---- Replay from that checkpoint ----
+        var parentOpId = IdAt(1);
+        var (replayCtx, _, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "m",
+                    ContextDetails = new ContextDetails { Result = parentPayload }
+                }
+            }
+        });
+
+        var executed = false;
+        var replay = await replayCtx.MapAsync(
+            new[] { "a", "b" },
+            async (ctx, item, index, all, _) => { executed = true; await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { ItemSerializer = ser });
+
+        Assert.False(executed); // replay does not re-run bodies
+        Assert.Equal(fresh.GetResults(), replay.GetResults());
+        Assert.Equal(new[] { "a-rt", "b-rt" }, replay.GetResults());
+    }
+
+    /// <summary>
+    /// Comment 2(a): a Flat unit whose fresh-success round-trip DESERIALIZE fails must be
+    /// handled terminally — the unit is recorded Failed inline and the parent STILL emits a
+    /// terminal SUCCEED — instead of letting the exception propagate raw with no terminal
+    /// checkpoint (which would re-run every virtual unit body on replay: a deterministic
+    /// poison loop). On replay the body is NOT re-run and reconstruct reads the terminal
+    /// Error inline without re-deserializing the poison payload.
+    /// </summary>
+    [Fact]
+    public async Task MapAsync_Flat_RoundTripDeserializeFails_RecordsUnitFailedAndStillCheckpointsSucceed()
+    {
+        var ser = new ThrowOnDeserializeSerializer();
+
+        var (freshCtx, freshRec, _, _) = CreateContext();
+        var fresh = await freshCtx.MapAsync(
+            new[] { "a" },
+            async (ctx, item, index, all, _) => { await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { NestingType = NestingType.Flat, ItemSerializer = ser });
+
+        await freshRec.Batcher.DrainAsync();
+
+        // Body succeeded but its result could not be deserialized back -> unit Failed, and
+        // the operation never throws.
+        Assert.True(fresh.HasFailure);
+        Assert.Equal(BatchItemStatus.Failed, fresh.All[0].Status);
+        Assert.IsType<ChildContextException>(fresh.All[0].Error);
+
+        // A terminal parent SUCCEED checkpoint WAS written despite the failure.
+        var parentSucceed = freshRec.Flushed
+            .Single(o => o.Type == "CONTEXT" && o.SubType == "Map" && $"{o.Action}" == "SUCCEED");
+        Assert.NotNull(parentSucceed.Payload);
+
+        // ---- Replay from that checkpoint: poison body never re-runs, unit stays Failed. ----
+        var parentOpId = IdAt(1);
+        var (replayCtx, _, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Map,
+                    Name = "m",
+                    ContextDetails = new ContextDetails { Result = parentSucceed.Payload }
+                }
+            }
+        });
+
+        var executed = false;
+        var replay = await replayCtx.MapAsync(
+            new[] { "a" },
+            async (ctx, item, index, all, _) => { executed = true; await Task.Yield(); return item; },
+            name: "m",
+            config: new MapConfig<string> { NestingType = NestingType.Flat, ItemSerializer = ser });
+
+        Assert.False(executed);
+        Assert.True(replay.HasFailure);
+        Assert.Equal(BatchItemStatus.Failed, replay.All[0].Status);
+    }
+
+    /// <summary>
+    /// A serializer that serializes normally (plain JSON) but ALWAYS throws on deserialize —
+    /// simulates an asymmetric/broken ItemSerializer that cannot read back its own output.
+    /// </summary>
+    private sealed class ThrowOnDeserializeSerializer : ILambdaSerializer, IDurableResultSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+
+        public void Serialize<T>(T value, Stream stream, DurableSerializationContext context) => _inner.Serialize(value, stream);
+        public T Deserialize<T>(Stream stream, DurableSerializationContext context) =>
+            throw new InvalidOperationException("ThrowOnDeserializeSerializer: cannot deserialize");
+
+        void ILambdaSerializer.Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
+        T ILambdaSerializer.Deserialize<T>(Stream requestStream) =>
+            throw new InvalidOperationException("ThrowOnDeserializeSerializer: cannot deserialize");
+    }
+
+    /// <summary>
+    /// Deliberately NON-round-tripping serializer: <c>Serialize</c> writes the value as
+    /// JSON, but <c>Deserialize</c> appends a marker to a string result. Lets a test
+    /// observe whether a value went through a deserialize (round-trip) or is the raw body
+    /// result.
+    /// </summary>
+    private sealed class AppendOnDeserializeSerializer : ILambdaSerializer, IDurableResultSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+
+        public void Serialize<T>(T value, Stream stream, DurableSerializationContext context) => _inner.Serialize(value, stream);
+
+        public T Deserialize<T>(Stream stream, DurableSerializationContext context)
+        {
+            var value = _inner.Deserialize<T>(stream);
+            if (value is string s) return (T)(object)(s + "-rt");
+            return value;
+        }
+
+        void ILambdaSerializer.Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
+        T ILambdaSerializer.Deserialize<T>(Stream requestStream) => _inner.Deserialize<T>(requestStream);
+    }
     // ──────────────────────────────────────────────────────────────────────
 
     [Fact]

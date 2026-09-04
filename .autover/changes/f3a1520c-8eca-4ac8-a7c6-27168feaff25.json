@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Behavior change (Map/Parallel, NestingType.Nested default): the parent now inlines each Nested unit\u0027s ORIGINAL child SUCCEED-checkpoint payload (S(body)) verbatim on the parent summary, and reconstructs it on replay with the child\u0027s own operation id, instead of re-serializing the already-round-tripped return value at the parent\u0027s per-unit id. This removes a fresh-vs-replay divergence with a non-round-tripping ItemSerializer (fresh vs replay values now match) and, for a context-aware serializer such as FileSystemSerializer, stops the parent writing a second file that orphaned the child\u0027s file. Round-tripping (symmetric) serializers and the default JSON serializer are unaffected; the Flat path is unchanged."
+      ]
+    }
+  ]
+}

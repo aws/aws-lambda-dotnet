@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Behavior change: a fresh-success serializer round-trip DESERIALIZE failure is now terminal on the child-context and Flat Map/Parallel paths, matching StepOperation. (Child) ChildContextOperation now emits a CONTEXT FAIL for a non-virtual, non-suppressed child whose round-trip deserialize throws, instead of throwing with no terminal checkpoint (which left the child STARTED and re-ran its side-effecting body on replay). (Flat Map/Parallel) a per-item round-trip deserialize failure now records that unit\u0027s terminal Error inline and still emits the parent SUCCEED, instead of propagating raw with no parent checkpoint (which re-ran every virtual unit body on replay, a poison loop, and bypassed the record-failure contract). Replay reconstructs the terminal failure without re-running or re-deserializing."
+      ]
+    }
+  ]
+}

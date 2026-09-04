@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -8,11 +10,12 @@ namespace Amazon.Lambda.DurableExecution;
 /// <see cref="IDurableContext.ParallelAsync{T}(IReadOnlyList{System.Func{IDurableContext, System.Threading.CancellationToken, System.Threading.Tasks.Task{T}}}, string?, ParallelConfig?, System.Threading.CancellationToken)"/>.
 /// </summary>
 /// <remarks>
-/// Per-branch checkpoint payloads are serialized via the
-/// <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> registered on
-/// <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/> (typically
-/// configured via <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>);
-/// this config does not expose a serializer slot.
+/// Per-branch result payloads are serialized via the
+/// <see cref="ILambdaSerializer"/> registered on
+/// <see cref="ILambdaContext.Serializer"/> (typically configured via
+/// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>), unless overridden per
+/// operation via <see cref="ItemSerializer"/>. The aggregated batch envelope (per-branch
+/// statuses and completion reason) is SDK-internal and is not user-serialized.
 /// </remarks>
 public sealed class ParallelConfig
 {
@@ -65,4 +68,29 @@ public sealed class ParallelConfig
     /// payload instead.
     /// </remarks>
     public NestingType NestingType { get; set; } = NestingType.Nested;
+
+    /// <summary>
+    /// Optional serializer for each branch's <b>result</b> payload. When <c>null</c>
+    /// (default), branch results are serialized with the <see cref="ILambdaSerializer"/>
+    /// registered on <see cref="ILambdaContext.Serializer"/>. This controls only the
+    /// per-branch result — not the aggregated batch envelope (statuses / completion
+    /// reason) — and durable operations inside a branch use their own configuration.
+    /// </summary>
+    /// <remarks>
+    /// <b>Size-dependent transform on overflow (Flat only).</b> Under
+    /// <see cref="NestingType.Flat"/> each branch's result is round-tripped through this
+    /// serializer on a fresh (non-replay) success before it enters the result, so a
+    /// serializer that transforms the value (e.g. redaction, canonicalization) has that
+    /// transform reflected in the returned branch — but <em>only</em> while the aggregated
+    /// per-branch payloads fit inline in a single checkpoint (≈256&#160;KB). If they are
+    /// large enough to overflow, the inline results are stripped and each value is instead
+    /// recovered by re-running the branch body on replay, which does <em>not</em> apply the
+    /// round-trip transform. A serializer whose <c>Deserialize</c> is not a pure inverse of
+    /// its <c>Serialize</c> will therefore observe a size-dependent difference (transform
+    /// applied for small results, skipped for overflowed ones). Prefer a round-tripping
+    /// serializer, or do not depend on the transform being applied to results large enough
+    /// to overflow the checkpoint. (Under <see cref="NestingType.Nested"/> the same
+    /// size-dependent caveat is documented on each branch's child-context result.)
+    /// </remarks>
+    public ILambdaSerializer? ItemSerializer { get; set; }
 }

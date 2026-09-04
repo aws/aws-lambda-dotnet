@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add FileSystemSerializer for offloading large durable operation results to a filesystem (e.g. EFS/S3 Files), keeping only a small pointer in the checkpoint. It wraps an inner ILambdaSerializer, so callers control the on-the-wire format (JSON, compressed, etc.). Introduces the optional IDurableResultSerializer interface and DurableSerializationContext (EntityId \u002B DurableExecutionArn); when an operation\u0027s configured serializer implements it, the durable runtime supplies operation/execution identity so external storage can be keyed safely. Applied to Step, ChildContext, WaitForCondition, and Map/Parallel per-item results. Plain ILambdaSerializer serializers are unaffected."
+      ]
+    }
+  ]
+}

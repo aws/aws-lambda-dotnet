@@ -53,6 +53,20 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     // Set once on overflow-replay re-execution; never reset.
     private bool _suppressTerminalCheckpoint;
 
+    /// <summary>
+    /// The exact SUCCEED-checkpoint payload this (non-virtual) child wrote on a fresh,
+    /// non-overflow success — i.e. <c>S(body)</c>, serialized with the child's own
+    /// <c>OperationId</c> as the entity id. A Nested Map/Parallel
+    /// parent captures this so it can inline the child's ORIGINAL checkpoint payload
+    /// verbatim, rather than re-serializing the (already round-tripped) return value.
+    /// Re-serializing the return value double-transforms a non-round-tripping serializer
+    /// (fresh vs replay diverge) and, for a context-aware serializer such as
+    /// <see cref="FileSystemSerializer"/>, writes a SECOND file at the parent's per-unit id
+    /// that orphans the child's file. <c>null</c> for virtual (Flat) children, for
+    /// overflow-replay re-execution, and before a fresh success has been serialized.
+    /// </summary>
+    internal string? SerializedResultPayload { get; private set; }
+
     public ChildContextOperation(
         string operationId,
         string? name,
@@ -235,10 +249,72 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         if (!_isVirtual && !_suppressTerminalCheckpoint)
         {
             var serialized = SerializeResult(result);
+
+            // Capture the child's own SUCCEED-checkpoint payload so a Nested Map/Parallel
+            // parent can inline it verbatim (serialized here with THIS child's OperationId
+            // as the entity id). Captured before the overflow decision so the parent sees
+            // the same S(body) it would otherwise re-derive: on overflow the parent inlines
+            // this (large) payload, overflows in turn, and recovers via ReplayChildren.
+            SerializedResultPayload = serialized;
+
             // Overflow: result too large to checkpoint inline. Emit an empty
             // payload + ReplayChildren so replay re-executes this body to recover
             // the value (mirrors the concurrent-operation overflow strategy).
             var overflow = Encoding.UTF8.GetByteCount(serialized) > DurableConstants.MaxOperationCheckpointBytes;
+
+            // Non-overflow: round-trip the just-written checkpoint payload so the
+            // value the workflow observes on this fresh execution matches replay
+            // (where the result is always deserialized from the checkpoint). This
+            // makes a custom (possibly non-round-tripping) ChildContextConfig.Serializer's
+            // transform visible in the child-context result on the first run.
+            // Behavior change: the returned object is no longer the same instance
+            // the child body produced. See the AutoVer change note. Overflow skips
+            // this (the payload was stripped; the value is recovered by replay).
+            //
+            // Deserialize BEFORE emitting the SUCCEED: a serializer whose deserialize
+            // fails is then surfaced as a normal child failure (wrapped in
+            // ChildContextException, with no SUCCEED recorded) instead of throwing
+            // against an already-SUCCEEDED operation — which would diverge from
+            // replay and, for a Map/Parallel Nested unit, record the unit Failed
+            // against its own SUCCEEDED checkpoint.
+            T roundTripped = result;
+            if (!overflow)
+            {
+                try
+                {
+                    roundTripped = DeserializeResult(serialized);
+                }
+                catch (Exception ex)
+                {
+                    // The body SUCCEEDED (side effects ran) but its result could not be
+                    // deserialized back. This is TERMINAL — emit a CONTEXT FAIL so the op
+                    // is terminal in the store and its side-effecting body is NOT re-run on
+                    // replay. Previously this threw with NO terminal checkpoint, leaving a
+                    // top-level child STARTED (its body re-runs on replay) and a Nested unit
+                    // recorded Failed against its own — now correctly absent — SUCCEED. This
+                    // mirrors the body-failure catch above and StepOperation.FailStepTerminallyAsync.
+                    // We are inside the non-virtual, non-suppressed block, so FAIL is the correct
+                    // terminal record. If this FAIL enqueue itself throws, it propagates straight
+                    // out (no retry loop, no recursion) — a broken batcher surfaces its own error.
+                    await EnqueueAsync(new SdkOperationUpdate
+                    {
+                        Id = OperationId,
+                        ParentId = ParentId,
+                        Type = OperationTypes.Context,
+                        Action = OperationAction.FAIL,
+                        SubType = _config?.SubType,
+                        Name = Name,
+                        Error = ToSdkError(ex)
+                    }, cancellationToken);
+
+                    throw MapFailureException(new ChildContextException(ex.Message, ex)
+                    {
+                        SubType = _config?.SubType,
+                        ErrorType = ex.GetType().FullName,
+                        OriginalStackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                    });
+                }
+            }
 
             await EnqueueAsync(new SdkOperationUpdate
             {
@@ -253,6 +329,11 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                     ? new SdkContextOptions { ReplayChildren = true }
                     : null
             }, cancellationToken);
+
+            if (!overflow)
+            {
+                return roundTripped;
+            }
         }
 
         return result;
@@ -284,13 +365,15 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         if (serialized == null) return default!;
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
-        return _serializer.Deserialize<T>(ms);
+        return LambdaSerializerHelper.Deserialize<T>(
+            _serializer, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
     }
 
     private string SerializeResult(T value)
     {
         using var ms = new MemoryStream();
-        _serializer.Serialize(value, ms);
+        LambdaSerializerHelper.Serialize(
+            _serializer, value, ms, new DurableSerializationContext(OperationId, DurableExecutionArn));
         return Encoding.UTF8.GetString(ms.ToArray());
     }
 

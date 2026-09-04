@@ -1,3 +1,8 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -9,11 +14,12 @@ namespace Amazon.Lambda.DurableExecution;
 /// receives the strongly-typed item rather than <c>object</c>.
 /// </typeparam>
 /// <remarks>
-/// Per-item checkpoint payloads are serialized via the
-/// <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> registered on
-/// <see cref="Amazon.Lambda.Core.ILambdaContext.Serializer"/> (typically
-/// configured via <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>);
-/// this config does not expose a serializer slot.
+/// Per-item result payloads are serialized via the
+/// <see cref="ILambdaSerializer"/> registered on
+/// <see cref="ILambdaContext.Serializer"/> (typically configured via
+/// <c>LambdaBootstrapBuilder.Create(handler, serializer)</c>), unless overridden per
+/// operation via <see cref="ItemSerializer"/>. The aggregated batch envelope (per-item
+/// statuses and completion reason) is SDK-internal and is not user-serialized.
 /// </remarks>
 public sealed class MapConfig<TItem>
 {
@@ -77,4 +83,31 @@ public sealed class MapConfig<TItem>
     /// named by index (<c>"0"</c>, <c>"1"</c>, ...).
     /// </summary>
     public Func<TItem, int, string>? ItemNamer { get; set; }
+
+    /// <summary>
+    /// Optional serializer for each item's <b>result</b> payload. When <c>null</c>
+    /// (default), item results are serialized with the <see cref="ILambdaSerializer"/>
+    /// registered on <see cref="ILambdaContext.Serializer"/>. This controls only the
+    /// per-item result — both the inline copy on the map's checkpoint and each nested
+    /// item's own checkpoint. It does not change the aggregated batch envelope
+    /// (statuses / completion reason), and durable operations inside an item's body use
+    /// their own configuration.
+    /// </summary>
+    /// <remarks>
+    /// <b>Size-dependent transform on overflow (Flat only).</b> Under
+    /// <see cref="NestingType.Flat"/> each item's result is round-tripped through this
+    /// serializer on a fresh (non-replay) success before it enters the result, so a
+    /// serializer that transforms the value (e.g. redaction, canonicalization) has that
+    /// transform reflected in the returned item — but <em>only</em> while the aggregated
+    /// per-item payloads fit inline in a single checkpoint (≈256&#160;KB). If they are
+    /// large enough to overflow, the inline results are stripped and each value is instead
+    /// recovered by re-running the item body on replay, which does <em>not</em> apply the
+    /// round-trip transform. A serializer whose <c>Deserialize</c> is not a pure inverse of
+    /// its <c>Serialize</c> will therefore observe a size-dependent difference (transform
+    /// applied for small results, skipped for overflowed ones). Prefer a round-tripping
+    /// serializer, or do not depend on the transform being applied to results large enough
+    /// to overflow the checkpoint. (Under <see cref="NestingType.Nested"/> the same
+    /// size-dependent caveat is documented on each item's child-context result.)
+    /// </remarks>
+    public ILambdaSerializer? ItemSerializer { get; set; }
 }

@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Behavior change: when a step post-round-trip SUCCEED-checkpoint enqueue fails (e.g. a broken CheckpointBatcher), the failure is now routed through the terminal path (FAIL checkpoint plus StepException) rather than propagating raw, consistent with the fresh-success round-trip failure handling. The side-effecting body is never re-invoked, and if emitting the terminal FAIL itself throws, the error propagates without recursion."
+      ]
+    }
+  ]
+}

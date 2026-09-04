@@ -1,3 +1,8 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -26,4 +31,11 @@ public sealed class WaitForConditionConfig<TState>
     /// polling and how long to wait before the next attempt.
     /// </summary>
     public required IWaitStrategy<TState> WaitStrategy { get; set; }
+
+    /// <summary>
+    /// Optional serializer for this operation's checkpointed state. When <c>null</c>
+    /// (default), the globally-registered <see cref="ILambdaSerializer"/> on
+    /// <see cref="ILambdaContext.Serializer"/> is used.
+    /// </summary>
+    public ILambdaSerializer? Serializer { get; set; }
 }
