@@ -24,6 +24,59 @@ Task<IBatchResult<T>> ParallelAsync<T>(
 
 Each branch receives its own `IDurableContext` and a `CancellationToken` (linking the caller-supplied token with the SDK's workflow-shutdown signal — see [Cancellation](cancellation.md)), so a branch can itself use steps, waits, and nested durable operations. Branch results are serialized to per-branch checkpoints via the `ILambdaSerializer` registered on `ILambdaContext.Serializer`. The operation `name` is used for observability and to derive the deterministic operation ID, so keep it stable across deployments.
 
+## Incremental, heterogeneous branches (`CreateParallel`)
+
+`ParallelAsync<T>` takes a complete branch list up front and every branch shares one result type `T`. When branches return **unrelated types**, or are **discovered incrementally**, use `CreateParallel` instead. It returns an `IDurableParallel` you register branches on one at a time — each with its own result type — and each branch **begins executing as soon as it is registered** (subject to `MaxConcurrency`), so earlier independent work makes progress while later branches are still being assembled.
+
+```csharp
+await using var parallel = ctx.CreateParallel(name: "process-order");
+
+IParallelBranch<InventoryReservation> inventory = parallel.Branch(
+    "inventory", async (branch, ct) => await ReserveInventoryAsync(branch, ct));
+
+IParallelBranch<PaymentAuthorization> payment = parallel.Branch(
+    "payment", async (branch, ct) => await AuthorizePaymentAsync(branch, ct));
+
+if (plan.RequiresComplianceReview)
+{
+    // Branches can be added conditionally / incrementally.
+    _ = parallel.Branch("compliance",
+        async (branch, ct) => await ReviewComplianceAsync(branch, ct));
+}
+
+// Seal registration, await the branches per CompletionConfig, checkpoint the aggregate.
+IBatchResult summary = await parallel.CompleteAsync();
+
+// Each handle yields its own concrete type — no shared base type, casts, or envelopes.
+InventoryReservation reservedInventory = await inventory;
+PaymentAuthorization authorizedPayment = await payment;
+```
+
+`Branch<T>` returns an awaitable `IParallelBranch<T>` handle exposing `Name`, `Index`, and `Status`. `await handle` yields the branch's typed result, rethrows its `ChildContextException` on failure, or throws a `DurableExecutionException` if the branch was skipped by a completion-policy short-circuit (inspect `Status` first when that's possible). `CompleteAsync()` returns the non-generic aggregate `IBatchResult` (counts + `CompletionReason`); it is idempotent and never throws on per-branch failure. `DisposeAsync` (via `await using`) seals and completes the operation if you did not call `CompleteAsync`, so the parallel's terminal checkpoint is always written.
+
+> **Deterministic replay applies unchanged.** Branch identity is positional: the n-th `Branch` call reuses the n-th deterministic operation ID, so workflow code must register the same branches in the same order across invocations (a name change at a given index throws `NonDeterministicExecutionException`). Produce any dynamic branch set inside a checkpointed `StepAsync` so replay sees the same branches. `MaxConcurrency`, `CompletionConfig`, `NestingType`, cancellation, and the checkpoint format are identical to `ParallelAsync<T>` — `CreateParallel` writes the same `Parallel` / `ParallelBranch` checkpoints, so it is purely an additive, front-end alternative.
+
+The homogeneous `ParallelAsync<T>` overloads remain the simplest choice for a fixed set of same-typed branches and convenient `GetResults()` usage.
+
+### Per-branch serialization
+
+Because each branch declares its own result type, each may also use its own serializer. `Branch<T>` takes an optional `ILambdaSerializer? serializer`; when omitted a branch uses the operation-level default — `ParallelConfig.ItemSerializer` if set on `CreateParallel`, otherwise the globally-registered `ILambdaContext.Serializer`. This lets one branch opt into a bespoke serializer (for example a source-generated `JsonSerializerContext` for Native AOT) without affecting sibling branches.
+
+```csharp
+await using var parallel = ctx.CreateParallel(name: "process-order");
+
+// Uses the operation-level / global serializer.
+var inventory = parallel.Branch("inventory", async (b, ct) => await ReserveAsync(b, ct));
+
+// Overrides serialization for just this branch.
+var payment = parallel.Branch(
+    "payment",
+    async (b, ct) => await AuthorizeAsync(b, ct),
+    serializer: PaymentSerializerContext.Default.CreateLambdaSerializer());
+```
+
+Like every other part of the workflow definition, a branch's serializer is re-resolved on replay, so a branch must be able to deserialize a result it previously serialized — keep the serializer stable at a given branch index across deployments.
+
 ## Example
 
 Fan out three independent lookups and collect the results:
