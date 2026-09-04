@@ -19,6 +19,16 @@ internal static class LambdaSerializerHelper
         lambdaContext.Serializer ?? throw new InvalidOperationException(MissingSerializerMessage);
 
     /// <summary>
+    /// If <paramref name="serializer"/> was constructed to defer to the globally-registered
+    /// serializer for its inner format (see <see cref="IDefaultInnerSerializer"/>, e.g. the
+    /// inner-less <see cref="FileSystemSerializer"/> constructor), binds
+    /// <paramref name="defaultInner"/> as its inner and returns the bound serializer;
+    /// otherwise returns <paramref name="serializer"/> unchanged.
+    /// </summary>
+    public static ILambdaSerializer WithDefaultInner(ILambdaSerializer serializer, ILambdaSerializer defaultInner) =>
+        serializer is IDefaultInnerSerializer d ? d.WithDefaultInner(defaultInner) : serializer;
+
+    /// <summary>
     /// Serializes a durable operation result. If <paramref name="serializer"/> implements
     /// <see cref="IDurableResultSerializer"/>, the context-aware overload is used so the
     /// serializer can key external storage by operation/execution; otherwise the plain

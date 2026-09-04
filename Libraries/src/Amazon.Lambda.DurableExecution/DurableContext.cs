@@ -84,7 +84,8 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
@@ -147,7 +148,8 @@ internal sealed class DurableContext : IDurableContext
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(config.WaitStrategy);
 
-        var serializer = config.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config.Serializer ?? defaultSerializer, defaultSerializer);
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
@@ -161,7 +163,8 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
 
@@ -246,7 +249,8 @@ internal sealed class DurableContext : IDurableContext
         // globally-registered serializer. This is the only serializer ConcurrentOperation
         // uses (per-unit child results + inline summary results); the aggregate batch
         // envelope is a source-generated structure and is unaffected.
-        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.ParallelOperation<T>(
@@ -279,7 +283,8 @@ internal sealed class DurableContext : IDurableContext
         // globally-registered serializer. This is the only serializer ConcurrentOperation
         // uses (per-unit child results + inline summary results); the aggregate batch
         // envelope is a source-generated structure and is unaffected.
-        var serializer = effectiveConfig.ItemSerializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.MapOperation<TItem, TResult>(

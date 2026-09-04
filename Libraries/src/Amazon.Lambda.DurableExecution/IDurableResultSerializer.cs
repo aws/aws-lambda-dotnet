@@ -18,7 +18,7 @@ namespace Amazon.Lambda.DurableExecution;
 /// <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> conveys only the value and a stream —
 /// it has no way to tell the serializer which operation or execution a value belongs to.
 /// Serializers that offload results to external storage (for example
-/// <c>FileSystemSerializer</c>) need that identity to build a stable, unique
+/// <see cref="FileSystemSerializer"/>) need that identity to build a stable, unique
 /// location and to avoid different operations clobbering one another. Serializers that
 /// do not need it simply implement <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> and
 /// are used unchanged.
