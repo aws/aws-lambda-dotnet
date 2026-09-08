@@ -200,6 +200,56 @@ public class FileSystemSerializerTests : IDisposable
         Assert.False(Directory.Exists(_base) && Directory.GetFiles(_base, "*.bin", SearchOption.AllDirectories).Length > 0);
     }
 
+    // ---- Symlinked base: a base path whose leaf is a symlink must not falsely reject reads/writes ----
+
+    [Fact]
+    public void SymlinkedBasePath_RoundTripsAndStaysContained()
+    {
+        // Model a real-world durable mount exposed through a symlink (e.g. an EFS mount
+        // surfaced as /mnt/link -> /mnt/real). The base path handed to the serializer is
+        // the *symlink*; every candidate path is built underneath it. The containment
+        // guard resolves the symlinked base to its real target, so it must resolve the
+        // candidates through the same symlink or it would reject every read and write.
+        var realDir = Path.Combine(Path.GetTempPath(), "fsser-real-" + Guid.NewGuid().ToString("N"));
+        var linkDir = Path.Combine(Path.GetTempPath(), "fsser-link-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(realDir);
+        try
+        {
+            try
+            {
+                Directory.CreateSymbolicLink(linkDir, realDir);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+            {
+                // Creating symlinks can require elevation (Windows without Developer Mode).
+                // The behavior under test is filesystem-level, so skip where we cannot set up.
+                return;
+            }
+
+            var s = new FileSystemSerializer(_json, linkDir, FileSystemStorageMode.Always);
+            var value = new Poco { Id = 42, Name = "efs" };
+
+            // Write through the symlinked base — must not throw "outside the configured base path".
+            var envelope = Serialize(s, value, DurableArnCtx());
+            Assert.Contains("\"file\"", envelope);
+
+            // Read back through the same base — must not be rejected by the containment guard.
+            var round = Deserialize<Poco>(s, envelope, DurableArnCtx());
+            Assert.Equal(value, round);
+
+            // The payload physically landed under the real target directory.
+            Assert.True(
+                Directory.GetFiles(realDir, "*.bin", SearchOption.AllDirectories).Length > 0,
+                "offloaded payload should be written under the symlink's real target");
+        }
+        finally
+        {
+            // Delete the link itself (non-recursive) so cleanup never follows into the target.
+            try { Directory.Delete(linkDir, recursive: false); } catch { /* best effort */ }
+            try { Directory.Delete(realDir, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     // ---- V7b: ARN that doesn't match the pattern falls back to a single encoded segment ----
 
     [Fact]

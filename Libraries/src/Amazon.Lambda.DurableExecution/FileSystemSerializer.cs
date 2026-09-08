@@ -407,32 +407,56 @@ public sealed class FileSystemSerializer : ILambdaSerializer, IDurableResultSeri
     }
 
     // Best-effort resolution of a path to its real on-disk location, following a
-    // symlink on the leaf file/directory and on its immediate parent directory.
-    // Path.GetFullPath only collapses '..'/separators and does NOT follow symlinks,
-    // so without this a symlink planted under the base but pointing outside it would
-    // pass a purely lexical prefix check and defeat the containment guard. Both the
-    // base and the candidate are resolved the same way so a symlinked mount root
-    // (for example macOS /var -> /private/var) does not cause false rejections.
+    // symlink at EVERY existing component of the path — not just the leaf and its
+    // immediate parent. Path.GetFullPath only collapses '..'/separators and does NOT
+    // follow symlinks, so without this a symlink planted under the base but pointing
+    // outside it would pass a purely lexical prefix check and defeat the containment
+    // guard. Resolving every component also means the base and the candidate are
+    // canonicalized identically no matter where a symlink sits in the path: a
+    // symlinked mount root used *as* the base (for example an EFS mount exposed as
+    // /mnt/link -> /mnt/real) resolves the same way the candidate paths built under
+    // it do, so containment is decided on real on-disk locations and legitimate
+    // reads/writes are not falsely rejected. A symlink above the base (for example
+    // macOS /var -> /private/var) is likewise resolved symmetrically on both sides.
+    // Components that do not exist yet (a per-execution directory validated before it
+    // is created) cannot be a symlink, so they are appended lexically.
     private static string ResolveReal(string fullPath)
     {
         try
         {
-            var dir = Path.GetDirectoryName(fullPath);
-            if (dir != null && Directory.Exists(dir))
+            var root = Path.GetPathRoot(fullPath);
+            if (string.IsNullOrEmpty(root))
+                return fullPath; // Not rooted (shouldn't happen post-GetFullPath); nothing to resolve against.
+
+            var current = root;
+            var rest = fullPath.Substring(root.Length);
+            foreach (var segment in rest.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
             {
-                var realDir = Directory.ResolveLinkTarget(dir, returnFinalTarget: true)?.FullName ?? dir;
-                fullPath = Path.Combine(realDir, Path.GetFileName(fullPath));
+                if (segment.Length == 0)
+                    continue;
+
+                current = Path.Combine(current, segment);
+
+                // Follow a symlink at this component (returnFinalTarget walks a chain
+                // of links to its ultimate target). A non-existent component or a
+                // regular file/dir yields null and is kept as-is.
+                var resolved = Directory.Exists(current)
+                    ? Directory.ResolveLinkTarget(current, returnFinalTarget: true)?.FullName
+                    : File.Exists(current)
+                        ? File.ResolveLinkTarget(current, returnFinalTarget: true)?.FullName
+                        : null;
+
+                if (resolved != null)
+                    current = resolved;
             }
-            if (File.Exists(fullPath))
-                fullPath = File.ResolveLinkTarget(fullPath, returnFinalTarget: true)?.FullName ?? fullPath;
-            else if (Directory.Exists(fullPath))
-                fullPath = Directory.ResolveLinkTarget(fullPath, returnFinalTarget: true)?.FullName ?? fullPath;
+
+            return current;
         }
         catch
         {
             // Best effort — fall back to the lexical full path.
+            return fullPath;
         }
-        return fullPath;
     }
 
     private string ResolveExecutionDir(string arn)
