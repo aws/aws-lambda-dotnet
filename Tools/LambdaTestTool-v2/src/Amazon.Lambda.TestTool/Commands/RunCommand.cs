@@ -42,8 +42,8 @@ public sealed class RunCommand(
 
             if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && !settings.ApiGatewayEmulatorHttpsPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig) && string.IsNullOrEmpty(settings.DynamoDBStreamsEventSourceConfig))
             {
-                throw new ArgumentException("At least one of the following parameters must be set: " +
-                                            "--lambda-emulator-port, --api-gateway-emulator-port, --api-gateway-emulator-https-port, --sqs-eventsource-config or --dynamodbstreams-eventsource-config");
+                throw new InvalidRunCommandSettingsException("At least one of the following parameters must be set: " +
+                                                             "--lambda-emulator-port, --api-gateway-emulator-port, --api-gateway-emulator-https-port, --sqs-eventsource-config or --dynamodbstreams-eventsource-config");
             }
 
             var tasks = new List<Task>();
