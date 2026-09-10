@@ -1,0 +1,18 @@
+﻿{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Null-safe marshalling for Path, HttpMethod, path parameters, and headers to avoid NullReferenceException with incomplete API Gateway events"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Populate RequestContext (and Path/HttpMethod defaults) when the API Gateway emulator builds REST APIGatewayProxyRequest events"
+      ]
+    }
+  ]
+}

@@ -157,6 +157,18 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="lambdaContext"></param>
         protected override void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
+            if (apiGatewayRequest == null)
+            {
+                _logger.LogError("MarshallRequest: apiGatewayRequest is null");
+                throw new ArgumentNullException(nameof(apiGatewayRequest));
+            }
+
+            _logger.LogDebug("MarshallRequest: Path={Path}, HttpMethod={HttpMethod}, Resource={Resource}, RequestContext={HasContext}",
+                apiGatewayRequest.Path ?? "(null)",
+                apiGatewayRequest.HttpMethod ?? "(null)",
+                apiGatewayRequest.Resource ?? "(null)",
+                apiGatewayRequest.RequestContext != null);
+
             {
                 var authFeatures = (IHttpAuthenticationFeature)features;
 
@@ -201,7 +213,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                 var rawQueryString = Utilities.CreateQueryStringParameters(
                     apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters, true);
 
-                requestFeatures.RawTarget = apiGatewayRequest.Path + rawQueryString;
+                var pathForTarget = apiGatewayRequest.Path ?? "/";
+                requestFeatures.RawTarget = pathForTarget + rawQueryString;
                 requestFeatures.QueryString = rawQueryString;
                 requestFeatures.Path = path;
 
@@ -365,24 +378,24 @@ namespace Amazon.Lambda.AspNetCoreServer
             if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.TryGetValue("proxy", out var proxy) &&
                 !string.IsNullOrEmpty(apiGatewayRequest.Resource))
             {
-                var proxyPath = proxy;
+                var proxyPath = proxy ?? "";
                 path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
 
                 // Adds all the rest of non greedy parameters in apiGateway.Resource to the path
                 foreach (var pathParameter in apiGatewayRequest.PathParameters.Where(pp => pp.Key != "proxy"))
                 {
-                    path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value);
+                    path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value ?? "");
                 }
             }
 
             if (string.IsNullOrEmpty(path))
             {
-                path = apiGatewayRequest.Path;
+                path = apiGatewayRequest.Path ?? "/";
             }
 
-            if (!path.StartsWith("/"))
+            if (string.IsNullOrEmpty(path) || !path.StartsWith("/"))
             {
-                path = "/" + path;
+                path = "/" + (path ?? "");
             }
             return path;
         }
@@ -394,7 +407,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected virtual string ParseHttpMethod(APIGatewayProxyRequest apiGatewayRequest)
         {
-            return apiGatewayRequest.HttpMethod;
+            return apiGatewayRequest.HttpMethod ?? "GET";
         }
 
         /// <summary>
