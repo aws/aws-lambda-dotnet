@@ -143,6 +143,22 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
+        if (string.Equals(routeConfig.IntegrationType, "Http", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(routeConfig.Endpoint))
+            {
+                _logger.LogError("HTTP integration requires a non-empty Endpoint for route {Lambda} {Method} {Path}.",
+                    routeConfig.LambdaResourceName, routeConfig.HttpMethod, routeConfig.Path);
+                return false;
+            }
+            if (!Uri.TryCreate(routeConfig.Endpoint, UriKind.Absolute, out var uri) || !uri.Scheme.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("HTTP integration Endpoint must be a valid HTTP(s) URL for route {Lambda} {Method} {Path}.",
+                    routeConfig.LambdaResourceName, routeConfig.HttpMethod, routeConfig.Path);
+                return false;
+            }
+        }
+
         // Special case for root path
         if (routeConfig.Path == "/") return true;
 

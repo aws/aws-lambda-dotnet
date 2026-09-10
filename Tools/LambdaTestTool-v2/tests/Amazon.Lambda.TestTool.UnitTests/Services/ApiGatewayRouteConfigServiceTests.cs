@@ -471,4 +471,78 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Equal("F1", result20?.LambdaResourceName);
         Assert.Equal("F1", result21?.LambdaResourceName);
     }
+
+    [Fact]
+    public void Constructor_LoadsHttpIntegrationWhenEndpointIsValid()
+    {
+        var routeConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "HttpBackend",
+            HttpMethod = "GET",
+            Path = "/proxy/{proxy+}",
+            IntegrationType = "Http",
+            Endpoint = "http://127.0.0.1:5000"
+        };
+
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfig) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+
+        var result = service.GetRouteConfig("GET", "/proxy/hello");
+        Assert.NotNull(result);
+        Assert.Equal("Http", result.IntegrationType);
+        Assert.Equal("http://127.0.0.1:5000", result.Endpoint);
+    }
+
+    [Fact]
+    public void Constructor_IgnoresHttpIntegrationWithoutEndpoint()
+    {
+        var routeConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "HttpBackend",
+            HttpMethod = "GET",
+            Path = "/proxy/{proxy+}",
+            IntegrationType = "Http"
+        };
+
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfig) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+
+        Assert.Null(service.GetRouteConfig("GET", "/proxy/hello"));
+    }
+
+    [Fact]
+    public void Constructor_IgnoresHttpIntegrationWithInvalidEndpoint()
+    {
+        var routeConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "HttpBackend",
+            HttpMethod = "GET",
+            Path = "/proxy/{proxy+}",
+            IntegrationType = "Http",
+            Endpoint = "not-a-url"
+        };
+
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfig) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+
+        Assert.Null(service.GetRouteConfig("GET", "/proxy/hello"));
+    }
 }
