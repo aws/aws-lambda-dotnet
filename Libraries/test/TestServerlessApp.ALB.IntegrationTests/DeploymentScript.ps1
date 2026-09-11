@@ -85,8 +85,26 @@ try
     }
 
     dotnet restore
+
+    # Resolve this runner's public egress IP so the test ALB's security group only admits us.
+    # The ALB stays internet-facing (the test client reaches it over public DNS), but locking
+    # ingress to a single /32 means it is not reachable by DyePack's scanners, which avoids
+    # EC2IPAuthentication findings on this short-lived integration ALB. Fail closed if we can't
+    # determine the IP rather than falling back to 0.0.0.0/0.
+    $myIp = $null
+    for ($i = 1; $i -le 3; $i++)
+    {
+        try { $myIp = (Invoke-RestMethod -Uri 'https://checkip.amazonaws.com' -TimeoutSec 10).Trim(); break }
+        catch { Write-Host "Attempt $i to resolve public IP failed: $_"; Start-Sleep -Seconds ($i * 2) }
+    }
+    if ([string]::IsNullOrEmpty($myIp) -or $myIp -notmatch '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+    {
+        throw "Could not resolve a valid public IP for the ALB security group; aborting to avoid opening the ALB to the internet."
+    }
+    Write-Host "Restricting test ALB ingress to runner IP $myIp/32"
+
     Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch"
-    dotnet lambda deploy-serverless
+    dotnet lambda deploy-serverless --template-parameters "AllowedCidr=$myIp/32"
     if (!$?)
     {
         Write-Host "Deployment failed. Fetching CloudFormation stack events for debugging..."
