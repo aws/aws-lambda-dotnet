@@ -3,9 +3,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers;
 using Amazon.Lambda.Serialization.Json;
 using Xunit;
@@ -194,6 +196,69 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             {
                 // Restore original ThreadPool settings
                 ThreadPool.SetMinThreads(originalMinWorker, originalMinIO);
+            }
+        }
+
+        [Theory]
+        [InlineData(true, 1)]   // Multi concurrency + JSON log format => emitted exactly once.
+        [InlineData(false, 0)]  // Multi concurrency without JSON log format => not emitted.
+        public async Task WorkerPoolInitializingLog_EmissionGatedByJsonLogFormat(bool jsonLogFormat, int expectedEmissions)
+        {
+            TestEnvironmentVariables environmentVariables = new TestEnvironmentVariables();
+            environmentVariables.SetEnvironmentVariable(
+                Amazon.Lambda.RuntimeSupport.Bootstrap.Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY, "2");
+            if (jsonLogFormat)
+            {
+                environmentVariables.SetEnvironmentVariable(
+                    Amazon.Lambda.RuntimeSupport.Bootstrap.Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, "Json");
+            }
+
+            var capturingLogger = new CapturingConsoleLoggerWriter();
+            var testRuntimeApiClient = new TestMultiConcurrencyRuntimeApiClient(environmentVariables,
+                new TestMultiConcurrencyRuntimeApiClient.InvocationEvent
+                {
+                    Headers = CreateDefaultHeaders("request1", "trace1"),
+                    FunctionInput = CreateFunctionInput(new SleepTimeEvent(0, 0))
+                })
+            {
+                ConsoleLogger = capturingLogger
+            };
+
+            var handler = HandlerWrapper.GetHandlerWrapper((SleepTimeEvent sleepTime, ILambdaContext context) => { }, _serializer).Handler;
+
+            var lambdaBootstrap = new LambdaBootstrap(
+                httpClient: null,
+                handler: handler,
+                initializer: null,
+                ownsHttpClient: true,
+                environmentVariables: environmentVariables);
+            lambdaBootstrap.Client = testRuntimeApiClient;
+
+            try
+            {
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
+                await lambdaBootstrap.RunAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when the cancellation token is triggered.
+            }
+
+            var workerPoolWrites = capturingLogger.Writes
+                .Where(w => w.Args != null && w.Args.Length > 0 && Equals(w.Args[0], Helpers.Utils.WorkerPoolInitializingEvent))
+                .ToList();
+
+            Assert.Equal(expectedEmissions, workerPoolWrites.Count);
+
+            if (expectedEmissions > 0)
+            {
+                var write = workerPoolWrites[0];
+                Assert.Equal(LogLevelLoggerWriter.LogLevel.Debug.ToString(), write.Level);
+                Assert.Equal(Helpers.Utils.WorkerPoolInitializingLogTemplate, write.Message);
+                // Worker count defaults to the max concurrency (2) and max concurrency is 2.
+                Assert.Equal(2, write.Args[1]);
+                Assert.Equal(2, write.Args[2]);
             }
         }
 
