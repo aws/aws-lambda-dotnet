@@ -294,6 +294,15 @@ namespace Amazon.Lambda.RuntimeSupport
             var processingTasksCount = Utils.DetermineProcessingTaskCount(_environmentVariables, Environment.ProcessorCount);
             _logger.LogInformation($"Using {processingTasksCount} tasks for invoke processing loops");
 
+            // In multi concurrency (Lambda managed instances) mode, emit a one time DEBUG log reporting the worker
+            // count and execution environment max concurrency for observability. This is a no-op unless the function
+            // is in multi concurrency mode with the JSON log format configured.
+            Utils.EmitWorkerPoolInitializingLog(
+                Client.ConsoleLogger,
+                _environmentVariables,
+                processingTasksCount,
+                Utils.GetMaxConcurrency(_environmentVariables));
+
             if (processingTasksCount == 1)
             {
                 await ProcessingLoop(runOnce, cancellationToken);

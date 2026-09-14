@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "In Lambda managed instances (multi-concurrency) mode, emit a structured DEBUG log during init reporting the worker count and execution environment max concurrency when the JSON log format is enabled."
+      ]
+    }
+  ]
+}

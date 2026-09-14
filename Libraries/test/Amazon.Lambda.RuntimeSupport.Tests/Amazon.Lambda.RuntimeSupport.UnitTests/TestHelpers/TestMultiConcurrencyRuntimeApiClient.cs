@@ -32,7 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
             ConsoleLogger = new LogLevelLoggerWriter(environmentVariables);
         }
 
-        public IConsoleLoggerWriter ConsoleLogger { get; }
+        public IConsoleLoggerWriter ConsoleLogger { get; set; }
 
         public class InvocationEvent
         {

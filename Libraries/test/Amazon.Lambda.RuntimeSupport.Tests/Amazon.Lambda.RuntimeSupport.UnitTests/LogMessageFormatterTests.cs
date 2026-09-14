@@ -81,6 +81,32 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public void FormatWorkerPoolInitializingEvent()
+        {
+            var timestamp = DateTime.UtcNow;
+            var formattedTimestamp = timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
+            var formatter = new JsonLogMessageFormatter();
+            var state = new MessageState()
+            {
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Debug,
+                MessageTemplate = Utils.WorkerPoolInitializingLogTemplate,
+                // Use distinct worker count and max concurrency values to confirm they are reported as separate fields.
+                MessageArguments = new object[] { Utils.WorkerPoolInitializingEvent, 3, 10 },
+                TimeStamp = timestamp
+            };
+
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            Assert.Equal(formattedTimestamp, doc.RootElement.GetProperty("timestamp").GetString());
+            Assert.Equal("Debug", doc.RootElement.GetProperty("level").GetString());
+            Assert.Equal("runtime_worker_pool_initializing", doc.RootElement.GetProperty("event").GetString());
+            Assert.Equal(3, doc.RootElement.GetProperty("workerCount").GetInt32());
+            Assert.Equal(10, doc.RootElement.GetProperty("executionEnvironmentMaxConcurrency").GetInt32());
+        }
+
+        [Fact]
         public void FormatTenantId()
         {
             var timestamp = DateTime.UtcNow;

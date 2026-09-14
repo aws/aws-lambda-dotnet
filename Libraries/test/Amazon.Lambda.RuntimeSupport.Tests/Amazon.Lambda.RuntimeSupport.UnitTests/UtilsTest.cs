@@ -5,12 +5,76 @@ using System;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using Xunit;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests;
 
 
 public class UtilsTest
 {
+    [Theory]
+    // .NET runtime specific variable takes precedence.
+    [InlineData("Json", null, true)]
+    [InlineData("json", null, true)]
+    [InlineData("Text", null, false)]
+    // Falls back to the Lambda platform variable when the .NET one is not set.
+    [InlineData(null, "Json", true)]
+    [InlineData(null, "Text", false)]
+    // The .NET variable wins over the platform variable.
+    [InlineData("Text", "Json", false)]
+    [InlineData("Json", "Text", true)]
+    [InlineData(null, null, false)]
+    public void IsJsonLogFormat(string ricLogFormat, string lambdaLogFormat, bool expected)
+    {
+        var envVars = new TestEnvironmentVariables();
+        if (ricLogFormat != null)
+            envVars.SetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, ricLogFormat);
+        if (lambdaLogFormat != null)
+            envVars.SetEnvironmentVariable(Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE, lambdaLogFormat);
+
+        Assert.Equal(expected, Utils.IsJsonLogFormat(envVars));
+    }
+
+    [Fact]
+    public void EmitWorkerPoolInitializingLog_WhenMultiConcurrencyAndJson_EmitsOnce()
+    {
+        var envVars = new TestEnvironmentVariables();
+        envVars.SetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY, "10");
+        envVars.SetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, "Json");
+        var logger = new CapturingConsoleLoggerWriter();
+
+        // Use a worker count that differs from the max concurrency to confirm the two values are reported distinctly.
+        Utils.EmitWorkerPoolInitializingLog(logger, envVars, workerCount: 3, maxConcurrency: 10);
+
+        var write = Assert.Single(logger.Writes);
+        Assert.Equal(LogLevelLoggerWriter.LogLevel.Debug.ToString(), write.Level);
+        Assert.Equal(Utils.WorkerPoolInitializingLogTemplate, write.Message);
+        Assert.Equal(new object[] { Utils.WorkerPoolInitializingEvent, 3, 10 }, write.Args);
+    }
+
+    [Fact]
+    public void EmitWorkerPoolInitializingLog_WhenMultiConcurrencyButNotJson_DoesNotEmit()
+    {
+        var envVars = new TestEnvironmentVariables();
+        envVars.SetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY, "10");
+        var logger = new CapturingConsoleLoggerWriter();
+
+        Utils.EmitWorkerPoolInitializingLog(logger, envVars, workerCount: 10, maxConcurrency: 10);
+
+        Assert.Empty(logger.Writes);
+    }
+
+    [Fact]
+    public void EmitWorkerPoolInitializingLog_WhenNotMultiConcurrency_DoesNotEmit()
+    {
+        var envVars = new TestEnvironmentVariables();
+        envVars.SetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, "Json");
+        var logger = new CapturingConsoleLoggerWriter();
+
+        Utils.EmitWorkerPoolInitializingLog(logger, envVars, workerCount: 1, maxConcurrency: 0);
+
+        Assert.Empty(logger.Writes);
+    }
     [Theory]
     [InlineData("5", true)]
     [InlineData("", false)]
