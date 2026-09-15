@@ -1,3 +1,8 @@
+## Release 2026-09-15
+
+### Amazon.Lambda.RuntimeSupport (2.2.1)
+* In Lambda managed instances (multi-concurrency) mode, emit a structured DEBUG log during init reporting the worker count and execution environment max concurrency when the JSON log format is enabled.
+
 ## Release 2026-09-08
 
 ### Amazon.Lambda.DurableExecution (2.0.0)
