@@ -480,7 +480,7 @@ public class ApiGatewayRouteConfigServiceTests
             LambdaResourceName = "HttpBackend",
             HttpMethod = "GET",
             Path = "/proxy/{proxy+}",
-            IntegrationType = "Http",
+            IntegrationType = ApiGatewayIntegrationType.Http,
             Endpoint = "http://127.0.0.1:5000"
         };
 
@@ -495,7 +495,7 @@ public class ApiGatewayRouteConfigServiceTests
 
         var result = service.GetRouteConfig("GET", "/proxy/hello");
         Assert.NotNull(result);
-        Assert.Equal("Http", result.IntegrationType);
+        Assert.Equal(ApiGatewayIntegrationType.Http, result.IntegrationType);
         Assert.Equal("http://127.0.0.1:5000", result.Endpoint);
     }
 
@@ -507,7 +507,7 @@ public class ApiGatewayRouteConfigServiceTests
             LambdaResourceName = "HttpBackend",
             HttpMethod = "GET",
             Path = "/proxy/{proxy+}",
-            IntegrationType = "Http"
+            IntegrationType = ApiGatewayIntegrationType.Http
         };
 
         _mockEnvironmentManager
@@ -530,7 +530,7 @@ public class ApiGatewayRouteConfigServiceTests
             LambdaResourceName = "HttpBackend",
             HttpMethod = "GET",
             Path = "/proxy/{proxy+}",
-            IntegrationType = "Http",
+            IntegrationType = ApiGatewayIntegrationType.Http,
             Endpoint = "not-a-url"
         };
 

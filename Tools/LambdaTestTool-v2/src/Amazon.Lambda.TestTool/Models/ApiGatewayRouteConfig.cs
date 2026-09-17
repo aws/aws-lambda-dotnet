@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Serialization;
+
 namespace Amazon.Lambda.TestTool.Models;
 
 /// <summary>
@@ -29,7 +31,10 @@ public class ApiGatewayRouteConfig
     public required string Path { get; set; }
 
     /// <summary>
-    /// The integration type: "Lambda" (default) or "Http". When "Http", the request is proxied to the Endpoint URL instead of invoking a Lambda.
+    /// The integration used for this route. Defaults to <see cref="ApiGatewayIntegrationType.Lambda"/>.
+    /// When <see cref="ApiGatewayIntegrationType.Http"/>, the request is proxied to <see cref="Endpoint"/> instead of invoking a Lambda.
+    /// Serialized as a string in route-config JSON (for example <c>"Http"</c>).
     /// </summary>
-    public string? IntegrationType { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ApiGatewayIntegrationType IntegrationType { get; set; } = ApiGatewayIntegrationType.Lambda;
 }

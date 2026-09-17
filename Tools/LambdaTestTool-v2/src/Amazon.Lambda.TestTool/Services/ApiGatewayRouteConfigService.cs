@@ -143,7 +143,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
-        if (string.Equals(routeConfig.IntegrationType, "Http", StringComparison.OrdinalIgnoreCase))
+        if (routeConfig.IntegrationType == ApiGatewayIntegrationType.Http)
         {
             if (string.IsNullOrWhiteSpace(routeConfig.Endpoint))
             {

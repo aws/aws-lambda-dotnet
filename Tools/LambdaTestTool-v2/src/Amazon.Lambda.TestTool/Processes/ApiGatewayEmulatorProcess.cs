@@ -96,7 +96,7 @@ public class ApiGatewayEmulatorProcess
             }
 
             // HTTP integration: proxy request to the backend URL
-            if (string.Equals(routeConfig.IntegrationType, "Http", StringComparison.OrdinalIgnoreCase))
+            if (routeConfig.IntegrationType == ApiGatewayIntegrationType.Http)
             {
                 var endpoint = routeConfig.Endpoint ?? throw new InvalidOperationException($"HTTP route {routeConfig.LambdaResourceName} requires Endpoint.");
                 var targetUrl = $"{endpoint.TrimEnd('/')}{context.Request.Path}{context.Request.QueryString}";
