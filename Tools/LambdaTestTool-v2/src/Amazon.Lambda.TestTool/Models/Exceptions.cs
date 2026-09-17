@@ -12,6 +12,14 @@ public abstract class TestToolException(string message, Exception? innerExceptio
     : Exception(message, innerException);
 
 /// <summary>
+/// Thrown if the run command settings are invalid.
+/// </summary>
+/// <param name="message">The message used in the exception.</param>
+/// <param name="innerException">The inner exception, if any.</param>
+public class InvalidRunCommandSettingsException(string message, Exception? innerException = null)
+    : TestToolException(message, innerException);
+
+/// <summary>
 /// Thrown if the API Gateway Emulator mode was not provided,
 /// </summary>
 /// <param name="message">The message used in the exception.</param>

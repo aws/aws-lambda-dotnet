@@ -22,6 +22,30 @@ public class RunCommandTests
     private readonly Mock<IRemainingArguments> _mockRemainingArgs = new Mock<IRemainingArguments>();
 
     [Fact]
+    public async Task ExecuteAsync_NoEmulatorConfiguration_ReturnsUserError()
+    {
+        // Arrange
+        var cancellationSource = new CancellationTokenSource();
+        var settings = new RunCommandSettings();
+        var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
+        var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationSource);
+
+        // Assert
+        Assert.Equal(CommandReturnCodes.UserError, result);
+        _mockInteractiveService.Verify(
+            service => service.WriteErrorLine(It.Is<string?>(message =>
+                message != null && message.Contains("At least one of the following parameters must be set"))),
+            Times.Once);
+        _mockInteractiveService.Verify(
+            service => service.WriteErrorLine(It.Is<string?>(message =>
+                message != null && message.Contains("This is a bug"))),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_LambdaRuntimeApi_SuccessfulLaunch()
     {
         // Arrange
@@ -54,7 +78,7 @@ public class RunCommandTests
         cancellationSource.CancelAfter(5000);
         var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
         var gatewayPort = TestHelpers.GetNextApiGatewayPort();
-        var settings = new RunCommandSettings { LambdaEmulatorPort = lambdaPort, ApiGatewayEmulatorPort = gatewayPort, ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
+        var settings = new RunCommandSettings { LambdaEmulatorPort = lambdaPort, ApiGatewayEmulatorPort = gatewayPort, ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true };
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
         var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
