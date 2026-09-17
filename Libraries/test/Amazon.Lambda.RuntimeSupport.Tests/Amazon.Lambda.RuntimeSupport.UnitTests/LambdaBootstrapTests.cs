@@ -297,6 +297,22 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public void RuntimeApiHttpClientBypassesProxy()
+        {
+            // Runtime API calls must never be routed through a customer-configured proxy
+            // (e.g. HTTP_PROXY/HTTPS_PROXY), which would fail when the RAPID endpoint is not
+            // on a loopback address. Verify the underlying handler has proxy usage disabled.
+            using var client = LambdaBootstrap.ConstructHttpClient();
+
+            var handlerField = typeof(System.Net.Http.HttpMessageInvoker).GetField("_handler",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.NotNull(handlerField);
+
+            var handler = Assert.IsType<System.Net.Http.SocketsHttpHandler>(handlerField.GetValue(client));
+            Assert.False(handler.UseProxy);
+        }
+
+        [Fact]
         public void IsCallPreJitTest()
         {
             var environmentVariables = new TestEnvironmentVariables();
