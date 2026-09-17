@@ -593,7 +593,13 @@ namespace Amazon.Lambda.RuntimeSupport
             var handler = new SocketsHttpHandler
             {
                 // Fix for https://github.com/aws/aws-lambda-dotnet/issues/1231. HttpClient by default supports only ASCII characters in headers. Changing it to allow UTF8 characters.
-                RequestHeaderEncodingSelector = delegate { return System.Text.Encoding.UTF8; }
+                RequestHeaderEncodingSelector = delegate { return System.Text.Encoding.UTF8; },
+
+                // Bypass any customer-configured proxy (e.g. HTTP_PROXY/HTTPS_PROXY environment variables) for
+                // Runtime API calls. These are internal calls to the RAPID endpoint, which is not necessarily on a
+                // loopback address, so routing them through a customer proxy would fail. This is scoped to the
+                // HttpClient used for the Runtime API and has no impact on customer handler HTTP calls.
+                UseProxy = false
             };
 
             // If we are running in an AOT environment, mark it as such.
