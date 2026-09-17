@@ -1,3 +1,13 @@
+## Release 2026-09-17
+
+### Amazon.Lambda.AspNetCoreServer (10.2.2)
+* Null-safe marshalling for Path, HttpMethod, path parameters, and headers to avoid NullReferenceException with incomplete API Gateway events
+### Amazon.Lambda.TestTool (0.16.0)
+* Populate RequestContext (and Path/HttpMethod defaults) when the API Gateway emulator builds REST APIGatewayProxyRequest events
+* API Gateway emulator: optional IntegrationType=Http to reverse-proxy requests to a non-Lambda HTTP Endpoint while keeping the emulator origin
+### Amazon.Lambda.RuntimeSupport (2.2.2)
+* Bypass any customer-configured proxy (e.g. HTTP_PROXY/HTTPS_PROXY environment variables) for internal Lambda Runtime API calls. The HttpClient used to communicate with the Runtime API now sets UseProxy = false so requests to the RAPID endpoint are not routed through a customer proxy, which would fail when RAPID is not on a loopback address. Customer handler HTTP calls are unaffected.
+
 ## Release 2026-09-15
 
 ### Amazon.Lambda.RuntimeSupport (2.2.1)
