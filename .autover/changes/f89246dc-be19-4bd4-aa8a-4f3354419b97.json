@@ -1,0 +1,11 @@
+﻿{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "API Gateway emulator: optional IntegrationType=Http to reverse-proxy requests to a non-Lambda HTTP Endpoint while keeping the emulator origin"
+      ]
+    }
+  ]
+}
