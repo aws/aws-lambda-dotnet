@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix LambdaLogger.ConfigureStructuredLogging having no effect for class library Lambda functions on the managed runtime by wiring the structured logging callback into the customer's Amazon.Lambda.Core assembly via reflection."
+      ]
+    }
+  ]
+}

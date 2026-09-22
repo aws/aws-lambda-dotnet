@@ -20,6 +20,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         // Options used when serializing any message property values as a JSON to be added to the structured log message.
         private JsonSerializerOptions _jsonSerializationOptions;
 
+        // Tracks the JsonLogMessageFormatter instances that have been created. This is needed for the class library
+        // programming model (managed runtime) where the customer's Amazon.Lambda.Core is loaded AFTER the formatter is
+        // constructed. When the UserCodeLoader loads the customer's Amazon.Lambda.Core it calls
+        // WireStructuredLoggingCallbacksToCustomerCore so each formatter can register its callback against the correct
+        // (customer) copy of Amazon.Lambda.Core. See https://github.com/aws/aws-lambda-dotnet/issues/2350.
+        private static readonly object _instancesLock = new object();
+        private static readonly List<JsonLogMessageFormatter> _instances = new List<JsonLogMessageFormatter>();
+
         /// <summary>
         /// Constructs an instance of JsonLogMessageFormatter.
         /// </summary>
@@ -31,13 +39,44 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                 WriteIndented = false
             };
 
+            lock (_instancesLock)
+            {
+                _instances.Add(this);
+            }
+
             try
             {
+                // Executable / custom runtime model: the compile-time reference to Amazon.Lambda.Core is the same
+                // assembly the customer uses, so this correctly wires the callback. In the class library model this
+                // wires up the RuntimeSupport bundled Amazon.Lambda.Core (harmless) and the real wiring happens later
+                // through WireStructuredLoggingCallbacksToCustomerCore once the customer's Amazon.Lambda.Core loads.
                 ConfigureJsonLogMessageFormatterIsolated.ConfigureCallbackInCore(ConfigureStructuredLogging);
             }
             catch (TypeLoadException)
             {
                 InternalLogger.GetDefaultLogger().LogDebug("Failed to configure Amazon.Lambda.Core with callback for configuring structured logging. This happens when the version of Amazon.Lambda.Core referenced by the Lambda function is out of date.");
+            }
+        }
+
+        /// <summary>
+        /// Wire every JsonLogMessageFormatter instance's structured logging callback into the customer's copy of
+        /// Amazon.Lambda.Core using reflection. This is used by the class library programming model on the managed
+        /// runtime, where the customer's Amazon.Lambda.Core is a different assembly than the one Amazon.Lambda.RuntimeSupport
+        /// was compiled against. See https://github.com/aws/aws-lambda-dotnet/issues/2350.
+        /// </summary>
+        /// <param name="customerCoreAssembly">The customer's Amazon.Lambda.Core assembly loaded by the UserCodeLoader.</param>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Uses reflection against the customer's Amazon.Lambda.Core. Only used in the class library programming model which does not support trimming.")]
+        internal static void WireStructuredLoggingCallbacksToCustomerCore(System.Reflection.Assembly customerCoreAssembly)
+        {
+            JsonLogMessageFormatter[] snapshot;
+            lock (_instancesLock)
+            {
+                snapshot = _instances.ToArray();
+            }
+
+            foreach (var formatter in snapshot)
+            {
+                ConfigureJsonLogMessageFormatterIsolated.ConfigureCallbackInCore(customerCoreAssembly, formatter.ConfigureStructuredLogging);
             }
         }
 

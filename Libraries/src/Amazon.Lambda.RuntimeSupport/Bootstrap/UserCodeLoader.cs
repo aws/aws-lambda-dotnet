@@ -100,6 +100,22 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                         _logger.LogDebug(
                             $"UCL : Load context loading '{LambdaCoreAssemblyName}', attempting to set {Types.LambdaLoggerTypeName}.{LambdaLoggingActionFieldName} to logging action.");
                         SetCustomerLoggerLogAction(args.LoadedAssembly, customerLoggingAction, _logger);
+
+                        // Wire the structured logging configuration callback into the customer's copy of
+                        // Amazon.Lambda.Core. This is required because Amazon.Lambda.RuntimeSupport is compiled against
+                        // its own bundled Amazon.Lambda.Core in the managed runtime; the compile-time wiring done in
+                        // JsonLogMessageFormatter's constructor targets the wrong assembly, so the customer's call to
+                        // LambdaLogger.ConfigureStructuredLogging would otherwise never reach the formatter.
+                        // See https://github.com/aws/aws-lambda-dotnet/issues/2350.
+                        try
+                        {
+                            Helpers.Logging.JsonLogMessageFormatter.WireStructuredLoggingCallbacksToCustomerCore(args.LoadedAssembly);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug("UCL : Failed to wire structured logging callback into the customer's Amazon.Lambda.Core: " + ex);
+                        }
+
                         _customerLoggerSetUpComplete = true;
                     }
                 };
