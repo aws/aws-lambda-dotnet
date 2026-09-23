@@ -87,18 +87,31 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
     private readonly ILambdaSerializer _serializer;
     private readonly string _childSubType;
 
+    // Entity id + ARN used to (de)serialize this branch's inline result on the parent
+    // summary through LambdaSerializerHelper, so a context-aware IDurableResultSerializer
+    // (e.g. FileSystemSerializer) resolves the SAME external location the child wrote —
+    // exactly as batch ConcurrentOperation does. The entity id matches whoever produced
+    // the inline payload: the child's own op id for a Nested branch, or "{parent}#{index}"
+    // for a Flat branch.
+    private readonly string _inlineEntityId;
+    private readonly string _durableExecutionArn;
+
     // Frozen status wins over the live re-run outcome on the overflow-recovery path
     // (Terminal mode): the checkpointed verdict is authoritative even if a
     // non-deterministic body re-executes to a different result.
     private BatchItemStatus? _frozenStatus;
     private volatile int _status = (int)BatchItemStatus.Started;
 
-    public IncrementalParallelBranch(int index, string name, ILambdaSerializer serializer, string childSubType)
+    public IncrementalParallelBranch(
+        int index, string name, ILambdaSerializer serializer, string childSubType,
+        string inlineEntityId, string durableExecutionArn)
     {
         Index = index;
         Name = name;
         _serializer = serializer;
         _childSubType = childSubType;
+        _inlineEntityId = inlineEntityId;
+        _durableExecutionArn = durableExecutionArn;
 
         // Per-branch failures are intentionally consumed via CompleteAsync, so a
         // caller may never await this handle. Observe the fault here so a discarded
@@ -123,13 +136,27 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
     /// authoritative and the run merely recovers the stripped value.
     /// </summary>
     public void Launch(
-        Func<Task<T>> run,
+        Func<Task<BranchRunResult<T>>> run,
         CancellationToken shortCircuitToken,
         CancellationToken controlToken,
         BatchItemStatus? frozenStatus = null)
     {
         _frozenStatus = frozenStatus;
         Settlement = ExecuteAsync(run, shortCircuitToken, controlToken);
+    }
+
+    /// <summary>
+    /// Serializes a Flat branch's result for inline storage on the parent summary,
+    /// routed through <see cref="LambdaSerializerHelper"/> with this branch's inline
+    /// entity id — mirroring <see cref="ConcurrentOperation{T}"/>'s Flat-unit path so a
+    /// context-aware serializer keys the same external location on write and on replay.
+    /// </summary>
+    public string SerializeInline(T value)
+    {
+        using var ms = new MemoryStream();
+        LambdaSerializerHelper.Serialize(
+            _serializer, value, ms, new DurableSerializationContext(_inlineEntityId, _durableExecutionArn));
+        return Encoding.UTF8.GetString(ms.ToArray());
     }
 
     /// <summary>
@@ -157,16 +184,22 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
     }
 
     private async Task<BranchOutcome> ExecuteAsync(
-        Func<Task<T>> run,
+        Func<Task<BranchRunResult<T>>> run,
         CancellationToken shortCircuitToken,
         CancellationToken controlToken)
     {
         try
         {
-            var value = await run().ConfigureAwait(false);
+            // run() both executes the branch body AND produces its inline payload for
+            // the parent summary (reused from the Nested child's own SUCCEED checkpoint,
+            // or serialized for a Flat branch). Serialization therefore happens BEFORE
+            // the handle is completed: if it throws, the branch is recorded — and the
+            // handle faulted — as a failure, so the checkpointed outcome can never
+            // contradict what `await branch` returns.
+            var run_ = await run().ConfigureAwait(false);
             if (_frozenStatus is null) _status = (int)BatchItemStatus.Succeeded;
-            _result.TrySetResult(value);
-            return BranchOutcome.Success(Index, Name, Serialize(value));
+            _result.TrySetResult(run_.Value);
+            return BranchOutcome.Success(Index, Name, run_.SerializedResult);
         }
         catch (ChildContextException ex)
         {
@@ -247,19 +280,32 @@ internal sealed class IncrementalParallelBranch<T> : IParallelBranch<T>, IParall
         $"operation completed before it started (completion-policy short-circuit). " +
         $"Inspect the branch's Status before awaiting it.");
 
-    private string Serialize(T value)
-    {
-        using var ms = new MemoryStream();
-        _serializer.Serialize(value, ms);
-        return Encoding.UTF8.GetString(ms.ToArray());
-    }
-
     private T Deserialize(string? serialized)
     {
         if (serialized == null) return default!;
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
-        return _serializer.Deserialize<T>(ms);
+        return LambdaSerializerHelper.Deserialize<T>(
+            _serializer, ms, new DurableSerializationContext(_inlineEntityId, _durableExecutionArn));
+    }
+}
+
+/// <summary>
+/// A branch body's return value paired with its inline payload for the parent
+/// <see cref="BatchSummary"/>. The payload is computed (or reused from the child's own
+/// checkpoint) BEFORE the branch handle is completed, so a serialization failure is
+/// surfaced as a terminal branch failure rather than a succeeded handle whose recorded
+/// outcome says failed.
+/// </summary>
+internal readonly struct BranchRunResult<T>
+{
+    public T Value { get; }
+    public string? SerializedResult { get; }
+
+    public BranchRunResult(T value, string? serializedResult)
+    {
+        Value = value;
+        SerializedResult = serializedResult;
     }
 }
 
@@ -420,7 +466,13 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             // resolved lazily here so a workflow overriding the serializer on every
             // branch never triggers the global-serializer lookup. Memoized under _lock.
             var branchSerializer = serializer ?? (_defaultSerializer ??= _defaultSerializerFactory());
-            var handle = new IncrementalParallelBranch<T>(index, name, branchSerializer, OperationSubTypes.ParallelBranch);
+            // Inline-payload entity id, matching batch ConcurrentOperation: a Flat branch
+            // is serialized by this parent at "{parent}#{index}"; a Nested branch's inline
+            // payload IS the child's own checkpoint payload, keyed by the child op id.
+            var inlineEntityId = _isVirtual ? $"{_operationId}#{index}" : childOpId;
+            var handle = new IncrementalParallelBranch<T>(
+                index, name, branchSerializer, OperationSubTypes.ParallelBranch,
+                inlineEntityId, _durableExecutionArn);
 
             var summaryEntry = FindSummaryUnit(index);
 
@@ -572,7 +624,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         var dispatchToken = isRecovery ? _workflowCancellation.Token : _dispatchCts.Token;
         var bailToken = isRecovery ? CancellationToken.None : _shortCircuitCts.Token;
 
-        async Task<T> Run()
+        async Task<BranchRunResult<T>> Run()
         {
             // Parent START must be enqueued before this branch's child START.
             await _startTask.ConfigureAwait(false);
@@ -606,7 +658,20 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                 // Branch child ops receive CancellationToken.None here — they re-link
                 // workflow-shutdown and the cooperative-bail token internally, and
                 // their checkpoint writes must not observe shutdown mid-flush.
-                return await childOp.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
+                var value = await childOp.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
+
+                // Produce the inline payload for the parent summary now — before the
+                // handle completes (in ExecuteAsync) — mirroring batch Parallel: a Nested
+                // branch reuses the child's OWN serialized SUCCEED payload verbatim; a Flat
+                // branch is serialized here through the durable serializer helper. A
+                // recovery re-run (frozenStatus set) exists only to recover the value; its
+                // payload is unused (Terminal mode never re-checkpoints the parent), so skip
+                // the redundant re-serialization and its failure risk.
+                string? serialized = isRecovery
+                    ? null
+                    : (_isVirtual ? handle.SerializeInline(value) : childOp.SerializedResultPayload);
+
+                return new BranchRunResult<T>(value, serialized);
             }
             finally
             {
@@ -755,11 +820,36 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         BatchUnitSummary? summaryEntry,
         ILambdaSerializer branchSerializer)
     {
-        // A branch registered now but absent from the frozen summary (registered
-        // after the original seal) never ran — surface it as skipped.
+        // No inline summary entry for this branch. Two cases:
+        //   1. The frozen summary is present but this index is absent (a branch
+        //      registered after the original seal) — it never ran, so it is skipped.
+        //      A whole-operation count mismatch is caught separately in
+        //      BuildTerminalResult.
+        //   2. The frozen summary is missing/corrupt (older or damaged checkpoint of an
+        //      already-terminal parent). Resolving every branch as skipped here would
+        //      synthesize a false AllCompleted and mask the terminal outcome. Instead,
+        //      fall back to the branch's OWN child checkpoint — mirroring batch
+        //      ConcurrentOperation.ReconstructFromCheckpoints — so a genuinely-completed
+        //      Nested branch is recovered from its surviving child op. (A Flat branch
+        //      writes no child checkpoint, so it stays skipped, exactly as in batch.)
         if (summaryEntry == null)
         {
-            handle.ResolveFromInline(BatchItemStatus.Started, null, null);
+            var childOp = _frozenSummary == null ? _state.GetOperation(childOpId) : null;
+            switch (childOp?.Status)
+            {
+                case OperationStatuses.Succeeded:
+                    // Recover the value from the child's own terminal checkpoint. A
+                    // recovery re-run of a SUCCEEDED child returns the cached result
+                    // without re-invoking side effects (ChildContextOperation.ReplayAsync).
+                    LaunchRunBranch(handle, name, childOpId, func, branchSerializer, frozenStatus: BatchItemStatus.Succeeded);
+                    break;
+                case OperationStatuses.Failed:
+                    handle.ResolveFromInline(BatchItemStatus.Failed, null, childOp.ContextDetails?.Error);
+                    break;
+                default:
+                    handle.ResolveFromInline(BatchItemStatus.Started, null, null);
+                    break;
+            }
             return;
         }
 

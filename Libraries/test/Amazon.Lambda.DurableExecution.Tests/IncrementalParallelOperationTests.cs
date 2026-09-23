@@ -879,6 +879,202 @@ public class IncrementalParallelOperationTests
         await Assert.ThrowsAsync<NonDeterministicExecutionException>(async () => await handleTask);
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // ParallelConfig.ItemSerializer parity with batch ParallelAsync (review 1a/1b)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateParallel_ItemSerializer_InnerLessContextSerializer_BindsGlobalInner()
+    {
+        // Review 1a: CreateParallel must bind the globally-registered serializer as the
+        // inner of an IDefaultInnerSerializer ItemSerializer (via WithDefaultInner), just
+        // like batch ParallelAsync. The documented inner-less FileSystemSerializer
+        // constructor otherwise fails every branch (RequireInner throws).
+        var basePath = Path.Combine(Path.GetTempPath(), "increm-fs-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var (context, _, _, _) = CreateContext();
+            var fs = new FileSystemSerializer(basePath); // inner-less: needs the global inner bound
+
+            IParallelBranch<string> a;
+            IParallelBranch<int> b;
+            IBatchResult summary;
+            await using (var parallel = context.CreateParallel(config: new ParallelConfig { ItemSerializer = fs }))
+            {
+                a = parallel.Branch("a", async (_, _) => { await Task.Yield(); return "alpha"; });
+                b = parallel.Branch("b", async (_, _) => { await Task.Yield(); return 42; });
+                summary = await parallel.CompleteAsync();
+            }
+
+            Assert.Equal(2, summary.SuccessCount);
+            Assert.False(summary.HasFailure);
+            Assert.Equal("alpha", await a);
+            Assert.Equal(42, await b);
+        }
+        finally
+        {
+            try { if (Directory.Exists(basePath)) Directory.Delete(basePath, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task CreateParallel_ContextAwareSerializer_RecordedOutcomeMatchesHandle()
+    {
+        // Review 1b: a succeeded branch's recorded outcome must not contradict its
+        // observed handle result. Before the fix, the branch re-serialized its value for
+        // the parent inline summary through the PLAIN ILambdaSerializer path (bypassing
+        // the context-aware IDurableResultSerializer), which for FileSystemSerializer
+        // throws — recording the branch FAILED after the handle had already been completed
+        // with the value. Now the inline payload is produced through LambdaSerializerHelper
+        // (reusing the Nested child's own payload) before the handle completes, so Status,
+        // the aggregate summary, and `await branch` all agree.
+        var basePath = Path.Combine(Path.GetTempPath(), "increm-fs-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var (context, _, _, _) = CreateContext();
+            var fs = new FileSystemSerializer(new DefaultLambdaJsonSerializer(), basePath); // explicit inner
+
+            IParallelBranch<string> a;
+            IParallelBranch<int> b;
+            IBatchResult summary;
+            await using (var parallel = context.CreateParallel(config: new ParallelConfig { ItemSerializer = fs }))
+            {
+                a = parallel.Branch("a", async (_, _) => { await Task.Yield(); return "alpha"; });
+                b = parallel.Branch("b", async (_, _) => { await Task.Yield(); return 7; });
+                summary = await parallel.CompleteAsync();
+            }
+
+            // Aggregate and per-branch status agree with the observed values (no inversion).
+            Assert.Equal(2, summary.SuccessCount);
+            Assert.Equal(0, summary.FailureCount);
+            Assert.False(summary.HasFailure);
+            Assert.Equal(BatchItemStatus.Succeeded, a.Status);
+            Assert.Equal(BatchItemStatus.Succeeded, b.Status);
+            Assert.Equal("alpha", await a);
+            Assert.Equal(7, await b);
+        }
+        finally
+        {
+            try { if (Directory.Exists(basePath)) Directory.Delete(basePath, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task CreateParallel_Flat_InlineSerializeThrows_FailsBranchTerminally_HandleFaults()
+    {
+        // Review 1b (Flat path): for a Flat branch the orchestrator serializes the inline
+        // payload itself. That serialization now happens BEFORE the handle is completed, so
+        // a serialize failure is a terminal branch failure — the handle FAULTS rather than
+        // yielding a value the checkpoint contradicts.
+        var (context, _, _, _) = CreateContext();
+
+        IParallelBranch<int> bad;
+        IBatchResult summary;
+        await using (var parallel = context.CreateParallel(config: new ParallelConfig
+        {
+            NestingType = NestingType.Flat,
+            ItemSerializer = new ThrowOnDurableSerializeSerializer()
+        }))
+        {
+            bad = parallel.Branch("bad", async (_, _) => { await Task.Yield(); return 1; });
+            summary = await parallel.CompleteAsync();
+        }
+
+        Assert.Equal(0, summary.SuccessCount);
+        Assert.Equal(1, summary.FailureCount);
+        Assert.True(summary.HasFailure);
+        Assert.Equal(BatchItemStatus.Failed, bad.Status);
+        await Assert.ThrowsAsync<ChildContextException>(async () => await bad);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Terminal parent with a missing/corrupt summary payload (review, suppressed)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateParallel_ReplaySucceeded_CorruptSummary_RecoversFromChildCheckpoints()
+    {
+        // A SUCCEEDED parent whose summary payload is missing/corrupt (older or damaged
+        // checkpoint) must NOT resolve every branch as skipped and synthesize a false
+        // AllCompleted. Instead each Nested branch is recovered from its own surviving
+        // child CONTEXT checkpoint — mirroring batch ConcurrentOperation.ReconstructFromCheckpoints.
+        var parentOpId = IdAt(1);
+        var child0 = ChildIdAt(parentOpId, 1);
+        var child1 = ChildIdAt(parentOpId, 2);
+
+        var (context, recorder, _, _) = CreateContext(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = parentOpId,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.Parallel,
+                    Name = "process-order",
+                    ContextDetails = new ContextDetails { Result = "}{ not valid json" } // corrupt → ParseSummary returns null
+                },
+                new()
+                {
+                    Id = child0,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "inventory",
+                    ContextDetails = new ContextDetails { Result = "\"reserved\"" }
+                },
+                new()
+                {
+                    Id = child1,
+                    Type = OperationTypes.Context,
+                    Status = OperationStatuses.Succeeded,
+                    SubType = OperationSubTypes.ParallelBranch,
+                    Name = "payment",
+                    ContextDetails = new ContextDetails { Result = "200" }
+                }
+            }
+        });
+
+        var executed = false;
+        IParallelBranch<string> inventory;
+        IParallelBranch<int> payment;
+        IBatchResult summary;
+
+        await using (var parallel = context.CreateParallel(name: "process-order"))
+        {
+            inventory = parallel.Branch("inventory", async (_, _) => { executed = true; await Task.Yield(); return "LIVE"; });
+            payment = parallel.Branch("payment", async (_, _) => { executed = true; await Task.Yield(); return -1; });
+            summary = await parallel.CompleteAsync();
+        }
+
+        // Recovered from the child checkpoints (the SUCCEEDED children replay cached, so
+        // the bodies never re-run), not masked as skipped.
+        Assert.False(executed);
+        Assert.Equal("reserved", await inventory);
+        Assert.Equal(200, await payment);
+        Assert.Equal(2, summary.SuccessCount);
+        Assert.False(summary.HasFailure);
+
+        await recorder.Batcher.DrainAsync();
+        Assert.Empty(recorder.Flushed); // terminal parent → no re-checkpoint
+    }
+
+    /// <summary>
+    /// A serializer whose context-aware (durable) Serialize always throws, used to prove a
+    /// serialization failure fails the branch terminally instead of completing the handle.
+    /// </summary>
+    private sealed class ThrowOnDurableSerializeSerializer
+        : Amazon.Lambda.Core.ILambdaSerializer, IDurableResultSerializer
+    {
+        private readonly DefaultLambdaJsonSerializer _inner = new();
+        public T Deserialize<T>(System.IO.Stream requestStream) => _inner.Deserialize<T>(requestStream);
+        public void Serialize<T>(T response, System.IO.Stream responseStream) => _inner.Serialize(response, responseStream);
+        public T Deserialize<T>(System.IO.Stream stream, DurableSerializationContext context) => _inner.Deserialize<T>(stream);
+        public void Serialize<T>(T value, System.IO.Stream stream, DurableSerializationContext context) =>
+            throw new InvalidOperationException("serialize-boom");
+    }
+
     /// <summary>
     /// Delegating <see cref="Amazon.Lambda.Core.ILambdaSerializer"/> that counts calls, so a
     /// test can assert which serializer a branch used.
