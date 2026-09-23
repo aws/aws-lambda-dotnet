@@ -195,6 +195,38 @@ internal sealed class DurableContext : IDurableContext
         return op.ExecuteAsync(cancellationToken);
     }
 
+    public IDurableParallel CreateParallel(
+        string? name = null,
+        ParallelConfig? config = null)
+    {
+        var effectiveConfig = config ?? new ParallelConfig();
+        // Operation-level default for per-branch result serialization: the config's
+        // ItemSerializer if set, else the globally-registered serializer. Individual
+        // branches may still override this via Branch's serializer parameter.
+        //
+        // Resolved LAZILY: a workflow that overrides the serializer on every Branch
+        // call (the AOT/per-branch scenario) must not be forced to register a global
+        // serializer. GetRequired is deferred to the factory below and invoked only
+        // when a branch actually falls back to this operation-level default.
+        var lambdaContext = LambdaContext;
+        Func<Amazon.Lambda.Core.ILambdaSerializer> defaultSerializerFactory = () =>
+        {
+            // Match the other serializer-resolving dispatchers (ParallelAsync, MapAsync,
+            // etc.): bind the globally-registered serializer as the inner of an
+            // IDefaultInnerSerializer (e.g. the inner-less FileSystemSerializer) so
+            // ParallelConfig.ItemSerializer behaves the same on CreateParallel as on
+            // batch ParallelAsync.
+            var defaultSerializer = LambdaSerializerHelper.GetRequired(lambdaContext);
+            return LambdaSerializerHelper.WithDefaultInner(
+                effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
+        };
+
+        var operationId = _idGenerator.NextId();
+        return new Internal.IncrementalParallelOperation(
+            operationId, name, _idGenerator.ParentId, effectiveConfig, defaultSerializerFactory, MakeChildFactory(),
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+    }
+
     public Task<IBatchResult<T>> ParallelAsync<T>(
         IReadOnlyList<Func<IDurableContext, CancellationToken, Task<T>>> branches,
         string? name = null,

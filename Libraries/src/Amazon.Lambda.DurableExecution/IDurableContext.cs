@@ -368,6 +368,50 @@ public interface IDurableContext
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Create an incremental, branch-oriented parallel operation. Unlike the
+    /// <see cref="ParallelAsync{T}(IReadOnlyList{Func{IDurableContext, CancellationToken, Task{T}}}, string?, ParallelConfig?, CancellationToken)"/>
+    /// overloads — which take a complete branch list up front and share one result
+    /// type — the returned <see cref="IDurableParallel"/> lets you register branches
+    /// one at a time via
+    /// <see cref="IDurableParallel.Branch{T}"/>,
+    /// each with its own result type (heterogeneous), starting each branch as it is
+    /// registered. Call <see cref="IDurableParallel.CompleteAsync(CancellationToken)"/>
+    /// to seal registration and obtain the aggregate <see cref="IBatchResult"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use <c>await using</c> so the operation is sealed and its terminal checkpoint
+    /// written even if <see cref="IDurableParallel.CompleteAsync(CancellationToken)"/>
+    /// is not called. Branch identity is positional and deterministic across
+    /// replays, so register the same branches in the same order every invocation —
+    /// derive any dynamic branch set from a checkpointed step. Per-branch results
+    /// are serialized via the <see cref="ILambdaSerializer"/> registered on
+    /// <see cref="ILambdaContext.Serializer"/>. Honors the same
+    /// <see cref="ParallelConfig.MaxConcurrency"/>,
+    /// <see cref="ParallelConfig.CompletionConfig"/>, and
+    /// <see cref="ParallelConfig.NestingType"/> as the homogeneous API.
+    /// </remarks>
+    /// <param name="name">
+    /// Optional human-readable name for the parallel operation. It surfaces on the
+    /// wire <c>OperationUpdate.Name</c> field and in execution traces. The
+    /// deterministic operation ID is positional (derived from the call order, not
+    /// from this name); however, when provided, the name becomes part of the
+    /// operation's deterministic definition and is validated on replay — changing it
+    /// across deployments for an in-flight execution throws
+    /// <see cref="NonDeterministicExecutionException"/>, so keep it stable (or leave
+    /// it <c>null</c>) for the life of an execution. Defaults to <c>null</c>.
+    /// </param>
+    /// <param name="config">
+    /// Optional parallel configuration. Defaults are used when null.
+    /// </param>
+    /// <returns>
+    /// An <see cref="IDurableParallel"/> for registering branches and awaiting the
+    /// aggregate result.
+    /// </returns>
+    IDurableParallel CreateParallel(
+        string? name = null,
+        ParallelConfig? config = null);
+
+    /// <summary>
     /// Execute multiple branches concurrently. Each branch runs inside its own
     /// child context; per-branch results are aggregated into an
     /// <see cref="IBatchResult{T}"/>. Branches are dispatched up to

@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Durable Execution Conformance Test Examples - .NET (Static Typing)
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  DurableFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: DurableExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:CheckpointDurableExecution
+            - lambda:GetDurableExecutionState
+            Resource: '*'
+
+  ParallelTypedBranches:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["12-1"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelTypedBranches/
+      Handler: bootstrap
+      Description: Parallel with independently typed heterogeneous branch handles
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ParallelEarlyStart:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["12-2"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ParallelEarlyStart/
+      Handler: bootstrap
+      Description: Parallel branch completes before later branches are registered
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
