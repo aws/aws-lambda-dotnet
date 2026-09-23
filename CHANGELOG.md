@@ -1,3 +1,11 @@
+## Release 2026-09-23
+
+### Amazon.Lambda.DurableExecution (2.1.0)
+* Added an incremental, branch-oriented parallel API (IDurableContext.CreateParallel, IDurableParallel, IParallelBranch<T>) supporting heterogeneous per-branch result types and incremental branch registration, alongside the existing homogeneous ParallelAsync<T> overloads. Each branch declares its own result type and returns an awaitable typed handle; branches start on registration (respecting MaxConcurrency) and the operation is sealed with CompleteAsync. Honors the existing MaxConcurrency, CompletionConfig, NestingType, cancellation, deterministic replay, and ILambdaSerializer behavior.
+* CreateParallel supports per-operation and per-branch result serialization: ParallelConfig.ItemSerializer sets the operation-level serializer for all branch results, and IDurableParallel.Branch accepts an optional per-branch ILambdaSerializer override, falling back to ItemSerializer and then the globally-registered serializer.
+### Amazon.Lambda.TestTool (0.16.1)
+* Report missing Test Tool startup options as a user error
+
 ## Release 2026-09-17
 
 ### Amazon.Lambda.AspNetCoreServer (10.2.2)
