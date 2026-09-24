@@ -1,4 +1,6 @@
 using Amazon.Lambda.Logging.AspNetCore.Tests;
+using Amazon.Lambda.RuntimeSupport.Helpers;
+using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Xunit;
 
 namespace Amazon.Lambda.Tests
@@ -724,6 +727,513 @@ namespace Amazon.Lambda.Tests
             finally
             {
                 Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_SingleStructuredScope_IncludedInParameters()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("User {Name} logged in", "Alice");
+                    }
+
+                    var text = writer.ToString();
+                    // scope param + 1 message param = 2
+                    Assert.Contains("parameter count: 2", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NestedStructuredScopes_AllIncludedInParameters()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var outerScope = new Dictionary<string, object> { { "TraceId", "trace-1" } };
+                    var innerScope = new Dictionary<string, object> { { "UserId", "user-99" } };
+                    using (logger.BeginScope(outerScope))
+                    {
+                        using (logger.BeginScope(innerScope))
+                        {
+                            logger.LogInformation("Processed {Item}", "order");
+                        }
+                    }
+
+                    var text = writer.ToString();
+                    // outer (1) + inner (1) + message param (1) = 3
+                    Assert.Contains("parameter count: 3", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_ScopesDisabled_ScopePropertiesNotIncluded()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = false };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("User {Name} logged in", "Alice");
+                    }
+
+                    var text = writer.ToString();
+                    // only 1 message param, scope excluded
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NoScopes_MessageTemplatePropertiesPreserved()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    logger.LogInformation("Order {OrderId} placed for {Customer}", 42, "Bob");
+
+                    var text = writer.ToString();
+                    Assert.Contains("parameter count: 2", text);
+                    Assert.Contains("Order {OrderId} placed for {Customer}", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_ScopeWithNullValue_DoesNotCrash()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    var scopeProps = new Dictionary<string, object> { { "NullProp", null } };
+                    using (logger.BeginScope(scopeProps))
+                    {
+                        logger.LogInformation("Null scope value test");
+                    }
+
+                    var text = writer.ToString();
+                    // 1 scope param (null) + 0 message params = 1
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        [Fact]
+        public void JsonLogging_NonStructuredScope_DoesNotCrash()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                    var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                    var logger = loggerFactory.CreateLogger("JsonScopeTest");
+
+                    using (logger.BeginScope("plain string scope"))
+                    {
+                        logger.LogInformation("Message {Param}", "value");
+                    }
+
+                    var text = writer.ToString();
+                    // non-structured scope ignored; only 1 message param
+                    Assert.Contains("parameter count: 1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
+        /// <summary>
+        /// Hooks the actual Lambda RuntimeSupport JSON log formatter (Amazon.Lambda.RuntimeSupport.Helpers.Logging.JsonLogMessageFormatter)
+        /// up to Amazon.Lambda.Core.LambdaLogger, the same way RuntimeSupport does at runtime, so tests can assert on real, parsed JSON
+        /// output rather than a fake sink. Returns the list that will be populated with the raw JSON produced for each log call.
+        /// </summary>
+        private static List<string> ConnectJsonFormatterToLogger()
+        {
+            var jsonMessages = new List<string>();
+            var formatter = new JsonLogMessageFormatter();
+
+            void Capture(string level, Exception exception, string message, object[] args)
+            {
+                var state = new MessageState
+                {
+                    TimeStamp = DateTime.UtcNow,
+                    Level = Enum.TryParse<LogLevelLoggerWriter.LogLevel>(level, true, out var parsedLevel)
+                        ? parsedLevel
+                        : (LogLevelLoggerWriter.LogLevel?)null,
+                    MessageTemplate = message,
+                    MessageArguments = args ?? Array.Empty<object>(),
+                    Exception = exception,
+                };
+
+                jsonMessages.Add(formatter.FormatMessage(state));
+            }
+
+            Action<string, Exception, string, object[]> loggingWithExceptionLevelAction =
+                (level, exception, message, args) => Capture(level, exception, message, args);
+
+            var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            var loggingWithExceptionLevelActionField = lambdaLoggerType
+                .GetTypeInfo()
+                .GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(loggingWithExceptionLevelActionField);
+
+            loggingWithExceptionLevelActionField.SetValue(null, loggingWithExceptionLevelAction);
+
+            return jsonMessages;
+        }
+
+        /// <summary>
+        /// Runs <paramref name="testBody"/> with AWS_LAMBDA_LOG_FORMAT=JSON and the real RuntimeSupport JSON formatter
+        /// connected to Amazon.Lambda.Core.LambdaLogger, restoring both the environment variable and the original
+        /// static logging delegate afterwards so this test does not leak state into other tests.
+        /// </summary>
+        private static void RunWithJsonFormatterCapture(Action<List<string>> testBody)
+        {
+            var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            var loggingWithExceptionLevelActionField = lambdaLoggerType
+                .GetTypeInfo()
+                .GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(loggingWithExceptionLevelActionField);
+            var originalAction = loggingWithExceptionLevelActionField.GetValue(null);
+
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                var jsonMessages = ConnectJsonFormatterToLogger();
+                testBody(jsonMessages);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+                loggingWithExceptionLevelActionField.SetValue(null, originalAction);
+            }
+        }
+
+        [Fact]
+        public void EndToEndJson_MessageProperties_WrittenWithCorrectNamesAndValues()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions());
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                logger.LogInformation("User {Name} bought {Count} items for {Price}", "Alice", 3, 19.99);
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("Alice", json.GetProperty("Name").GetString());
+                Assert.Equal(3, json.GetProperty("Count").GetInt32());
+                Assert.Equal(19.99, json.GetProperty("Price").GetDouble());
+                Assert.Equal("Information", json.GetProperty("level").GetString());
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_ScopeProperties_AddedAsJsonPropertiesWithCorrectTypes()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object>
+                {
+                    { "RequestId", "abc-123" },
+                    { "RetryCount", 2 },
+                };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("User {Name} logged in", "Bob");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("Bob", json.GetProperty("Name").GetString());
+                Assert.Equal("abc-123", json.GetProperty("RequestId").GetString());
+                Assert.Equal(2, json.GetProperty("RetryCount").GetInt32());
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_NestedScopesDuplicateKey_InnerValueWins()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var outerScope = new Dictionary<string, object> { { "UserId", "outer-user" } };
+                var innerScope = new Dictionary<string, object> { { "UserId", "inner-user" } };
+                using (logger.BeginScope(outerScope))
+                using (logger.BeginScope(innerScope))
+                {
+                    logger.LogInformation("Processing");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("inner-user", json.GetProperty("UserId").GetString());
+                // Ensure the property was written exactly once by round-tripping through JsonDocument (which would
+                // otherwise expose duplicate properties on enumeration).
+                Assert.Equal(1, json.EnumerateObject().Count(p => p.Name == "UserId"));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_DuplicateKeysWithinSingleScope_LastValueWins()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeWithDuplicates = new List<KeyValuePair<string, object>>
+                {
+                    new KeyValuePair<string, object>("Key", "first"),
+                    new KeyValuePair<string, object>("Key", "second"),
+                };
+                using (logger.BeginScope(scopeWithDuplicates))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("second", json.GetProperty("Key").GetString());
+                Assert.Equal(1, json.EnumerateObject().Count(p => p.Name == "Key"));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_ScopeKeyCollidesWithMessageProperty_MessagePropertyPreserved()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "Name", "FromScope" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("User {Name} logged in", "FromMessage");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("FromMessage", json.GetProperty("Name").GetString());
+                Assert.Equal(1, json.EnumerateObject().Count(p => p.Name == "Name"));
+            });
+        }
+
+        [Theory]
+        [InlineData("Invalid:Key")]
+        [InlineData("Invalid{Key")]
+        [InlineData("Invalid}Key")]
+        [InlineData("Invalid Key")]
+        public void EndToEndJson_InvalidScopeKey_SkippedAndSubsequentValidKeyStillBinds(string invalidKey)
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new List<KeyValuePair<string, object>>
+                {
+                    new KeyValuePair<string, object>(invalidKey, "should-not-appear"),
+                    new KeyValuePair<string, object>("ValidKey", "valid-value"),
+                };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var jsonString = Assert.Single(jsonMessages);
+                var json = JsonDocument.Parse(jsonString).RootElement;
+                Assert.Equal("valid-value", json.GetProperty("ValidKey").GetString());
+                Assert.DoesNotContain("should-not-appear", jsonString);
+            });
+        }
+
+        [Theory]
+        [InlineData("timestamp")]
+        [InlineData("level")]
+        [InlineData("message")]
+        public void EndToEndJson_ScopeKeyCollidesWithReservedField_ReservedFieldNotOverwritten(string reservedKey)
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { reservedKey, "hijacked-value" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var jsonString = Assert.Single(jsonMessages);
+                var json = JsonDocument.Parse(jsonString).RootElement;
+                // The reserved value (a real timestamp/level/message string) must never be replaced by the
+                // scope's "hijacked-value", and the reserved field must appear exactly once.
+                Assert.DoesNotContain("hijacked-value", jsonString);
+                Assert.NotEqual("hijacked-value", json.GetProperty(reservedKey).GetString());
+                Assert.Equal(1, json.EnumerateObject().Count(p => p.Name == reservedKey));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_ScopeKeyCollidesWithConditionalReservedField_NotAddedAsMessageProperty()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                // "requestId", "tenantId" and "traceId" are only written by the formatter when the corresponding
+                // MessageState value is populated. Since MessageState.AwsRequestId is null in this test, the
+                // "requestId" JSON property is not emitted at all - it must not be added as a message property either.
+                var scopeProps = new Dictionary<string, object> { { "requestId", "hijacked-value" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var jsonString = Assert.Single(jsonMessages);
+                var json = JsonDocument.Parse(jsonString).RootElement;
+                Assert.DoesNotContain("hijacked-value", jsonString);
+                Assert.False(json.TryGetProperty("requestId", out _));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_ScopesDisabled_ScopePropertiesAbsentFromJson()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = false });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("User {Name} logged in", "Carol");
+                }
+
+                var jsonString = Assert.Single(jsonMessages);
+                var json = JsonDocument.Parse(jsonString).RootElement;
+                Assert.Equal("Carol", json.GetProperty("Name").GetString());
+                Assert.False(json.TryGetProperty("RequestId", out _));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_ScopeWithNullValue_WritesJsonNull()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "NullProp", null } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var jsonString = Assert.Single(jsonMessages);
+                var json = JsonDocument.Parse(jsonString).RootElement;
+                // The RuntimeSupport JSON formatter omits null-valued message properties entirely rather than
+                // writing a JSON null (see JsonLogMessageFormatter.WriteMessageAttributes).
+                Assert.False(json.TryGetProperty("NullProp", out _));
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_NoScopeProvider_NonJsonBehaviorUnaffected()
+        {
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                var loggerOptions = new LambdaLoggerOptions { IncludeScopes = true };
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(loggerOptions);
+                var logger = loggerFactory.CreateLogger("Default");
+
+                using (logger.BeginScope("First {0}", "scope123"))
+                {
+                    logger.LogInformation("Hello");
+                }
+
+                var text = writer.ToString();
+                Assert.Contains("[Information] First scope123 => Default: Hello ", text);
             }
         }
 

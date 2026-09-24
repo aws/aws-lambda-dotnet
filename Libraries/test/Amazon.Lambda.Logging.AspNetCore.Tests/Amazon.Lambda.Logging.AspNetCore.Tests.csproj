@@ -31,6 +31,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Logging.AspNetCore\Amazon.Lambda.Logging.AspNetCore.csproj" />
+    <!-- Referenced only by tests to drive log messages through the actual Lambda RuntimeSupport JSON log
+         formatter and assert on the resulting JSON. Production code in Amazon.Lambda.Logging.AspNetCore does
+         not, and must not, depend on Amazon.Lambda.RuntimeSupport. -->
+    <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
