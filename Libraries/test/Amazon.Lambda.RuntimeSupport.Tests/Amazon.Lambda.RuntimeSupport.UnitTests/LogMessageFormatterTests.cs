@@ -12,6 +12,7 @@ using static Amazon.Lambda.RuntimeSupport.UnitTests.LogMessageFormatterTests;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    [Collection("StructuredLogging")]
     public class LogMessageFormatterTests
     {
         [Fact]

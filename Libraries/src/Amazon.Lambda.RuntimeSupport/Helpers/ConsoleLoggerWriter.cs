@@ -173,10 +173,27 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             Initialize(stdOutWriter, stdErrorWriter);
         }
 
+        /// <summary>
+        /// Test-only constructor that wraps the provided writers using an injected environment. This lets tests
+        /// exercise the two-writer setup (and the shared formatter) without mutating process-wide environment
+        /// variables or replacing Console.Out/Console.Error, both of which leak across parallel tests.
+        /// </summary>
+        internal LogLevelLoggerWriter(IEnvironmentVariables environmentVariables, TextWriter stdOutWriter, TextWriter stdErrorWriter)
+        {
+            _environmentVariables = environmentVariables;
+            Initialize(stdOutWriter, stdErrorWriter);
+        }
+
         private void Initialize(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
             _wrappedStdOutWriter = new WrapperTextWriter(_environmentVariables, stdOutWriter, LogLevel.Information.ToString());
-            _wrappedStdErrorWriter = new WrapperTextWriter(_environmentVariables, stdErrorWriter, LogLevel.Error.ToString());
+            // Share the stdout writer's formatter with the stderr writer. Both writers resolve the same log
+            // format from the same environment variables, so a single formatter is correct for both. Sharing is
+            // required for structured logging customization: JsonLogMessageFormatter registers the customer's
+            // ConfigureStructuredLogging callback through a single static setter on Amazon.Lambda.Core.LambdaLogger,
+            // so if each writer had its own formatter the second registration would overwrite the first and the
+            // customer's JsonSerializerOptions would not reach the formatter used for stdout. See issue #2350.
+            _wrappedStdErrorWriter = new WrapperTextWriter(_environmentVariables, stdErrorWriter, LogLevel.Error.ToString(), _wrappedStdOutWriter.LogMessageFormatter);
         }
 
         /// <summary>
@@ -314,7 +331,12 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// <param name="environmentVariables"></param>
             /// <param name="innerWriter"></param>
             /// <param name="defaultLogLevel"></param>
-            public WrapperTextWriter(IEnvironmentVariables environmentVariables, TextWriter innerWriter, string defaultLogLevel)
+            /// <param name="sharedFormatter">
+            /// When provided, this formatter is used instead of constructing a new one. This lets the stdout and
+            /// stderr writers share a single formatter instance so structured logging configuration applies to
+            /// both (see issue #2350).
+            /// </param>
+            public WrapperTextWriter(IEnvironmentVariables environmentVariables, TextWriter innerWriter, string defaultLogLevel, ILogMessageFormatter sharedFormatter = null)
             {
                 _environmentVariables = environmentVariables;
                 _innerWriter = innerWriter;
@@ -356,7 +378,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     }
                 }
 
-                if(_logFormatType == LogFormatType.Json)
+                if (sharedFormatter != null)
+                {
+                    // Reuse the formatter created for the sibling writer. The stdout and stderr WrapperTextWriter
+                    // instances must share ONE formatter so that a customer's LambdaLogger.ConfigureStructuredLogging
+                    // callback (which JsonLogMessageFormatter registers via a single static setter on
+                    // Amazon.Lambda.Core.LambdaLogger) applies to the same formatter instance that actually formats
+                    // the log records. If each writer had its own formatter, the second one constructed would
+                    // overwrite the first's callback registration, and the customer's custom JsonSerializerOptions
+                    // would never reach the formatter used for stdout logging. See
+                    // https://github.com/aws/aws-lambda-dotnet/issues/2350.
+                    _logMessageFormatter = sharedFormatter;
+                }
+                else if(_logFormatType == LogFormatType.Json)
                 {
                     _logMessageFormatter = new JsonLogMessageFormatter();
                 }
@@ -365,6 +399,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     _logMessageFormatter = new DefaultLogMessageFormatter(_logFormatType != LogFormatType.Unformatted);
                 }
             }
+
+            /// <summary>
+            /// The log message formatter this writer uses. Exposed so the sibling writer (stderr) can share the
+            /// same formatter instance created by the first writer (stdout); see the sharedFormatter constructor
+            /// parameter and issue #2350.
+            /// </summary>
+            internal ILogMessageFormatter LogMessageFormatter => _logMessageFormatter;
 
             private string GetEnvironmentVariable(string envName, string fallbackEnvName)
             {
