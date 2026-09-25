@@ -1,3 +1,8 @@
+## Release 2026-09-25
+
+### Amazon.Lambda.RuntimeSupport (2.2.3)
+* Fix LambdaLogger.ConfigureStructuredLogging custom JsonSerializerOptions being ignored when JSON log format is enabled. The stdout and stderr log writers each created their own JsonLogMessageFormatter, and the second registration overwrote the first's structured logging callback, so the customer's options never reached the formatter used for stdout. Both writers now share a single formatter instance.
+
 ## Release 2026-09-23
 
 ### Amazon.Lambda.DurableExecution (2.1.0)
