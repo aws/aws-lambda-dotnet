@@ -14,6 +14,12 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    // These tests construct real LogLevelLoggerWriter instances (via TestMultiConcurrencyRuntimeApiClient) which, under
+    // JSON log format, build a JsonLogMessageFormatter that registers itself as the process-wide LambdaLogger
+    // structured-logging callback target. That is the same static state the StructuredLogging collection guards, so this
+    // class must run serially with those tests to avoid overwriting each other's callback registration. See
+    // https://github.com/aws/aws-lambda-dotnet/issues/2350.
+    [Collection("StructuredLogging")]
     public class LambdaBootstrapMultiConcurrencyTests
     {
         JsonSerializer _serializer = new JsonSerializer();

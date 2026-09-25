@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix LambdaLogger.ConfigureStructuredLogging custom JsonSerializerOptions being ignored when JSON log format is enabled. The stdout and stderr log writers each created their own JsonLogMessageFormatter, and the second registration overwrote the first's structured logging callback, so the customer's options never reached the formatter used for stdout. Both writers now share a single formatter instance."
+      ]
+    }
+  ]
+}
