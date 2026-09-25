@@ -41,7 +41,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 => new Instant(reader.GetDateTime());
 
             public override void Write(Utf8JsonWriter writer, Instant value, JsonSerializerOptions options)
-                => writer.WriteStringValue(value.ToUtc().ToString("yyyy-MM-ddTHH:mm:ssZ"));
+                => writer.WriteStringValue(value.ToUtc().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture));
         }
 
         [Fact]
