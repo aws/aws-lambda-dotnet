@@ -11,6 +11,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.Sub1
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.Sub1.Functions"/>.
+    /// </summary>
     public class Functions_ToUpper_Generated
     {
         private readonly ServiceProvider serviceProvider;

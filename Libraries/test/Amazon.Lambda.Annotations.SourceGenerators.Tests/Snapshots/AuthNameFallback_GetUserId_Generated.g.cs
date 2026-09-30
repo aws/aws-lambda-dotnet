@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.AuthNameFallback"/>.
+    /// </summary>
     public class AuthNameFallback_GetUserId_Generated
     {
         private readonly AuthNameFallback authNameFallback;

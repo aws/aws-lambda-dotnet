@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.ComplexCalculator"/>.
+    /// </summary>
     public class ComplexCalculator_Add_Generated
     {
         private readonly ComplexCalculator complexCalculator;

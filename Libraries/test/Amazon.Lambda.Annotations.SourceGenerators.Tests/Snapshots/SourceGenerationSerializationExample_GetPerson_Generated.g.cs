@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestExecutableServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestExecutableServerlessApp.SourceGenerationSerializationExample"/>.
+    /// </summary>
     public class SourceGenerationSerializationExample_GetPerson_Generated
     {
         private readonly SourceGenerationSerializationExample sourceGenerationSerializationExample;

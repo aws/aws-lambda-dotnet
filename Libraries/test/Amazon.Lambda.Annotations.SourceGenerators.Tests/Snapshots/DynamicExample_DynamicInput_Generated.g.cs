@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.DynamicExample"/>.
+    /// </summary>
     public class DynamicExample_DynamicInput_Generated
     {
         private readonly DynamicExample dynamicExample;

@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.TaskExample"/>.
+    /// </summary>
     public class TaskExample_TaskReturn_Generated
     {
         private readonly TaskExample taskExample;

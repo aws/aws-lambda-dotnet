@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestCustomAuthorizerApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestCustomAuthorizerApp.AuthorizerFunction"/>.
+    /// </summary>
     public class AuthorizerFunction_SimpleRestApiAuthorize_Generated
     {
         private readonly AuthorizerFunction authorizerFunction;

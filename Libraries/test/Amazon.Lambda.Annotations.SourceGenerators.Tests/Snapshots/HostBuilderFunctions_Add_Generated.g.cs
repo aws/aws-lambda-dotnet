@@ -12,6 +12,9 @@ using Amazon.Lambda.Core;
 
 namespace TestHostBuilderApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestHostBuilderApp.HostBuilderFunctions"/>.
+    /// </summary>
     public class HostBuilderFunctions_Add_Generated
     {
         private readonly ServiceProvider serviceProvider;
