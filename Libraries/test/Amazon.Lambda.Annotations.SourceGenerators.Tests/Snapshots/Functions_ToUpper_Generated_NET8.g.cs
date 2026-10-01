@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.NET8
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.NET8.Functions"/>.
+    /// </summary>
     public class Functions_ToUpper_Generated
     {
         private readonly Functions functions;

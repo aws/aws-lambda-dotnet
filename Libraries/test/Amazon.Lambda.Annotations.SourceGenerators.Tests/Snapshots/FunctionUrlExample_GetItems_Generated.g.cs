@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.FunctionUrlExample"/>.
+    /// </summary>
     public class FunctionUrlExample_GetItems_Generated
     {
         private readonly FunctionUrlExample functionUrlExample;

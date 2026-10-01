@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.VoidExample"/>.
+    /// </summary>
     public class VoidExample_VoidReturn_Generated
     {
         private readonly VoidExample voidExample;

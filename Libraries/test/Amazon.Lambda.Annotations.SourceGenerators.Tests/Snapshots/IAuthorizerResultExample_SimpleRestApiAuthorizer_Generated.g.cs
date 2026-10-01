@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.IAuthorizerResultExample"/>.
+    /// </summary>
     public class IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated
     {
         private readonly IAuthorizerResultExample iAuthorizerResultExample;

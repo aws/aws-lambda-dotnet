@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestCustomAuthorizerApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestCustomAuthorizerApp.AuthorizerFunction"/>.
+    /// </summary>
     public class AuthorizerFunction_HttpApiAuthorizeV1_Generated
     {
         private readonly AuthorizerFunction authorizerFunction;

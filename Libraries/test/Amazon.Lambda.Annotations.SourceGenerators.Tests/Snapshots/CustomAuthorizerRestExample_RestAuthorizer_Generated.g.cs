@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.CustomAuthorizerRestExample"/>.
+    /// </summary>
     public class CustomAuthorizerRestExample_RestAuthorizer_Generated
     {
         private readonly CustomAuthorizerRestExample customAuthorizerRestExample;
