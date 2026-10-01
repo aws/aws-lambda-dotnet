@@ -1,3 +1,8 @@
+## Release 2026-10-01
+
+### Amazon.Lambda.Annotations (2.4.1)
+* Add a class-level XML documentation comment to the generated Lambda function handler class so projects that enable GenerateDocumentationFile no longer get a CS1591 warning for the generated class.
+
 ## Release 2026-09-25
 
 ### Amazon.Lambda.RuntimeSupport (2.2.3)
