@@ -509,6 +509,30 @@ public class DurableFunctionTests
     }
 
     [Fact]
+    public async Task WrapAsync_CheckpointResponseWithoutToken_ReturnsPendingAndStopsCheckpointing()
+    {
+        var input = MakeCheckpointInput();
+        var mockClient = new MockLambdaClient { OmitTokenOnCall = 1 };
+        var bodyRan = false;
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (_, ctx) =>
+            {
+                // AtMostOncePerRetry sync-flushes START, so call 1 is deterministic.
+                await ctx.StepAsync(async (_, _) => { bodyRan = true; await Task.CompletedTask; return "ok"; },
+                    name: "s1", config: new StepConfig { Semantics = StepSemantics.AtMostOncePerRetry });
+                await ctx.StepAsync(async (_, _) => { await Task.CompletedTask; return "ok"; }, name: "s2");
+                return new OrderResult { Status = "done" };
+            },
+            input, CreateLambdaContext(), mockClient);
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Null(output.Error);
+        Assert.Single(mockClient.CheckpointCalls);
+        Assert.False(bodyRan);
+    }
+
+    [Fact]
     public async Task WrapAsync_HydrationThrows_AlwaysPropagatesToHost()
     {
         // State hydration is OUTSIDE the IsTerminalCheckpointError try/catch — every

@@ -120,7 +120,8 @@ public static class DurableFunction
                 // CALLBACK op (and may emit terminal-state callbacks/timers); merge
                 // those back into ExecutionState so the next ExecuteAsync sees them.
                 onNewOperations: state.AddOperations,
-                cancellationToken: ct));
+                cancellationToken: ct),
+            termination: terminationManager);
 
         var context = new DurableContext(
             state, terminationManager, workflowCancellation, idGenerator,
@@ -148,6 +149,9 @@ public static class DurableFunction
             }
 
             await batcher.DrainAsync();
+
+            if (batcher.IsCheckpointTokenMissing)
+                result = new HandlerResult<TOutput> { Status = InvocationStatus.Pending };
         }
         catch (DurableExecutionException ex) when (ex.InnerException is AmazonServiceException sdkEx && IsTerminalCheckpointError(sdkEx))
         {

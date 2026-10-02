@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Return Pending when a checkpoint response has no checkpoint token, instead of failing the execution."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.DurableExecution.Testing",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add TestRunnerOptions.OmitCheckpointToken to simulate a checkpoint response without a token."
+      ]
+    }
+  ]
+}

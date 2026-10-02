@@ -62,4 +62,10 @@ public sealed record TestRunnerOptions
     /// assert on ARN values. Default: a synthetic test ARN.
     /// </summary>
     public string DurableExecutionArn { get; init; } = "arn:aws:lambda:us-east-1:123456789012:execution:test-fn:test-execution";
+
+    /// <summary>
+    /// Given the 1-based checkpoint call number, return true to accept that checkpoint but
+    /// omit its token from the response, which suspends the invocation. Default: null.
+    /// </summary>
+    public Func<int, bool>? OmitCheckpointToken { get; init; }
 }
