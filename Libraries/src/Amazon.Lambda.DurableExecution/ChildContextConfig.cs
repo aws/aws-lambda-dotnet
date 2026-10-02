@@ -18,7 +18,8 @@ public sealed class ChildContextConfig
 {
     /// <summary>
     /// Operation sub-type label for observability (e.g. <c>"WaitForCallback"</c>).
-    /// Surfaces on the wire <c>OperationUpdate.SubType</c> field.
+    /// Surfaces on the wire <c>OperationUpdate.SubType</c> field. Null or empty sends
+    /// no subtype. Must be 1 to 32 characters from <c>[a-zA-Z0-9-_]</c>.
     /// </summary>
     public string? SubType { get; set; }
 

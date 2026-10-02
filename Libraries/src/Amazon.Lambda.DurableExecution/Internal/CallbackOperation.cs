@@ -61,6 +61,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
 {
     private readonly CallbackConfig? _config;
     private readonly ILambdaSerializer _serializer;
+    private readonly string? _subType;
 
     private string? _callbackId;
 
@@ -78,6 +79,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
     {
         _config = config;
         _serializer = serializer;
+        _subType = SubTypeValidator.Resolve(config?.SubType, OperationSubTypes.Callback, nameof(CallbackConfig.SubType));
     }
 
     protected override string OperationType => OperationTypes.Callback;
@@ -106,7 +108,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
             ParentId = ParentId,
             Type = OperationTypes.Callback,
             Action = OperationAction.START,
-            SubType = OperationSubTypes.Callback,
+            SubType = _subType,
             Name = Name,
             CallbackOptions = BuildCallbackOptions()
         }, cancellationToken);

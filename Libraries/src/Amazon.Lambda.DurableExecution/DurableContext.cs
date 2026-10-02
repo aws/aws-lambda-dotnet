@@ -359,6 +359,7 @@ internal sealed class DurableContext : IDurableContext
         {
             Timeout = config.Timeout,
             HeartbeatTimeout = config.HeartbeatTimeout,
+            SubType = config.SubType,
         };
 
         var stepConfig = config?.RetryStrategy == null
