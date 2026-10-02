@@ -7,8 +7,8 @@ namespace Amazon.Lambda.DurableExecution;
 /// Configuration for the composite
 /// <see cref="IDurableContext.WaitForCallbackAsync{T}(System.Func{string, IWaitForCallbackContext, System.Threading.CancellationToken, System.Threading.Tasks.Task}, string?, WaitForCallbackConfig?, System.Threading.CancellationToken)"/>
 /// operation. Inherits the callback's <see cref="CallbackConfig.Timeout"/> and
-/// <see cref="CallbackConfig.HeartbeatTimeout"/>; adds a
-/// <see cref="RetryStrategy"/> for the submitter step.
+/// <see cref="CallbackConfig.HeartbeatTimeout"/>; <see cref="CallbackConfig.SubType"/>
+/// applies to the inner callback operation. Adds a <see cref="RetryStrategy"/> for the submitter step.
 /// </summary>
 public class WaitForCallbackConfig : CallbackConfig
 {

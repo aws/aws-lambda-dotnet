@@ -35,4 +35,11 @@ public sealed class StepConfig
     /// a way that cannot read the stored payload will break replay.
     /// </remarks>
     public ILambdaSerializer? Serializer { get; set; }
+
+    /// <summary>
+    /// Optional operation subtype label for observability (e.g. <c>"ChargeCard"</c>),
+    /// recorded on every checkpoint for this step. Null or empty uses the default
+    /// (<c>"Step"</c>). Must be 1 to 32 characters from <c>[a-zA-Z0-9-_]</c>.
+    /// </summary>
+    public string? SubType { get; set; }
 }

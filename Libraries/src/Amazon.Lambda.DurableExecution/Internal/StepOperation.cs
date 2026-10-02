@@ -43,6 +43,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
     private readonly ILambdaSerializer _serializer;
     private readonly ILogger _logger;
     private readonly WorkflowCancellation _workflowCancellation;
+    private readonly string? _subType;
 
     public StepOperation(
         string operationId,
@@ -64,6 +65,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
         _serializer = serializer;
         _logger = logger;
         _workflowCancellation = workflowCancellation;
+        _subType = SubTypeValidator.Resolve(config?.SubType, OperationSubTypes.Step, nameof(StepConfig.SubType));
     }
 
     protected override string OperationType => OperationTypes.Step;
@@ -192,7 +194,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 ParentId = ParentId,
                 Type = OperationTypes.Step,
                 Action = OperationAction.START,
-                SubType = OperationSubTypes.Step,
+                SubType = _subType,
                 Name = Name
             };
 
@@ -307,7 +309,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 ParentId = ParentId,
                 Type = OperationTypes.Step,
                 Action = OperationAction.SUCCEED,
-                SubType = OperationSubTypes.Step,
+                SubType = _subType,
                 Name = Name,
                 Payload = serialized
             }, cancellationToken);
@@ -357,7 +359,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                     ParentId = ParentId,
                     Type = OperationTypes.Step,
                     Action = OperationAction.RETRY,
-                    SubType = OperationSubTypes.Step,
+                    SubType = _subType,
                     Name = Name,
                     Error = ToSdkError(ex),
                     StepOptions = new SdkStepOptions { NextAttemptDelaySeconds = delaySeconds }
@@ -387,7 +389,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
             ParentId = ParentId,
             Type = OperationTypes.Step,
             Action = OperationAction.FAIL,
-            SubType = OperationSubTypes.Step,
+            SubType = _subType,
             Name = Name,
             Error = ToSdkError(ex)
         }, cancellationToken);

@@ -20,11 +20,13 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// Callers using fire-and-forget should observe the discarded Task's exception
 /// (see <c>StepOperation.FireAndForget</c>) so it doesn't trip the runtime's
 /// <c>UnobservedTaskException</c> event.
+/// A response with no checkpoint token stops all further flushes and suspends the invocation.
 /// </remarks>
 internal sealed class CheckpointBatcher : IAsyncDisposable
 {
     private readonly Func<string?, IReadOnlyList<SdkOperationUpdate>, CancellationToken, Task<string?>> _flushAsync;
     private readonly CheckpointBatcherConfig _config;
+    private readonly TerminationManager? _termination;
     private readonly Channel<BatchItem> _channel;
     private readonly Task _worker;
     private readonly CancellationTokenSource _shutdownCts = new();
@@ -32,6 +34,7 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     private string? _checkpointToken;
     private Exception? _terminalError;
     private int _disposed;
+    private int _tokenMissing;
 
     // Per-update wire-footprint estimate constants. Deliberate over-estimates:
     // flushing slightly early is safe, flushing late risks a request-too-large.
@@ -66,11 +69,13 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     public CheckpointBatcher(
         string? initialCheckpointToken,
         Func<string?, IReadOnlyList<SdkOperationUpdate>, CancellationToken, Task<string?>> flushAsync,
-        CheckpointBatcherConfig? config = null)
+        CheckpointBatcherConfig? config = null,
+        TerminationManager? termination = null)
     {
         _checkpointToken = initialCheckpointToken;
         _flushAsync = flushAsync;
         _config = config ?? new CheckpointBatcherConfig();
+        _termination = termination;
         _channel = Channel.CreateUnbounded<BatchItem>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -84,6 +89,9 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     /// every successful batch flush.
     /// </summary>
     public string? CheckpointToken => Volatile.Read(ref _checkpointToken);
+
+    /// <summary>True once a checkpoint response arrived without a token.</summary>
+    public bool IsCheckpointTokenMissing => Volatile.Read(ref _tokenMissing) == 1;
 
     /// <summary>
     /// Queues <paramref name="update"/> for flushing. The returned Task completes
@@ -104,9 +112,10 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
             // Writer is completed (terminal error or disposed) — surface the cause.
             terminal = Volatile.Read(ref _terminalError);
             if (terminal != null) ExceptionDispatchInfo.Throw(terminal);
-            throw new ObjectDisposedException(nameof(CheckpointBatcher));
+            if (!IsCheckpointTokenMissing) throw new ObjectDisposedException(nameof(CheckpointBatcher));
         }
 
+        // After a missing token this never completes (the invocation is suspended).
         await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -220,12 +229,16 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         }
         finally
         {
-            // Anything left in the batch/channel after the worker exits — fail it.
-            var failure = Volatile.Read(ref _terminalError) ?? new ObjectDisposedException(nameof(CheckpointBatcher));
-            foreach (var leftover in batch.Items)
-                leftover.Completion.TrySetException(failure);
-            while (_channel.Reader.TryRead(out var item))
-                item.Completion.TrySetException(failure);
+            // Anything left in the batch/channel after the worker exits — fail it,
+            // unless the token went missing (those awaiters stay suspended).
+            if (!IsCheckpointTokenMissing)
+            {
+                var failure = Volatile.Read(ref _terminalError) ?? new ObjectDisposedException(nameof(CheckpointBatcher));
+                foreach (var leftover in batch.Items)
+                    leftover.Completion.TrySetException(failure);
+                while (_channel.Reader.TryRead(out var item))
+                    item.Completion.TrySetException(failure);
+            }
 
             _channel.Writer.TryComplete();
         }
@@ -233,6 +246,8 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
 
     private async Task FlushBatchAsync(IReadOnlyList<BatchItem> batch, CancellationToken cancellationToken)
     {
+        if (IsCheckpointTokenMissing) return;
+
         var updates = new SdkOperationUpdate[batch.Count];
         for (int i = 0; i < batch.Count; i++)
             updates[i] = batch[i].Update;
@@ -241,6 +256,16 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         {
             var newToken = await _flushAsync(_checkpointToken, updates, cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _checkpointToken, newToken);
+
+            if (string.IsNullOrEmpty(newToken))
+            {
+                // Leave awaiters suspended so user code stops here.
+                Volatile.Write(ref _tokenMissing, 1);
+                _channel.Writer.TryComplete();
+                _termination?.Terminate(TerminationReason.CheckpointTokenMissing);
+                return;
+            }
+
             foreach (var item in batch)
                 item.Completion.TrySetResult(true);
         }
