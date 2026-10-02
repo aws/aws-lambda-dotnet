@@ -115,4 +115,4 @@ using (logger.BeginScope(scopeProperties))
 }
 ```
 
-Nested structured scopes are supported. The scope properties are prepended to the parameter list (outermost scope first), followed by the message-template parameters. Non-structured scopes (e.g. plain strings) are silently ignored in JSON mode.
+Nested structured scopes are supported. The message-template parameters come first, followed by the scope properties (outermost scope first). Non-structured scopes (e.g. plain strings) are silently ignored in JSON mode.

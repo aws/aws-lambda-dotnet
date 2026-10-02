@@ -1237,6 +1237,91 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void EndToEndJson_ScopeKeyDiffersFromReservedFieldOnlyByCase_IsEmittedAndDoesNotCollide()
+        {
+            // The reserved-name guard is case-sensitive (StringComparer.Ordinal) because the RuntimeSupport
+            // JSON formatter writes its metadata fields in a fixed casing (e.g. lowercase "requestId"). A scope
+            // key that differs only by case (e.g. "RequestId" with a capital R) is therefore NOT reserved and
+            // must be emitted as its own distinct JSON property, with the formatter's own field left intact.
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "RequestId", "from-scope" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    logger.LogInformation("Message");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                // The capital-R scope property is emitted verbatim.
+                Assert.Equal("from-scope", json.GetProperty("RequestId").GetString());
+            });
+        }
+
+        /// <summary>
+        /// Pins LambdaILogger.ExtractTemplatePropertyNames to the behavior of the real Lambda RuntimeSupport
+        /// template parser (Amazon.Lambda.RuntimeSupport.Helpers.Logging.AbstractLogMessageFormatter.ParseProperties
+        /// + MessageProperty name extraction). The collision guard in LambdaILogger relies on predicting exactly
+        /// which property names the downstream RuntimeSupport parser will treat as message properties; if the two
+        /// parsers ever diverge, scope keys can silently collide with (or be needlessly dropped against) message
+        /// properties. Production code cannot take a dependency on RuntimeSupport, so this cross-check in the test
+        /// project (which already references RuntimeSupport) is what keeps the two in lockstep. If RuntimeSupport's
+        /// parser changes, this test fails instead of corrupting customer logs.
+        /// </summary>
+        [Theory]
+        [InlineData("User {Name} did {Action}")]
+        [InlineData("{{Name}}")]
+        [InlineData("{{{Name}}}")]
+        [InlineData("{{{{Name}}}}")]
+        [InlineData("Order {OrderId")]            // unterminated placeholder
+        [InlineData("Val {@Payload:j}")]
+        [InlineData("{0} and {1}")]               // positional
+        [InlineData("no properties here")]
+        [InlineData("{Name:0.00}")]
+        [InlineData("{{escaped}} {Real}")]
+        [InlineData("trailing {")]
+        [InlineData("}} {A}")]
+        [InlineData("{A}{B}")]
+        [InlineData("mix {{x}} {Y} {{z}}")]
+        [InlineData("{A} }} {B")]
+        [InlineData("")]
+        public void ExtractTemplatePropertyNames_MatchesRuntimeSupportParser(string template)
+        {
+            var ours = InvokeExtractTemplatePropertyNames(template);
+
+            var runtimeSupport = new JsonLogMessageFormatter()
+                .ParseProperties(template ?? string.Empty)
+                .Select(p => p.Name)
+                .ToHashSet(StringComparer.Ordinal);
+
+            Assert.True(
+                ours.SetEquals(runtimeSupport),
+                $"Parser divergence for template \"{template}\": " +
+                $"LambdaILogger=[{string.Join(",", ours.OrderBy(x => x))}] " +
+                $"RuntimeSupport=[{string.Join(",", runtimeSupport.OrderBy(x => x))}]");
+        }
+
+        /// <summary>
+        /// Invokes the private static LambdaILogger.ExtractTemplatePropertyNames via reflection so the test can
+        /// compare it against the RuntimeSupport parser without widening the production API surface.
+        /// </summary>
+        private static HashSet<string> InvokeExtractTemplatePropertyNames(string template)
+        {
+            var lambdaILoggerType = typeof(LambdaLoggerOptions).Assembly
+                .GetType("Microsoft.Extensions.Logging.LambdaILogger");
+            Assert.NotNull(lambdaILoggerType);
+
+            var method = lambdaILoggerType.GetMethod(
+                "ExtractTemplatePropertyNames",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            return (HashSet<string>)method.Invoke(null, new object[] { template });
+        }
+
         private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
