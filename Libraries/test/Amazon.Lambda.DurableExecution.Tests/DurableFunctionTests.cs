@@ -441,7 +441,7 @@ public class DurableFunctionTests
     // aws-durable-execution-sdk-python):
     //   4xx (except 429) → terminal (Failed envelope)
     //   429 / 5xx / no status → transient (escapes to host for Lambda retry)
-    //   Carve-out: InvalidParameterValueException "Invalid Checkpoint Token" → transient
+    //   Carve-out: InvalidParameterValueException "Invalid checkpoint token" → transient
     //
     // Driven through CheckpointDurableExecution: a workflow that succeeds a single Step
     // forces the batcher to flush, which is wrapped by the try/catch in WrapAsyncCore.
@@ -484,7 +484,8 @@ public class DurableFunctionTests
         new object[] { MakeServiceException("TooManyRequestsException", (HttpStatusCode)429, "throttled") },
         // No status (network / SDK-internal). HttpStatusCode default (0) → classifier treats < 400 as transient.
         new object[] { MakeServiceException("RequestTimeout", 0, "timeout") },
-        // Carve-out: stale checkpoint token is transient.
+        // Carve-out: stale checkpoint token is transient (any casing).
+        new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Invalid checkpoint token: stale") },
         new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Invalid Checkpoint Token: stale") },
     };
 
