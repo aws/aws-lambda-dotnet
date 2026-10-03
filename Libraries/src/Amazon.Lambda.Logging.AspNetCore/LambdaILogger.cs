@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Logging
                     // Scope entries that collide with these names, or with each other, must never be allowed to
                     // silently corrupt the message or reserved JSON metadata fields written by the RuntimeSupport
                     // JSON formatter (e.g. "timestamp", "level", "message", ...).
-                    var messagePropertyNames = ExtractTemplatePropertyNames(messageTemplate);
+                    var messagePropertyNames = ExtractTemplatePropertyNames(messageTemplate, out var templatePropertyCount);
 
                     // Preserves the order scope property names were first encountered, while allowing a later
                     // (i.e. more inner/nested) scope to overwrite the value of an earlier (outer) scope that used
@@ -135,6 +135,20 @@ namespace Microsoft.Extensions.Logging
 
                     if (orderedScopeKeys.Count > 0)
                     {
+                        // The JSON formatter binds arguments to placeholders by position, so line the state values up
+                        // with the template's placeholders before appending scope values. Extra values (never bound by
+                        // the formatter) are dropped. Missing values, e.g. literal braces in a message logged without
+                        // arguments, are padded with null, which the formatter renders as the original placeholder
+                        // text and omits from the JSON.
+                        if (parameters.Count > templatePropertyCount)
+                        {
+                            parameters.RemoveRange(templatePropertyCount, parameters.Count - templatePropertyCount);
+                        }
+                        while (parameters.Count < templatePropertyCount)
+                        {
+                            parameters.Add(null);
+                        }
+
                         var sb = new System.Text.StringBuilder(messageTemplate);
                         foreach (var key in orderedScopeKeys)
                         {
@@ -240,10 +254,12 @@ namespace Microsoft.Extensions.Logging
         /// override an explicit message property with the same name.
         /// </summary>
         /// <param name="messageTemplate">The message template to inspect.</param>
+        /// <param name="propertyCount">The number of placeholders in the template, counting repeats.</param>
         /// <returns>The set of property names already used by the message template.</returns>
-        private static HashSet<string> ExtractTemplatePropertyNames(string messageTemplate)
+        private static HashSet<string> ExtractTemplatePropertyNames(string messageTemplate, out int propertyCount)
         {
             var names = new HashSet<string>(StringComparer.Ordinal);
+            propertyCount = 0;
 
             if (string.IsNullOrEmpty(messageTemplate))
             {
@@ -286,6 +302,7 @@ namespace Microsoft.Extensions.Logging
                                 token = token.Substring(0, colonIdx);
                             }
                             names.Add(token.Trim());
+                            propertyCount++;
                         }
 
                         inParameter = false;

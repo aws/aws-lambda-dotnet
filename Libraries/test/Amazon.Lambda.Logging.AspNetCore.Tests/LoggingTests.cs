@@ -1261,6 +1261,72 @@ namespace Amazon.Lambda.Tests
             });
         }
 
+        [Fact]
+        public void EndToEndJson_StateWithoutOriginalFormat_ScopeValueBindsToScopeKey()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    // Custom state with no {OriginalFormat}: the rendered message has no placeholders, so the
+                    // state value must not be bound to the appended scope placeholder.
+                    var state = new Dictionary<string, object> { { "Unbound", 1 } };
+                    logger.Log(LogLevel.Information, 0, state, null, (s, e) => "hello");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal("abc-123", json.GetProperty("RequestId").GetString());
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_SourceGeneratedUnreferencedParameter_ScopeValueBindsToScopeKey()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    SourceGeneratedLogMessages.OrderPlaced(logger, 42, "unreferenced-value");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.Equal(42, json.GetProperty("OrderId").GetInt32());
+                Assert.Equal("abc-123", json.GetProperty("RequestId").GetString());
+            });
+        }
+
+        [Fact]
+        public void EndToEndJson_LiteralBracesWithoutArguments_MessagePreservedAndScopeValueBindsToScopeKey()
+        {
+            RunWithJsonFormatterCapture(jsonMessages =>
+            {
+                var loggerFactory = new TestLoggerFactory().AddLambdaLogger(new LambdaLoggerOptions { IncludeScopes = true, IncludeCategory = false });
+                var logger = loggerFactory.CreateLogger("EndToEndJson");
+
+                var scopeProps = new Dictionary<string, object> { { "RequestId", "abc-123" } };
+                using (logger.BeginScope(scopeProps))
+                {
+                    // An interpolated string with JSON in it has no arguments, so the braces look like a placeholder
+                    // with no value. The scope value must not be bound to it.
+                    var body = "{\"id\":5}";
+                    logger.LogInformation($"Body: {body}");
+                }
+
+                var json = JsonDocument.Parse(Assert.Single(jsonMessages)).RootElement;
+                Assert.StartsWith("Body: {\"id\":5}", json.GetProperty("message").GetString());
+                Assert.Equal("abc-123", json.GetProperty("RequestId").GetString());
+                Assert.False(json.TryGetProperty("\"id\"", out _));
+            });
+        }
+
         /// <summary>
         /// Pins LambdaILogger.ExtractTemplatePropertyNames to the behavior of the real Lambda RuntimeSupport
         /// template parser (Amazon.Lambda.RuntimeSupport.Helpers.Logging.AbstractLogMessageFormatter.ParseProperties
@@ -1285,17 +1351,22 @@ namespace Amazon.Lambda.Tests
         [InlineData("trailing {")]
         [InlineData("}} {A}")]
         [InlineData("{A}{B}")]
+        [InlineData("{X} then {Y} then {X}")]   // repeated placeholder
         [InlineData("mix {{x}} {Y} {{z}}")]
         [InlineData("{A} }} {B")]
         [InlineData("")]
         public void ExtractTemplatePropertyNames_MatchesRuntimeSupportParser(string template)
         {
-            var ours = InvokeExtractTemplatePropertyNames(template);
+            var ours = InvokeExtractTemplatePropertyNames(template, out var ourCount);
 
-            var runtimeSupport = new JsonLogMessageFormatter()
-                .ParseProperties(template ?? string.Empty)
+            var runtimeSupportProperties = new JsonLogMessageFormatter().ParseProperties(template ?? string.Empty);
+            var runtimeSupport = runtimeSupportProperties
                 .Select(p => p.Name)
                 .ToHashSet(StringComparer.Ordinal);
+
+            // The placeholder count decides how many state values are kept before scope values are appended,
+            // so it must match the number of properties RuntimeSupport will bind arguments to.
+            Assert.Equal(runtimeSupportProperties.Count, ourCount);
 
             Assert.True(
                 ours.SetEquals(runtimeSupport),
@@ -1308,7 +1379,7 @@ namespace Amazon.Lambda.Tests
         /// Invokes the private static LambdaILogger.ExtractTemplatePropertyNames via reflection so the test can
         /// compare it against the RuntimeSupport parser without widening the production API surface.
         /// </summary>
-        private static HashSet<string> InvokeExtractTemplatePropertyNames(string template)
+        private static HashSet<string> InvokeExtractTemplatePropertyNames(string template, out int propertyCount)
         {
             var lambdaILoggerType = typeof(LambdaLoggerOptions).Assembly
                 .GetType("Microsoft.Extensions.Logging.LambdaILogger");
@@ -1319,7 +1390,10 @@ namespace Amazon.Lambda.Tests
                 BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
 
-            return (HashSet<string>)method.Invoke(null, new object[] { template });
+            var args = new object[] { template, null };
+            var names = (HashSet<string>)method.Invoke(null, args);
+            propertyCount = (int)args[1];
+            return names;
         }
 
         private static string GetAppSettingsPath(string fileName)
