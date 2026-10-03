@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Added structured scope support to Lambda JSON logging with safe handling of invalid, colliding, and duplicate scope keys"
+      ]
+    }
+  ]
+}
