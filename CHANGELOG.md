@@ -1,3 +1,8 @@
+## Release 2026-10-05
+
+### Amazon.Lambda.Logging.AspNetCore (5.1.0)
+* Added structured scope support to Lambda JSON logging with safe handling of invalid, colliding, and duplicate scope keys
+
 ## Release 2026-10-01
 
 ### Amazon.Lambda.Annotations (2.4.1)
