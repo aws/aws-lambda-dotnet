@@ -46,8 +46,11 @@ public sealed class StepConfig
     public IRetryStrategy? RetryStrategy { get; set; }              // null = no retry
     public StepSemantics Semantics { get; set; } = StepSemantics.AtLeastOncePerRetry;
     public ILambdaSerializer? Serializer { get; set; }             // null = global serializer
+    public string? SubType { get; set; }                           // observability label; null = "Step"
 }
 ```
+
+`SubType` is an optional label recorded on every checkpoint for the step (e.g. `"ChargeCard"`), useful for filtering and grouping operations in execution history. When null or empty, the default `"Step"` is used. It must be 1 to 32 characters from `[a-zA-Z0-9-_]`; invalid values throw `ArgumentException` when the step runs.
 
 ### Retry strategies
 
