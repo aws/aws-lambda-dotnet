@@ -138,6 +138,25 @@ public class RunAsyncTests
     }
 
     [Fact]
+    public async Task RunAsync_OmitCheckpointToken_SuspendsAndResumesInNextInvocation()
+    {
+        await using var runner = new DurableTestRunner<string, string>(
+            handler: async (input, ctx) =>
+            {
+                var a = await ctx.StepAsync(async (_, _) => { await Task.CompletedTask; return "a"; }, name: "a");
+                var b = await ctx.StepAsync(async (_, _) => { await Task.CompletedTask; return "b"; }, name: "b");
+                return a + b;
+            },
+            options: new TestRunnerOptions { OmitCheckpointToken = n => n == 1 });
+
+        var result = await runner.RunAsync("x");
+
+        result.EnsureSucceeded();
+        Assert.Equal("ab", result.Result);
+        Assert.True(result.InvocationCount > 1);
+    }
+
+    [Fact]
     public async Task RunAsync_Timeout_ThrowsOperationCanceled()
     {
         await using var runner = new DurableTestRunner<string, string>(

@@ -176,6 +176,8 @@ public class CallbackConfig
 {
     public TimeSpan Timeout { get; set; }           // overall callback timeout, ≥ 1s or Zero (default = no timeout)
     public TimeSpan HeartbeatTimeout { get; set; }  // heartbeat-gap timeout, ≥ 1s or Zero (default = no timeout)
+    public ILambdaSerializer? Serializer { get; set; } // null = global serializer (deserialize only)
+    public string? SubType { get; set; }            // observability label; null = "Callback"
 }
 
 public class WaitForCallbackConfig : CallbackConfig
@@ -183,6 +185,10 @@ public class WaitForCallbackConfig : CallbackConfig
     public IRetryStrategy? RetryStrategy { get; set; } // applied to the submitter step only
 }
 ```
+
+`SubType` is an optional label recorded on the callback's checkpoint, useful for filtering and grouping operations in execution history. When null or empty, the default `"Callback"` is used. It must be 1 to 32 characters from `[a-zA-Z0-9-_]`; invalid values throw `ArgumentException` when the callback is created.
+
+For `WaitForCallbackAsync`, `SubType` is applied to the **inner callback operation**, not the wrapping child context (which always uses `"WaitForCallback"`) or the submitter step.
 
 ## Custom serializer
 

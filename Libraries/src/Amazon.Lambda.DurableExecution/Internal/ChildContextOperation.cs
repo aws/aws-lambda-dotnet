@@ -50,6 +50,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
     private readonly WorkflowCancellation _workflowCancellation;
     private readonly CancellationToken _cooperativeBailToken;
     private readonly bool _isVirtual;
+    private readonly string? _subType;
     // Set once on overflow-replay re-execution; never reset.
     private bool _suppressTerminalCheckpoint;
 
@@ -91,6 +92,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         _workflowCancellation = workflowCancellation;
         _cooperativeBailToken = cooperativeBailToken;
         _isVirtual = isVirtual;
+        _subType = SubTypeValidator.Resolve(config?.SubType, defaultSubType: null, nameof(ChildContextConfig.SubType));
     }
 
     protected override string OperationType => OperationTypes.Context;
@@ -113,7 +115,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                 ParentId = ParentId,
                 Type = OperationTypes.Context,
                 Action = OperationAction.START,
-                SubType = _config?.SubType,
+                SubType = _subType,
                 Name = Name
             }, cancellationToken);
         }
@@ -227,7 +229,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                     ParentId = ParentId,
                     Type = OperationTypes.Context,
                     Action = OperationAction.FAIL,
-                    SubType = _config?.SubType,
+                    SubType = _subType,
                     Name = Name,
                     Error = ToSdkError(ex)
                 }, cancellationToken);
@@ -235,7 +237,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
 
             throw MapFailureException(new ChildContextException(ex.Message, ex)
             {
-                SubType = _config?.SubType,
+                SubType = _subType,
                 ErrorType = ex.GetType().FullName,
                 OriginalStackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
             });
@@ -302,14 +304,14 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                         ParentId = ParentId,
                         Type = OperationTypes.Context,
                         Action = OperationAction.FAIL,
-                        SubType = _config?.SubType,
+                        SubType = _subType,
                         Name = Name,
                         Error = ToSdkError(ex)
                     }, cancellationToken);
 
                     throw MapFailureException(new ChildContextException(ex.Message, ex)
                     {
-                        SubType = _config?.SubType,
+                        SubType = _subType,
                         ErrorType = ex.GetType().FullName,
                         OriginalStackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
                     });
@@ -322,7 +324,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
                 ParentId = ParentId,
                 Type = OperationTypes.Context,
                 Action = OperationAction.SUCCEED,
-                SubType = _config?.SubType,
+                SubType = _subType,
                 Name = Name,
                 Payload = overflow ? string.Empty : serialized,
                 ContextOptions = overflow
@@ -353,7 +355,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         var err = failedOp.ContextDetails?.Error;
         return new ChildContextException(err?.ErrorMessage ?? "Child context failed")
         {
-            SubType = failedOp.SubType ?? _config?.SubType,
+            SubType = failedOp.SubType ?? _subType,
             ErrorType = err?.ErrorType,
             ErrorData = err?.ErrorData,
             OriginalStackTrace = err?.StackTrace

@@ -45,6 +45,8 @@ public sealed class ChildContextConfig
 }
 ```
 
+`SubType` is an optional label recorded on the child context's checkpoint. When null or empty, no subtype is sent. It must be 1 to 32 characters from `[a-zA-Z0-9-_]`; invalid values throw `ArgumentException` when the child context runs.
+
 `ErrorMapping` lets you translate exceptions thrown inside the child context into a domain-specific exception type before they propagate to the parent.
 
 ## Custom serializer

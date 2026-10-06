@@ -71,6 +71,13 @@ public class CallbackConfig
     /// </summary>
     public ILambdaSerializer? Serializer { get; set; }
 
+    /// <summary>
+    /// Optional operation subtype label for observability, recorded on the callback's
+    /// checkpoint. Null or empty uses the default (<c>"Callback"</c>). Must be 1 to 32
+    /// characters from <c>[a-zA-Z0-9-_]</c>.
+    /// </summary>
+    public string? SubType { get; set; }
+
     private static void ValidateTimeout(TimeSpan value, string paramName)
     {
         // Allow Zero (means "not set"); reject negative; reject sub-second
