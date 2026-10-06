@@ -68,5 +68,5 @@ internal class SnapStartEmptyLambdaContext : ILambdaContext, ICognitoIdentity, I
 
     private static readonly IReadOnlyDictionary<string, string> EmptyW3C =
         new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
-    public IReadOnlyDictionary<string, string> W3C() => EmptyW3C;
+    public IReadOnlyDictionary<string, string> W3C => EmptyW3C;
 }

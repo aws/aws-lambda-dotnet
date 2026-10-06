@@ -40,11 +40,11 @@ namespace W3CTestHandler
             await bootstrap.RunAsync();
         }
 
-        /// <summary>Returns the raw W3C() dictionary — the primary assertion target.</summary>
+        /// <summary>Returns the raw W3C dictionary — the primary assertion target.</summary>
         public static object GetW3c(JsonNode input, ILambdaContext context)
         {
             // Returning the IReadOnlyDictionary directly serializes as a JSON object.
-            return context.W3C();
+            return context.W3C;
         }
 
         public static object GetW3cAndSource(JsonNode input, ILambdaContext context)
@@ -52,7 +52,7 @@ namespace W3CTestHandler
             var clientContext = context.ClientContext;
             return new Dictionary<string, object>
             {
-                ["w3c"] = context.W3C(),
+                ["w3c"] = context.W3C,
                 ["clientContextIsDefined"] = clientContext != null,
                 // IClientContext has no "w3c" accessor at all on .NET — the
                 // strip-the-source step is naturally met by the type system.
@@ -68,10 +68,10 @@ namespace W3CTestHandler
 
         public static object W3CIsCallable(JsonNode input, ILambdaContext context)
         {
-            var method = context.GetType().GetMethod(nameof(ILambdaContext.W3C), Type.EmptyTypes);
+            var property = context.GetType().GetProperty(nameof(ILambdaContext.W3C));
             return new Dictionary<string, object>
             {
-                ["isCallable"] = method != null,
+                ["isCallable"] = property != null,
             };
         }
 

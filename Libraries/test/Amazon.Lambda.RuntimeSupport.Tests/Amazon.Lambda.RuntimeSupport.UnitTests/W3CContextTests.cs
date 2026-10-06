@@ -37,14 +37,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void W3C_ReturnsEmpty_WhenClientContextHeaderAbsent()
         {
             var context = BuildContext(clientContextJson: null);
-            Assert.Empty(context.W3C());
+            Assert.Empty(context.W3C);
         }
 
         [Fact]
         public void W3C_ReturnsEmpty_WhenClientContextHasNoW3CKey()
         {
             var context = BuildContext("{\"custom\":{\"value\":\"test\"}}");
-            Assert.Empty(context.W3C());
+            Assert.Empty(context.W3C);
             // ClientContext is still populated — w3c is just not there.
             Assert.NotNull(context.ClientContext);
             Assert.Equal("test", context.ClientContext.Custom["value"]);
@@ -54,7 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void W3C_ReturnsBaggageOnly()
         {
             var context = BuildContext("{\"w3c\":{\"baggage\":\"userId=alice\"}}");
-            var w3c = context.W3C();
+            var w3c = context.W3C;
             Assert.Single(w3c);
             Assert.Equal("userId=alice", w3c["baggage"]);
         }
@@ -71,7 +71,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 }
             }";
             var context = BuildContext(json);
-            var w3c = context.W3C();
+            var w3c = context.W3C;
             Assert.Equal(3, w3c.Count);
             Assert.Equal("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01", w3c["traceparent"]);
             Assert.Equal("rojo=00f067aa0ba902b7", w3c["tracestate"]);
@@ -90,8 +90,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }";
             var context = BuildContext(json);
 
-            // W3C fields are surfaced through W3C()
-            Assert.Equal(2, context.W3C().Count);
+            // W3C fields are surfaced through W3C
+            Assert.Equal(2, context.W3C.Count);
             // but IClientContext has no way to read them back
             Assert.NotNull(context.ClientContext);
             Assert.Null(context.ClientContext.Environment);
@@ -113,7 +113,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 }
             }";
             var context = BuildContext(json);
-            var w3c = context.W3C();
+            var w3c = context.W3C;
             Assert.Single(w3c);
             Assert.Equal("abc", w3c["baggage"]);
         }
@@ -122,21 +122,21 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void W3C_TreatsNonObjectValueAsEmpty()
         {
             var context = BuildContext("{\"w3c\":\"not-an-object\"}");
-            Assert.Empty(context.W3C());
+            Assert.Empty(context.W3C);
         }
 
         [Fact]
         public void W3C_TreatsArrayValueAsEmpty()
         {
             var context = BuildContext("{\"w3c\":[\"baggage=abc\"]}");
-            Assert.Empty(context.W3C());
+            Assert.Empty(context.W3C);
         }
 
         [Fact]
         public void W3C_ResultIsReadOnly()
         {
             var context = BuildContext("{\"w3c\":{\"baggage\":\"abc\"}}");
-            var w3c = context.W3C();
+            var w3c = context.W3C;
 
             Assert.IsType<System.Collections.ObjectModel.ReadOnlyDictionary<string, string>>(w3c);
 
@@ -145,7 +145,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Throws<NotSupportedException>(() =>
                 mutable.Add(new KeyValuePair<string, string>("baggage", "tampered")));
 
-            Assert.Equal("abc", context.W3C()["baggage"]);
+            Assert.Equal("abc", context.W3C["baggage"]);
         }
 
         [Fact]
@@ -159,7 +159,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 }
             }";
             var context = BuildContext(json);
-            var w3c = context.W3C();
+            var w3c = context.W3C;
             Assert.Single(w3c);
             Assert.Equal("keep=me", w3c["baggage"]);
             Assert.False(w3c.ContainsKey("unknownField"));
@@ -169,7 +169,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void W3C_OmitsAbsentAllowlistedKeys()
         {
             var context = BuildContext("{\"w3c\":{\"baggage\":\"abc\"}}");
-            var w3c = context.W3C();
+            var w3c = context.W3C;
             Assert.True(w3c.ContainsKey("baggage"));
             Assert.False(w3c.ContainsKey("traceparent"));
             Assert.False(w3c.ContainsKey("tracestate"));
@@ -186,7 +186,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 }
             }";
             var context = BuildContext(json);
-            Assert.Empty(context.W3C());
+            Assert.Empty(context.W3C);
         }
 
         [Fact]

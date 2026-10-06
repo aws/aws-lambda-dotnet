@@ -110,13 +110,12 @@ namespace Amazon.Lambda.Core
         ILambdaSerializer Serializer { get { return null; } }
 
         /// <summary>
-        /// Returns the W3C trace-context fields (<c>traceparent</c>,
-        /// <c>tracestate</c>, <c>baggage</c>) carried on the invoke's
-        /// <c>clientContext.w3c</c> payload.
+        /// The W3C trace-context fields (<c>traceparent</c>, <c>tracestate</c>,
+        /// <c>baggage</c>) carried on the invoke's <c>clientContext.w3c</c> payload.
         /// </summary>
-        IReadOnlyDictionary<string, string> W3C()
+        IReadOnlyDictionary<string, string> W3C
         {
-            return new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+            get { return new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>()); }
         }
 #endif
     }

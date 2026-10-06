@@ -80,7 +80,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string TenantId => _runtimeApiHeaders.TenantId;
 
-        public IReadOnlyDictionary<string, string> W3C() => _w3cLazy.Value;
+        public IReadOnlyDictionary<string, string> W3C => _w3cLazy.Value;
 
         /// <summary>
         /// The serializer the Lambda function registered with the runtime, surfaced via

@@ -97,17 +97,20 @@ namespace Amazon.Lambda.TestUtilities
         public IDictionary<string, string> W3CFields { get; set; }
 
         /// <summary>
-        /// Returns the W3C trace-context fields configured via <see cref="W3CFields"/>,
+        /// The W3C trace-context fields configured via <see cref="W3CFields"/>,
         /// wrapped in a read-only dictionary. Returns an empty read-only dictionary
         /// when no fields were set.
         /// </summary>
-        public IReadOnlyDictionary<string, string> W3C()
+        public IReadOnlyDictionary<string, string> W3C
         {
-            if (W3CFields == null)
+            get
             {
-                return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+                if (W3CFields == null)
+                {
+                    return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+                }
+                return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(W3CFields));
             }
-            return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(W3CFields));
         }
     }
 }
