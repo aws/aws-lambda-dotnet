@@ -46,3 +46,5 @@ global.json
 
 # JetBrains Rider per-project cache
 **/*.lscache
+
+test/dockerized/tasks/

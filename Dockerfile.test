@@ -1,0 +1,22 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+ARG BASE_IMAGE=public.ecr.aws/lambda/provided:al2023
+FROM ${BASE_IMAGE}
+
+ARG TARGETARCH=amd64
+ARG RIE_URL_AMD64=https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie
+ARG RIE_URL_ARM64=https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie-arm64
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      arm64) RIE_URL="${RIE_URL_ARM64}" ;; \
+      *)     RIE_URL="${RIE_URL_AMD64}" ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/aws-lambda-rie "${RIE_URL}"; \
+    chmod +x /usr/local/bin/aws-lambda-rie
+
+COPY test/dockerized/tasks /var/task
+RUN chmod +x /var/task/bootstrap
+
+ENTRYPOINT ["/usr/local/bin/aws-lambda-rie", "/var/task/bootstrap"]
