@@ -1,3 +1,20 @@
+## Release 2026-10-08
+
+### Amazon.Lambda.DurableExecution (2.2.0)
+* Return Pending when a checkpoint response has no checkpoint token, instead of failing the execution.
+* Treat the service's 'Invalid checkpoint token' error as transient (case-insensitive) so a stale token retries the invocation instead of failing the execution.
+* Add SubType to StepConfig and CallbackConfig, and validate SubType values (1 to 32 characters from [a-zA-Z0-9-_]) including ChildContextConfig.SubType.
+### Amazon.Lambda.DurableExecution.Testing (1.1.0)
+* Add TestRunnerOptions.OmitCheckpointToken to simulate a checkpoint response without a token.
+### Amazon.Lambda.Core (3.4.0)
+* Add ILambdaContext.W3C to expose the W3C trace-context fields (traceparent, tracestate, baggage) carried on clientContext.w3c at invoke time.
+### Amazon.Lambda.RuntimeSupport (2.3.0)
+* Implement ILambdaContext.W3C in LambdaContext, surfacing the allowlisted W3C trace-context fields (traceparent, tracestate, baggage) parsed from the client context header.
+### Amazon.Lambda.TestUtilities (4.3.0)
+* Add W3C trace-context support to TestLambdaContext via the settable W3CFields property and the W3C property.
+### Amazon.Lambda.AspNetCoreServer (10.3.0)
+* Implement ILambdaContext.W3C on the SnapStart empty context, returning an empty trace-context during initialization.
+
 ## Release 2026-10-05
 
 ### Amazon.Lambda.Logging.AspNetCore (5.1.0)
