@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -87,5 +88,29 @@ namespace Amazon.Lambda.TestUtilities
         /// in production.
         /// </summary>
         public ILambdaSerializer Serializer { get; set; }
+
+        /// <summary>
+        /// The W3C trace-context fields (<c>traceparent</c>, <c>tracestate</c>,
+        /// <c>baggage</c>) a test wants to pretend were carried on
+        /// <c>clientContext.w3c</c> at invoke time.
+        /// </summary>
+        public IDictionary<string, string> W3CFields { get; set; }
+
+        /// <summary>
+        /// The W3C trace-context fields configured via <see cref="W3CFields"/>,
+        /// wrapped in a read-only dictionary. Returns an empty read-only dictionary
+        /// when no fields were set.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> W3C
+        {
+            get
+            {
+                if (W3CFields == null)
+                {
+                    return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+                }
+                return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(W3CFields));
+            }
+        }
     }
 }

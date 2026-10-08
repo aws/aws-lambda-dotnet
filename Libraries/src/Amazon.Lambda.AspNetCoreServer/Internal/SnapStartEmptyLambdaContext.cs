@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Amazon.Lambda.Core;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal;
@@ -64,4 +65,8 @@ internal class SnapStartEmptyLambdaContext : ILambdaContext, ICognitoIdentity, I
     public IClientApplication Client { get; }
     public IDictionary<string, string> Custom { get; } = new Dictionary<string, string>();
     public string TenantId { get; }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyW3C =
+        new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+    public IReadOnlyDictionary<string, string> W3C => EmptyW3C;
 }

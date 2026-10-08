@@ -15,6 +15,7 @@
 
 using Amazon.Lambda.Core;
 using System;
+using System.Collections.Generic;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -30,6 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly int _memoryLimitInMB;
         private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
+        private readonly Lazy<IReadOnlyDictionary<string, string>> _w3cLazy;
         private readonly IConsoleLoggerWriter _consoleLogger;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
@@ -49,6 +51,7 @@ namespace Amazon.Lambda.RuntimeSupport
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
             _cognitoIdentityLazy = new Lazy<CognitoIdentity>(() => CognitoIdentity.FromJson(runtimeApiHeaders.CognitoIdentityJson));
             _cognitoClientContextLazy = new Lazy<CognitoClientContext>(() => CognitoClientContext.FromJson(runtimeApiHeaders.ClientContextJson));
+            _w3cLazy = new Lazy<IReadOnlyDictionary<string, string>>(() => W3CTraceContext.FromClientContextJson(runtimeApiHeaders.ClientContextJson));
         }
 
         public string TraceId => _runtimeApiHeaders.TraceId;
@@ -76,6 +79,8 @@ namespace Amazon.Lambda.RuntimeSupport
         public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (_dateTimeHelper.UtcNow - UnixEpoch).TotalMilliseconds);
 
         public string TenantId => _runtimeApiHeaders.TenantId;
+
+        public IReadOnlyDictionary<string, string> W3C => _w3cLazy.Value;
 
         /// <summary>
         /// The serializer the Lambda function registered with the runtime, surfaced via

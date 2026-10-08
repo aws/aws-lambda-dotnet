@@ -1,0 +1,46 @@
+name: dockerized-test
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: ['*']
+  workflow_dispatch:
+
+jobs:
+  dockerized-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Publish W3CTestHandler
+        run: |
+          dotnet publish test/dockerized/W3CTestHandler/W3CTestHandler.csproj \
+            -c Release \
+            -r linux-x64 \
+            --self-contained \
+            -o test/dockerized/tasks
+          chmod +x test/dockerized/tasks/bootstrap
+
+      - name: Build the test image
+        run: |
+          docker build . \
+            -t local/test \
+            -f Dockerfile.test \
+            --build-arg BASE_IMAGE=public.ecr.aws/lambda/provided:al2023
+
+      - name: Run dockerized suites
+        uses: aws/containerized-test-runner-for-aws-lambda@0863dd17b5fc19585250a2405c0f939a77b4f397 # main
+        with:
+          suiteFileArray: '["./test/dockerized/suites/*.json"]'
+          dockerImageName: 'local/test'
+          taskFolder: './test/dockerized/tasks'

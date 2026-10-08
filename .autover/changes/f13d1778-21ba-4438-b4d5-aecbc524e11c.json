@@ -1,0 +1,32 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add ILambdaContext.W3C to expose the W3C trace-context fields (traceparent, tracestate, baggage) carried on clientContext.w3c at invoke time."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Implement ILambdaContext.W3C in LambdaContext, surfacing the allowlisted W3C trace-context fields (traceparent, tracestate, baggage) parsed from the client context header."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add W3C trace-context support to TestLambdaContext via the settable W3CFields property and the W3C property."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Implement ILambdaContext.W3C on the SnapStart empty context, returning an empty trace-context during initialization."
+      ]
+    }
+  ]
+}
