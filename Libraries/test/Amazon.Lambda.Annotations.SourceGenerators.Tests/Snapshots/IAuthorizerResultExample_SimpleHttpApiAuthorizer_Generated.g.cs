@@ -39,6 +39,7 @@ namespace TestServerlessApp
         /// <returns>Result of the Lambda function execution</returns>
         public System.IO.Stream SimpleHttpApiAuthorizer(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
+            var __bindingFailed__ = false;
             var authorization = default(string);
             if (__request__.Headers?.Any(x => string.Equals(x.Key, "Authorization", StringComparison.OrdinalIgnoreCase)) == true)
             {
@@ -53,7 +54,18 @@ namespace TestServerlessApp
 #else
                     __context__.Logger.Log("Failed to extract header 'Authorization'. Exception: " + e.ToString());
 #endif
+                    __bindingFailed__ = true;
                 }
+            }
+
+            // Deny the request if any client supplied value failed to convert to its parameter type.
+            if (__bindingFailed__)
+            {
+                return AuthorizerResults.Deny().Serialize(new AuthorizerResultSerializationOptions
+                {
+                    Format = AuthorizerResultSerializationOptions.AuthorizerFormat.HttpApiSimple,
+                    MethodArn = __request__.RouteArn
+                });
             }
 
             var authorizerResult = iAuthorizerResultExample.SimpleHttpApiAuthorizer(authorization, __context__);

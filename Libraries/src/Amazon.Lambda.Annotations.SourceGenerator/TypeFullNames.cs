@@ -47,6 +47,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string APIGatewayCustomAuthorizerRequest = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest";
         public const string APIGatewayCustomAuthorizerV2SimpleResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse";
         public const string APIGatewayCustomAuthorizerResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse";
+        public const string APIGatewayCustomAuthorizerV2IamResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2IamResponse";
+        public const string APIGatewayCustomAuthorizerPolicy = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerPolicy";
 
         public const string SQSEvent = "Amazon.Lambda.SQSEvents.SQSEvent";
         public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";

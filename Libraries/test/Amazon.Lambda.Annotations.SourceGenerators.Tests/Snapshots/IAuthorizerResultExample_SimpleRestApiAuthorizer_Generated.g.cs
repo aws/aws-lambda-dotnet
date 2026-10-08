@@ -39,6 +39,7 @@ namespace TestServerlessApp
         /// <returns>Result of the Lambda function execution</returns>
         public System.IO.Stream SimpleRestApiAuthorizer(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
+            var __bindingFailed__ = false;
             var authorization = default(string);
             if (!string.IsNullOrEmpty(__request__.AuthorizationToken))
             {
@@ -53,7 +54,18 @@ namespace TestServerlessApp
 #else
                     __context__.Logger.Log("Failed to extract authorization token. Exception: " + e.ToString());
 #endif
+                    __bindingFailed__ = true;
                 }
+            }
+
+            // Deny the request if any client supplied value failed to convert to its parameter type.
+            if (__bindingFailed__)
+            {
+                return AuthorizerResults.Deny().Serialize(new AuthorizerResultSerializationOptions
+                {
+                    Format = AuthorizerResultSerializationOptions.AuthorizerFormat.RestApi,
+                    MethodArn = __request__.MethodArn
+                });
             }
 
             var authorizerResult = iAuthorizerResultExample.SimpleRestApiAuthorizer(authorization, __context__);
