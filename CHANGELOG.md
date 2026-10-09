@@ -1,3 +1,8 @@
+## Release 2026-10-09
+
+### Amazon.Lambda.Annotations (2.4.2)
+* Generated API Gateway authorizer handlers now deny the request without invoking the authorizer method when a [FromHeader], [FromQuery] or [FromRoute] value cannot be converted to the parameter type, instead of invoking the method with the parameter set to its default value.
+
 ## Release 2026-10-08
 
 ### Amazon.Lambda.DurableExecution (2.2.0)
