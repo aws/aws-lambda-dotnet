@@ -17,7 +17,7 @@
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     
-    <Version>2.4.1</Version>
+    <Version>2.4.2</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
