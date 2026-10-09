@@ -43,7 +43,7 @@ namespace TestServerlessApp
         }
 
         /// <summary>
-        /// The generated Lambda function handler for <see cref="SayHelloAsync(System.Collections.Generic.IEnumerable<string>)"/>
+        /// The generated Lambda function handler for <see cref="SayHelloAsync(System.Collections.Generic.IEnumerable{string})"/>
         /// </summary>
         /// <param name="__request__">The API Gateway request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
