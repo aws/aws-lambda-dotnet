@@ -1,0 +1,258 @@
+BeforeAll {
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PayloadStream.ps1'))
+}
+
+AfterAll {
+    Remove-LambdaPSTestModule
+}
+
+Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
+    Context 'payload serialization' {
+        BeforeEach {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $null; FunctionError = $null }
+            }
+        }
+
+        It 'serializes an object payload to JSON before sending' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Payload @{ name = 'world' }
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $Payload -eq '{"name":"world"}' }
+        }
+
+        It 'sends a string payload verbatim (assumed already JSON)' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Payload '{"name":"world"}'
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $Payload -eq '{"name":"world"}' }
+        }
+
+        It 'sends an array payload as an array (<Case>)' -ForEach @(
+            @{ Case = 'one element'; Value = @(@{ a = 1 }); Json = '[{"a":1}]' }
+            @{ Case = 'empty'; Value = @(); Json = '[]' }
+        ) {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Payload $Value
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $Payload -eq $Json }
+        }
+
+        It 'sends no payload when -Payload is omitted' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $null -eq $Payload }
+        }
+
+        It 'passes -ProfileName, -ProfileLocation and -Credential to Invoke-LMFunction, and nothing when omitted' {
+            $anonymous = [Amazon.Runtime.AnonymousAWSCredentials]::new()
+            # A credential file of the test's own that defines the profile.
+            $credentialFile = [System.IO.Path]::Combine($TestDrive, 'credentials')
+            Set-Content -LiteralPath $credentialFile -Value "[dev]`naws_access_key_id = AKIAEXAMPLE`naws_secret_access_key = example"
+            $null = Invoke-LambdaPSFunction -FunctionName hello -ProfileName dev -ProfileLocation $credentialFile -Credential $anonymous
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
+                $ProfileName -eq 'dev' -and $ProfileLocation -eq $credentialFile -and [object]::ReferenceEquals($Credential, $anonymous)
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
+                [string]::IsNullOrEmpty($ProfileName) -and [string]::IsNullOrEmpty($ProfileLocation) -and $null -eq $Credential
+            }
+        }
+
+        It 'takes FunctionName and Region from a piped deployment result' {
+            $deployments = @(
+                [PSCustomObject]@{ FunctionName = 'fn-a'; Region = 'us-west-2' }
+                [PSCustomObject]@{ FunctionName = 'fn-b'; Region = 'eu-central-1' }
+            )
+            $null = $deployments | Invoke-LambdaPSFunction
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $FunctionName -eq 'fn-a' -and $Region -eq 'us-west-2' }
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $FunctionName -eq 'fn-b' -and $Region -eq 'eu-central-1' }
+        }
+
+        It 'invokes each function name piped in as a string' {
+            $null = 'fn-a', 'fn-b' | Invoke-LambdaPSFunction
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'fn-a' }
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'fn-b' }
+        }
+
+        It 'uses the region of a function ARN when -Region is omitted (<Case>)' -ForEach @(
+            @{ Case = 'unqualified'; Name = 'arn:aws:lambda:eu-west-1:111122223333:function:hello' }
+            @{ Case = 'qualified'; Name = 'arn:aws:lambda:eu-west-1:111122223333:function:hello:live' }
+            @{ Case = 'other partition'; Name = 'arn:aws-cn:lambda:eu-west-1:111122223333:function:hello' }
+        ) {
+            $null = Invoke-LambdaPSFunction -FunctionName $Name
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Region -eq 'eu-west-1' }
+        }
+
+        It 'takes no region from <Case>' -ForEach @(
+            @{ Case = 'a partial ARN'; Name = '111122223333:function:hello' }
+            @{ Case = 'an ARN whose account has a non-ASCII digit'; Name = "arn:aws:lambda:eu-west-1:11112222333$([char]0x0663):function:hello" }
+        ) {
+            $null = Invoke-LambdaPSFunction -FunctionName $Name
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $null -eq $Region }
+        }
+
+        It 'refuses a -Region that differs from the region in a function ARN, before invoking' {
+            $err = { Invoke-LambdaPSFunction -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -Region us-west-2 } |
+                Should -Throw -ErrorId 'FunctionRegionMismatch,Invoke-LambdaPSFunction' -PassThru
+            $err.Exception.Message | Should -BeLike "*region 'eu-west-1', but -Region is 'us-west-2'*"
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'accepts a -Region equal to the ARN''s, and adds none for a plain name' {
+            $null = Invoke-LambdaPSFunction -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -Region eu-west-1
+            $null = Invoke-LambdaPSFunction -FunctionName hello
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Region -eq 'eu-west-1' }
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $null -eq $Region }
+        }
+
+        It 'threads -Region and -Qualifier through to Invoke-LMFunction' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' }
+        }
+    }
+
+    Context 'output parsing' {
+        It 'returns the parsed function output when the payload is JSON' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"message":"Hello, world","count":3}'); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello -Payload @{ name = 'world' }
+
+            $result.message | Should -Be 'Hello, world'
+            $result.count | Should -Be 3
+        }
+
+        It 'returns a JSON array as an array, including one element and none' -ForEach @(
+            @{ Json = '[1]'; Count = 1 }, @{ Json = '[]'; Count = 0 }, @{ Json = '[1,2]'; Count = 2 }
+        ) {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith ([scriptblock]::Create(
+                "[PSCustomObject]@{ Payload = (New-PayloadStream '$Json'); LogResult = `$null; FunctionError = `$null }"))
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello
+
+            , $result | Should -BeOfType ([array])
+            $result.Count | Should -Be $Count
+        }
+
+        It 'returns the raw string when the payload is not JSON' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream 'plain text'); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello
+
+            $result | Should -Be 'plain text'
+        }
+
+        It 'returns nothing for an empty payload' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream ''); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello
+
+            $result | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'execution log' {
+        It 'requests the log and surfaces the decoded log on the Information stream with -IncludeLog' {
+            $logText = "START RequestId: abc`nEND RequestId: abc"
+            $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($logText))
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $encoded; FunctionError = $null }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -IncludeLog -InformationVariable info
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $LogType -eq 'Tail' }
+            ($info | ForEach-Object { $_.MessageData }) -join "`n" | Should -Match 'START RequestId'
+        }
+
+        It 'does not request the log by default' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $null; FunctionError = $null }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $null -eq $LogType }
+        }
+    }
+
+    Context 'function error' {
+        It 'writes FunctionInvocationError, with the parsed error payload as its target, when the response reports a FunctionError' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"errorMessage":"boom","errorType":"RuntimeException"}'); LogResult = $null; FunctionError = 'Unhandled' }
+            }
+
+            { Invoke-LambdaPSFunction -FunctionName hello -Payload @{ x = 1 } -ErrorAction Stop } |
+                Should -Throw -ErrorId 'FunctionInvocationError,Invoke-LambdaPSFunction'
+            $result = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors -ErrorAction SilentlyContinue
+            $result | Should -BeNullOrEmpty
+            $errors[0].TargetObject.errorType | Should -Be 'RuntimeException'
+        }
+
+        It 'still invokes the functions piped in after one that returns an error' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                if ($FunctionName -eq 'bad') {
+                    [PSCustomObject]@{ Payload = (New-PayloadStream '{"errorMessage":"boom"}'); LogResult = $null; FunctionError = 'Unhandled' }
+                }
+                else { [PSCustomObject]@{ Payload = (New-PayloadStream '{"ok":true}'); LogResult = $null; FunctionError = $null } }
+            }
+
+            $results = @('bad', 'good' | ForEach-Object { [PSCustomObject]@{ FunctionName = $_ } } |
+                    Invoke-LambdaPSFunction -ErrorVariable errors -ErrorAction SilentlyContinue)
+            $results.Count | Should -Be 1
+            $results[0].ok | Should -BeTrue
+            @($errors).Count | Should -Be 1
+        }
+
+        It 'reports a function error whose payload is <Case>' -ForEach @(
+            @{ Case = 'not JSON'; Body = 'Task timed out'; Target = 'Task timed out'; Message = "*returned a function error (Unhandled): Task timed out" }
+            @{ Case = 'empty'; Body = ''; Target = ''; Message = '*returned a function error (Unhandled).' }
+        ) {
+            $script:errorBody = $Body
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream $script:errorBody); LogResult = $null; FunctionError = 'Unhandled' }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors -ErrorAction SilentlyContinue
+
+            # -ErrorVariable also collects the JSON parse error the cmdlet catches, so pick the record.
+            $record = @($errors | Where-Object { $_.FullyQualifiedErrorId -eq 'FunctionInvocationError,Invoke-LambdaPSFunction' })
+            $record.Count | Should -Be 1
+            $record[0].TargetObject | Should -Be $Target
+            $record[0].Exception.Message | Should -BeLike $Message
+        }
+    }
+
+    # Unlike a function error, a request that fails (permissions, a missing function) stops the cmdlet.
+    Context 'request failure' {
+        It 'stops at a failed request instead of invoking the functions piped in after it' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                if ($FunctionName -eq 'missing') { throw [System.InvalidOperationException]::new('Function not found: missing') }
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"ok":true}'); LogResult = $null; FunctionError = $null }
+            }
+
+            $piped = 'missing', 'good' | ForEach-Object { [PSCustomObject]@{ FunctionName = $_ } }
+            { $piped | Invoke-LambdaPSFunction -ErrorAction SilentlyContinue } | Should -Throw '*Function not found: missing*'
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+    }
+}
