@@ -1,0 +1,11 @@
+#!/bin/sh
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# CMR and Container bootstrap, at /var/runtime/bootstrap. A POSIX sh wrapper that execs the image's
+# pwsh against the runtime loop; pwsh -File runs runtime.ps1 in the global scope. It is a wrapper,
+# not a pwsh shebang, because Linux passes everything after a shebang's interpreter as ONE argument,
+# so a shebang cannot carry both -NoProfile and -NonInteractive. -NonInteractive: nothing can answer
+# a prompt in Lambda, so a handler that prompts gets PowerShell's NonInteractive error, not the
+# prompt text in the log and a NullReferenceException.
+exec /var/runtime/powershell/pwsh -NoProfile -NonInteractive -File /var/runtime/runtime.ps1

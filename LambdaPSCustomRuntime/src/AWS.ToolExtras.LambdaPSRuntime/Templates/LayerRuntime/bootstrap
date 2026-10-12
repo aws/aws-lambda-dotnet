@@ -1,0 +1,13 @@
+#!/bin/sh
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# LAYER target bootstrap. Lands at /opt/bootstrap on a provided.al2023 function. This is a POSIX
+# sh wrapper, NOT a pwsh script: it must export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT before pwsh
+# starts, because .NET reads that flag at process startup. provided.al2023 does not ship libicu,
+# so without invariant mode pwsh aborts with "Couldn't find a valid ICU package." The wrapper then
+# execs the pwsh interpreter bundled in the layer (/opt/powershell) against the runtime loop.
+export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+# -NonInteractive: nothing can answer a prompt in Lambda, so a handler that prompts gets PowerShell's
+# NonInteractive error, not the prompt text in the log and a NullReferenceException.
+exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
