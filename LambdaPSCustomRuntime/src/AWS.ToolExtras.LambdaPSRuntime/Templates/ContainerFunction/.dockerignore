@@ -1,0 +1,12 @@
+# The build context of the container-per-function image. 'COPY . /var/task' bakes the function's
+# own files (the handler and any script, data file or folder beside it) into the image; these are
+# scaffolding, source control and build output, not function payload. The runtime files the
+# Dockerfile copies into /var/runtime (bootstrap, runtime.ps1, PowerShellLambdaContext.cs and
+# modules/) must stay in the context, so they are not listed here.
+.dockerignore
+Dockerfile
+README.md
+lambdaps-runtime.json
+**/.git
+**/.gitignore
+**/*.zip

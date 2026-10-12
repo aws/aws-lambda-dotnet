@@ -1,0 +1,18 @@
+# Container-per-function: a single image that IS the function (PackageType=Image). It adds the
+# function handler to the runtime image above; there is no shared runtime, layer, or runtime
+# resource. Unlike a published runtime, a function image DOES use the image's ENTRYPOINT, CMD and
+# ENV: the provided.al2023 base ENTRYPOINT (/lambda-entrypoint.sh) execs /var/runtime/bootstrap
+# (ours, which starts runtime.ps1) and passes CMD as the handler (_HANDLER).
+
+# 4. Bake the function into /var/task (LAMBDA_TASK_ROOT): the handler and every script, data
+#    file and folder beside it, so a handler can dot-source a helper or read a file next to it.
+#    .dockerignore leaves out the scaffolding. The runtime files steps 2 and 3 copied into
+#    /var/runtime are then removed from /var/task, so it holds only the function. Get-Handler
+#    resolves the handler script from here at invoke time.
+COPY . /var/task
+RUN rm -rf /var/task/bootstrap /var/task/runtime.ps1 /var/task/PowerShellLambdaContext.cs /var/task/modules
+
+# Keep the base ENTRYPOINT; CMD sets _HANDLER = the script handler form 'handler.ps1'.
+# To run a different script, change this CMD (or re-scaffold with -Handler);
+# Publish-LMFunction -ImageConfig_Command overrides CMD at deploy time.
+CMD [ "handler.ps1" ]
