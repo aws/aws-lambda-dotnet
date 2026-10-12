@@ -1,0 +1,5 @@
+# Everything under Templates/ is copied into a Linux Lambda runtime or image. The bootstraps are
+# executed directly by the kernel: with CRLF line endings the shebang reads '/bin/sh\r' and the runtime
+# fails to start with "bad interpreter". Force LF on checkout regardless of core.autocrlf, so a Windows
+# clone scaffolds working projects.
+src/AWS.ToolExtras.LambdaPSRuntime/Templates/** text eol=lf

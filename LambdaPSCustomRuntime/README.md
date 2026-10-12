@@ -1,0 +1,286 @@
+# AWS.ToolExtras.LambdaPSRuntime
+
+Value-add PowerShell tooling for running PowerShell on AWS Lambda via a **customer-managed runtime**
+or a **custom runtime**. It scaffolds, validates, builds, and packages runtime and function projects,
+and offers one-command deployments for the common case.
+
+AWS Lambda has no managed PowerShell runtime, so PowerShell brings its own: a native `pwsh`
+interpreter plus a bootstrap implementing the Lambda Runtime API loop. That runtime ships as a
+customer-managed runtime (a container image that functions bind to by alias), as a custom runtime on
+`provided.al2023` (a layer, or bundled into the function's .zip), or inside a function's own container
+image. This module automates building and deploying it. It lives deliberately outside the
+`AWS.Tools.*` family so it is not tied to that family's unified-versioning lockstep.
+
+## Requirements
+
+- PowerShell 7.4+
+- For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
+  `PATH`. Docker is the only supported container CLI — the image build depends on
+  `--provenance=false` and `oci-mediatypes=false` to emit the Docker v2 Schema 2 manifest a
+  customer-managed runtime requires, and those have no equivalent in Podman, Finch, or nerdctl.
+  `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
+- The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —
+  that is the path for Docker-averse environments.
+- AWS.Tools 5.0.1001 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
+  `AWS.Tools.SecurityToken`), with an `AWS.Tools.LambdaCore` that exports the Lambda
+  customer-managed runtime cmdlets (`New-LMCRuntime`, `New-LMCRuntimeVersion`,
+  `New-LMCRuntimeAlias`, …) and an `AWS.Tools.Lambda` whose function cmdlets accept the runtime
+  binding (`Publish-LMFunction -RuntimeConfig_RuntimeArn -RuntimeConfig_RuntimeAlias`).
+
+## Concepts
+
+The runtime can be packaged four ways; they differ only in packaging, each a scaffolding template
+with its own lint rules:
+
+| Approach | Scaffold with | `pwsh` | Container | One-command deploy |
+| --- | --- | --- | --- | --- |
+| **CMR** (default) | `New-LambdaPSRuntimeProject -Target CMR` | installed in image | Yes | Yes |
+| Layer | `New-LambdaPSRuntimeProject -Target Layer` | bundled on `provided.al2023` | No | No |
+| Self-contained `.zip` | `New-LambdaPSFunctionProject -Target SelfContainedZip` | bundled on `provided.al2023` | No | No |
+| Container-per-function | `New-LambdaPSFunctionProject -Target Container` | installed in image | Yes | No |
+
+CMR (customer-managed runtime) is the default: publish the runtime once as a container image,
+reference it by alias, and roll the whole fleet forward by moving the alias — no per-function
+redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by default; the
+releases and their tarball SHA256s are listed in `Config/pwsh.psd1`, and `-PwshVersion` picks
+another. The container-free targets run in invariant-globalization mode
+(`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`) so no ICU libraries are needed.
+
+The Layer and self-contained `.zip` packages bundle pwsh, so they are large: about 72 MB zipped and
+174 MB unzipped for PowerShell 7.4 on x86_64, before any modules. That is over Lambda's direct-upload
+limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Content_S3Bucket`/
+`-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 75 MB for modules and code.
+
+## Quick start (high-level)
+
+Deploy the runtime once, then deploy functions bound to its alias.
+
+```powershell
+Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
+
+# 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
+#    publish version -> point the 'production' alias at it).
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 `
+    -IncludeModule @(
+        @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
+        @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
+    ) -Region us-east-1
+
+# 2. Deploy a function bound to the runtime alias (resolves the runtime ARN for you).
+New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./handler.ps1 `
+    -RuntimeName my-powershell-runtime -RuntimeAlias production `
+    -Role arn:aws:iam::111122223333:role/hello-powershell-role -Region us-east-1
+
+# 3. Invoke it.
+Invoke-LambdaPSFunction -FunctionName hello-powershell -Payload @{ name = 'world' } -Region us-east-1 `
+    -IncludeLog -InformationAction Continue
+```
+
+The three cmdlets that call AWS take `-ProfileName`, `-ProfileLocation` and `-Credential` as any
+AWS.Tools cmdlet does, except that a relative `-ProfileLocation` is resolved against the current
+PowerShell location. Without them, AWS.Tools uses its default credentials (`Set-AWSCredential`,
+environment variables, the default profile, or an instance or container role). `-Region` is optional
+the same way: without it, the region comes from `Set-DefaultAWSRegion`, the `-ProfileName` profile, the
+default profile, `AWS_REGION`, the `AWS_PROFILE` profile, or the instance or container, in that order,
+and a deploy that finds none fails with `RegionNotResolved`. For `New-LambdaPSFunctionDeployment` and
+`Invoke-LambdaPSFunction`, a full function ARN in `-FunctionName` supplies the region when `-Region` is
+omitted, and a `-Region` that differs from the ARN's fails with `FunctionRegionMismatch`.
+
+A handler declares `param($LambdaInput, $LambdaContext)` — the runtime passes the parsed event and the
+runtime details **positionally**, so a script without that param block silently sees `$null` for both.
+Whatever the handler leaves on the pipeline is returned as the response. `-Handler` takes one of three
+forms: `<script>.ps1` runs the whole file per invoke; `<script>.ps1::<function>` dot-sources the file
+once and calls the function per invoke; `Module::<module>::<function>` calls a function of a module.
+
+Omit `-Handler` and it is resolved from the source itself: the `ScriptFile` in a scaffolded project's
+`manifest.json`, else the sole `*.ps1` at the root. An ambiguous folder is an error rather than a
+guess, and a handler naming a script that is not in the package is rejected before anything is
+deployed — Lambda accepts such a function and every invoke then hangs to the timeout.
+
+**Architecture is checked, not assumed.** Lambda does not validate a customer-managed runtime's CPU
+architecture against the function bound to it — a mismatch deploys cleanly and fails at invoke,
+sometimes as a misleading capacity error. The service reports each runtime version's architecture from
+the image manifest (not from anything the caller declares), and both deploy cmdlets check against it.
+`New-LambdaPSRuntimeDeployment -Architecture` builds for that platform and stops before moving the
+alias if the image turns out to be a different architecture — for example a buildx builder that cannot
+emit `linux/arm64`. Moving an existing alias to a version of a different architecture is allowed but
+warns: the functions bound to that alias fail to invoke until they are redeployed for the new
+architecture. `New-LambdaPSFunctionDeployment` reads the architecture from the alias: omit
+`-Architecture` and the function takes the runtime's; state one that differs and the deploy stops
+before anything is created.
+
+`New-LambdaPSFunctionDeployment` defaults `-Timeout` to 30 seconds and `-MemorySize` to 512 MB rather
+than inheriting Lambda's 3 s / 128 MB, which a PowerShell function cannot reliably meet: a warm
+invoke can take about 2 seconds at 128 MB, and pwsh uses about 115–130 MB of memory on startup. Memory
+also scales CPU, so at 512 MB the same warm invoke takes about half a second.
+
+## Low-level cmdlets
+
+Reach for these to override any of the four decisions the one-command deploy makes for you (packaging
+approach, stock image, one ECR repository per runtime, single version behind one alias):
+
+- Scaffold: `New-LambdaPSRuntimeProject`, `New-LambdaPSFunctionProject` (`-Target` selects the approach)
+- Validate: `Test-LambdaPSRuntimeProject`, `Test-LambdaPSContainerRuntime`
+- Build / package: `Build-LambdaPSRuntimeImage`, `Build-LambdaPSRuntimePackage`, `Compress-LambdaPSFunctionPackage`
+- Modules: `Save-LambdaPSModule`
+
+`Test-LambdaPSRuntimeProject` is a gate, not just a report: a failing rule goes to the error stream as
+well as the pipeline, so `-ErrorAction Stop` halts a script, `$?` is `$false` afterwards, and `-Quiet`
+returns a single boolean.
+Pass `-ErrorAction SilentlyContinue` when you only want the findings.
+
+`-Force` on either scaffolder **replaces** the target directory (its contents are deleted first)
+rather than writing over the top. Merging would leave files the new target does not emit — a CMR
+`Dockerfile` surviving into a re-scaffolded Layer project, for instance, which then builds into an
+image whose bootstrap points at a path the image does not contain. `-WhatIf` shows what would go.
+On Linux and macOS, an existing target directory owned by a user other than you, or by root and
+writable by group or others, is refused with `TargetOwnedByAnotherUser`, even with `-Force` (no check
+when running as root). `New-LambdaPSRuntimeDeployment` replaces
+`-ProjectPath` the same way, but only when it holds a runtime-image project this module scaffolded
+(a `lambdaps-runtime.json` marker with target CMR); any other non-empty directory is refused with
+`TargetNotEmpty` before anything is created.
+
+`-WhatIf` runs the same local checks as a real run — module pins and availability, the pwsh version,
+the handler, the architecture — and the deploy cmdlets also run their read-only AWS checks, so a
+preview that succeeds is one the real run would get past those checks too.
+
+Every cmdlet has full comment-based help (`Get-Help <Name> -Full`).
+
+The runtime reads two environment variables, set on the function: `POWERSHELL_RUNTIME_VERBOSE=TRUE`
+logs its start-up and per-invocation steps, and `POWERSHELL_RUNTIME_JSON_DEPTH` (1-100, default 100)
+is the depth to which a handler's output is serialized. Return plain data from handlers; a rich .NET
+object (for example from `Get-Item`) serialized that deep can exhaust memory. Every scaffolded
+project's README describes both. For a function bound to a customer-managed runtime,
+`New-LambdaPSFunctionDeployment -EnvironmentVariable` sets them, with the function's other environment
+variables.
+
+## Modules
+
+`-IncludeModule` (alias `-Module`) takes `[Microsoft.PowerShell.Commands.ModuleSpecification[]]`.
+Each module **must pin an exact `RequiredVersion`** (a minimum or range is rejected); the module never
+resolves "latest". Modules are copied into the project's `modules/` folder, following each manifest's
+`RequiredModules` to copy transitive dependencies at the versions they declare. The function packager
+and `Build-LambdaPSRuntimePackage` (for a SelfContainedZip) also harvest `#Requires -Modules` from the
+handler under the same rules.
+
+A module (or dependency) that is not installed locally is handled by `-MissingModuleAction`, on the
+scaffolders, `Compress-LambdaPSFunctionPackage`, `Build-LambdaPSRuntimePackage` and both deploy
+cmdlets:
+
+| Value | Behavior |
+|---|---|
+| `Save` (default) | Download into a temporary folder, stage from there, delete the folder. The local PowerShell environment is not changed. |
+| `Install` | Download the same way, and also install into the CurrentUser module folder (never over an existing version). |
+| `Stop` | Fail with `ModuleNotFoundLocally`. |
+
+Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the
+SHA512-checked AWS.Tools.zip from CloudFront, one download per version) and **PSResourceGet** (`Save-PSResource`) for everything
+else, from your registered repositories in priority order, or from the ones you name with
+`-ModuleRepository` (for example an internal mirror, so a same-named package in another feed cannot be
+picked up). PowerShellGet is never called, but AWS.Tools.Installer requires it to be installed. If Installer 2.x
+is not installed it is itself saved with PSResourceGet, from `-ModuleRepository` or else PSGallery and, on
+Windows, only when its Authenticode signature is valid. It is then used from the temporary folder. Repository
+trust is not bypassed: an untrusted repository (PSGallery by default) prompts, and fails in a
+non-interactive session — trust it with `Set-PSResourceRepository -Trusted`, or pre-stage modules and
+use `Stop`.
+
+Whenever something is downloaded, a warning names the modules and says to test those exact versions
+before production use; modules that came from PSGallery get a second warning that PSGallery is not
+recommended as a direct production dependency.
+
+`Save-LambdaPSModule -Module <specs> -Path ./mods` runs the same download on its own, and also copies
+any module in the set that is already installed, so `./mods` holds the complete set at the exact
+versions a function will ship with. Test against it by adding `./mods` to `$env:PSModulePath`.
+
+## Attribution
+
+The module sets the SDK `ClientAppId` on the client config it passes to the cmdlets it wraps, so its
+calls carry a stable `app/AWS.ToolExtras.LambdaPSRuntime#<version>` token for adoption metrics.
+
+## Testing
+
+Run the offline test suite (all AWS and container seams are mocked) with coverage. The suite also
+checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
+exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
+directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`:
+
+```powershell
+pwsh ./build.ps1            # Pester suite + code coverage
+pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
+pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+```
+
+The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory
+at the front of `PSModulePath` before importing this module:
+
+```powershell
+$env:PSModulePath = '/path/to/aws-tools-modules' + [IO.Path]::PathSeparator + $env:PSModulePath
+Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
+```
+
+Results are written to `testResults.xml` (NUnit) and `coverage.xml` (JaCoCo), both git-ignored.
+
+Test files in `src/AWS.ToolExtras.LambdaPSRuntime/Tests/` are named by kind, and every `Describe` is
+tagged with its file's kind:
+
+| File | Tests |
+|------|-------|
+| `Unit.Public.<Command>.Tests.ps1`, `Unit.Private.<Function>.Tests.ps1` | one command, with the AWS and container calls it makes mocked |
+| `Component.<Topic>.Tests.ps1` | several commands working together, with AWS mocked |
+| `Contract.<Topic>.Tests.ps1` | the module as a whole: its exports and help, and its AWS cmdlet calls against the real cmdlets |
+| `Integration.<Topic>.Tests.ps1` | end to end against AWS: each target deployed and invoked, then removed; run only by `-Task Integration`; every other task skips it (the file's header says what it creates and costs) |
+
+Setup that several files share (importing the module, stand-in exception types, helper functions)
+is in `Tests/Helpers/`, which each file dot-sources from its `BeforeAll`.
+
+### Analyzer contract
+
+`-Task Lint` runs PSScriptAnalyzer in two scopes, because the module source and its tests/templates
+are held to different standards:
+
+| Scope | Settings | Gate |
+| --- | --- | --- |
+| `Public/`, `Private/`, `Config/`, `*.psm1`, `*.psd1` | `PSScriptAnalyzerSettings.psd1` (default rules, no exclusions) | **any** finding fails |
+| `Tests/`, `Templates/` | `PSScriptAnalyzerSettings.Relaxed.psd1` | only `Error` severity fails |
+
+Where a rule is statically wrong about the source, it
+is suppressed **at the site** with `[Diagnostics.CodeAnalysis.SuppressMessageAttribute]` and a
+`Justification`, rather than excluded globally — so the reason sits next to the code and the gate is
+not eroded for the rest of the module. The relaxed scope's exclusions (`PSAvoidUsingWriteHost` for
+runtime logging in `Templates/`, `PSReviewUnusedParameter` for mockable stub signatures in `Tests/`,
+`PSUseSingularNouns` for non-exported helper names in both) are each documented in that settings
+file.
+
+## Status
+
+- **AWS.Tools dependency:** the AWS-calling paths use the Lambda customer-managed runtime cmdlets
+  (`New-LMCRuntime`, `New-LMCRuntimeVersion`, `New-LMCRuntimeAlias`, `Update-LMCRuntimeAlias`,
+  `Get-LMCRuntime`, …) and the function cmdlets' runtime binding (`-RuntimeConfig_RuntimeArn`,
+  `-RuntimeConfig_RuntimeAlias`). The manifest declares
+  `AWS.Tools.Lambda`/`.LambdaCore`/`.ECR`/`.SecurityToken` as `RequiredModules` with a **minimum**
+  `ModuleVersion` of `5.0.1001`, the first build with those cmdlets and parameters, not an exact
+  pin, so consumers can take newer AWS.Tools releases without this module re-pinning. All four share
+  one `AWS.Tools.Common` build, so they have the same floor. Without them, or with an older build,
+  the module does not import. A manifest cannot express "exports command X", so a later build whose
+  modules lack those cmdlets or parameters imports fine and fails at the point of call.
+- **Re-deploying an existing function updates its code and only the configuration you give.**
+  `New-LambdaPSFunctionDeployment` against a function that already exists updates its code with
+  `Update-LMFunctionCode`, then its configuration with `Update-LMFunctionConfiguration`: always its
+  role, and `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable` only when
+  you give them. Anything you don't give keeps the function's current value, so a redeploy doesn't
+  reset a tuned timeout, memory size or alias to the defaults. The live handler is kept unless you give
+  `-Handler` or its script is not in the package, and the live alias is kept unless you give
+  `-RuntimeAlias` or `-RuntimeName` names another runtime. The handler and alias a scaffolded project's
+  `manifest.json` records apply to a new function (the alias also to one moving to another runtime);
+  where the live ones are kept, a warning says when the manifest's differ. When the alias is kept, a
+  stated `-Architecture` is checked against it: one it supports is applied, and one it doesn't is
+  refused with `ArchitectureMismatch`. An existing function of the same name that is not
+  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched. If
+  the configuration update fails after the code update, `FunctionConfigurationNotApplied` says what the
+  function now has; fix the cause the service reported, then run the deploy again.
+- **A function deploy returns once the function can be invoked.** Lambda creates a function in state
+  `Pending` and runs a code update as `InProgress`; `New-LambdaPSFunctionDeployment` waits for both to
+  settle (up to 120 seconds each: before the code update, before the configuration update, and after
+  it). A function that fails to become ready is `FunctionNotActive`, naming Lambda's reason; one still
+  settling at the limit is `FunctionStateTimeout`, and it may still become ready, so check it with
+  `Get-LMFunctionConfiguration`.
