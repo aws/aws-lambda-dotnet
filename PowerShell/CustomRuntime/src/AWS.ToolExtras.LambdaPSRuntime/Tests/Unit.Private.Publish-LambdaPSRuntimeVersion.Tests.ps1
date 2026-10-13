@@ -223,6 +223,25 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         }
     }
 
+    It 'names the caller''s alias in the timeout error''s alias command when it is given' {
+        InModuleScope $script:moduleName {
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'CREATING' } }
+            Mock 'Start-Sleep' -MockWith { }
+
+            $err = $null
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'production' }
+            catch { $err = $_ }
+
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1*'
+            $err.Exception.Message | Should -Not -BeLike '*<alias>*'
+        }
+    }
+
     It 'names the alias commands, not a deploy re-run, in the timeout error' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }

@@ -172,7 +172,8 @@ function New-LambdaPSRuntimeDeployment {
         AWS.ToolExtras.LambdaPSRuntime.StagedModule objects (Name, and Version as a [version]),
         including the dependencies followed from -IncludeModule. RuntimeArn, ImageDigest and
         ModulesStaged are empty under -WhatIf, and for the stages skipped when one is declined under
-        -Confirm; the object is still returned.
+        -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
+        when its stage ran, and declining that stage alone is warned about with the command to move it.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 -Region us-east-1
 
@@ -519,7 +520,7 @@ function New-LambdaPSRuntimeDeployment {
         # $ProjectPath is REPLACED (its contents deleted). The ShouldProcess message says so, so -WhatIf
         # and -Confirm disclose it rather than silently discarding a customized project.
         Write-Verbose "Stage 2: Scaffold runtime project at '$ProjectPath'."
-        $scaffoldAction = if (Test-Path -LiteralPath $ProjectPath) {
+        $scaffoldAction = if ((Test-Path -LiteralPath $ProjectPath -PathType Container) -and @(Get-ChildItem -LiteralPath $ProjectPath -Force).Count -gt 0) {
             "Replace existing directory with a scaffolded PowerShell $PowerShellVersion runtime project (existing contents are deleted)"
         }
         else {
@@ -563,7 +564,7 @@ function New-LambdaPSRuntimeDeployment {
         if ($declinedStage) {
             Write-Warning "Skipped building and pushing the image, because the $declinedStage stage was declined."
         }
-        elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository', and push image")) {
+        elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository' and its Lambda pull grant, and push image")) {
             $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -Confirm:$false
             $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
             $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -Confirm:$false
@@ -586,11 +587,12 @@ function New-LambdaPSRuntimeDeployment {
         if ($declinedStage) {
             Write-Warning "Skipped publishing the runtime version, because the $declinedStage stage was declined."
         }
-        elseif ($PSCmdlet.ShouldProcess($RuntimeName, "Publish Lambda runtime version '$RuntimeVersion' from image '$publishUri'")) {
+        elseif ($PSCmdlet.ShouldProcess($RuntimeName, "$(if (-not $runtimeExists) { "Create runtime '$RuntimeName' and publish" } else { 'Publish' }) Lambda runtime version '$RuntimeVersion' from image '$publishUri'")) {
             $publishParams = @{
                 RuntimeName    = $RuntimeName
                 ImageUri       = $publishUri
                 RuntimeVersion = $RuntimeVersion
+                RuntimeAlias   = $RuntimeAlias
                 Architecture   = $Architecture
                 Region         = $Region
             }
@@ -615,6 +617,13 @@ function New-LambdaPSRuntimeDeployment {
             }
             $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
+        }
+        elseif (-not $WhatIfPreference) {
+            # The version is published, but functions bound to the alias stay where they are.
+            Write-Warning ("Alias '$RuntimeAlias' was not pointed at '$RuntimeVersion', because that stage was declined. " +
+                "Point it later with Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias " +
+                "-RuntimeVersion $RuntimeVersion -Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter) " +
+                '(New-LMCRuntimeAlias if the alias does not exist yet).')
         }
 
         [PSCustomObject]@{

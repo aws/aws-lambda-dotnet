@@ -32,6 +32,9 @@ function Publish-LambdaPSRuntimeVersion {
         [x86_64]. So a mismatch means the image itself was built for the wrong platform --
         for example 'docker buildx' on a single-architecture builder that cannot emit linux/arm64.
         Failing here stops the caller from pointing an alias, and then functions, at it.
+    .PARAMETER RuntimeAlias
+        The alias the caller points at the version once it is ACTIVE. Optional; it only fills in the
+        alias command the timeout error suggests, which otherwise shows <alias>.
     .PARAMETER Region
         The AWS region the runtime is in.
     .PARAMETER CredentialParameter
@@ -62,6 +65,10 @@ function Publish-LambdaPSRuntimeVersion {
         [Parameter(Mandatory)]
         [ValidateSet('x86_64', 'arm64')]
         [string]$Architecture,
+
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$RuntimeAlias,
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
@@ -150,7 +157,7 @@ function Publish-LambdaPSRuntimeVersion {
                  "$($wait.Attempts * $wait.IntervalSeconds) seconds. It may still become ACTIVE; check with " +
                  "Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments. Once it is " +
                  "ACTIVE and its Compatibility.Architectures is '$Architecture', point the alias at it with Update-LMCRuntimeAlias -RuntimeName $RuntimeName " +
-                 "-Name <alias> -RuntimeVersion $RuntimeVersion $commandArguments (New-LMCRuntimeAlias if the alias " +
+                 "-Name $(if ($RuntimeAlias) { $RuntimeAlias } else { '<alias>' }) -RuntimeVersion $RuntimeVersion $commandArguments (New-LMCRuntimeAlias if the alias " +
                  'does not exist yet).')),
             'RuntimeVersionTimeout', [System.Management.Automation.ErrorCategory]::OperationTimeout, $RuntimeVersion)
     }

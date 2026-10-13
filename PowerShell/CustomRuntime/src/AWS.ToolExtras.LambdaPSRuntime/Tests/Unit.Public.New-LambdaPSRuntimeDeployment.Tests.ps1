@@ -278,7 +278,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { -not $Tag -and $ImageUri -like '*/rt:v1' }
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Architecture -eq 'x86_64' }
+                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Architecture -eq 'x86_64' -and $RuntimeAlias -eq 'production' }
             Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $RuntimeAlias -eq 'production' }
         }
@@ -615,9 +615,69 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
             $whatIf = @($result.Output -split "`n" | Where-Object { $_ -like 'What if:*' })
-            $whatIf | Should -Contain 'What if: Performing the operation "Build image, ensure ECR repository ''rt'', and push image" on target "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7".'
-            $whatIf | Should -Contain 'What if: Performing the operation "Publish Lambda runtime version ''v7'' from image ''111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7''" on target "my-ps".'
+            # The stage text names every change: the pull grant in the repository policy, and a runtime it creates.
+            $whatIf | Should -Contain 'What if: Performing the operation "Build image, ensure ECR repository ''rt'' and its Lambda pull grant, and push image" on target "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7".'
+            $whatIf | Should -Contain 'What if: Performing the operation "Create runtime ''my-ps'' and publish Lambda runtime version ''v7'' from image ''111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7''" on target "my-ps".'
             $whatIf | Should -Contain 'What if: Performing the operation "Point alias at v7" on target "my-ps/production".'
+        }
+
+        # The scaffold says "existing contents are deleted" only when there are contents; a runtime that
+        # exists is published to, not created.
+        It 'words the scaffold and publish stages for <Case>' -ForEach @(
+            @{ Case = 'an existing empty directory and an existing runtime'; Marker = $false; Scaffold = 'Scaffold PowerShell 7.4 runtime project'; Publish = 'Publish Lambda runtime version' }
+            @{ Case = 'a scaffolded project and an existing runtime'; Marker = $true; Scaffold = 'Replace existing directory with a scaffolded PowerShell 7.4 runtime project (existing contents are deleted)'; Publish = 'Publish Lambda runtime version' }
+        ) {
+            $project = [System.IO.Path]::Combine($TestDrive, "words-$Marker")
+            $null = New-Item -ItemType Directory -Path $project
+            if ($Marker) { Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR"}' }
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
+                function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
+                function script:Get-LMCRuntimeAlias { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist')) }
+                function script:New-LambdaPSRuntimeProject { }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WhatIf"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
+
+            $whatIf = @($result.Output -split "`n" | Where-Object { $_ -like 'What if:*' })
+            $whatIf | Should -Contain "What if: Performing the operation `"$Scaffold`" on target `"$project`"."
+            @($whatIf | Where-Object { $_ -like "*`"$Publish 'v7' from image*" }).Count | Should -Be 1
+        }
+
+        # Declining a middle stage skips the stages after it, with a warning for each, and leaves their
+        # fields empty; declining the alias stage alone says how to point the alias later.
+        It 'runs <Ran> and warns about the rest when -Confirm is answered <Answers>' -ForEach @(
+            @{ Answers = @('Y', 'N'); Ran = 'Scaffold'; Warnings = @('Skipped publishing the runtime version, because the build and push stage was declined', "Skipped pointing alias 'production' at 'v7', because the build and push stage was declined") }
+            @{ Answers = @('Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push'; Warnings = @("Skipped pointing alias 'production' at 'v7', because the publish stage was declined") }
+            @{ Answers = @('Y', 'Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push,Publish'; Warnings = @("Alias 'production' was not pointed at 'v7', because that stage was declined. Point it later with Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1") }
+        ) {
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist')) }
+                function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
+                function script:Get-LambdaPSStagedModule { }
+                function script:Build-LambdaPSRuntimeImage { param($Path, $Architecture, $Tag, $ImageUri)
+                    $script:LambdaPSCalls.Add($(if ($ImageUri) { 'Push' } else { 'Build' }))
+                    if ($ImageUri) { [PSCustomObject]@{ ImageUri = $ImageUri; ImageDigest = 'sha256:abc123' } } }
+                function script:Initialize-LambdaPSEcrRepository { $script:LambdaPSCalls.Add('Repository') }
+                function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish'); [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v7' } }
+                function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $project = [System.IO.Path]::Combine($TestDrive, "decline-$($Answers.Count)")
+            $command = "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm; 'ARN=' + `$r.RuntimeArn"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command -Answer $Answers
+
+            ($result.Calls -join ',') | Should -Be $Ran
+            $output = $result.Output -replace '\s+', ' '
+            foreach ($warning in $Warnings) { $output | Should -BeLike "*$warning*" }
+            if ($Ran -notlike '*Publish*') { $output | Should -BeLike '*ARN= *' }
         }
 
         # Under -Confirm each stage asks once; accepting them all runs every stage, in order, and the version is
