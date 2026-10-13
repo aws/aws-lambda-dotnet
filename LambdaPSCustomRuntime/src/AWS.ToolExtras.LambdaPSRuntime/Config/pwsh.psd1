@@ -4,14 +4,17 @@
     # Dockerfiles fetch the arm64 tarball from it.
     ReleaseUrl    = 'https://github.com/PowerShell/PowerShell/releases/download'
 
-    # How those downloads retry. A failed HTTP response (a GitHub rate limit or server error) is
-    # retried up to RetryCount times, RetryDelaySeconds apart, and a host that does not answer within
-    # ConnectTimeoutSeconds is given up on. The Layer and self-contained .zip builds use these for the
-    # tarball download, and the scaffolded Dockerfiles for every curl they run.
+    # How those downloads retry and time out. A failed HTTP response (a GitHub rate limit or server
+    # error) is retried up to RetryCount times, RetryDelaySeconds apart. ConnectTimeoutSeconds limits
+    # only connecting to the host; OperationTimeoutSeconds limits a whole download, so a transfer that
+    # stalls part-way fails instead of waiting indefinitely. The Layer and self-contained .zip builds
+    # use all four for the tarball download; the scaffolded Dockerfiles use the retry and connect
+    # settings for every curl they run.
     Download      = @{
-        RetryCount            = 3
-        RetryDelaySeconds     = 2
-        ConnectTimeoutSeconds = 30
+        RetryCount              = 3
+        RetryDelaySeconds       = 2
+        ConnectTimeoutSeconds   = 30
+        OperationTimeoutSeconds = 600
     }
 
     # The pwsh release each supported PowerShell line installs by default, when -PwshVersion is not

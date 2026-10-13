@@ -80,6 +80,27 @@ Describe 'Module import' -Tag 'Component' {
         $result.Output | Should -BeLike "*Missing: Function.Attempts in Config/wait.psd1, MemorySize in Config/function.psd1.*Reinstall the module*"
     }
 
+    It 'refuses to import, naming the setting, when Config/pwsh.psd1 has no download operation timeout' {
+        $result = Invoke-ImportWithConfig -Name 'no-operation-timeout' -Change {
+            param($config)
+            $file = [System.IO.Path]::Combine($config, 'pwsh.psd1')
+            Set-Content -LiteralPath $file -Value ((Get-Content -LiteralPath $file) -notmatch '^\s*OperationTimeoutSeconds\s*=')
+        }
+
+        $result.Output | Should -BeLike "*FAILED: ConfigSettingMissing* | $([System.IO.Path]::Combine($result.Config, 'pwsh.psd1')) | *"
+        $result.Output | Should -BeLike "*Missing: Download.OperationTimeoutSeconds in Config/pwsh.psd1.*Reinstall the module*"
+    }
+
+    It 'ships download timeouts that are positive whole numbers, with the whole-download limit above the connect limit' {
+        $download = (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($script:moduleRoot, 'Config', 'pwsh.psd1'))).Download
+
+        foreach ($name in 'ConnectTimeoutSeconds', 'OperationTimeoutSeconds') {
+            $download[$name] | Should -BeOfType [int]
+            $download[$name] | Should -BeGreaterThan 0
+        }
+        $download.OperationTimeoutSeconds | Should -BeGreaterThan $download.ConnectTimeoutSeconds
+    }
+
     # An AWS.Tools build below the floors has no customer-managed runtime cmdlets, so the module is
     # refused at import rather than failing at its first AWS call.
     It 'refuses to import against AWS.Tools modules older than its RequiredModules floors' {
