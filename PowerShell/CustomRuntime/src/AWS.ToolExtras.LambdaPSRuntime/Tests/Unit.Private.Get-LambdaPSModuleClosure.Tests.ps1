@@ -451,7 +451,7 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure.Error.TargetObject | Should -Be $Name
             $closure.Error.Exception.Message | Should -BeLike "Module '$Name' (-IncludeModule or -Module) cannot be packaged for Lambda: *. Require the AWS.Tools.* modules *"
             $desktop = '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
-            $netCore = "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"
+            $netCore = "*AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more than Lambda's 250 MB limit for a .zip package and its layers, and far more than a container image needs*"
             # Each module's own reason, and not the other's: -eq ignores case, as the check does.
             $reason, $other = if ($Name -eq 'AWSPowerShell') { $desktop, $netCore } else { $netCore, $desktop }
             $closure.Error.Exception.Message | Should -BeLike $reason
@@ -467,7 +467,7 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure.Error.FullyQualifiedErrorId | Should -Be 'AWSPowerShellModuleNotSupported'
             $closure.Error.Exception.Message | Should -BeLike "Module 'AWSPowerShell' and 'AWSPowerShell.NetCore' (-IncludeModule or -Module)*"
             $closure.Error.Exception.Message | Should -BeLike '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
-            $closure.Error.Exception.Message | Should -BeLike "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"
+            $closure.Error.Exception.Message | Should -BeLike "*AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more than Lambda's 250 MB limit for a .zip package and its layers, and far more than a container image needs*"
         }
     }
 

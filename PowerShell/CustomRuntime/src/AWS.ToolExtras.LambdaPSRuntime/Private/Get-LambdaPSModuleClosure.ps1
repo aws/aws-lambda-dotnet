@@ -28,11 +28,12 @@ function Get-LambdaPSModuleClosure {
         A -Module specification that names AWSPowerShell or AWSPowerShell.NetCore (any case, with or
         without a version) is returned as an AWSPowerShellModuleNotSupported Error. AWSPowerShell is
         the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda;
-        AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's
-        250 MB limit for a .zip package and its layers. Every other -Module specification must pin an exact
-        RequiredVersion (Get-LambdaPSModulePinError); the first that does not is returned as Error
-        before anything is walked. Every caller that downloads, stages or checks a module set walks it
-        here, so this is the one place both rules are enforced for -IncludeModule and -Module.
+        AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more than
+        Lambda's 250 MB limit for a .zip package and its layers, and far more than a container image
+        needs. Every other -Module specification must pin an exact RequiredVersion
+        (Get-LambdaPSModulePinError); the first that does not is returned as Error before anything is
+        walked. Every caller that downloads, stages or checks a module set walks it here, so this is
+        the one place both rules are enforced for -IncludeModule and -Module.
 
         PowerShell's own modules (Test-LambdaPSBuiltInModule: Microsoft.PowerShell.Utility,
         .Management, .Security, .Host, .Diagnostics, .Core, CimCmdlets, Microsoft.WSMan.Management,
@@ -111,8 +112,9 @@ function Get-LambdaPSModuleClosure {
 
     # The monolithic AWSPowerShell modules are refused as for a handler's #Requires
     # (Get-LambdaPSRequiredModule): AWSPowerShell is the Windows PowerShell (Desktop edition) module and
-    # does not run in PowerShell 7 on Lambda, and AWSPowerShell.NetCore holds every AWS service, at over
-    # 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers. Checked
+    # does not run in PowerShell 7 on Lambda, and AWSPowerShell.NetCore holds every AWS service (over
+    # 600 MB installed), which is more than Lambda's 250 MB limit for a .zip package and its layers, and
+    # far more than a container image needs. Checked
     # before the pin, so a bare name gets this advice rather than a request for a version. -in ignores
     # case, as PowerShell does.
     $monolithic = @($Module | Where-Object { $_.Name -in 'AWSPowerShell', 'AWSPowerShell.NetCore' })
@@ -120,8 +122,8 @@ function Get-LambdaPSModuleClosure {
         $names = @($monolithic | ForEach-Object { "'$($_.Name)'" }) -join ' and '
         $reasons = [ordered]@{
             'AWSPowerShell'         = 'AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda'
-            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB " +
-                'limit for a .zip package and its layers, and far larger than the AWS.Tools.* modules a handler needs'
+            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more than Lambda's " +
+                '250 MB limit for a .zip package and its layers, and far more than a container image needs'
         }
         # -contains ignores case, so 'awspowershell.netcore' gets the AWSPowerShell.NetCore reason.
         $why = @($reasons.Keys | Where-Object { @($monolithic.Name) -contains $_ } | ForEach-Object { $reasons[$_] }) -join '; '

@@ -43,8 +43,8 @@ function Save-LambdaPSModule {
         Errors it can stop with (FullyQualifiedErrorId starts with):
           AWSPowerShellModuleNotSupported
                                       a -Module specification that names AWSPowerShell (Windows
-                                      PowerShell only) or AWSPowerShell.NetCore (over 600 MB
-                                      installed, more than Lambda's 250 MB limit)
+                                      PowerShell only) or AWSPowerShell.NetCore (every AWS
+                                      service, over 600 MB installed)
           ModuleVersionRequired       a -Module specification without an exact RequiredVersion
           DependencyNameIsPath, DependencyNameMissing, DependencyVersionUnpinned
                                       a RequiredModules entry that names a path, has no name, or
