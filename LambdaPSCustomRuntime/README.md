@@ -192,6 +192,21 @@ recommended as a direct production dependency.
 any module in the set that is already installed, so `./mods` holds the complete set at the exact
 versions a function will ship with. Test against it by adding `./mods` to `$env:PSModulePath`.
 
+## Migrating from AWSLambdaPSCore
+
+Handlers written for AWSLambdaPSCore (`New-AWSPowerShellLambda`, `Publish-AWSPowerShellLambda`) run
+on this runtime with three differences:
+
+- **The response is all of the handler's pipeline output, not just the last item.** One object is
+  returned as that object; two or more are returned as a JSON array. Send everything else to `$null`
+  (`$null = Invoke-Something`, or `| Out-Null`) so the handler outputs only its response, for example
+  with `return $result`.
+- **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
+  CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
+- **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
+  them, and empty when the caller sent none. Parse them with `ConvertFrom-Json`, for example
+  `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
+
 ## Attribution
 
 The module sets the SDK `ClientAppId` on the client config it passes to the cmdlets it wraps, so its
