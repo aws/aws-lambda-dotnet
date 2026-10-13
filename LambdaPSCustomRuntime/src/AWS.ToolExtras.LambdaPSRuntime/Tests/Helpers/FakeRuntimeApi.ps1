@@ -41,6 +41,12 @@ function Invoke-LambdaPSRuntimeLoop {
     .PARAMETER TraceId
         The Lambda-Runtime-Trace-Id header to send with each event, in order. An empty or missing
         entry sends no header.
+    .PARAMETER ClientContext
+        The Lambda-Runtime-Client-Context header (JSON text) to send with each event, in order. An empty
+        or missing entry sends no header.
+    .PARAMETER CognitoIdentity
+        The Lambda-Runtime-Cognito-Identity header (JSON text) to send with each event, in order. An
+        empty or missing entry sends no header.
     .OUTPUTS
         One object per post, in order: Path (the path posted to: an invocation's /response or /error,
         or /init/error), Body and Status (the status it was answered with).
@@ -59,6 +65,8 @@ function Invoke-LambdaPSRuntimeLoop {
         [int[]]$ResponseStatus = @(),
         [int]$NextStatus,
         [string[]]$TraceId = @(),
+        [string[]]$ClientContext = @(),
+        [string[]]$CognitoIdentity = @(),
         [switch]$ExpectExit,
         [int]$StartupTimeoutSeconds = 120,
         [string]$ExitCodeVariable,
@@ -115,6 +123,12 @@ function Invoke-LambdaPSRuntimeLoop {
                 $context.Response.Headers['Lambda-Runtime-Invoked-Function-Arn'] = 'arn:aws:lambda:us-east-1:111122223333:function:fn'
                 if ($served -le $TraceId.Count -and $TraceId[$served - 1]) {
                     $context.Response.Headers['Lambda-Runtime-Trace-Id'] = $TraceId[$served - 1]
+                }
+                if ($served -le $ClientContext.Count -and $ClientContext[$served - 1]) {
+                    $context.Response.Headers['Lambda-Runtime-Client-Context'] = $ClientContext[$served - 1]
+                }
+                if ($served -le $CognitoIdentity.Count -and $CognitoIdentity[$served - 1]) {
+                    $context.Response.Headers['Lambda-Runtime-Cognito-Identity'] = $CognitoIdentity[$served - 1]
                 }
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($pending.Dequeue())
                 $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)

@@ -86,6 +86,22 @@ function Send-LambdaPSResponse { param($Id) $null = Invoke-WebRequest -Method Po
             Should -Throw '*still had 1 of 1 event(s) open after 2 seconds*'
     }
 
+    It 'sends -ClientContext and -CognitoIdentity as the Lambda-Runtime-Client-Context and Lambda-Runtime-Cognito-Identity headers' {
+        $runtime = [System.IO.Path]::Combine($TestDrive, 'echo-headers.ps1')
+        Set-Content -LiteralPath $runtime -Value ($script:runtimePrelude + @'
+
+while ($true) {
+    $next = Invoke-WebRequest -Uri "$api/invocation/next" -NoProxy -TimeoutSec 600
+    $body = "$($next.Headers['Lambda-Runtime-Client-Context'])|$($next.Headers['Lambda-Runtime-Cognito-Identity'])"
+    $null = Invoke-WebRequest -Method Post -Uri "$api/invocation/$($next.Headers['Lambda-Runtime-Aws-Request-Id'])/response" -Body $body -NoProxy
+}
+'@)
+
+        $posts = @(Invoke-LambdaPSRuntimeLoop -RuntimePath $runtime -TaskRoot $script:taskRoot -Handler 'x.ps1' -EventBody '{}', '{}' -ClientContext '{"client":{"app_title":"a"}}' -CognitoIdentity '', '{"cognitoIdentityId":"id-1"}' -TimeoutSeconds 30)
+
+        $posts.Body | Should -Be @('{"client":{"app_title":"a"}}|', '|{"cognitoIdentityId":"id-1"}')
+    }
+
     It 'fails when the runtime neither asks for an event nor exits within -StartupTimeoutSeconds' {
         $runtime = [System.IO.Path]::Combine($TestDrive, 'never-asks.ps1')
         Set-Content -LiteralPath $runtime -Value 'Start-Sleep -Seconds 60'
