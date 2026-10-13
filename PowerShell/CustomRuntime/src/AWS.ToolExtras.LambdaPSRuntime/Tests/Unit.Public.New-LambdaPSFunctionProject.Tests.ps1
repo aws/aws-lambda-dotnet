@@ -98,8 +98,8 @@ Describe 'New-LambdaPSFunctionProject' -Tag 'Unit' {
         @(Get-ChildItem -LiteralPath $target -Recurse -Force | ForEach-Object FullName) | Should -Be $before
     }
 
-    # A declined download stops the scaffold, as a declined delete does (J3): before, the project was
-    # written without the modules it was asked to include.
+    # A declined download stops the scaffold, as a declined delete does, so no project is written
+    # without the modules it was asked to include.
     It 'writes nothing, naming the modules, when the download is declined under -Confirm' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-confirm-decline-download')
         $stub = @"

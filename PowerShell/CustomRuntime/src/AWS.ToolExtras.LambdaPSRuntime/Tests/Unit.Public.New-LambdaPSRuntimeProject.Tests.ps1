@@ -275,11 +275,11 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         [System.IO.File]::ReadAllText($bootstrap) | Should -BeExactly $original
     }
 
-    # -Force REPLACES the target rather than merging into it. Merging produced a hybrid project: a CMR
-    # scaffold re-scaffolded as '-Target Layer -Force' kept the CMR Dockerfile, so
-    # Build-LambdaPSRuntimeImage found a Dockerfile in a Layer project and built an image whose
-    # bootstrap execs /opt/powershell/pwsh -- absent from that image. Worse, the validator passed the
-    # hybrid green, because the marker and the bootstrap were both consistently Layer.
+    # -Force REPLACES the target rather than merging into it. A merge would leave a hybrid project: a CMR
+    # scaffold re-scaffolded as '-Target Layer -Force' would keep the CMR Dockerfile, so
+    # Build-LambdaPSRuntimeImage would find a Dockerfile in a Layer project and build an image whose
+    # bootstrap execs /opt/powershell/pwsh, which that image does not have. The validator would not
+    # catch it, because the marker and the bootstrap are both consistently Layer.
     Context '-Force replaces rather than merges' {
         It 'removes a previous target-specific file that the new target does not emit' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-crosstarget')
@@ -419,8 +419,8 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
             (Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json).Target | Should -Be 'CMR'
         }
 
-        # A declined download stops the scaffold, as a declined delete does (J3): before, the project was
-        # written over the old one, or written without the modules it was asked to include.
+        # A declined download stops the scaffold, as a declined delete does, so the old project is not
+        # written over and no project is written without the modules it was asked to include.
         It 'deletes and writes nothing, naming the modules, when the download is declined' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-decline-download')
             $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'

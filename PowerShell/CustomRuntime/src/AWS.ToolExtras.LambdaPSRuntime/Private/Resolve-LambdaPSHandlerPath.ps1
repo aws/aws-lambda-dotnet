@@ -4,9 +4,9 @@ function Resolve-LambdaPSHandlerPath {
         Returns the real path of a function source's handler script, or $null when the source does not
         contain it.
     .DESCRIPTION
-        The shared check that a handler script is in the function source, used by the packager
-        (Compress-LambdaPSFunctionPackage, which reads the script's '#Requires -Modules') and the
-        deployer (New-LambdaPSFunctionDeployment, which refuses a handler the package would not
+        The shared check that a handler script is in the function source, used by the packagers
+        (Compress-LambdaPSFunctionPackage and Build-LambdaPSRuntimePackage, which read the script's
+        '#Requires -Modules') and the deployer (New-LambdaPSFunctionDeployment, which refuses a handler the package would not
         contain). Each caller reports a missing script in its own words.
 
         Off Windows, a '\' in -HandlerScript is a terminating InvalidHandlerPath error, since Lambda's
