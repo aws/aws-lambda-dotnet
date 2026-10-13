@@ -3,10 +3,10 @@ function Publish-LambdaPSRuntimeVersion {
     .SYNOPSIS
         Registers and publishes a Lambda customer-managed runtime version.
     .DESCRIPTION
-        Thin, single-purpose seam over the Lambda runtime cmdlets (AWS.Tools.LambdaCore). It ensures the
-        runtime exists by calling New-LMCRuntime (tolerating an already-exists condition so
-        the operation is idempotent), then calls New-LMCRuntimeVersion to create a new version
-        from the pushed image. It exists so the orchestrator has one mockable point for runtime
+        Thin, single-purpose seam over the Lambda runtime cmdlets (AWS.Tools.LambdaCore). It looks the
+        runtime up with Get-LMCRuntime and creates it with New-LMCRuntime only when it is not found
+        (tolerating a create that races another), then calls New-LMCRuntimeVersion to create a new
+        version from the pushed image. It exists so the orchestrator has one mockable point for runtime
         publication. It binds no AWS SDK assembly directly.
 
         A freshly published version starts in CREATING and settles to ACTIVE or FAILED as Lambda

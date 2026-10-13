@@ -177,27 +177,27 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 -ParameterFilter { $RepositoryName -eq 'my-powershell-runtime' }
         }
 
-        # A runtime name allows separators in a row ('my--rt'); an ECR repository name does not.
+        # A runtime name allows '.' next to another separator ('my..runtime'); an ECR repository name does not.
         It 'throws InvalidRepositoryName asking for -RepositoryName when the runtime name is not a valid ECR name' {
             $splat = @{
-                RuntimeName = 'my--powershell-runtime'; PowerShellVersion = '7.4'; Region = 'us-east-1'
+                RuntimeName = 'my..powershell-runtime'; PowerShellVersion = '7.4'; Region = 'us-east-1'
             }
             $err = { New-LambdaPSRuntimeDeployment @splat } |
                 Should -Throw -ErrorId 'InvalidRepositoryName,New-LambdaPSRuntimeDeployment' -PassThru
             # Every character of the name is allowed, so the message names the rule that fails.
-            $err.Exception.Message | Should -BeLike '*no two separators in a row; each separator sits between letters or digits*'
+            $err.Exception.Message | Should -BeLike '*(lowercase letters and digits, 2-256 characters, in ''/''-separated parts where letters or digits are joined by one ''.'', one ''_'', two ''_'', or any number of ''-'')*'
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
         It 'names the separator rule when an explicit -RepositoryName is not a valid ECR name' {
-            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName 'a--b' } |
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName 'a..b' } |
                 Should -Throw -ErrorId 'InvalidRepositoryName,New-LambdaPSRuntimeDeployment' -PassThru
-            $err.Exception.Message | Should -BeLike "Repository 'a--b' *no two separators in a row; each separator sits between letters or digits*"
+            $err.Exception.Message | Should -BeLike "Repository 'a..b' *(lowercase letters and digits, 2-256 characters, in '/'-separated parts where letters or digits are joined by one '.', one '_', two '_', or any number of '-')*"
         }
 
         It 'uses an explicit -RepositoryName even when the runtime name would be invalid' {
             $splat = @{
-                RuntimeName = 'my--runtime'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'my-runtime'
+                RuntimeName = 'my..runtime'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'my-runtime'
             }
             $result = New-LambdaPSRuntimeDeployment @splat
 

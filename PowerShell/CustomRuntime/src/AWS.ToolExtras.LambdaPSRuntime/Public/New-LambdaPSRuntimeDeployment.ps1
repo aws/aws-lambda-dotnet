@@ -26,9 +26,10 @@ function New-LambdaPSRuntimeDeployment {
         Update-LMCRuntimeAlias.
 
         -RepositoryName is optional and defaults to -RuntimeName. An ECR repository name is stricter
-        than a runtime name: it refuses names with consecutive separators, such as 'my..runtime'. A
-        runtime name that is not a valid ECR repository name fails with a request for an explicit
-        -RepositoryName, rather than being silently altered.
+        than a runtime name: it refuses names where '.' touches another separator, '_' touches '-', or
+        three or more '_' run together, for example 'my..runtime'. A runtime name that is not a valid
+        ECR repository name fails with a request for an explicit -RepositoryName, rather than being
+        silently altered.
 
         Module staging is delegated entirely to the scaffolder: this cmdlet forwards -IncludeModule to
         New-LambdaPSRuntimeProject, which stages the requested modules (with transitive dependencies),
@@ -42,7 +43,9 @@ function New-LambdaPSRuntimeDeployment {
         runtime already has -RuntimeVersion, the deploy stops with RuntimeVersionExists: versions are
         immutable, and pushing first would move the <RuntimeVersion> tag off the image that version
         runs. (The version is published by digest, so it keeps running, but an ECR lifecycle rule
-        that expires untagged images could then delete its image.) A version that cannot be read for
+        that expires untagged images could then delete its image.) Only this runtime's versions are
+        checked: when -RepositoryName is shared with another runtime, a -RuntimeVersion that runtime
+        already uses would still move its tag. A version that cannot be read for
         any reason other than not existing stops the deploy with RuntimeVersionCheckFailed, rather than
         being taken as new. For a new version it then reads -RuntimeAlias, to warn when the deploy
         moves it off a version that supports an architecture the new version does not. A missing
@@ -51,8 +54,7 @@ function New-LambdaPSRuntimeDeployment {
         before the ECR repository is ensured, so a failed build leaves nothing in AWS; the push reuses
         the local build's cache. The local build leaves an image tagged
         <RepositoryName>:<RuntimeVersion> in the local docker store, and with docker's default builder
-        the push also stores it there under its
-        ECR image URI.
+        the push also stores it there under its ECR image URI.
 
         Each state-changing stage is guarded by ShouldProcess, so -WhatIf previews the plan (the
         project path, the composed ECR image URI, the version and the alias) without creating or
@@ -116,7 +118,7 @@ function New-LambdaPSRuntimeDeployment {
         default (Set-DefaultAWSRegion), the -ProfileName profile's region, the default profile's
         region, AWS_REGION, the AWS_PROFILE profile's region, or the instance or container's.
         AWS_DEFAULT_REGION is not read. With none of those it fails with RegionNotResolved. Region
-        names are lowercase, so a region given in another case (EU-WEST-1) is used as eu-west-1.
+        names are lowercase, so a region given in another case (US-EAST-1) is used as us-east-1.
     .PARAMETER ProfileName
         The name of the AWS credential profile to use, as for any AWS.Tools cmdlet. When no credential
         parameter is given, AWS.Tools resolves credentials the usual way: the shell's default
@@ -305,10 +307,10 @@ function New-LambdaPSRuntimeDeployment {
         $effectiveRepository = if ($repositoryDefaulted) { $RuntimeName } else { $RepositoryName }
         if (-not (Test-LambdaPSEcrRepositoryName -Name $effectiveRepository)) {
             $message = if ($repositoryDefaulted) {
-                "Runtime name '$RuntimeName' is not a valid ECR repository name, so it cannot be used as the default repository. Pass an explicit -RepositoryName (lowercase letters, digits, and '. _ - /', 2-256 chars; no two separators in a row; each separator sits between letters or digits)."
+                "Runtime name '$RuntimeName' is not a valid ECR repository name, so it cannot be used as the default repository. Pass an explicit -RepositoryName (lowercase letters and digits, 2-256 characters, in '/'-separated parts where letters or digits are joined by one '.', one '_', two '_', or any number of '-')."
             }
             else {
-                "Repository '$RepositoryName' is not a valid ECR repository name (lowercase letters, digits, and '. _ - /', 2-256 chars; no two separators in a row; each separator sits between letters or digits)."
+                "Repository '$RepositoryName' is not a valid ECR repository name (lowercase letters and digits, 2-256 characters, in '/'-separated parts where letters or digits are joined by one '.', one '_', two '_', or any number of '-')."
             }
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
