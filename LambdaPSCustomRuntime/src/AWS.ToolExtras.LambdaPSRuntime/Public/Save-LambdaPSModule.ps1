@@ -35,7 +35,8 @@ function Save-LambdaPSModule {
 
         Under -Confirm it asks once to download and once to copy the installed modules; under -WhatIf
         it lists each download and copy. Declining the download leaves the modules it would have
-        fetched out of -Path, with a warning naming them.
+        fetched out of -Path, and declining the copy leaves the installed modules out; either way a
+        warning names the modules left out, because -Path then does not hold the complete set.
 
         When anything is downloaded, a warning names the modules and says to test them before
         production use; modules that came from PSGallery get a second warning that PSGallery is not
@@ -144,6 +145,10 @@ function Save-LambdaPSModule {
         if (-not $WhatIfPreference -and $toCopy.Count -gt 0) {
             $copyAll = $PSCmdlet.ShouldProcess(
                 "'$root': $(@($toCopy | ForEach-Object { "$($_.Found.Name) $($_.Found.Version)" }) -join ', ')", 'Copy installed modules')
+        }
+        if (-not $WhatIfPreference -and $toCopy.Count -gt 0 -and -not $copyAll) {
+            Write-Warning ("Did not copy $(@($toCopy | ForEach-Object { "$($_.Found.Name) $($_.Found.Version)" }) -join ', '), " +
+                "because the copy was declined, so '$Path' does not hold the complete set.")
         }
         foreach ($copy in $toCopy) {
             $found = $copy.Found

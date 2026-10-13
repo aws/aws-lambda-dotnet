@@ -157,4 +157,23 @@ Describe 'Save-LambdaPSModule -Confirm' -Tag 'Unit' {
             [System.IO.Path]::Combine($mods, $n, '1.0.0', "$n.psd1") | Should -Exist
         }
     }
+
+    It 'warns, naming the modules, when the copy is declined' {
+        $installed = Join-Path $TestDrive 'decline-installed'
+        foreach ($n in 'LambdaPSFake.ID', 'LambdaPSFake.IE') {
+            $null = New-FakeModule -Root $installed -Name $n -Version '1.0.0'
+        }
+        $mods = Join-Path $TestDrive 'decline-mods'
+        $command = "`$env:PSModulePath = '$installed' + [System.IO.Path]::PathSeparator + `$env:PSModulePath; " +
+            "`$out = @(Save-LambdaPSModule -Module @(@{ ModuleName = 'LambdaPSFake.ID'; RequiredVersion = '1.0.0' }, " +
+            "@{ ModuleName = 'LambdaPSFake.IE'; RequiredVersion = '1.0.0' }) -Path '$mods' -Confirm -WarningVariable w -WarningAction SilentlyContinue); " +
+            "'OUT:' + `$out.Count; `$w | ForEach-Object { 'WARNING:' + `$_ }"
+
+        $lines = @((Invoke-InChildPwsh -Command $command -Answer 'N').Output -split "`n")
+
+        $lines | Should -Contain 'OUT:0'
+        $lines | Should -Contain ("WARNING:Did not copy LambdaPSFake.ID 1.0.0, LambdaPSFake.IE 1.0.0, because the copy was declined, " +
+            "so '$mods' does not hold the complete set.")
+        Test-Path -LiteralPath ([System.IO.Path]::Combine($mods, 'LambdaPSFake.ID')) | Should -BeFalse
+    }
 }
