@@ -53,15 +53,17 @@ function Get-LambdaPSRequiredModule {
     }
 
     # AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7
-    # on Lambda. AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more
-    # than Lambda's 250 MB limit for a .zip package and its layers, and far more than a container image
-    # needs. The AWS.Tools.* modules split the same cmdlets by service.
+    # on Lambda. AWSPowerShell.NetCore holds every AWS service (over 600 MB installed): more than
+    # Lambda's 250 MB limit for a .zip package and its layers, and in a container image, importing it
+    # takes over 10 seconds and over 1 GB of memory on every cold start. The AWS.Tools.* modules split
+    # the same cmdlets by service.
     $monolithic = @($ast.ScriptRequirements.RequiredModules | Where-Object { $_.Name -in 'AWSPowerShell', 'AWSPowerShell.NetCore' })
     if ($monolithic.Count -gt 0) {
         $reasons = [ordered]@{
             'AWSPowerShell'         = 'AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda'
-            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service (over 600 MB installed), which is more than Lambda's " +
-                '250 MB limit for a .zip package and its layers, and far more than a container image needs'
+            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service (over 600 MB installed): more than Lambda's 250 MB " +
+                'limit for a .zip package and its layers, and in a container image, importing it takes over 10 ' +
+                'seconds and over 1 GB of memory on every cold start'
         }
         # -contains ignores case, so 'awspowershell.netcore' gets the AWSPowerShell.NetCore reason.
         $why = @($reasons.Keys | Where-Object { @($monolithic.Name) -contains $_ } | ForEach-Object { $reasons[$_] }) -join '; '
