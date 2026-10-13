@@ -20,6 +20,8 @@
 #   ChangingFunctions                 ErrorRecord change no state.
 #   PSUsePSCredentialType,            -Credential takes an AWS.Tools AWSCredentials object, as on every
 #   PSAvoidUsingPlainTextForPassword  AWS.Tools cmdlet, not a PSCredential or a password string.
+#   PSReviewUnusedParameter           A helper keeps a parameter it does not read so that every caller
+#                                     calls it the same way.
 #
 # `grep -rn SuppressMessageAttribute src/` lists every site.
 #

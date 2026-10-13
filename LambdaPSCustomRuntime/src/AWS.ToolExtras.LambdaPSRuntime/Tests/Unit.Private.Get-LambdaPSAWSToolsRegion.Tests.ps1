@@ -31,14 +31,36 @@ Describe 'Get-LambdaPSAWSToolsRegion' -Tag 'Unit' {
         }
     }
 
-    # That the default profile is read from -ProfileLocation is tested in a clean process, in
-    # Unit.Private.Resolve-LambdaPSRegion.Tests.ps1; the shell default wins here.
-    It 'binds -ProfileLocation' {
-        $config = Join-Path $TestDrive 'credentials'
-        Set-Content -LiteralPath $config -Value ''
-        InModuleScope $script:moduleName -Parameters @{ config = $config } {
-            param($config)
-            Get-LambdaPSAWSToolsRegion -ProfileLocation $config | Should -Be 'ap-southeast-2'
+}
+
+# The SDK reads the profile store once per process, so -ProfileLocation is checked in a child pwsh
+# whose default credential files are empty and that has no shell default.
+Describe 'Get-LambdaPSAWSToolsRegion -ProfileLocation' -Tag 'Unit' {
+    BeforeAll {
+        . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+        $script:emptyConfig = Join-Path $TestDrive 'empty-config'
+        Set-Content -LiteralPath $script:emptyConfig -Value ''
+        $script:located = Join-Path $TestDrive 'located-credentials'
+        Set-Content -LiteralPath $script:located -Value "[default]`naws_access_key_id = AKIAEXAMPLE`naws_secret_access_key = example`nregion = ap-northeast-1"
+
+        function Invoke-RegionInChild {
+            param([string]$ArgumentText)
+            $command = @"
+foreach (`$name in 'AWS_REGION', 'AWS_DEFAULT_REGION', 'AWS_PROFILE') { [Environment]::SetEnvironmentVariable(`$name, `$null) }
+`$env:AWS_CONFIG_FILE = '$script:emptyConfig'
+`$env:AWS_SHARED_CREDENTIALS_FILE = '$script:emptyConfig'
+`$env:AWS_EC2_METADATA_DISABLED = 'true'
+'REGION:[' + (& (Get-Module AWS.ToolExtras.LambdaPSRuntime) { Get-LambdaPSAWSToolsRegion $ArgumentText }) + ']'
+"@
+            (Invoke-InChildPwsh -Command $command).Output
         }
+    }
+
+    It 'reads the default profile''s region from -ProfileLocation' {
+        Invoke-RegionInChild -ArgumentText "-ProfileLocation '$script:located'" | Should -BeLike '*REGION:`[ap-northeast-1`]*'
+    }
+
+    It 'returns nothing without -ProfileLocation when the default files hold no region' {
+        Invoke-RegionInChild -ArgumentText '' | Should -BeLike '*REGION:`[`]*'
     }
 }

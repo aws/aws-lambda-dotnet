@@ -38,6 +38,13 @@ Describe 'Invoke-InChildPwsh' -Tag 'Component' {
 
 # A stand-in runtime written per test: $Body runs after $api and Get-LambdaPSNextEvent are defined.
 # Get-LambdaPSNextEvent asks /next and returns the request id; Send-LambdaPSResponse posts its result.
+Describe 'Invoke-InChildPwsh when the child ends early' -Tag 'Component' {
+    It 'throws with the child''s exit code and output when the child exits before reporting its calls' {
+        { Invoke-InChildPwsh -Command "'printed before exit'; exit 4" } |
+            Should -Throw '*exited with code 4 before it reported its calls*printed before exit*'
+    }
+}
+
 Describe 'Invoke-LambdaPSRuntimeLoop' -Tag 'Component' {
     BeforeAll {
         $script:runtimePrelude = @'

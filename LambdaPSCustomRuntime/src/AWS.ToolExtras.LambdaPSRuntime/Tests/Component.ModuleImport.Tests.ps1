@@ -101,13 +101,27 @@ Describe 'Module import' -Tag 'Component' {
         $download.OperationTimeoutSeconds | Should -BeGreaterThan $download.ConnectTimeoutSeconds
     }
 
+    It 'pins an x64 and an arm64 SHA256 for every pwsh release in Config/pwsh.psd1, including each default' {
+        $pwsh = Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($script:moduleRoot, 'Config', 'pwsh.psd1'))
+
+        foreach ($release in $pwsh.DefaultPatch.Values) {
+            $pwsh.ArchiveSha256.Keys | Should -Contain $release
+        }
+        foreach ($release in $pwsh.ArchiveSha256.Keys) {
+            @($pwsh.ArchiveSha256[$release].Keys | Sort-Object) | Should -Be @('arm64', 'x64') -Because "release $release"
+            foreach ($hash in $pwsh.ArchiveSha256[$release].Values) {
+                $hash | Should -Match '^[0-9a-f]{64}$' -Because "release $release"
+            }
+        }
+    }
+
     # An AWS.Tools build below the floors has no customer-managed runtime cmdlets, so the module is
     # refused at import rather than failing at its first AWS call.
     It 'refuses to import against AWS.Tools modules older than its RequiredModules floors' {
         $required = (Import-PowerShellDataFile -LiteralPath $script:modulePath).RequiredModules
         $oldTools = [System.IO.Path]::Combine($TestDrive, 'old-aws-tools')
         foreach ($module in $required) {
-            # A released AWS.Tools build just below the floors.
+            # A released AWS.Tools build below the floors.
             $folder = [System.IO.Path]::Combine($oldTools, $module.ModuleName, '5.0.224')
             $null = New-Item -ItemType Directory -Path $folder -Force
             Set-Content -LiteralPath ([System.IO.Path]::Combine($folder, "$($module.ModuleName).psd1")) -Value "@{ ModuleVersion = '5.0.224'; GUID = '$($module.GUID)' }"
@@ -128,7 +142,7 @@ Describe 'Module import' -Tag 'Component' {
     }
 
     # Every Public/ cmdlet, and nothing else, imported from a caller in the strictest mode. A caller's
-    # strict mode does not reach the module's own code (backlog F18 covers checking that code).
+    # strict mode does not reach the module's own code, so this does not check that code.
     It 'imports from a caller under Set-StrictMode -Version Latest and exports every Public/ cmdlet' {
         $public = [System.IO.Path]::Combine($script:moduleRoot, 'Public')
         $expected = @()

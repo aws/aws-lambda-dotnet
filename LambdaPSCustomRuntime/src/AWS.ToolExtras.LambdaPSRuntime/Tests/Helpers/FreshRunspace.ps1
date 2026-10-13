@@ -96,9 +96,15 @@ try { $Command } catch { "ERROR: `$(`$_.FullyQualifiedErrorId)" }
     $process.StandardInput.Close()
     $stdout = $process.StandardOutput.ReadToEnd()
     $process.WaitForExit()
+    $output = ($stdout + $stderr.Result) -replace "`r`n", "`n"
     $callLine = @($stdout -split "`r?`n" | Where-Object { $_ -like 'CALLS:*' }) | Select-Object -Last 1
+    # The script prints CALLS: last, so a child that ends before it (a failed import, a crash, exit
+    # in the command) is reported with what it printed.
+    if ($null -eq $callLine) {
+        throw "The child pwsh exited with code $($process.ExitCode) before it reported its calls. Its output:`n$output"
+    }
     [PSCustomObject]@{
-        Output = ($stdout + $stderr.Result) -replace "`r`n", "`n"
-        Calls  = @(([string]$callLine).Substring(6).Trim() -split ',' | Where-Object { $_ })
+        Output = $output
+        Calls  = @($callLine.Substring(6).Trim() -split ',' | Where-Object { $_ })
     }
 }
