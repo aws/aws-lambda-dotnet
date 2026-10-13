@@ -82,6 +82,11 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'FAILED'
                 $_.Exception.Message | Should -Match 'acct\.dkr\.ecr\.us-east-1\.amazonaws\.com/rt:v1'
                 $_.Exception.Message | Should -Match 'Schema 2'
+                # The version now exists, so a rerun needs another name; and the cause is something to check,
+                # not a rebuild with the tool that just built it.
+                $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.*"
+                $_.Exception.Message | Should -BeLike '*docker buildx imagetools inspect acct.dkr.ecr.us-east-1.amazonaws.com/rt:v1*'
+                $_.Exception.Message | Should -Not -BeLike '*Rebuild with*'
             }
             $threw | Should -BeTrue
         }

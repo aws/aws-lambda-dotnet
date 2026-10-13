@@ -159,10 +159,13 @@ function Publish-LambdaPSRuntimeVersion {
     # broken version and print a success object. Only FAILED is about the image; another state (for
     # example DELETING, from a concurrent removal) is reported as it is.
     if ($rv.State -ne 'ACTIVE') {
+        # A FAILED version exists and is immutable, so a rerun under the same name is refused; say so, as
+        # the architecture-mismatch error below does.
         $cause = if ($rv.State -eq 'FAILED') {
-            (' The most common cause is an image that is not a Docker v2 Schema 2 manifest -- Lambda pulls ' +
-             'by digest and rejects OCI. Rebuild with Build-LambdaPSRuntimeImage, which passes ' +
-             '--provenance=false and oci-mediatypes=false for exactly this reason.')
+            (" Check that the image is a Docker v2 Schema 2 manifest: Lambda pulls by digest and rejects OCI " +
+             "('docker buildx imagetools inspect $ImageUri' shows its media type). Version '$RuntimeVersion' " +
+             'already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with ' +
+             "Remove-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments.")
         }
         else { '' }
         throw [System.Management.Automation.ErrorRecord]::new(
