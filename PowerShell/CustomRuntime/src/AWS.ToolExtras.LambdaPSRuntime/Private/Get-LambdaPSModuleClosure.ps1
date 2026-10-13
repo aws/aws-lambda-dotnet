@@ -19,12 +19,15 @@ function Get-LambdaPSModuleClosure {
                     walked. MinimumOnly is true when only ModuleVersion entries ask for the module.
           Pending   the -Pending keys the walk reached; treated as present but not walked (used under
                     -WhatIf, where a download is only previewed)
-          Error     a ready-to-throw AWSPowerShellModuleNotSupported, ModuleVersionRequired,
-                    DependencyNameIsPath, DependencyNameMissing, DependencyVersionUnpinned,
-                    ModuleVersionConflict, ModuleVersionSpelling, ModuleClosureNotSettled or (with
-                    -RequireAll) ModuleNotFoundLocally ErrorRecord, or $null. It is returned rather
-                    than thrown so the error is attributed to the calling cmdlet.
+          Error     a ready-to-throw ModuleNameInvalid, AWSPowerShellModuleNotSupported,
+                    ModuleVersionRequired, DependencyNameIsPath, DependencyNameMissing,
+                    DependencyVersionUnpinned, ModuleVersionConflict, ModuleVersionSpelling,
+                    ModuleClosureNotSettled or (with -RequireAll) ModuleNotFoundLocally ErrorRecord, or
+                    $null. It is returned rather than thrown so the error is attributed to the calling
+                    cmdlet.
 
+        A -Module name that is a wildcard (*, ? or [) or a path (rooted, or containing a / or \) is
+        returned as a ModuleNameInvalid Error: each module must be named exactly.
         A -Module specification that names AWSPowerShell or AWSPowerShell.NetCore (any case, with or
         without a version) is returned as an AWSPowerShellModuleNotSupported Error. AWSPowerShell is
         the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda;
@@ -33,8 +36,8 @@ function Get-LambdaPSModuleClosure {
         over 10 seconds and over 1 GB of memory on every cold start. Every other -Module specification
         must pin an exact RequiredVersion (Get-LambdaPSModulePinError); the first that does not is
         returned as Error before anything is walked. Every caller that downloads, stages or checks a
-        module set walks it here, so this is the one place both rules are enforced for -IncludeModule
-        and -Module.
+        module set walks it here, so this is the one place these rules are enforced for
+        -IncludeModule and -Module.
 
         PowerShell's own modules (Test-LambdaPSBuiltInModule: Microsoft.PowerShell.Utility,
         .Management, .Security, .Host, .Diagnostics, .Core, CimCmdlets, Microsoft.WSMan.Management,
@@ -110,6 +113,21 @@ function Get-LambdaPSModuleClosure {
         [Parameter()]
         [switch]$SkipInstalled
     )
+
+    # A -Module name must name one module. Get-Module -FullyQualifiedName would also take a wildcard
+    # (and use the first module it matches) or a manifest path (which does not load on Lambda), and
+    # either would get past the checks below. A dependency that names a path is refused the same way
+    # (DependencyNameIsPath).
+    foreach ($spec in $Module) {
+        if ([System.IO.Path]::IsPathRooted($spec.Name) -or $spec.Name.IndexOfAny([char[]]@('/', '\', '*', '?', '[')) -ge 0) {
+            $message = "Module '$($spec.Name)' is a wildcard or a path, not a module name. Name each module " +
+                "exactly (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '<version>' })."
+            $nameError = [System.Management.Automation.ErrorRecord]::new(
+                [System.ArgumentException]::new($message, 'Module'),
+                'ModuleNameInvalid', [System.Management.Automation.ErrorCategory]::InvalidArgument, $spec.Name)
+            return [PSCustomObject]@{ Resolved = @(); Missing = @(); Pending = @(); Error = $nameError }
+        }
+    }
 
     # The monolithic AWSPowerShell modules are refused as for a handler's #Requires
     # (Get-LambdaPSRequiredModule): AWSPowerShell is the Windows PowerShell (Desktop edition) module and

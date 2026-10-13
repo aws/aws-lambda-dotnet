@@ -41,6 +41,7 @@ function Save-LambdaPSModule {
         production use; modules that came from PSGallery get a second warning that PSGallery is not
         recommended as a direct production dependency.
         Errors it can stop with (FullyQualifiedErrorId starts with):
+          ModuleNameInvalid           a -Module name that is a wildcard or a path
           AWSPowerShellModuleNotSupported
                                       a -Module specification that names AWSPowerShell (Windows
                                       PowerShell only) or AWSPowerShell.NetCore (every AWS

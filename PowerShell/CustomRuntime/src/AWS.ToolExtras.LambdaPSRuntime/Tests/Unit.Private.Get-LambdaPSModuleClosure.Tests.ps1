@@ -471,6 +471,39 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         }
     }
 
+    It 'returns ModuleNameInvalid for <Case>, before walking anything' -ForEach @(
+        @{ Case = "the wildcard 'AWSPowerShell.Net*'"; Name = 'AWSPowerShell.Net*' }
+        @{ Case = "the wildcard 'AWS.Tools.*'"; Name = 'AWS.Tools.*' }
+        @{ Case = "the wildcard 'LambdaPSFake.?'"; Name = 'LambdaPSFake.?' }
+        @{ Case = "the wildcard 'LambdaPSFake.[AB]'"; Name = 'LambdaPSFake.[AB]' }
+        @{ Case = 'a manifest path'; Name = 'manifest' }
+        @{ Case = 'a relative path'; Name = 'modules/LambdaPSFake.A' }
+    ) {
+        if ($Name -eq 'manifest') {
+            $root = Join-Path $TestDrive 'closure-name-path'
+            $null = New-FakeModule -Root $root -Name 'LambdaPSFake.A' -Version '1.0.0'
+            $Name = [System.IO.Path]::Combine($root, 'LambdaPSFake.A', '1.0.0', 'LambdaPSFake.A.psd1')
+        }
+        InModuleScope $script:moduleName -Parameters @{ Name = $Name } {
+            param($Name)
+            Mock 'Find-LambdaPSModule'
+            $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = $Name; RequiredVersion = '1.0.0' }
+            $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleNameInvalid'
+            $closure.Error.CategoryInfo.Category | Should -Be 'InvalidArgument'
+            $closure.Error.TargetObject | Should -Be $Name
+            $closure.Error.Exception.Message | Should -BeLike "Module '$([WildcardPattern]::Escape($Name))' is a wildcard or a path, not a module name.*"
+            Should -Invoke 'Find-LambdaPSModule' -Times 0 -Exactly
+        }
+    }
+
+    It 'accepts a dotted module name with no wildcard or path' {
+        InModuleScope $script:moduleName {
+            $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Not-Installed_1'; RequiredVersion = '1.0.0' }
+            $closure.Error | Should -BeNullOrEmpty
+            @($closure.Missing.Key) | Should -Be @('LambdaPSFake.Not-Installed_1 1.0.0')
+        }
+    }
+
     It 'checks the AWSPowerShell names exactly, so a module whose name only starts with one is not refused' {
         InModuleScope $script:moduleName {
             $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell.Extensions'
