@@ -292,12 +292,17 @@ function Publish-LambdaPSFunction {
         $updated = $true
 
         # The function keeps its handler unless the caller gave one, or the kept handler names a script
-        # this package does not contain; then the package's own handler is sent, so the function never
-        # points at a missing script. The Module:: form names no script, so it is always kept.
+        # this package does not contain, or is not a PowerShell handler at all (one written for another
+        # runtime, such as 'app.handler'); then the package's own handler is sent, so the function never
+        # points at a missing script. The 'Module::name::function' form names no script, so it is kept.
         $sendHandler = $UpdateSetting -contains 'Handler'
         if (-not $sendHandler) {
-            $keptScript = ([string]$current.Handler -split '::', 2)[0]
-            if ($keptScript -like '*.ps1') {
+            $keptParts = ([string]$current.Handler).Split('::')
+            $keptScript = $keptParts[0]
+            if ($keptScript -notlike '*.ps1') {
+                $sendHandler = -not ($keptParts.Count -eq 3 -and $keptScript -eq 'Module' -and $keptParts -notcontains '')
+            }
+            else {
                 # A package that cannot be read as a .zip counts as not containing it.
                 Add-Type -AssemblyName System.IO.Compression
                 $entries = @()

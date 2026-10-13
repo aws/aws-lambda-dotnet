@@ -8,7 +8,7 @@ function Split-LambdaPSFunctionArn {
         The function cmdlets need the bare name (for a default package file name, which must not
         contain ':') and, from a full ARN, the region, which they use when -Region is omitted. A plain
         name is returned as it is, with no region. The account is matched as [0-9]{12}, so non-ASCII
-        digits do not make a value look like an ARN.
+        digits do not make a value look like an ARN. A region in capitals is still read, as it is.
     .PARAMETER FunctionName
         The function name, full ARN or partial ARN.
     .OUTPUTS
@@ -27,7 +27,7 @@ function Split-LambdaPSFunctionArn {
         [string]$FunctionName
     )
 
-    if ($FunctionName -cmatch '^arn:aws[a-z-]*:lambda:(?<region>[a-z0-9-]+):[0-9]{12}:function:(?<name>[^:]+)') {
+    if ($FunctionName -cmatch '^arn:aws[a-z-]*:lambda:(?<region>[a-zA-Z0-9-]+):[0-9]{12}:function:(?<name>[^:]+)') {
         return [PSCustomObject]@{ Name = $Matches.name; Region = $Matches.region }
     }
     if ($FunctionName -cmatch '^[0-9]{12}:function:(?<name>[^:]+)') {

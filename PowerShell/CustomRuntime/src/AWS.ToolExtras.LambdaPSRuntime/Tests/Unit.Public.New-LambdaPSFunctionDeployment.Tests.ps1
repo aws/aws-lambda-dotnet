@@ -11,8 +11,7 @@ BeforeAll {
     Set-Content -LiteralPath (Join-Path $script:folder 'script.ps1') -Value 'param($LambdaInput, $LambdaContext)'
 
     # A folder whose sole script is NOT named script.ps1, so a fixed default would bind Lambda to a
-    # file that is not in the package -- and an absent handler script does not fail the invoke, it
-    # HANGS it to the timeout.
+    # file that is not in the package, and every invoke would then fail with 'Handler script not found'.
     $script:folderOtherName = Join-Path $TestDrive 'fn-other'
     New-Item -ItemType Directory -Path $script:folderOtherName -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $script:folderOtherName 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
@@ -51,7 +50,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
         Mock 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -MockWith {
             [PSCustomObject]@{
                 PSTypeName = 'AWS.ToolExtras.LambdaPSRuntime.PublishedFunction'
-                FunctionName = $FunctionName; Arn = "arn:aws:lambda:us-east-1:111122223333:function/$FunctionName"
+                FunctionName = $FunctionName; Arn = "arn:aws:lambda:us-east-1:111122223333:function:$FunctionName"
             }
         }
     }
@@ -71,7 +70,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $result.Handler | Should -Be 'handler.ps1'
             $result.RuntimeArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
             $result.RuntimeAlias | Should -Be 'production'
-            $result.FunctionArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function/hello-powershell'
+            $result.FunctionArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function:hello-powershell'
             $result.Updated | Should -BeFalse
             Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $HandlerScript -eq 'handler.ps1' }
@@ -114,6 +113,22 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $result.Handler | Should -Be 'handler.ps1'
             Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $Handler -eq 'handler.ps1' }
+        }
+
+        # A name starting with '.' is hidden on Linux and macOS, and found all the same.
+        It 'packages a source whose name starts with ''.''' {
+            $hidden = Join-Path $TestDrive '.hidden.ps1'
+            Set-Content -LiteralPath $hidden -Value 'param($LambdaInput, $LambdaContext)'
+            $splat = @{
+                FunctionName = 'hello'; ProjectPath = $hidden; Handler = '.hidden.ps1'
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+                PackagePath = (Join-Path $TestDrive 'hidden.zip')
+            }
+
+            $result = New-LambdaPSFunctionDeployment @splat
+
+            $result.ProjectPath | Should -Be (Get-Item -LiteralPath $hidden -Force).FullName
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Path -eq $hidden }
         }
 
         It 'prefers the manifest.json ScriptFile when several root scripts exist' {
@@ -602,6 +617,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $null = New-LambdaPSFunctionDeployment @splat
 
             $hasProfile = { $CredentialParameter.ProfileName -eq 'dev' }
+            Should -Invoke 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter $hasProfile
             Should -Invoke 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter $hasProfile
             Should -Invoke 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter $hasProfile
             Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter $hasProfile
@@ -769,6 +785,28 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
 
             $result.Region | Should -Be 'eu-west-1'
         }
+
+        # Region names are matched without regard to case, so the same region in capitals is no mismatch.
+        It 'accepts a -Region that differs from the ARN''s only in case' {
+            $result = New-LambdaPSFunctionDeployment -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -ProjectPath $script:handlerFile `
+                -RuntimeName my-ps -Role 'arn:aws:iam::111122223333:role/r' -Region EU-WEST-1 -PackagePath (Join-Path $TestDrive 'explicit.zip')
+
+            $result.FunctionName | Should -Be 'arn:aws:lambda:eu-west-1:111122223333:function:hello'
+        }
+
+        It 'reads the region and name of a function ARN whose region is in capitals' {
+            Mock 'Resolve-LambdaPSRegion' -ModuleName $script:moduleName -MockWith { 'ap-southeast-2' }
+            Push-Location $TestDrive
+            try {
+                $result = New-LambdaPSFunctionDeployment -FunctionName 'arn:aws:lambda:EU-WEST-1:111122223333:function:hello' -ProjectPath $script:handlerFile `
+                    -RuntimeName my-ps -Role 'arn:aws:iam::111122223333:role/r'
+            }
+            finally { Pop-Location }
+
+            $result.Region | Should -Be 'EU-WEST-1'
+            $result.PackagePath | Should -Be ([System.IO.Path]::Combine($TestDrive, 'hello.zip'))
+            Should -Invoke 'Resolve-LambdaPSRegion' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
     }
 
     Context 'WhatIf' {
@@ -898,7 +936,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
 
     BeforeEach {
         $m = $script:moduleName
-        Mock 'Get-LambdaPSRuntimeArn' -ModuleName $m -MockWith { 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps' }
+        Mock 'Get-LambdaPSRuntimeArn' -ModuleName $m -MockWith { "arn:aws:lambda:us-east-1:111122223333:runtime/$RuntimeName" }
         Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $m -MockWith { , [string[]]@('x86_64') }
         # A real .zip holding the source's scripts, so the seam can see what the package contains.
         Mock 'Compress-LambdaPSFunctionPackage' -ModuleName $m -MockWith {
@@ -917,13 +955,19 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $script:tuned = @{
             Handler = 'handler.ps1::Invoke-Handler'; Timeout = 300; MemorySize = 2048; Role = 'arn:aws:iam::111122223333:role/r'
             RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'staging'
+            Architecture = 'x86_64'; Runtime = $null; PackageType = 'Zip'
         }
+        # A function not bound to a customer-managed runtime has no RuntimeConfig.
         Mock 'Get-LMFunctionConfiguration' -ModuleName $m -MockWith {
             [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = $script:tuned.Handler
-                Timeout = $script:tuned.Timeout; MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @('x86_64')
-                RuntimeConfig = [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } }
+                Timeout = $script:tuned.Timeout; MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role
+                Architectures = @($script:tuned.Architecture); Runtime = $script:tuned.Runtime; PackageType = $script:tuned.PackageType
+                RuntimeConfig = if ($script:tuned.RuntimeArn) { [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } } }
         }
-        Mock 'Update-LMFunctionCode' -ModuleName $m -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
+        Mock 'Update-LMFunctionCode' -ModuleName $m -MockWith {
+            if ($Architecture) { $script:tuned.Architecture = $Architecture }
+            [PSCustomObject]@{ FunctionArn = 'arn:f' }
+        }
         # Lambda applies what was sent and returns the whole configuration.
         Mock 'Update-LMFunctionConfiguration' -ModuleName $m -MockWith {
             if ($Handler) { $script:tuned.Handler = $Handler }
@@ -935,7 +979,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
                 $script:tuned.RuntimeAlias = $RuntimeConfig_RuntimeAlias
             }
             [PSCustomObject]@{ FunctionArn = 'arn:f'; Handler = $script:tuned.Handler; Timeout = $script:tuned.Timeout
-                MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @('x86_64')
+                MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @($script:tuned.Architecture)
                 RuntimeConfig = [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } }
         }
         $script:redeploy = @{
@@ -1027,12 +1071,75 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 0 -Exactly
     }
 
-    It 'checks the alias given with -RuntimeAlias, and reads no binding when -Handler is given too' {
-        Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { throw 'must not read the binding when -Handler and -RuntimeAlias are given' }
+    It 'checks the alias given with -RuntimeAlias, and reads no binding when -Handler and -Architecture are given too' {
+        Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { throw 'must not read the binding when -Handler, -RuntimeAlias and -Architecture are given' }
 
-        $null = New-LambdaPSFunctionDeployment @script:redeploy -RuntimeAlias live -Handler handler.ps1
+        $null = New-LambdaPSFunctionDeployment @script:redeploy -RuntimeAlias live -Handler handler.ps1 -Architecture x86_64
 
         Should -Invoke 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $RuntimeAlias -eq 'live' }
+    }
+
+    # A setting not given keeps the function's value: its architecture too, when the alias it will be
+    # on supports it, whichever alias or runtime that is.
+    It 'keeps an arm64 function''s architecture on a redeploy that names <Case>' -ForEach @(
+        @{ Case = 'its own alias'; Extra = @{ RuntimeAlias = 'staging' } }
+        @{ Case = 'another alias'; Extra = @{ RuntimeAlias = 'live' } }
+        @{ Case = 'another alias and -Handler'; Extra = @{ RuntimeAlias = 'live'; Handler = 'handler.ps1' } }
+        @{ Case = 'another runtime'; Extra = @{ RuntimeName = 'other-ps' } }
+    ) {
+        $script:tuned.Architecture = 'arm64'
+        Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@('x86_64', 'arm64') }
+        $splat = $script:redeploy.Clone()
+        foreach ($key in $Extra.Keys) { $splat[$key] = $Extra[$key] }
+
+        $result = New-LambdaPSFunctionDeployment @splat
+
+        $result.Architecture | Should -Be 'arm64'
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'arm64' }
+    }
+
+    It 'moves an arm64 function to the x86_64 the alias it is bound to supports, when that alias has no arm64' {
+        $script:tuned.Architecture = 'arm64'
+
+        $result = New-LambdaPSFunctionDeployment @script:redeploy -RuntimeAlias live
+
+        $result.Architecture | Should -Be 'x86_64'
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'x86_64' }
+    }
+
+    # Only a function bound to a customer-managed runtime can run this code, so any other is refused
+    # before anything is packaged, and the preview says so too.
+    It 'refuses <Case> before packaging (WhatIf <WhatIf>)' -ForEach @(
+        @{ Case = 'a python function'; Runtime = 'python3.12'; PackageType = 'Zip'; Says = "already exists on runtime 'python3.12'"; WhatIf = $false }
+        @{ Case = 'a python function'; Runtime = 'python3.12'; PackageType = 'Zip'; Says = "already exists on runtime 'python3.12'"; WhatIf = $true }
+        @{ Case = 'a container-image function'; Runtime = $null; PackageType = 'Image'; Says = 'is a container-image function'; WhatIf = $false }
+    ) {
+        $script:tuned.RuntimeArn = ''
+        $script:tuned.Handler = 'lambda_function.lambda_handler'
+        $script:tuned.Runtime = $Runtime
+        $script:tuned.PackageType = $PackageType
+
+        $err = { New-LambdaPSFunctionDeployment @script:redeploy -WhatIf:$WhatIf } |
+            Should -Throw -ErrorId 'FunctionNotRuntimeBound,New-LambdaPSFunctionDeployment' -PassThru
+
+        $err.Exception.Message | Should -BeLike "Function 'hello' $Says and is not bound to a customer-managed runtime, so nothing was packaged or deployed.*"
+        Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 0 -Exactly
+    }
+
+    # A handler written for another runtime names no script of this package, so the package's own
+    # handler replaces it; the Module:: form names none either, and is kept.
+    It 'replaces the live handler <Live> of a function moved from another runtime with <Expected>' -ForEach @(
+        @{ Live = 'app.handler'; Expected = 'handler.ps1' }
+        @{ Live = 'Module::Handlers::Invoke'; Expected = 'Module::Handlers::Invoke' }
+    ) {
+        $script:tuned.RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/other'
+        $script:tuned.Handler = $Live
+
+        $result = New-LambdaPSFunctionDeployment @script:redeploy
+
+        $result.Handler | Should -Be $Expected
+        $script:tuned.Handler | Should -Be $Expected
     }
 
     It 'warns, and keeps the architecture, when the function is bound with no alias and -Architecture is stated' {

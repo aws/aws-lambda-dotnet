@@ -16,8 +16,9 @@ function Get-LambdaPSFunctionBinding {
     .PARAMETER CredentialParameter
         AWS credential parameters (ProfileName, ProfileLocation, Credential) to splat onto the call.
     .OUTPUTS
-        System.Management.Automation.PSCustomObject (Handler, RuntimeArn, RuntimeAlias, Architecture), or
-        $null.
+        System.Management.Automation.PSCustomObject (Handler, RuntimeArn, RuntimeAlias, Architecture,
+        Runtime, PackageType), or $null. RuntimeArn and RuntimeAlias are empty for a function that is not
+        bound to a customer-managed runtime.
     .EXAMPLE
         Get-LambdaPSFunctionBinding -FunctionName hello -Region us-east-1
 
@@ -53,5 +54,7 @@ function Get-LambdaPSFunctionBinding {
         RuntimeArn   = if ($null -ne $runtimeConfig) { [string]$runtimeConfig.RuntimeArn } else { '' }
         RuntimeAlias = if ($null -ne $runtimeConfig) { [string]$runtimeConfig.RuntimeAlias } else { '' }
         Architecture = @($configuration.Architectures | ForEach-Object { [string]$_ }) | Select-Object -First 1
+        Runtime      = [string]$configuration.Runtime
+        PackageType  = [string]$configuration.PackageType
     }
 }

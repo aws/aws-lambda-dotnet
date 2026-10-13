@@ -12,11 +12,11 @@ Describe 'Get-LambdaPSFunctionBinding' -Tag 'Unit' {
         Mock 'Get-LambdaPSClientConfig' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ ClientAppId = 'test' } }
     }
 
-    It 'returns the runtime ARN, alias and architecture of an existing function' {
+    It 'returns the handler, runtime ARN, alias and architecture of an existing function' {
         InModuleScope $script:moduleName {
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMFunctionConfiguration' -MockWith {
-                [PSCustomObject]@{ Architectures = @('arm64')
+                [PSCustomObject]@{ Handler = 'handler.ps1::Invoke'; Architectures = @('arm64'); Runtime = $null; PackageType = 'Zip'
                     RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'staging' } }
             }
 
@@ -25,7 +25,25 @@ Describe 'Get-LambdaPSFunctionBinding' -Tag 'Unit' {
             $binding.RuntimeArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
             $binding.RuntimeAlias | Should -Be 'staging'
             $binding.Architecture | Should -Be 'arm64'
+            $binding.Handler | Should -Be 'handler.ps1::Invoke'
+            $binding.PackageType | Should -Be 'Zip'
             Should -Invoke 'Get-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $Region -eq 'us-east-1' }
+        }
+    }
+
+    It 'returns an empty runtime ARN and alias, and the runtime, for a function not bound to a customer-managed runtime' {
+        InModuleScope $script:moduleName {
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMFunctionConfiguration' -MockWith {
+                [PSCustomObject]@{ Handler = 'lambda_function.lambda_handler'; Architectures = @('x86_64'); Runtime = 'python3.12'; PackageType = 'Zip'; RuntimeConfig = $null }
+            }
+
+            $binding = Get-LambdaPSFunctionBinding -FunctionName hello -Region us-east-1
+
+            $binding.RuntimeArn | Should -BeExactly ''
+            $binding.RuntimeAlias | Should -BeExactly ''
+            $binding.Runtime | Should -Be 'python3.12'
+            $binding.Handler | Should -Be 'lambda_function.lambda_handler'
         }
     }
 

@@ -25,6 +25,14 @@ Describe 'Split-LambdaPSFunctionArn' -Tag 'Unit' {
         }
     }
 
+    It 'reads the region of an ARN whose region is in capitals, as it is written' {
+        InModuleScope $script:moduleName {
+            $parts = Split-LambdaPSFunctionArn -FunctionName 'arn:aws:lambda:EU-WEST-1:111122223333:function:hello'
+            $parts.Name | Should -BeExactly 'hello'
+            $parts.Region | Should -BeExactly 'EU-WEST-1'
+        }
+    }
+
     It 'treats a value whose account has a non-ASCII digit as a plain name' {
         InModuleScope $script:moduleName {
             $value = "arn:aws:lambda:eu-west-1:11112222333$([char]0x0663):function:hello"

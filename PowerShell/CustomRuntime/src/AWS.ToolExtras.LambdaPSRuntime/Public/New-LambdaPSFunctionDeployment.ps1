@@ -33,13 +33,14 @@ function New-LambdaPSFunctionDeployment {
         -Handler, -Timeout, -MemorySize, -RuntimeAlias and -EnvironmentVariable when given. A redeploy
         starts from the live function: its handler and alias are kept over the ones manifest.json
         records (with a warning when they differ), and the handler is replaced only when its script is
-        not in the package. A setting not given keeps the function's existing value, so a redeploy
+        not in the package, or when it is not a PowerShell handler (one written for another runtime,
+        such as 'app.handler'). A setting not given keeps the function's existing value, so a redeploy
         changes only what was asked for. The runtime binding also moves when -RuntimeName names another
         runtime. Otherwise the function keeps its alias, and the architecture check (see -Architecture)
         uses that alias: a stated -Architecture it supports is applied, and one it does not is refused
         with ArchitectureMismatch. A function bound with no alias keeps its architecture, with a warning
         if one was stated. A function of that name that is not bound to a customer-managed runtime is
-        refused with FunctionNotRuntimeBound and left untouched. If the configuration update fails
+        refused with FunctionNotRuntimeBound before anything is packaged, and left untouched. If the configuration update fails
         after the code update, FunctionConfigurationNotApplied says the function has its new code and
         its previous configuration; fix the cause the service reported, then run the deploy again. A
         wait that times out between the two updates says the configuration was not applied and to
@@ -143,10 +144,11 @@ function New-LambdaPSFunctionDeployment {
         repository fails with ModuleRepositoryNotFound before anything is downloaded.
     .PARAMETER Architecture
         The function architecture: x86_64 or arm64. When omitted, a scaffolded project's manifest.json
-        supplies it (and it is checked like an explicit value); otherwise it is taken from the runtime:
-        the architecture Lambda reports for the alias's current version, which it reads from the image
-        manifest. If it reports several, x86_64 is preferred; if it reports none, x86_64 is used with
-        a warning that the match could not be verified.
+        supplies it (and it is checked like an explicit value); otherwise a redeploy keeps the
+        function's architecture while the alias it will be on supports it, and a new function takes it
+        from the runtime: the architecture Lambda reports for the alias's current version, which it
+        reads from the image manifest. If it reports several, x86_64 is preferred; if it reports none,
+        x86_64 is used with a warning that the match could not be verified.
 
         When given, it must be one the runtime reports, or the deploy stops before anything is
         created (ArchitectureMismatch). Lambda does not validate this: an x86_64 function on an
@@ -308,7 +310,8 @@ function New-LambdaPSFunctionDeployment {
                     [System.IO.FileNotFoundException]::new("Source path '$ProjectPath' was not found."),
                     'ProjectNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $ProjectPath))
         }
-        $source = Get-Item -LiteralPath $ProjectPath
+        # -Force, so a source whose name starts with '.' (hidden on Linux and macOS) is found too.
+        $source = Get-Item -LiteralPath $ProjectPath -Force
 
         # A folder carrying a lambdaps-runtime.json marker is a RUNTIME (CMR, Layer) or a self-contained
         # function (SelfContainedZip, Container) project, not handler code to bind to a CMR runtime.
@@ -357,11 +360,27 @@ function New-LambdaPSFunctionDeployment {
             }
         }
 
-        # A redeploy starts from the live function: what -Handler and -RuntimeAlias leave out comes from
-        # the function as it is, not from manifest.json or the folder, which may be older than it.
+        # A redeploy starts from the live function: what -Handler, -RuntimeAlias and -Architecture leave
+        # out comes from the function as it is, not from manifest.json or the folder, which may be older
+        # than it.
         $existing = $null
-        if (-not $PSBoundParameters.ContainsKey('Handler') -or -not $PSBoundParameters.ContainsKey('RuntimeAlias')) {
+        if (-not $PSBoundParameters.ContainsKey('Handler') -or -not $PSBoundParameters.ContainsKey('RuntimeAlias') -or
+            -not ($PSBoundParameters.ContainsKey('Architecture') -or $architectureFromManifest)) {
             $existing = Get-LambdaPSFunctionBinding -FunctionName $FunctionName -Region $Region -CredentialParameter $credentialParameter
+        }
+        # Only a function bound to a customer-managed runtime can run this code. Refuse any other here,
+        # before anything is packaged, and under -WhatIf too.
+        if ($null -ne $existing -and [string]::IsNullOrEmpty($existing.RuntimeArn)) {
+            $existingKind = if ($existing.PackageType -eq 'Image' -or [string]::IsNullOrEmpty($existing.Runtime)) {
+                'is a container-image function'
+            }
+            else { "already exists on runtime '$($existing.Runtime)'" }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("Function '$FunctionName' $existingKind and is not bound to a customer-managed runtime, so " +
+                         'nothing was packaged or deployed. Use a new -FunctionName, or delete the function first.')),
+                    'FunctionNotRuntimeBound', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
         }
 
         # Resolve the handler string from the source itself rather than assuming a file name: the
@@ -371,10 +390,14 @@ function New-LambdaPSFunctionDeployment {
         $handlerGiven = $PSBoundParameters.ContainsKey('Handler') -or
             ($null -ne $projectManifest -and -not [string]::IsNullOrWhiteSpace([string]$projectManifest.ScriptFile))
         if (-not $PSBoundParameters.ContainsKey('Handler') -and $null -ne $existing -and $existing.Handler) {
-            # The live handler is kept while the source still has its script (a Module:: handler names
-            # none); only a missing script falls back to manifest.json or the folder's root script.
-            $liveScript = ($existing.Handler -split '::', 2)[0]
-            $liveScriptShips = if ($liveScript -notlike '*.ps1') { $true }
+            # The live handler is kept while the source still has its script, or when it is the
+            # 'Module::name::function' form, which names none. Any other handler (one from another
+            # runtime, such as 'app.handler') falls back to manifest.json or the folder's root script.
+            $liveParts = $existing.Handler.Split('::')
+            $liveScript = $liveParts[0]
+            $liveScriptShips = if ($liveScript -notlike '*.ps1') {
+                $liveParts.Count -eq 3 -and $liveScript -eq 'Module' -and $liveParts -notcontains ''
+            }
             elseif ($source.PSIsContainer) {
                 -not $liveScript.Contains('\') -and -not [System.IO.Path]::IsPathRooted($liveScript) -and
                     $null -ne (Resolve-LambdaPSHandlerPath -Path $source.FullName -HandlerScript $liveScript)
@@ -537,9 +560,9 @@ function New-LambdaPSFunctionDeployment {
                         'ArchitectureMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Architecture))
             }
         }
-        elseif ($null -ne $keptBinding -and $runtimeArchitectures -contains $keptBinding.Architecture) {
-            # The function's own architecture still matches the alias it stays on.
-            $Architecture = $keptBinding.Architecture
+        elseif ($null -ne $existing -and $runtimeArchitectures -contains $existing.Architecture) {
+            # A redeploy keeps the function's own architecture while the alias it will be on supports it.
+            $Architecture = $existing.Architecture
         }
         else {
             $Architecture = if ($runtimeArchitectures -contains 'x86_64') { 'x86_64' } else { $runtimeArchitectures[0] }

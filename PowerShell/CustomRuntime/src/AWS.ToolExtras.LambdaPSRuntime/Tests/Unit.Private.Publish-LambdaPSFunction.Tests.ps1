@@ -35,7 +35,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                     $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
             }
             Mock 'Publish-LMFunction' -MockWith {
-                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function/hello' }
+                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' }
             }
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
                 [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful' } }
@@ -48,7 +48,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             }
             $result = Publish-LambdaPSFunction @splat
 
-            $result.Arn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function/hello'
+            $result.Arn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function:hello'
             $result.Updated | Should -BeFalse
             Should -Invoke 'Publish-LMFunction' -Times 1 -Exactly -ParameterFilter {
                 $Runtime -eq 'custom' -and
@@ -75,10 +75,10 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists')
             }
             Mock 'Update-LMFunctionCode' -MockWith {
-                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function/hello' }
+                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' }
             }
             Mock 'Update-LMFunctionConfiguration' -MockWith {
-                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function/hello' }
+                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' }
             }
 
             $splat = @{
@@ -113,7 +113,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
                 [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/old-rt'; RuntimeAlias = 'stable' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
-            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function/hello' } }
+            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:UpdateFunctionConfiguration') }
 
             $splat = @{
@@ -142,7 +142,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Architectures = @('x86_64')
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Architectures = @('x86_64'); Handler = 'Module::Handlers::Invoke'
                     RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = '' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
@@ -368,6 +368,42 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             $result.Architecture | Should -Be 'arm64'
             $result.RuntimeArn | Should -Be 'arn:runtime/new-rt'
             $result.RuntimeAlias | Should -Be 'production'
+        }
+    }
+
+    # A handler the caller did not give is kept only when it is the Module:: form or a script the
+    # package has; one written for another runtime would leave the function unable to start.
+    It 'sends the package''s handler in place of a kept <Case> handler only when it is not the Module:: form' -ForEach @(
+        @{ Case = 'non-PowerShell'; Kept = 'app.handler'; Sent = 'handler.ps1' }
+        @{ Case = 'Module::'; Kept = 'Module::Handlers::Invoke'; Sent = $null }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Kept = $Kept; Sent = $Sent } {
+            param($Kept, $Sent)
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
+            $script:keptHandler = $Kept
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
+            Mock 'Get-LMFunctionConfiguration' -MockWith {
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = $script:keptHandler
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:runtime/old-rt'; RuntimeAlias = 'stable' } }
+            }
+            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
+            Mock 'Update-LMFunctionConfiguration' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
+
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'production'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'; UpdateSetting = @('RuntimeAlias')
+            }
+            $null = Publish-LambdaPSFunction @splat
+
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter { [string]$Handler -eq [string]$Sent }
         }
     }
 
