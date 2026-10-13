@@ -85,13 +85,17 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
             $handler = Join-Path $TestDrive "deep.ps1"
             Set-Content -LiteralPath $handler -Value 'param($LambdaInput, $LambdaContext) @{ a = @{ b = @{ c = @{ d = @{ e = 5 } } } } }'
             $env:POWERSHELL_RUNTIME_JSON_DEPTH = $Value
+            # The function warns once per value; start from none warned, so this value's warning is seen.
+            $script:LambdaPSRuntimeDepthWarnedFor = $null
             try {
+                # The warning goes to the host (the function log); capture it instead of printing it.
                 $json = Invoke-FunctionHandler ([PSCustomObject]@{ incomingEvent = '{}' }) `
-                    ([PSCustomObject]@{ handlerType = 'Script'; scriptFilePath = $handler }) ([PSCustomObject]@{}) 3>$null
+                    ([PSCustomObject]@{ handlerType = 'Script'; scriptFilePath = $handler }) ([PSCustomObject]@{}) -InformationVariable hostOutput 3>$null 6>$null
             }
             finally { $env:POWERSHELL_RUNTIME_JSON_DEPTH = $null }
 
             ($json | ConvertFrom-Json).a.b.c.d.e | Should -Be 5
+            @($hostOutput | Where-Object { "$_" -like "*POWERSHELL_RUNTIME_JSON_DEPTH is '$Value'*using 100.*" }).Count | Should -Be 1
         }
 
         It 'passes a JSON array event as an array, keeping <Event> intact' -ForEach @(
