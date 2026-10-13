@@ -349,6 +349,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
             'function Handle { param($LambdaInput, $LambdaContext) @{ ContextType = $LambdaContext.GetType().Name; Id = $LambdaContext.AwsRequestId; Own = (ConvertTo-Json 1) } }'
         )
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'strict.ps1')) -Value 'Set-StrictMode -Version Latest', 'function Handle { param($LambdaInput, $LambdaContext) @{ Kind = ''strict'' } }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'callerctx.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ Client = $LambdaContext.ClientContext; Identity = $LambdaContext.Identity; ClientType = "$($LambdaContext.ClientContext.GetType().Name)"; IdentityType = "$($LambdaContext.Identity.GetType().Name)" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -758,6 +759,22 @@ public class InvokeBin : PSCmdlet {
         # Valid JSON from the runtime's ConvertTo-Json, with the runtime's $LambdaContext.
         $result = $posts[0].Body | ConvertFrom-Json
         foreach ($key in $Expected.Keys) { $result.$key | Should -Be $Expected[$key] }
+    }
+
+    It 'gives the handler the caller''s client context and Cognito identity as JSON text, and empty strings when absent' {
+        $clientContext = '{"client":{"installation_id":"abc"},"custom":{"tier":"gold"}}'
+        $identity = '{"cognitoIdentityId":"eu-west-1:1111","cognitoIdentityPoolId":"eu-west-1:2222"}'
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'callerctx.ps1' -EventBody '{}', '{}' -ClientContext $clientContext, '' -CognitoIdentity $identity, '')
+
+        $first = $posts[0].Body | ConvertFrom-Json
+        $first.Client | Should -BeExactly $clientContext
+        $first.Identity | Should -BeExactly $identity
+        # The second event sends neither header: the properties are empty strings, not $null or the first event's values.
+        $second = $posts[1].Body | ConvertFrom-Json
+        $second.Client | Should -BeExactly ''
+        $second.Identity | Should -BeExactly ''
+        $second.ClientType | Should -Be 'String'
+        $second.IdentityType | Should -Be 'String'
     }
 
     It 'sets _X_AMZN_TRACE_ID for its own invocation only' {
