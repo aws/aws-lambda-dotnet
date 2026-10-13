@@ -158,9 +158,12 @@ function Save-LambdaPSMissingModule {
                 $go = if ($WhatIfPreference) { $PSCmdlet.ShouldProcess("$($names -join ', ') $version", "Download with AWS.Tools.Installer to '$root'") } else { $downloadConfirmed }
                 if ($go) {
                     Write-Verbose "Downloading $($names -join ', ') $version (and AWS.Tools.Common) with AWS.Tools.Installer to '$root'."
+                    # The installer always brings AWS.Tools.Common at the same version. A version folder
+                    # already in -Path is kept as it is, so it is not reported as downloaded.
+                    $already = @(@($names + 'AWS.Tools.Common') | Where-Object {
+                            Test-Path -LiteralPath ([System.IO.Path]::Combine($root, $_, $version)) })
                     Save-LambdaPSAWSToolsModule -Name $names -Version $version -Path $root -InstallerPath $installerPath -ModuleRepository $ModuleRepository
-                    # The installer always brings AWS.Tools.Common at the same version.
-                    foreach ($name in @($names + 'AWS.Tools.Common')) {
+                    foreach ($name in @($names + 'AWS.Tools.Common' | Where-Object { $already -notcontains $_ })) {
                         $key = "$name $version"
                         $null = $downloadedKeys.Add($key)
                         $origin[$key] = @{ Source = 'AWS.Tools.Installer'; Repository = $null }

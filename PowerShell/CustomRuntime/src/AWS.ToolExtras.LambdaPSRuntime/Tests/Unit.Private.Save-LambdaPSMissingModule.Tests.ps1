@@ -99,6 +99,29 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
         }
     }
 
+    It 'does not report AWS.Tools.Common as downloaded when that version was already in -Path' {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
+            param($dl)
+            $common = [System.IO.Path]::Combine($dl, 'AWS.Tools.Common', '9.9.2')
+            $null = New-Item -ItemType Directory -Path $common -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($common, 'AWS.Tools.Common.psd1')) -Value "@{ ModuleVersion = '9.9.2' }"
+            # As the seam does: a version folder already in -Path is kept.
+            Mock 'Save-LambdaPSAWSToolsModule' -MockWith {
+                foreach ($n in @($Name + 'AWS.Tools.Common')) {
+                    $d = [System.IO.Path]::Combine($Path, $n, $Version)
+                    if (Test-Path -LiteralPath $d) { continue }
+                    $null = New-Item -ItemType Directory -Path $d -Force
+                    Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$n.psd1")) -Value "@{ ModuleVersion = '$Version'; RequiredModules = @(@{ ModuleName = 'AWS.Tools.Common'; RequiredVersion = '$Version' }) }"
+                }
+            }
+
+            $result = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.2' } -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
+            @($result.Downloaded.Name) | Should -Be @('AWS.Tools.S3')
+            @($result.Resolved.Key) | Should -Contain 'AWS.Tools.Common 9.9.2'
+            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.2. *'
+        }
+    }
+
     It 'writes the test-before-production warning once, and the PSGallery warning only for PSGallery modules' {
         InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
             param($dl)
