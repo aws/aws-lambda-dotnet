@@ -137,6 +137,26 @@ Describe 'build.ps1 integration suite' -Tag 'Component' {
         }
     }
 
+    It 'puts back a LAMBDAPS_INTEGRATION_TESTS value the caller had after the integration run' {
+        $savedIntegrationSetting = $env:LAMBDAPS_INTEGRATION_TESTS
+        $env:LAMBDAPS_INTEGRATION_TESTS = 'caller value'
+        try {
+            Mock Import-Module { }
+            function Invoke-Pester { param($Configuration) }
+            $testsPath = [System.IO.Path]::Combine($TestDrive, 'Tests')
+            Set-Variable -Name sourceGlob -Value @([System.IO.Path]::Combine($TestDrive, 'Public', '*.ps1'))
+            Set-Variable -Name SkipCoverage -Value $false
+            . $script:invokeTestFile
+
+            Invoke-Test -Integration
+
+            $env:LAMBDAPS_INTEGRATION_TESTS | Should -Be 'caller value'
+        }
+        finally {
+            $env:LAMBDAPS_INTEGRATION_TESTS = $savedIntegrationSetting
+        }
+    }
+
     # A copy of build.ps1 next to a Tests folder of the test's own, run for real in a child pwsh.
     It 'runs every Integration-tagged file for -Task Integration, and nothing in a tree that has none' {
         $marks = [System.IO.Path]::Combine($TestDrive, 'marks')
@@ -235,5 +255,23 @@ Describe 'build.ps1 AWS.Tools module path' -Tag 'Component' {
         $null = Initialize-AWSToolsModulePath 6>&1
 
         $env:PSModulePath -split [System.IO.Path]::PathSeparator | Should -Be @($script:awsToolsPath, $script:otherPath)
+    }
+    # Import-Module by name takes the first PSModulePath folder that has the module, so only that one counts.
+    It 'refuses when the first folder holding AWS.Tools.LambdaCore lacks the CMR cmdlets, even if a later one has them' {
+        $oldTools = [System.IO.Path]::Combine($TestDrive, 'old-aws-tools')
+        $oldFolder = [System.IO.Path]::Combine($oldTools, 'AWS.Tools.LambdaCore', '4.1.0')
+        $null = New-Item -ItemType Directory -Path $oldFolder -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($oldFolder, 'AWS.Tools.LambdaCore.psd1')) -Value "@{ ModuleVersion = '4.1.0'; CmdletsToExport = @('Get-LMCOther') }"
+        $env:LAMBDAPS_AWSTOOLS_MODULE_PATH = $null
+        $env:PSModulePath = $oldTools + [System.IO.Path]::PathSeparator + $script:awsToolsPath
+
+        { Initialize-AWSToolsModulePath 6>&1 } | Should -Throw '*needs an AWS.Tools.LambdaCore that exports*'
+    }
+
+    It 'accepts the first folder holding AWS.Tools.LambdaCore when it has the CMR cmdlets' {
+        $env:LAMBDAPS_AWSTOOLS_MODULE_PATH = $null
+        $env:PSModulePath = $script:otherPath + [System.IO.Path]::PathSeparator + $script:awsToolsPath
+
+        { Initialize-AWSToolsModulePath 6>&1 } | Should -Not -Throw
     }
 }

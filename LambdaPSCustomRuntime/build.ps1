@@ -72,12 +72,18 @@ function Initialize-AWSToolsModulePath {
 
     # Read the manifests as data. Get-Module -ListAvailable can load a module's assemblies to list its
     # commands, and a loaded AWSSDK.Core from another AWS.Tools build breaks every later import.
-    $lambdaCore = foreach ($root in ($env:PSModulePath -split [System.IO.Path]::PathSeparator)) {
+    # Import-Module by name takes the first PSModulePath folder that has the module, at its highest
+    # version, so only that manifest is checked.
+    $lambdaCore = $null
+    foreach ($root in ($env:PSModulePath -split [System.IO.Path]::PathSeparator)) {
         if ([string]::IsNullOrWhiteSpace($root)) { continue }
-        foreach ($manifest in @(Get-ChildItem -Path ([System.IO.Path]::Combine($root, 'AWS.Tools.LambdaCore', '*', 'AWS.Tools.LambdaCore.psd1')) -ErrorAction SilentlyContinue)) {
-            $exports = @((Import-PowerShellDataFile -LiteralPath $manifest.FullName -ErrorAction SilentlyContinue).CmdletsToExport)
-            if ($exports -contains 'New-LMCRuntime') { $manifest.FullName }
-        }
+        $manifest = @(Get-ChildItem -Path ([System.IO.Path]::Combine($root, 'AWS.Tools.LambdaCore', '*', 'AWS.Tools.LambdaCore.psd1')) -ErrorAction SilentlyContinue |
+                Sort-Object { $version = $null; if ([version]::TryParse($_.Directory.Name, [ref]$version)) { $version } else { [version]'0.0' } } -Descending) |
+            Select-Object -First 1
+        if (-not $manifest) { continue }
+        $exports = @((Import-PowerShellDataFile -LiteralPath $manifest.FullName -ErrorAction SilentlyContinue).CmdletsToExport)
+        if ($exports -contains 'New-LMCRuntime') { $lambdaCore = $manifest.FullName }
+        break
     }
     if (-not $lambdaCore) {
         throw ('The test suite needs an AWS.Tools.LambdaCore that exports the Lambda customer-managed runtime ' +
@@ -236,9 +242,11 @@ function Invoke-Test {
         Invoke-Pester -Configuration $config
         return
     }
+    # Set for the integration run only; a value the caller had is put back afterwards.
+    $callerSetting = $env:LAMBDAPS_INTEGRATION_TESTS
     $env:LAMBDAPS_INTEGRATION_TESTS = 'true'
     try { Invoke-Pester -Configuration $config }
-    finally { Remove-Item -Path Env:LAMBDAPS_INTEGRATION_TESTS -ErrorAction SilentlyContinue }
+    finally { $env:LAMBDAPS_INTEGRATION_TESTS = $callerSetting }
 }
 
 # Before anything else runs: whatever AWS.Tools build loads first is what the tests get.
