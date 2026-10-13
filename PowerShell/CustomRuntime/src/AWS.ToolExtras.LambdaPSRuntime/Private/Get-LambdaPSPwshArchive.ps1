@@ -17,7 +17,8 @@ function Get-LambdaPSPwshArchive {
         hash the file is used as-is (the caller owns that file's provenance).
 
         The download retries a failed HTTP response (a GitHub rate limit or server error) and gives up
-        on a host that does not answer, rather than waiting indefinitely.
+        on a host that does not connect and send its response headers in time. A download that stops
+        part-way through the file has no time limit.
     .PARAMETER PwshVersion
         The full pwsh version (x.y.z, for example 7.4.20) to download and verify.
     .PARAMETER Architecture
@@ -105,7 +106,7 @@ function Get-LambdaPSPwshArchive {
     Write-Verbose "Downloading $url"
     try {
         # Retry a failed HTTP response (a GitHub rate limit or server error), and give up on a host
-        # that does not answer. A dropped connection is not retried. The limits are in Config/pwsh.psd1.
+        # that does not connect and send its headers in time. A dropped connection is not retried. The limits are in Config/pwsh.psd1.
         $download = $script:Config.pwsh.Download
         Invoke-WebRequest -Uri $url -OutFile $destination -UseBasicParsing -ErrorAction Stop `
             -MaximumRetryCount $download.RetryCount -RetryIntervalSec $download.RetryDelaySeconds `

@@ -30,7 +30,8 @@ function Build-LambdaPSRuntimePackage {
              shipped, with a warning, and the runtime compiles the .cs at cold start (~1.7 s). A compile
              that runs and fails is ContextCompileFailed.
           4. Zips it with forward-slash relative entry paths in ordinal order, each with the same
-             timestamp, so an unchanged project gives a byte-identical package (except for a precompiled
+             timestamp, so an unchanged project built with the same PowerShell version on the same OS
+             gives a byte-identical package (except for a precompiled
              PowerShellLambdaContext.dll, whose compiled bytes can differ between builds), and the executable
              bit set on bootstrap and powershell/pwsh, and on any file that is executable on a Linux or
              macOS build host; everything else is mode 0644.

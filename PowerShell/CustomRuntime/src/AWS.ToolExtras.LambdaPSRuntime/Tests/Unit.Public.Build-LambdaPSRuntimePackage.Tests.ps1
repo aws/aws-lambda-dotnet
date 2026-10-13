@@ -11,7 +11,7 @@ BeforeAll {
     # The build runs the BUNDLED pwsh to precompile PowerShellLambdaContext.dll (so it targets the right
     # .NET), so the stand-in forwards to the host pwsh and leaves a marker proving it was the one run.
     $script:bundledRanMarker = [System.IO.Path]::Combine($TestDrive, 'bundled-pwsh-ran')
-    Set-Content -LiteralPath ([System.IO.Path]::Combine($fakeSrc, 'pwsh')) -Value "#!/bin/sh`ntouch '$script:bundledRanMarker'`nexec pwsh `"`$@`""
+    Set-Content -LiteralPath ([System.IO.Path]::Combine($fakeSrc, 'pwsh')) -Value "#!/bin/sh`ntouch '$script:bundledRanMarker'`nexec '$([System.Environment]::ProcessPath)' `"`$@`""
     # The stand-in pwsh is NOT executable, as in a tarball extracted onto a file system without Unix
     # modes: the build must set the bit itself. Windows has no chmod and no executable bit to clear (a
     # file there is already the 'not executable' case), and the zip writer stamps 0755 on the named
@@ -755,7 +755,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh tarball cleanup' -Tag 'Unit' {
         # A tarball of its own, standing in for one the seam downloaded to the temp folder.
         $script:downloadedSrc = [System.IO.Path]::Combine($TestDrive, 'downloaded-pwsh-src')
         $null = New-Item -ItemType Directory -Path $script:downloadedSrc -Force
-        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:downloadedSrc, 'pwsh')) -Value "#!/bin/sh`nexec pwsh `"`$@`""
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:downloadedSrc, 'pwsh')) -Value "#!/bin/sh`nexec '$([System.Environment]::ProcessPath)' `"`$@`""
         if (-not $IsWindows) { & chmod +x ([System.IO.Path]::Combine($script:downloadedSrc, 'pwsh')) }
     }
 

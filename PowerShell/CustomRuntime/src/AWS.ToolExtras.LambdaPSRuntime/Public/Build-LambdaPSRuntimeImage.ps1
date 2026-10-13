@@ -9,6 +9,10 @@ function Build-LambdaPSRuntimeImage {
         New-LambdaPSFunctionProject -Target Container) with provenance disabled and OCI media types
         turned off, and either loads the image locally or pushes it.
 
+        The image ships the modules in the project's modules/ folder; it does not stage a handler's
+        '#Requires -Modules'. Put the modules a container function needs in modules/, with
+        Save-LambdaPSModule or New-LambdaPSFunctionProject -IncludeModule.
+
         The exact recipe issued is:
 
             docker buildx build --provenance=false --platform <linux/amd64|linux/arm64>

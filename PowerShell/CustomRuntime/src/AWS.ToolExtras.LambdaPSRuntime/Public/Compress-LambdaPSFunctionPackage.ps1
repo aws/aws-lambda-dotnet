@@ -40,8 +40,8 @@ function Compress-LambdaPSFunctionPackage {
         execute bit; everything else is mode 0644.
 
         Entries are written with System.IO.Compression.ZipArchive, with forward-slash relative paths in
-        ordinal order and the same timestamp on each, so the same files give a byte-identical package
-        on every OS. This cmdlet makes no AWS API calls; create the function with
+        ordinal order and the same timestamp on each, so the same files with the same PowerShell version
+        on the same OS give a byte-identical package. This cmdlet makes no AWS API calls; create the function with
         Publish-LMFunction, or package and deploy in one step with New-LambdaPSFunctionDeployment.
 
         Errors it can raise, by error ID:

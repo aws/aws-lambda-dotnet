@@ -78,8 +78,8 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
         $second = Join-Path $TestDrive 'repro-b'
         foreach ($stage in $first, $second) { $null = New-Item -ItemType Directory -Path (Join-Path $stage 'lib') -Force }
         # Created in a different order, with different times.
-        foreach ($name in 'b.txt', 'a.txt', 'lib/c.txt', 'B.txt') { "content of $name" | Set-Content -LiteralPath (Join-Path $first $name) }
-        foreach ($name in 'lib/c.txt', 'B.txt', 'a.txt', 'b.txt') { "content of $name" | Set-Content -LiteralPath (Join-Path $second $name) }
+        foreach ($name in 'b.txt', 'a.txt', 'lib/c.txt', 'Z.txt') { "content of $name" | Set-Content -LiteralPath (Join-Path $first $name) }
+        foreach ($name in 'lib/c.txt', 'Z.txt', 'a.txt', 'b.txt') { "content of $name" | Set-Content -LiteralPath (Join-Path $second $name) }
         Get-ChildItem -LiteralPath $second -Recurse -File | ForEach-Object { $_.LastWriteTime = [datetime]'2001-02-03' }
         $zipA = Join-Path $TestDrive 'repro-a.zip'
         $zipB = Join-Path $TestDrive 'repro-b.zip'
@@ -92,7 +92,9 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
 
         (Get-FileHash -LiteralPath $zipB -Algorithm SHA256).Hash | Should -Be (Get-FileHash -LiteralPath $zipA -Algorithm SHA256).Hash
         $names = Get-ZipEntryNames -ZipPath $zipA
-        $names | Should -Be @('B.txt', 'a.txt', 'b.txt', 'lib/c.txt')
+        # Ordinal order puts 'Z' before 'a'; the names never differ only in case, so they are distinct files
+        # on a case-insensitive file system too.
+        $names | Should -Be @('Z.txt', 'a.txt', 'b.txt', 'lib/c.txt')
         $archive = [System.IO.Compression.ZipFile]::OpenRead($zipA)
         try { @($archive.Entries | Where-Object { $_.LastWriteTime.Year -ne 1980 }) | Should -BeNullOrEmpty }
         finally { $archive.Dispose() }

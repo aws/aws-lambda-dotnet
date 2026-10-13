@@ -18,7 +18,8 @@ function Copy-LambdaPSFunctionSource {
     .PARAMETER Path
         The source folder.
     .PARAMETER Destination
-        The staging folder to copy into. It must exist and be empty: the .zip warning is read from it.
+        The staging folder to copy into. It must exist and hold no top-level .zip of its own: every
+        top-level .zip in it after the copy is warned about as part of the source.
     .PARAMETER ExcludePath
         Full paths to leave out.
     .OUTPUTS

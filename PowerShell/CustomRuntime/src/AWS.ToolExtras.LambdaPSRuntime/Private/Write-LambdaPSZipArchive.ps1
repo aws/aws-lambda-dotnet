@@ -7,8 +7,8 @@ function Write-LambdaPSZipArchive {
 
           - Entries are the files under -Path, named by forward-slash relative path, written in
             ordinal order of those names, each with the same timestamp (1980-01-01). So the same files
-            give a byte-identical archive whichever OS built it, whatever order the file system lists
-            them in and whatever their modification times.
+            with the same PowerShell version on the same OS give a byte-identical archive, whatever
+            order the file system lists them in and whatever their modification times.
           - Each entry carries a Unix mode in its external attributes: 0755 for the -ExecutableEntry
             names (Lambda runs 'bootstrap' and the bundled 'powershell/pwsh' directly) and, on a Unix
             host, for any file with an execute bit set; 0644 for every other file.

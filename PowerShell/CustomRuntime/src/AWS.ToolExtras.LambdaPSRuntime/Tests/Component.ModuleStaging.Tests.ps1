@@ -6,7 +6,7 @@ BeforeAll {
     # A stand-in pwsh tarball, so the build runs offline: its 'pwsh' hands over to the host pwsh.
     $fakeSrc = [System.IO.Path]::Combine($TestDrive, 'fake-pwsh-src')
     $null = New-Item -ItemType Directory -Path $fakeSrc -Force
-    Set-Content -LiteralPath ([System.IO.Path]::Combine($fakeSrc, 'pwsh')) -Value "#!/bin/sh`nexec pwsh `"`$@`""
+    Set-Content -LiteralPath ([System.IO.Path]::Combine($fakeSrc, 'pwsh')) -Value "#!/bin/sh`nexec '$([System.Environment]::ProcessPath)' `"`$@`""
     $script:fakeTarball = [System.IO.Path]::Combine($TestDrive, 'fake-pwsh.tar.gz')
     $tar = InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' { Get-LambdaPSTarCommand }
     & $tar -czf $script:fakeTarball -C $fakeSrc .
