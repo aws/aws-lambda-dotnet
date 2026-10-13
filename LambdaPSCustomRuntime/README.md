@@ -76,10 +76,10 @@ Invoke-LambdaPSFunction -FunctionName hello-powershell -Payload @{ name = 'world
     -IncludeLog -InformationAction Continue
 ```
 
-The three cmdlets that call AWS take `-ProfileName`, `-ProfileLocation` and `-Credential` as any
-AWS.Tools cmdlet does, except that a relative `-ProfileLocation` is resolved against the current
-PowerShell location. Without them, AWS.Tools uses its default credentials (`Set-AWSCredential`,
-environment variables, the default profile, or an instance or container role). `-Region` is optional
+The three cmdlets that call AWS take `-ProfileName`, `-ProfileLocation` and `-Credential`; a
+relative `-ProfileLocation` is resolved against the current PowerShell location. Without them,
+AWS.Tools uses its default credentials (`Set-AWSCredential`, environment variables, the default
+profile, or an instance or container role). `-Region` is optional
 the same way: without it, the region comes from `Set-DefaultAWSRegion`, the `-ProfileName` profile, the
 default profile, `AWS_REGION`, the `AWS_PROFILE` profile, or the instance or container, in that order,
 and a deploy that finds none fails with `RegionNotResolved`. For `New-LambdaPSFunctionDeployment` and
@@ -95,7 +95,8 @@ once and calls the function per invoke; `Module::<module>::<function>` calls a f
 Omit `-Handler` and it is resolved from the source itself: the `ScriptFile` in a scaffolded project's
 `manifest.json`, else the sole `*.ps1` at the root. An ambiguous folder is an error rather than a
 guess, and a handler naming a script that is not in the package is rejected before anything is
-deployed — Lambda accepts such a function and every invoke then hangs to the timeout.
+deployed — Lambda accepts such a function, and its runtime then fails at start-up with "Handler
+script not found".
 
 **Architecture is checked, not assumed.** Lambda does not validate a customer-managed runtime's CPU
 architecture against the function bound to it — a mismatch deploys cleanly and fails at invoke,
@@ -196,8 +197,14 @@ versions a function will ship with. Test against it by adding `./mods` to `$env:
 ## Migrating from AWSLambdaPSCore
 
 Handlers written for AWSLambdaPSCore (`New-AWSPowerShellLambda`, `Publish-AWSPowerShellLambda`) run
-on this runtime with three differences:
+on this runtime with these differences:
 
+- **The handler declares its input.** Add `param($LambdaInput, $LambdaContext)` at the top of the
+  script: the runtime passes the event and the context positionally, so a script without that
+  param block gets `$null` for both.
+- **`#Requires -Modules` pins an exact version.** Change `ModuleVersion` to `RequiredVersion`, for
+  example `#Requires -Modules @{ModuleName='AWS.Tools.S3';RequiredVersion='5.0.274'}`: packaging
+  refuses a minimum version with `ModuleVersionRequired`.
 - **The response is all of the handler's pipeline output, not just the last item.** One object is
   returned as that object; two or more are returned as a JSON array. Send everything else to `$null`
   (`$null = Invoke-Something`, or `| Out-Null`) so the handler outputs only its response, for example
