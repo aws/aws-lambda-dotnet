@@ -39,13 +39,13 @@ BeforeDiscovery {
 Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:IntegrationEnabled) {
     BeforeAll {
         # First, so that AfterAll has them whatever fails below.
+        $script:Prefix = 'lambdaps-integration-{0}-' -f (-join (Get-Random -Count 8 -InputObject ([char[]]'abcdefghijklmnopqrstuvwxyz0123456789')))
+        # What this run created, in order, each with the script block that removes it.
+        $script:Created = [System.Collections.Generic.List[object]]::new()
         $missing = @('LAMBDAPS_INTEGRATION_REGION', 'LAMBDAPS_INTEGRATION_ACCOUNT', 'LAMBDAPS_INTEGRATION_ROLE_ARN' |
                 Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) })
         if ($missing) { throw "The integration suite needs these environment variables set: $($missing -join ', ')." }
         $script:Region = $env:LAMBDAPS_INTEGRATION_REGION
-        $script:Prefix = 'lambdaps-integration-{0}-' -f (-join (Get-Random -Count 8 -InputObject ([char[]]'abcdefghijklmnopqrstuvwxyz0123456789')))
-        # What this run created, in order, each with the script block that removes it.
-        $script:Created = [System.Collections.Generic.List[object]]::new()
 
         . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
         Import-Module AWS.Tools.S3 -ErrorAction Stop
@@ -138,9 +138,12 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         # Removed newest first: a function before its layer or runtime, an alias before its version.
         # What fails is tried once more, since Lambda can still be releasing a function that was just
         # deleted, then listed.
+        # Nothing was recorded when BeforeAll stopped before creating anything, so there is nothing to remove.
         $pending = $script:Created.ToArray()
         [array]::Reverse($pending)
+        $failed = @()
         foreach ($attempt in 1, 2) {
+            if (-not $pending) { break }
             $failed = @(Remove-IntegrationResourceSet -Resource $pending -Prefix $script:Prefix)
             $pending = @($failed | ForEach-Object Resource)
             if (-not $pending -or $attempt -eq 2) { break }

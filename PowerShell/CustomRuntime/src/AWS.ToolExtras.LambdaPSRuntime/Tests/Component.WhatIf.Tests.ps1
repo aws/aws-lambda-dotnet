@@ -57,8 +57,9 @@ Describe 'New-LambdaPSFunctionDeployment -WhatIf' -Tag 'Component' {
         Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@('x86_64') }
         # A new function: the read of an existing one finds none.
         Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { $null }
-        foreach ($command in 'Publish-LMFunction', 'Update-LMFunctionCode', 'Update-LMFunctionConfiguration', 'Get-LMFunctionConfiguration') {
-            Mock $command -ModuleName $script:moduleName -MockWith { throw 'must not call AWS under -WhatIf' }
+        # The writes. The preview still makes its read-only calls, such as the function's configuration.
+        foreach ($command in 'Publish-LMFunction', 'Update-LMFunctionCode', 'Update-LMFunctionConfiguration') {
+            Mock $command -ModuleName $script:moduleName -MockWith { throw 'must not change AWS under -WhatIf' }
         }
         $script:handler = Join-Path $TestDrive "handler-$([guid]::NewGuid().ToString('N')).ps1"
         Set-Content -LiteralPath $script:handler -Value 'param($LambdaInput, $LambdaContext)'
@@ -85,7 +86,7 @@ Describe 'New-LambdaPSFunctionDeployment -WhatIf' -Tag 'Component' {
         $result.FunctionArn | Should -BeNullOrEmpty
         $result.Updated | Should -BeFalse
         @($result.ModulesStaged).Count | Should -Be 0
-        foreach ($command in 'Publish-LMFunction', 'Update-LMFunctionCode', 'Update-LMFunctionConfiguration', 'Get-LMFunctionConfiguration') {
+        foreach ($command in 'Publish-LMFunction', 'Update-LMFunctionCode', 'Update-LMFunctionConfiguration') {
             Should -Invoke $command -ModuleName $script:moduleName -Times 0 -Exactly
         }
     }

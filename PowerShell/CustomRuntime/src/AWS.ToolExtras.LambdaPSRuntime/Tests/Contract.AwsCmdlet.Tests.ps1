@@ -58,15 +58,19 @@ BeforeDiscovery {
         @{ Cmdlet = 'Publish-LMFunction'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'Handler', 'Runtime', 'Role', 'Architecture', 'Code_ZipFile',
                           'Timeout', 'MemorySize', 'Environment_Variable', 'Environment_IsVariablesSet',
-                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'Region', 'ClientConfig') }
+                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'Region', 'ClientConfig')
+           Types = @{ Code_ZipFile = 'System.Byte[]' } }
         @{ Cmdlet = 'Update-LMFunctionCode'; Module = 'AWS.Tools.Lambda'
-           Parameters = @('FunctionName', 'ZipFile', 'Architecture', 'Region', 'ClientConfig') }
+           Parameters = @('FunctionName', 'ZipFile', 'Architecture', 'Region', 'ClientConfig')
+           Types = @{ ZipFile = 'System.Byte[]' } }
         @{ Cmdlet = 'Get-LMFunctionConfiguration'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'Region', 'ClientConfig') }
 
         # --- Invoke (Public/Invoke-LambdaPSFunction.ps1) ---
+        # -Payload is sent as the JSON text the cmdlet serialized.
         @{ Cmdlet = 'Invoke-LMFunction'; Module = 'AWS.Tools.Lambda'
-           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'Region', 'ClientConfig') }
+           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'Region', 'ClientConfig')
+           Types = @{ Payload = 'System.String' } }
 
         # --- Configuration update of an existing function (Private/Publish-LambdaPSFunction.ps1) ---
         @{ Cmdlet = 'Update-LMFunctionConfiguration'; Module = 'AWS.Tools.Lambda'
@@ -161,6 +165,17 @@ Describe 'AWS cmdlet parameter contract' -Tag 'Contract' {
                 "$Cmdlet is called with these parameters by this module, but the real cmdlet does not " +
                 'declare them. Either the call site is wrong or the cmdlet changed shape. Note that ' +
                 'a mocked test CANNOT catch this: the stub declares whatever the call site uses.')
+        }
+
+        # A parameter can exist and take another type than the value this module passes: the package
+        # bytes and the JSON payload.
+        It '<Cmdlet> takes the parameter types this module passes' -ForEach @($script:AwsCmdletContract | Where-Object { $_.Types }) {
+            $command = Get-Command $Cmdlet -ErrorAction SilentlyContinue
+            $command | Should -Not -BeNullOrEmpty
+
+            foreach ($name in $Types.Keys) {
+                $command.Parameters[$name].ParameterType.FullName | Should -Be $Types[$name] -Because "this module passes $Cmdlet -$name a $($Types[$name])"
+            }
         }
 
         # Every AWS call site splats the caller's -ProfileName / -ProfileLocation / -Credential (see the
