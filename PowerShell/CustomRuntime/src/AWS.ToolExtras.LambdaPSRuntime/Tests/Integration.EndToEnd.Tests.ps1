@@ -1,5 +1,6 @@
-# Integration tests: each deployment target is scaffolded, built, deployed to AWS and invoked once, and
-# everything the run created is removed afterwards. They are tagged 'Integration' and run only with
+# Integration tests: each deployment target is scaffolded, built, deployed to AWS and invoked once (the
+# RuntimeImage function is then redeployed and invoked again), and everything the run created is removed
+# afterwards. They are tagged 'Integration' and run only with
 #
 #     pwsh ./build.ps1 -Task Integration
 #
@@ -20,12 +21,13 @@
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
 #   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with version v1
-#     and alias production (<prefix>cmr), and a function bound to it (<prefix>cmr-fn).
+#     and alias production (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
+#     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, and fails listing anything it could not remove. Nothing whose name does
 # not start with this run's prefix is changed.
 #
-# What it costs: four invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
+# What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
 # AfterAll, with the requests to upload and remove it. At on-demand prices that is under
 # US$0.01 a run; data transfer into AWS (the image pushes and the .zip uploads) is not charged. The
 # image and package builds run on the build host.
@@ -234,8 +236,12 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $response.Echo.name | Should -BeExactly 'live'
     }
 
-    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke' {
+    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke, and a redeploy keeps its handler and alias' {
         $region = $script:Region
+        # Region names are lowercase. The runtime deploy is given its region in upper case, and every
+        # ARN that follows must carry it in lower case.
+        $lowerRegion = $script:Region.ToLowerInvariant()
+        $inRegion = "^arn:aws[a-z-]*:lambda:$([regex]::Escape($lowerRegion)):\d{12}:"
         $runtimeName = $script:Prefix + 'cmr'
         # New-LambdaPSRuntimeDeployment makes all four, so all four are recorded first.
         Add-IntegrationResource -Kind 'ECR repository' -Name $runtimeName -Remove {
@@ -250,9 +256,10 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         Add-IntegrationResource -Kind 'runtime alias production of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'production' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -Region $script:Region `
+        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -Region $script:Region.ToUpperInvariant() `
             -ProjectPath ([System.IO.Path]::Combine($script:Work, 'cmr')) -Confirm:$false
-        $runtime.RuntimeArn | Should -Not -BeNullOrEmpty
+        $runtime.Region | Should -BeExactly $lowerRegion
+        $runtime.RuntimeArn | Should -MatchExactly $inRegion
 
         $functionName = $script:Prefix + 'cmr-fn'
         $project = [System.IO.Path]::Combine($script:Work, 'cmr-fn')
@@ -263,10 +270,50 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $deployment = New-LambdaPSFunctionDeployment -FunctionName $functionName -ProjectPath $project -RuntimeName $runtimeName `
             -Role $script:Role -Region $script:Region -PackagePath ([System.IO.Path]::Combine($script:Work, 'cmr-fn.zip')) -Confirm:$false
         $deployment.RuntimeArn | Should -BeExactly $runtime.RuntimeArn
+        $deployment.FunctionArn | Should -MatchExactly $inRegion
 
         $response = Invoke-LambdaPSFunction -FunctionName $functionName -Payload @{ name = 'live' } -Region $script:Region -ErrorAction Stop
 
         $response.message | Should -BeExactly 'Hello, live'
+        $response.function | Should -BeExactly $functionName
+
+        # The redeploy: new code, and a manifest.json that now records another script and alias. The
+        # function keeps the handler and alias it has, with a warning for each, and runs the new code.
+        $before = Get-LMFunctionConfiguration -FunctionName $functionName -Region $script:Region -ErrorAction Stop
+        $before.Handler | Should -BeExactly 'handler.ps1'
+        $before.RuntimeConfig.RuntimeArn | Should -BeExactly $runtime.RuntimeArn
+        $before.RuntimeConfig.RuntimeAlias | Should -BeExactly 'production'
+        $handlerPath = [System.IO.Path]::Combine($project, 'handler.ps1')
+        $code = [System.IO.File]::ReadAllText($handlerPath)
+        $newCode = $code.Replace('"Hello, $name"', '"Hello again, $name"')
+        $newCode | Should -Not -BeExactly $code
+        [System.IO.File]::WriteAllText($handlerPath, $newCode)
+        [System.IO.File]::WriteAllText([System.IO.Path]::Combine($project, 'other.ps1'), "param(`$LambdaInput, `$LambdaContext)`n'other'`n")
+        $manifestPath = [System.IO.Path]::Combine($project, 'manifest.json')
+        $manifest = [System.IO.File]::ReadAllText($manifestPath) | ConvertFrom-Json
+        $manifest.HandlerString = 'other.ps1'
+        $manifest.ScriptFile = 'other.ps1'
+        $manifest.RuntimeAlias = 'staging'
+        [System.IO.File]::WriteAllText($manifestPath, ($manifest | ConvertTo-Json))
+
+        $redeployment = New-LambdaPSFunctionDeployment -FunctionName $functionName -ProjectPath $project -RuntimeName $runtimeName `
+            -Role $script:Role -Region $script:Region -PackagePath ([System.IO.Path]::Combine($script:Work, 'cmr-fn-redeploy.zip')) `
+            -Confirm:$false -WarningVariable warnings -WarningAction SilentlyContinue
+
+        $redeployment.Updated | Should -BeTrue
+        $redeployment.FunctionArn | Should -MatchExactly $inRegion
+        $messages = @($warnings | ForEach-Object { [string]$_ })
+        @($messages | Where-Object { $_ -clike "manifest.json records ScriptFile 'other.ps1', but function '$functionName' runs handler 'handler.ps1'*" }).Count | Should -Be 1
+        @($messages | Where-Object { $_ -clike "manifest.json records RuntimeAlias 'staging', but function '$functionName' is bound to alias 'production'*" }).Count | Should -Be 1
+        $after = Get-LMFunctionConfiguration -FunctionName $functionName -Region $script:Region -ErrorAction Stop
+        $after.Handler | Should -BeExactly $before.Handler
+        $after.RuntimeConfig.RuntimeArn | Should -BeExactly $before.RuntimeConfig.RuntimeArn
+        $after.RuntimeConfig.RuntimeArn | Should -MatchExactly $inRegion
+        $after.RuntimeConfig.RuntimeAlias | Should -BeExactly $before.RuntimeConfig.RuntimeAlias
+
+        $response = Invoke-LambdaPSFunction -FunctionName $functionName -Payload @{ name = 'live' } -Region $script:Region -ErrorAction Stop
+
+        $response.message | Should -BeExactly 'Hello again, live'
         $response.function | Should -BeExactly $functionName
     }
 }
