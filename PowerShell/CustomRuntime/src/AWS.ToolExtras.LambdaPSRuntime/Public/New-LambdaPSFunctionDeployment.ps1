@@ -128,7 +128,8 @@ function New-LambdaPSFunctionDeployment {
         PowerShell module, which doesn't run in PowerShell 7) and AWSPowerShell.NetCore (over 600 MB,
         more than Lambda's 250 MB package limit) fail with AWSPowerShellModuleNotSupported, whether
         named in -IncludeModule or in a handler's #Requires; name the AWS.Tools.* modules for the
-        services you use instead. Alias: -Module.
+        services you use instead. An -IncludeModule name with a wildcard (* ? [) or a path (rooted, or
+        containing / or \) fails with ModuleNameInvalid. Alias: -Module.
     .PARAMETER MissingModuleAction
         What to do with a module (or dependency) that is not available locally, forwarded to
         Compress-LambdaPSFunctionPackage: Save (default; download into a temporary folder that is
