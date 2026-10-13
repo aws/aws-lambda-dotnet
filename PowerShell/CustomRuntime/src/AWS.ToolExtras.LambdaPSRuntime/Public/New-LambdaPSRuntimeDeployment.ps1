@@ -92,10 +92,10 @@ function New-LambdaPSRuntimeDeployment {
         Modules to bake into the runtime, forwarded to New-LambdaPSRuntimeProject (with transitive
         dependencies). Accepts a list. Each specification must pin an exact RequiredVersion (for
         example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }); minimum-version and
-        version-range specs are rejected. Versions are never resolved implicitly. AWSPowerShell and
-        AWSPowerShell.NetCore are too large to package for Lambda and fail with
-        AWSPowerShellModuleNotSupported; name the AWS.Tools.* modules for the services you use
-        instead. Alias: -Module.
+        version-range specs are rejected. Versions are never resolved implicitly. AWSPowerShell (the
+        Windows PowerShell module, which doesn't run in PowerShell 7) and AWSPowerShell.NetCore (every
+        AWS service, over 600 MB) fail with AWSPowerShellModuleNotSupported; name the AWS.Tools.*
+        modules for the services you use instead. Alias: -Module.
     .PARAMETER MissingModuleAction
         What to do with a module (or dependency) that is not available locally, forwarded to
         New-LambdaPSRuntimeProject: Save (default; download into a temporary folder that is deleted
