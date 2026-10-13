@@ -49,7 +49,7 @@ function Build-LambdaPSRuntimePackage {
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
             ContextCompileFailed.
           - The handler's modules (SelfContainedZip only): ModuleVersionRequired (a #Requires that does not pin
-            an exact RequiredVersion), AWSPowerShellModuleNotSupported (a #Requires on the monolithic
+            an exact RequiredVersion), AWSPowerShellModuleNotSupported (a #Requires on the
             AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
             DependencyVersionUnpinned, ModuleNotFoundLocally (-MissingModuleAction Stop),
