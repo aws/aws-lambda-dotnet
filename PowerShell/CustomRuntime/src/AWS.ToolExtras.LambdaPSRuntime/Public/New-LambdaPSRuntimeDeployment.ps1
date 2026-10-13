@@ -269,9 +269,9 @@ function New-LambdaPSRuntimeDeployment {
     # flow is unit testable offline. No AWS SDK type is bound directly.
     try {
         # Credential parameters the caller gave, passed to every seam that calls AWS.
-        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters
+        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
         if (-not $PSBoundParameters.ContainsKey('Region')) {
-            $Region = Resolve-LambdaPSRegion -CredentialParameter $credentialParameter
+            $Region = Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState
         }
         # AWS region names are lowercase. The ECR pull grant is matched against the runtime ARN Lambda
         # sends, which carries the lowercase name, so a region given in another case is lowercased here,

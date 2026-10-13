@@ -195,6 +195,14 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err.Exception.Message | Should -BeLike "Repository 'a..b' *(lowercase letters and digits, 2-256 characters, in '/'-separated parts where letters or digits are joined by one '.', one '_', two '_', or any number of '-')*"
         }
 
+        # The closest valid names: ECR joins letters or digits with any number of '-', or two '_'.
+        It 'defaults the repository to a runtime name such as <Name>, which ECR accepts' -ForEach @(
+            @{ Name = 'my--rt' }, @{ Name = 'my__rt' }
+        ) {
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName $Name -PowerShellVersion 7.4 -Region us-east-1 -WhatIf
+            $result.RepositoryName | Should -Be $Name
+        }
+
         It 'uses an explicit -RepositoryName even when the runtime name would be invalid' {
             $splat = @{
                 RuntimeName = 'my..runtime'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'my-runtime'
@@ -446,6 +454,33 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Mock 'Resolve-LambdaPSRegion' -ModuleName $script:moduleName -MockWith { 'AP-SOUTHEAST-2' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt
             $result.Region | Should -BeExactly 'ap-southeast-2'
+        }
+
+        # A deploy script that sets its own default region and credentials (in its own scope, not the
+        # global one) gets them used, as any AWS.Tools cmdlet it calls would.
+        It 'uses the region and credentials a calling script set with Set-DefaultAWSRegion and Set-AWSCredential' {
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [CmdletBinding()] param($Region, $ClientConfig, $Credential, $ProfileName, $ProfileLocation)
+                    $script:LambdaPSCalls.Add("STS region=$Region credential=$($null -ne $Credential)")
+                    [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { [CmdletBinding()] param($RuntimeName, $Region, $ClientConfig, $Credential, $ProfileName, $ProfileLocation)
+                    $script:LambdaPSCalls.Add("GetRuntime region=$Region credential=$($null -ne $Credential)")
+                    throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist')) }
+                function script:New-LambdaPSRuntimeProject { }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $project = [System.IO.Path]::Combine($TestDrive, 'script-scope-rt')
+            # A script block's local scope, as in a function of the script: AWS.Tools reads global settings
+            # itself, so only a non-global scope needs the caller's session state.
+            $command = "& { Set-DefaultAWSRegion -Region ap-northeast-3 -Scope Local; Set-AWSCredential -AccessKey AKIAEXAMPLE -SecretKey example -Scope Local; " +
+                "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -ProjectPath '$project' -WhatIf; 'REGION=' + `$r.Region }"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
+
+            $result.Output | Should -BeLike '*REGION=ap-northeast-3*'
+            $result.Calls | Should -Contain 'STS region=ap-northeast-3 credential=True'
+            $result.Calls | Should -Contain 'GetRuntime region=ap-northeast-3 credential=True'
         }
 
         It 'composes the image URI with the partition''s DNS suffix' {
