@@ -4,16 +4,16 @@ function New-LambdaPSRuntimeProject {
         Scaffolds a PowerShell Lambda custom-runtime project (runtime image or layer).
     .DESCRIPTION
         Copies the module's template tree for the selected deployment target into the target
-        directory. This is the low-level scaffold cmdlet; New-LambdaPSRuntimeDeployment scaffolds,
-        builds and publishes a customer-managed runtime in one step. -Target defaults to CMR.
+        directory. This is the low-level scaffold cmdlet. -Target defaults to CMR.
 
-        The CMR target (default) emits a runtime-image project: a provided:al2023 Dockerfile that
-        installs pwsh (from the Microsoft GPG-signed RPM on linux/amd64, or on linux/arm64 from
-        the official release tarball verified against a pinned SHA256) and relocates the
-        interpreter into /var/runtime/powershell, the bootstrap and the runtime.ps1 event loop it starts, a
-        PowerShellLambdaContext.cs precompiled to a DLL during the image build, and the pwsh-runtime
-        helper modules (including modules/Private/Set-PSModulePath.ps1, which sets a function-first
-        PSModulePath spanning all module tiers).
+        The CMR target (default) emits a runtime-image project with:
+          - a provided:al2023 Dockerfile that installs pwsh (from the Microsoft GPG-signed RPM on
+            linux/amd64, or on linux/arm64 from the official release tarball verified against a
+            pinned SHA256) and moves the interpreter to /var/runtime/powershell;
+          - the bootstrap, and the runtime.ps1 event loop it starts;
+          - PowerShellLambdaContext.cs, precompiled to a DLL during the image build;
+          - the pwsh-runtime helper modules, including modules/Private/Set-PSModulePath.ps1, which
+            sets a function-first PSModulePath spanning all module tiers.
 
         The Layer target emits a Lambda layer project whose contents mount at /opt: a bootstrap that
         references /opt, runtime.ps1, the pwsh-runtime helper modules, and
@@ -39,8 +39,9 @@ function New-LambdaPSRuntimeProject {
         New-LMCRuntime, New-LMCRuntimeVersion, New-LMCRuntimeAlias).
     .PARAMETER Path
         The directory to create the project in. Alias: -ProjectPath.
-        An existing file is a TargetIsFile error, a drive that does not exist DriveNotFound, and a
-        provider other than the file system (for example Env:) PathNotFileSystem. Create projects in a
+        An existing file, or a link to nothing, is a TargetIsFile error, a folder you cannot list
+        TargetNotReadable, a drive that does not exist DriveNotFound, and a provider other than the
+        file system (for example Env:) PathNotFileSystem. Create projects in a
         folder only you can write to: a new -Path's parent folder is not checked, so another user who
         can write to it could change the project.
         On Linux and macOS an existing -Path must be owned by you, or by root when no group or other

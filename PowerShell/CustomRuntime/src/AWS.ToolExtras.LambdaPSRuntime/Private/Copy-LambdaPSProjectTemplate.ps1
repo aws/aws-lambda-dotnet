@@ -230,6 +230,11 @@ function Copy-LambdaPSProjectTemplate {
                 $null = New-Item -ItemType Directory -Path $directory -Force -WhatIf:$false -Confirm:$false
             }
             [System.IO.File]::WriteAllText($entry.Key, $entry.Value, $encoding)
+            # The kernel runs the bootstrap directly, so it is executable (755) like the template. It is
+            # set rather than copied: a module installed from a .nupkg keeps no Unix modes.
+            if (-not $IsWindows -and [System.IO.Path]::GetFileName($entry.Key) -ceq 'bootstrap') {
+                [System.IO.File]::SetUnixFileMode($entry.Key, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute')
+            }
             $written.Add($entry.Key)
         }
     }

@@ -8,14 +8,16 @@ function Assert-LambdaPSScaffoldPath {
         directory behind:
 
           - -Path must not be blank (a parameter validation error).
-          - -Path must not be a file (TargetIsFile), even with -Force. Get-ChildItem on a file returns
-            the file itself, so without this check it would be reported as a non-empty directory and
-            -Force would delete it.
+          - -Path must not be a file, or a link to nothing (TargetIsFile), even with -Force.
+            Get-ChildItem on a file returns the file itself, so without this check it would be
+            reported as a non-empty directory and -Force would delete it.
           - On Linux and macOS, an existing -Path (after following a link) must be owned by the
             current user, or by root when no group or other user can write to it
             (TargetOwnedByAnotherUser), even with -Force. In a shared folder
             such as /tmp another user could create the directory first and change the project while
             it is written or built. The check is skipped when the caller is root.
+          - An existing -Path must be listable (TargetNotReadable), even with -Force: a folder you
+            cannot list could hold files the scaffold would write over.
           - A non-empty -Path needs -Force (TargetNotEmpty).
 
         Returns the existing children of -Path (empty when it does not exist or is empty), which
@@ -47,11 +49,15 @@ function Assert-LambdaPSScaffoldPath {
     )
 
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        # Test-Path calls a link to nothing a leaf: name the link, not a file.
+        $link = (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue).LinkTarget
+        $message = if ($link -and -not [System.IO.Directory]::Exists($Path)) { "Target '$Path' is a link to '$link', which does not exist. Choose a directory path for the project." }
+        else { "Target '$Path' is a file, not a directory. Choose a directory path for the project." }
         # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the error with
         # its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would also reach the
         # caller's -ErrorVariable naming this internal helper.
         throw [System.Management.Automation.ErrorRecord]::new(
-            [System.IO.IOException]::new("Target '$Path' is a file, not a directory. Choose a directory path for the project."),
+            [System.IO.IOException]::new($message),
             'TargetIsFile', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path)
     }
 
@@ -74,7 +80,12 @@ function Assert-LambdaPSScaffoldPath {
 
     $existing = @()
     if (Test-Path -LiteralPath $Path) {
-        $existing = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
+        try { $existing = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction Stop) }
+        catch {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.UnauthorizedAccessException]::new("Target '$Path' cannot be listed, so it cannot be checked for files the scaffold would write over: $($_.Exception.Message) Choose a directory you can read.", $_.Exception),
+                'TargetNotReadable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Path)
+        }
         if ($existing.Count -gt 0 -and -not $Force) {
             throw [System.Management.Automation.ErrorRecord]::new(
                 [System.IO.IOException]::new("Target '$Path' already exists and is not empty. Use -Force to replace it."),

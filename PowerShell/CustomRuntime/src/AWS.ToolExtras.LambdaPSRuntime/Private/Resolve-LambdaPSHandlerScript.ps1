@@ -51,7 +51,7 @@ function Resolve-LambdaPSHandlerScript {
     }
 
     # A single-file source is its own handler script.
-    $source = Get-Item -LiteralPath $Path
+    $source = Get-Item -LiteralPath $Path -Force
     if (-not $source.PSIsContainer) {
         return $source.Name
     }

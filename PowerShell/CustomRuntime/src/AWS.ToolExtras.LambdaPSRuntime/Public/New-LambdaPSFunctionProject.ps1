@@ -17,9 +17,10 @@ function New-LambdaPSFunctionProject {
           - SelfContainedZip: a single, self-contained function .zip on provided.al2023 whose
             contents mount at /var/task. The interpreter (pwsh), runtime module, LambdaContext
             (precompiled when the build host can run the bundled pwsh), and a starter <Handler>.ps1
-            all ship in the one .zip; there is no separate runtime resource. This target copies the module's Templates/Shared and
-            Templates/SelfContainedZip trees and writes a lambdaps-runtime.json marker so the validator can recognize the project
-            shape. pwsh itself is added at build time by Build-LambdaPSRuntimePackage (no Docker).
+            all ship in the one .zip; there is no separate runtime resource. This target copies the
+            module's Templates/Shared and Templates/SelfContainedZip trees and writes a
+            lambdaps-runtime.json marker so the validator can recognize the project shape. pwsh
+            itself is added at build time by Build-LambdaPSRuntimePackage (no Docker).
 
           - Container: a container-per-function image (PackageType=Image) that bundles pwsh, the
             runtime bootstrap, and the helper modules under /var/runtime (the CMR layout), plus the
@@ -37,8 +38,9 @@ function New-LambdaPSFunctionProject {
         TemplateNotFound error.
     .PARAMETER Path
         The directory to create the function project in. Alias: -ProjectPath.
-        An existing file is a TargetIsFile error, a drive that does not exist DriveNotFound, and a
-        provider other than the file system (for example Env:) PathNotFileSystem. Create projects in a
+        An existing file, or a link to nothing, is a TargetIsFile error, a folder you cannot list
+        TargetNotReadable, a drive that does not exist DriveNotFound, and a provider other than the
+        file system (for example Env:) PathNotFileSystem. Create projects in a
         folder only you can write to: a new -Path's parent folder is not checked, so another user who
         can write to it could change the project.
         On Linux and macOS an existing -Path must be owned by you, or by root when no group or other

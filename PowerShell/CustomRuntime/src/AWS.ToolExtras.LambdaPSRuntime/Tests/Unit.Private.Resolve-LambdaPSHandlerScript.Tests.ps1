@@ -23,6 +23,26 @@ Describe 'Resolve-LambdaPSHandlerScript' -Tag 'Unit' {
         }
     }
 
+    # Get-Item does not see a name that starts with '.' on Linux and macOS without -Force.
+    It 'resolves a source whose name starts with a dot: <Case>' -ForEach @(
+        @{ Case = 'a folder'; Folder = $true }, @{ Case = 'a single file'; Folder = $false }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Folder = $Folder } {
+            param($Folder)
+            if ($Folder) {
+                $source = [System.IO.Path]::Combine($TestDrive, '.dot-folder')
+                $null = New-Item -ItemType Directory -Path $source -Force
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($source, 'only.ps1')) -Value '# handler'
+                Resolve-LambdaPSHandlerScript -Path $source -ErrorAction Stop | Should -Be 'only.ps1'
+            }
+            else {
+                $source = [System.IO.Path]::Combine($TestDrive, '.dot-file.ps1')
+                Set-Content -LiteralPath $source -Value '# handler'
+                Resolve-LambdaPSHandlerScript -Path $source -ErrorAction Stop | Should -Be '.dot-file.ps1'
+            }
+        }
+    }
+
     It 'returns the file name for a single-file source' {
         InModuleScope $script:moduleName {
             $file = [System.IO.Path]::Combine($TestDrive, 'single.ps1')

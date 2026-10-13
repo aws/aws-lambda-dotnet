@@ -100,6 +100,23 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
                 Should -Throw -ErrorId 'PwshVersionRequired'
         }
     }
+
+    # The kernel runs the bootstrap directly, so a project zipped or built by hand needs it executable.
+    It 'writes the <Target> bootstrap executable, even from a template that is not' -Skip:$IsWindows -ForEach @(
+        @{ Target = 'CMR' }, @{ Target = 'Layer' }
+    ) {
+        $source = Join-Path $TestDrive "mode-src-$Target"
+        $null = New-Item -ItemType Directory -Path $source -Force
+        Set-Content -LiteralPath (Join-Path $source 'bootstrap') -Value '#!/bin/sh'
+        [System.IO.File]::SetUnixFileMode((Join-Path $source 'bootstrap'), [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
+        $destination = Join-Path $TestDrive "mode-out-$Target"
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination; Target = $Target } {
+            param($Source, $Destination, $Target)
+            $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -Target $Target -PowerShellVersion '7.4' -PwshVersion '7.4.20'
+        }
+        (Get-Item -LiteralPath (Join-Path $destination 'bootstrap')).UnixFileMode |
+            Should -Be ([System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute')
+    }
 }
 
 Describe 'Scaffolded README' -Tag 'Unit' {

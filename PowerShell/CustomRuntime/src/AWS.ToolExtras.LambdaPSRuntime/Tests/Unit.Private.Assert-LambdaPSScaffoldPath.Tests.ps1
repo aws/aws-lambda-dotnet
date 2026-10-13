@@ -67,6 +67,34 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
         }
     }
 
+    # Without the listing, a folder you can enter but not read would look empty, and the scaffold would
+    # write over what is in it.
+    It 'refuses a folder it cannot list with TargetNotReadable, <Case>' -Skip:($IsWindows -or ((id -u) -eq '0')) -ForEach @(
+        @{ Case = 'without -Force'; Force = $false }, @{ Case = 'even with -Force'; Force = $true }
+    ) {
+        $dir = [System.IO.Path]::Combine($TestDrive, "unlistable-$Force")
+        $null = New-Item -ItemType Directory -Path $dir
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'README.md')) -Value 'keep me'
+        [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserWrite, UserExecute')
+        try {
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir; Force = $Force } {
+                param($Path, $Force)
+                { Assert-LambdaPSScaffoldPath -Path $Path -Force:$Force } |
+                    Should -Throw -ErrorId 'TargetNotReadable' -ExpectedMessage '*cannot be listed*'
+            }
+        }
+        finally { [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute') }
+    }
+
+    It 'names a link to nothing as such, with TargetIsFile' -Skip:$IsWindows {
+        $link = [System.IO.Path]::Combine($TestDrive, 'dangling')
+        $null = New-Item -ItemType SymbolicLink -Path $link -Target ([System.IO.Path]::Combine($TestDrive, 'nothing-here'))
+        InModuleScope $script:moduleName -Parameters @{ Path = $link } {
+            param($Path)
+            { Assert-LambdaPSScaffoldPath -Path $Path } | Should -Throw -ErrorId 'TargetIsFile' -ExpectedMessage '*is a link to*which does not exist*'
+        }
+    }
+
     # Another user's directory is simulated by reporting a different current user ID.
     Context 'a directory another user owns' -Skip:$IsWindows {
         It 'refuses it with TargetOwnedByAnotherUser, <Case>' -ForEach @(
@@ -86,6 +114,27 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
                 Mock id { '4294967294' }
                 { Assert-LambdaPSScaffoldPath -Path $Path -Force:$Force } |
                     Should -Throw -ErrorId 'TargetOwnedByAnotherUser' -ExpectedMessage '*owned by another user*'
+            }
+        }
+
+        # The owner checked is the link's target's: a link you own does not make another user's
+        # directory yours.
+        It 'refuses a link the current user owns to a directory another user owns' -Skip:((id -u) -eq '0') {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'foreign-target')
+            $link = "$dir-own-link"
+            $null = New-Item -ItemType Directory -Path $dir
+            $null = New-Item -ItemType SymbolicLink -Path $link -Target $dir
+            InModuleScope $script:moduleName -Parameters @{ Dir = $dir; Link = $link; Me = [long](id -u) } {
+                param($Dir, $Link, $Me)
+                $mode = [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute'
+                # The method body names the target literally, since it runs in no scope of this test.
+                $resolve = [scriptblock]::Create("param(`$ReturnFinalTarget) [PSCustomObject]@{ FullName = '$Dir' }")
+                Mock Get-Item {
+                    $linkItem = [PSCustomObject]@{ LinkTarget = $Dir; UnixStat = [PSCustomObject]@{ UserId = $Me }; UnixFileMode = $mode; User = 'me' }
+                    $linkItem | Add-Member -MemberType ScriptMethod -Name ResolveLinkTarget -Value $resolve -PassThru
+                }.GetNewClosure() -ParameterFilter { $LiteralPath -eq $Link }
+                Mock Get-Item { [PSCustomObject]@{ LinkTarget = $null; UnixStat = [PSCustomObject]@{ UserId = 4294967294 }; UnixFileMode = $mode; User = 'other' } }.GetNewClosure() -ParameterFilter { $LiteralPath -eq $Dir }
+                { Assert-LambdaPSScaffoldPath -Path $Link } | Should -Throw -ErrorId 'TargetOwnedByAnotherUser' -ExpectedMessage '*owned by another user*'
             }
         }
     }
