@@ -16,9 +16,9 @@ function Get-LambdaPSPwshArchive {
         architecture fails here rather than producing a broken package. For a version with no pinned
         hash the file is used as-is (the caller owns that file's provenance).
 
-        The download retries a failed HTTP response (a GitHub rate limit or server error) and gives up
-        on a host that does not connect and send its response headers in time. A download that stops
-        part-way through the file has no time limit.
+        The download retries a failed HTTP response (a GitHub rate limit or server error), gives up on a
+        host that does not connect in time, and fails a download that does not finish in time (one that
+        stalls part-way), rather than waiting indefinitely.
     .PARAMETER PwshVersion
         The full pwsh version (x.y.z, for example 7.4.20) to download and verify.
     .PARAMETER Architecture
@@ -105,12 +105,13 @@ function Get-LambdaPSPwshArchive {
 
     Write-Verbose "Downloading $url"
     try {
-        # Retry a failed HTTP response (a GitHub rate limit or server error), and give up on a host
-        # that does not connect and send its headers in time. A dropped connection is not retried. The limits are in Config/pwsh.psd1.
+        # Retry a failed HTTP response (a GitHub rate limit or server error), give up on a host that does
+        # not connect in time, and fail a download that does not finish in time. A dropped connection is
+        # not retried. The limits are in Config/pwsh.psd1.
         $download = $script:Config.pwsh.Download
         Invoke-WebRequest -Uri $url -OutFile $destination -UseBasicParsing -ErrorAction Stop `
             -MaximumRetryCount $download.RetryCount -RetryIntervalSec $download.RetryDelaySeconds `
-            -ConnectionTimeoutSeconds $download.ConnectTimeoutSeconds
+            -ConnectionTimeoutSeconds $download.ConnectTimeoutSeconds -OperationTimeoutSeconds $download.OperationTimeoutSeconds
         $actual = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
     }
     catch {

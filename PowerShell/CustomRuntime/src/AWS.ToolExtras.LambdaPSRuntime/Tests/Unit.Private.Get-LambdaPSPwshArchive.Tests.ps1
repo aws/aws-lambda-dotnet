@@ -110,7 +110,9 @@ Describe 'Get-LambdaPSPwshArchive' -Tag 'Unit' {
                 $Uri -eq 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.20/powershell-7.4.20-linux-x64.tar.gz' -and
                 $MaximumRetryCount -eq $script:Config.pwsh.Download.RetryCount -and
                 $RetryIntervalSec -eq $script:Config.pwsh.Download.RetryDelaySeconds -and
-                $ConnectionTimeoutSeconds -eq $script:Config.pwsh.Download.ConnectTimeoutSeconds
+                $ConnectionTimeoutSeconds -eq $script:Config.pwsh.Download.ConnectTimeoutSeconds -and
+                # A download that stalls part-way fails rather than waiting indefinitely.
+                $OperationTimeoutSeconds -eq $script:Config.pwsh.Download.OperationTimeoutSeconds
             }
         }
     }
