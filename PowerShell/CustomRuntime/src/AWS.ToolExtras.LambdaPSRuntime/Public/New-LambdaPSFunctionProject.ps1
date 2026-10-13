@@ -86,8 +86,9 @@ function New-LambdaPSFunctionProject {
         (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }); minimum-version and
         version-range specs are rejected. A module that is not installed locally is handled according
         to -MissingModuleAction. Defaults to none. Alias: -Module.
-        A specification without RequiredVersion is a ModuleVersionRequired error. Resolving the
-        dependencies stops with ModuleVersionConflict when a module is needed at versions no one
+        A specification for AWSPowerShell or AWSPowerShell.NetCore is an AWSPowerShellModuleNotSupported
+        error (use the AWS.Tools.* modules), and one without RequiredVersion a ModuleVersionRequired
+        error. Resolving the dependencies stops with ModuleVersionConflict when a module is needed at versions no one
         version meets; ModuleVersionSpelling when the module found has the version written another way
         (PowerShell matches versions exactly, so 1.2 is not 1.2.0) or is above a dependency's
         MaximumVersion; DependencyNameMissing, DependencyNameIsPath or DependencyVersionUnpinned when a
