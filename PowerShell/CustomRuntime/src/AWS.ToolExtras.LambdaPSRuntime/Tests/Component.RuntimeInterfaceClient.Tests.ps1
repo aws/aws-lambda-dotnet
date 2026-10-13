@@ -338,6 +338,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toplabel.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break nowhere } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toploop.ps1')) -Value '$script:seen = foreach ($i in 1..3) { if ($i -eq 2) { break }; $i }', 'function Handle { param($LambdaInput, $LambdaContext) "loaded:$script:seen" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'other.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ Kind = ''script file''; N = $LambdaInput.n }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nested.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ a = @{ b = @{ c = @{ d = @{ e = 5 } } } } }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -696,6 +697,32 @@ public class InvokeBin : PSCmdlet {
         $posts.Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
         $log | Should -BeLike '*answered GET /runtime/invocation/next with HTTP 500*'
         $exitCode | Should -Be 1
+    }
+
+    # An invalid setting falls back to 100 and says so once in the function log, not on every invocation.
+    It 'with POWERSHELL_RUNTIME_JSON_DEPTH <Case>, serializes at depth <Depth> and warns <Warnings> time(s)' -ForEach @(
+        @{ Case = '''abc'''; Value = 'abc'; Depth = 100; Warnings = 1 }
+        @{ Case = '''0'''; Value = '0'; Depth = 100; Warnings = 1 }
+        @{ Case = '''200'''; Value = '200'; Depth = 100; Warnings = 1 }
+        @{ Case = '''2'' (valid)'; Value = '2'; Depth = 2; Warnings = 0 }
+        @{ Case = 'unset'; Value = $null; Depth = 100; Warnings = 0 }
+    ) {
+        $savedDepth = $env:POWERSHELL_RUNTIME_JSON_DEPTH
+        $env:POWERSHELL_RUNTIME_JSON_DEPTH = $Value
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'nested.ps1' -EventBody '{}', '{}' -LogVariable log)
+        }
+        finally { $env:POWERSHELL_RUNTIME_JSON_DEPTH = $savedDepth }
+
+        $posts.Count | Should -Be 2
+        foreach ($post in $posts) {
+            $result = $post.Body | ConvertFrom-Json
+            if ($Depth -eq 100) { $result.a.b.c.d.e | Should -Be 5 }
+            else { $result.a.b | Should -Match 'System\.Collections\.Hashtable' }
+        }
+        $warning = "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$Value', which is not a whole number from 1 to 100; using 100."
+        ([regex]::Matches($log, [regex]::Escape($warning))).Count | Should -Be $Warnings
+        ([regex]::Matches($log, 'POWERSHELL_RUNTIME_JSON_DEPTH is ')).Count | Should -Be $Warnings
     }
 
     It 'sets _X_AMZN_TRACE_ID for its own invocation only' {

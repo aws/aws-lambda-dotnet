@@ -51,6 +51,24 @@ function private:Invoke-FunctionHandler {
             'The handler used break or continue outside a loop of its own, so it stopped before returning. Use return to leave the handler early.')
     }
 
+    # The serialization depth: POWERSHELL_RUNTIME_JSON_DEPTH (1-100) lowers it from 100. A value that is
+    # set but not a whole number in that range falls back to 100, with one warning in the function log
+    # for each value (the setting is the function's, so it holds for every invocation in this execution
+    # environment). An unset variable is silent. [Environment] tells set-but-empty from unset.
+    $private:depth = 100
+    $private:depthValue = [System.Environment]::GetEnvironmentVariable('POWERSHELL_RUNTIME_JSON_DEPTH')
+    if ($null -ne $private:depthValue) {
+        $private:depthSetting = 0
+        if ([int]::TryParse($private:depthValue, [ref]$private:depthSetting) -and
+            $private:depthSetting -ge 1 -and $private:depthSetting -le 100) {
+            $private:depth = $private:depthSetting
+        }
+        elseif ($script:LambdaPSRuntimeDepthWarnedFor -cne $private:depthValue) {
+            $script:LambdaPSRuntimeDepthWarnedFor = $private:depthValue
+            Write-Host "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
+        }
+    }
+
     # Convert function response to a string if needed
     # $null and strings go as they are; anything else, including $false and 0, is serialized, so a
     # handler returning $false sends the JSON 'false' rather than the text 'False'.
@@ -60,12 +78,6 @@ function private:Invoke-FunctionHandler {
         # Return plain data (hashtables, PSCustomObjects, arrays, strings, numbers): a rich .NET object
         # such as Get-Item's output references other objects without end, and serializing it that deep
         # takes minutes and exhausts memory. POWERSHELL_RUNTIME_JSON_DEPTH (1-100) lowers the depth.
-        $private:depth = 100
-        $private:depthSetting = 0
-        if ([int]::TryParse($env:POWERSHELL_RUNTIME_JSON_DEPTH, [ref]$private:depthSetting) -and
-            $private:depthSetting -ge 1 -and $private:depthSetting -le 100) {
-            $private:depth = $private:depthSetting
-        }
         $private:responseString = ConvertTo-Json -InputObject $private:functionInvocationResponse -Compress -Depth $private:depth
     }
     else {

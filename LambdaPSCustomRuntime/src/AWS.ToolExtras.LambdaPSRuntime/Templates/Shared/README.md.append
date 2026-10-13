@@ -6,10 +6,11 @@ Set these as environment variables on the function:
   every invocation) to the function log. It does not turn on `Write-Verbose` output from the handler
   or the modules it uses: set `$VerbosePreference` in the handler for that.
 - `POWERSHELL_RUNTIME_JSON_DEPTH` (1-100, default 100) is the depth to which the handler's output is
-  serialized to JSON; any other value uses 100. Return plain data (hashtables, PSCustomObjects,
-  arrays, strings, numbers): a rich .NET object, such as the output of `Get-Item`, references other
-  objects without end, and serializing it that deep can exhaust the function's memory or time. Lower
-  the depth if a handler must return one.
+  serialized to JSON; any other value uses 100, and the runtime writes a warning naming the value to
+  the function log once. Return plain data (hashtables, PSCustomObjects, arrays, strings, numbers): a
+  rich .NET object, such as the output of `Get-Item`, references other objects without end, and
+  serializing it that deep can exhaust the function's memory or time. Lower the depth if a handler must
+  return one.
 
 Everything the handler writes to the pipeline is its response. A string is sent as it is; anything
 else is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)` to send a JSON array
