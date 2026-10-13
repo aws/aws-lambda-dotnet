@@ -52,27 +52,17 @@ function Get-LambdaPSRequiredModule {
         return
     }
 
-    # AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7
-    # on Lambda. AWSPowerShell.NetCore holds every AWS service (over 600 MB installed): more than
-    # Lambda's 250 MB limit for a .zip package and its layers, and in a container image, importing it
-    # takes over 10 seconds and over 1 GB of memory on every cold start. The AWS.Tools.* modules split
-    # the same cmdlets by service.
-    $monolithic = @($ast.ScriptRequirements.RequiredModules | Where-Object { $_.Name -in 'AWSPowerShell', 'AWSPowerShell.NetCore' })
-    if ($monolithic.Count -gt 0) {
-        $reasons = [ordered]@{
-            'AWSPowerShell'         = 'AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda'
-            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service (over 600 MB installed): more than Lambda's 250 MB " +
-                'limit for a .zip package and its layers, and in a container image, importing it takes over 10 ' +
-                'seconds and over 1 GB of memory on every cold start'
-        }
-        # -contains ignores case, so 'awspowershell.netcore' gets the AWSPowerShell.NetCore reason.
-        $why = @($reasons.Keys | Where-Object { @($monolithic.Name) -contains $_ } | ForEach-Object { $reasons[$_] }) -join '; '
-        $message = "'$fullPath' requires $(@($monolithic | ForEach-Object { "'$($_.Name)'" }) -join ' and ') (#Requires -Modules), " +
-            "which cannot be packaged for Lambda: $why. Require the AWS.Tools.* modules for the services you use instead " +
-            "(for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '<version>' }), each pinned with a RequiredVersion."
+    # AWSPowerShell and AWSPowerShell.NetCore are refused; Get-LambdaPSAWSPowerShellModuleReason gives
+    # each module's reason.
+    $monolithic = Get-LambdaPSAWSPowerShellModuleReason -Name @($ast.ScriptRequirements.RequiredModules.Name)
+    if ($null -ne $monolithic) {
+        $message = "'$fullPath' requires $(@($monolithic.Names | ForEach-Object { "'$_'" }) -join ' and ') (#Requires -Modules), " +
+            "which cannot be packaged for Lambda: $($monolithic.Reason). Require the AWS.Tools.* modules for the services you " +
+            "use instead (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '<version>' }), each pinned with a " +
+            'RequiredVersion.'
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.ArgumentException]::new($message, 'Path'),
-            'AWSPowerShellModuleNotSupported', [System.Management.Automation.ErrorCategory]::InvalidArgument, $monolithic[0].Name)
+            'AWSPowerShellModuleNotSupported', [System.Management.Automation.ErrorCategory]::InvalidArgument, $monolithic.Names[0])
     }
 
     # Emit the specifications individually (no comma-wrap) so the caller's @(...) counts each module.

@@ -465,7 +465,7 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell', 'AWSPowerShell.NetCore'
             $closure.Error.FullyQualifiedErrorId | Should -Be 'AWSPowerShellModuleNotSupported'
-            $closure.Error.Exception.Message | Should -BeLike "Module 'AWSPowerShell' and 'AWSPowerShell.NetCore' (-IncludeModule or -Module)*"
+            $closure.Error.Exception.Message | Should -BeLike "Modules 'AWSPowerShell' and 'AWSPowerShell.NetCore' (-IncludeModule or -Module) cannot*"
             $closure.Error.Exception.Message | Should -BeLike '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
             $closure.Error.Exception.Message | Should -BeLike "*AWSPowerShell.NetCore holds every AWS service (over 600 MB installed): more than Lambda's 250 MB limit for a .zip package and its layers, and in a container image, importing it takes over 10 seconds and over 1 GB of memory on every cold start*"
         }
@@ -501,6 +501,13 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Not-Installed_1'; RequiredVersion = '1.0.0' }
             $closure.Error | Should -BeNullOrEmpty
             @($closure.Missing.Key) | Should -Be @('LambdaPSFake.Not-Installed_1 1.0.0')
+        }
+    }
+
+    It 'names a module given twice, in another case, once' {
+        InModuleScope $script:moduleName {
+            $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell', 'awspowershell'
+            $closure.Error.Exception.Message | Should -BeLike "Module 'AWSPowerShell' (-IncludeModule or -Module) cannot*"
         }
     }
 

@@ -58,6 +58,18 @@ param($LambdaInput, $LambdaContext)
         }
     }
 
+    It 'refuses a name in another case, giving that module its reason' {
+        $path = Join-Path $TestDrive 'handler-monolithic-case.ps1'
+        Set-Content -LiteralPath $path -Value ('#Requires -Modules awspowershell.netcore', 'param($LambdaInput, $LambdaContext)')
+
+        InModuleScope $script:moduleName -Parameters @{ p = $path } {
+            param($p)
+            $err = { Get-LambdaPSRequiredModule -Path $p } | Should -Throw -ErrorId 'AWSPowerShellModuleNotSupported' -PassThru
+            $err.TargetObject | Should -Be 'awspowershell.netcore'
+            $err.Exception.Message | Should -BeLike "*'awspowershell.netcore' (#Requires -Modules)*AWSPowerShell.NetCore holds every AWS service*"
+        }
+    }
+
     It 'gives each module its own reason when a handler requires both' {
         $path = Join-Path $TestDrive 'handler-monolithic-both.ps1'
         Set-Content -LiteralPath $path -Value ('#Requires -Modules AWSPowerShell, AWSPowerShell.NetCore', 'param($LambdaInput, $LambdaContext)')
