@@ -15,7 +15,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
     BeforeEach {
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
-            [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0.0.0' }
+            [PSCustomObject]@{ Name = 'docker'; Path = '/opt/found/bin/docker'; BuildxVersion = 'v0.0.0' }
         }
     }
 
@@ -31,7 +31,8 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             $result.PSTypeNames | Should -Contain 'AWS.ToolExtras.LambdaPSRuntime.RuntimeImage'
 
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
-                $Executable -eq 'docker' -and
+                # The docker program the preflight found, not the bare name a function or alias could answer to.
+                $Executable -eq '/opt/found/bin/docker' -and
                 $ArgumentList[[array]::IndexOf($ArgumentList, '-t') + 1] -eq 'powershell-runtime:v1' -and
                 $ArgumentList[-1] -eq $script:projectPath -and
                 $ArgumentList -contains '--provenance=false' -and

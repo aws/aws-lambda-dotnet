@@ -19,7 +19,7 @@ function Test-LambdaPSContainerRuntime {
 
         The CLI is located with Get-Command docker -CommandType Application, so only a real
         executable on PATH matches (aliases and functions are ignored). buildx is probed by running
-        'docker buildx version'.
+        'buildx version' with that executable, and Build-LambdaPSRuntimeImage builds with the same one.
 
         When Docker or buildx is missing this is a hard failure: the cmdlet raises a terminating
         error saying which of the two is absent and pointing at the setup documentation, so the
@@ -62,7 +62,7 @@ function Test-LambdaPSContainerRuntime {
         # fails the deploy in its preflight, before the scaffold and any AWS call. A caller's
         # $PSNativeCommandUseErrorActionPreference would throw before $LASTEXITCODE is checked.
         $PSNativeCommandUseErrorActionPreference = $false
-        $buildxVersion = & docker buildx version 2>&1
+        $buildxVersion = & $command.Source buildx version 2>&1
         if ($LASTEXITCODE -ne 0) {
             $message = "The docker CLI at '$($command.Source)' does not support 'buildx' " +
                 "(docker buildx version exited with $LASTEXITCODE). buildx is required: the image build " +

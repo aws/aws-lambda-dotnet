@@ -116,7 +116,8 @@ function Build-LambdaPSRuntimeImage {
         }
 
         # The same docker and buildx check as the deploy preflight (DockerNotFound / DockerBuildxNotFound).
-        $null = Test-LambdaPSContainerRuntime
+        # The build runs the docker program it found, so a docker function or alias cannot stand in for it.
+        $containerRuntime = Test-LambdaPSContainerRuntime
 
         $dockerArgs = [System.Collections.Generic.List[string]]::new()
         $dockerArgs.Add('buildx')
@@ -161,7 +162,7 @@ function Build-LambdaPSRuntimeImage {
 
         $digest = $null
         try {
-            Invoke-LambdaPSExternalTool -Executable 'docker' -ArgumentList $dockerArgs.ToArray()
+            Invoke-LambdaPSExternalTool -Executable $containerRuntime.Path -ArgumentList $dockerArgs.ToArray()
             if ($push -and (Test-Path -LiteralPath $metadataFile -PathType Leaf)) {
                 # The image is pushed by now, so metadata buildx wrote in another shape leaves the digest
                 # unknown rather than failing the build.

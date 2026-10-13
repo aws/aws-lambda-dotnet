@@ -2,9 +2,22 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'DockerStub.ps1'))
     Add-LambdaPSDockerStub
+
+    # A stand-in docker program: a script that writes its arguments next to itself, prints -Output and
+    # exits with -ExitCode. The probe runs it by the path Get-Command returns.
+    function script:New-FakeDockerProgram {
+        param([string]$Name, [string]$Output, [int]$ExitCode)
+        $path = [System.IO.Path]::Combine($TestDrive, $Name)
+        Set-Content -LiteralPath $path -Value @(
+            "Set-Content -LiteralPath '$path.args' -Value (`$args -join ' ')"
+            "'$($Output -replace "'", "''")'"
+            "exit $ExitCode")
+        $path
+    }
 }
 
 AfterAll {
+    Remove-LambdaPSDockerStub
     Remove-LambdaPSTestModule
 }
 
@@ -15,20 +28,18 @@ AfterAll {
 Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
     Context 'when docker and buildx are both present' {
         BeforeEach {
+            # The docker program, as a script the probe runs by its path: it records its arguments.
+            $script:fakeDocker = New-FakeDockerProgram -Name 'docker-buildx.ps1' -Output 'github.com/docker/buildx v0.17.1' -ExitCode 0
             Mock 'Get-Command' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' `
                 -ParameterFilter { $Name -eq 'docker' -and $CommandType -eq 'Application' } `
-                -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = '/usr/bin/docker' } }
-            Mock 'docker' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
-                $global:LASTEXITCODE = 0
-                'github.com/docker/buildx v0.17.1'
-            }
+                -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = $script:fakeDocker } }
         }
 
         It 'returns a runtime object naming docker' {
             $result = Test-LambdaPSContainerRuntime
 
             $result.Name | Should -Be 'docker'
-            $result.Path | Should -Be '/usr/bin/docker'
+            $result.Path | Should -Be $script:fakeDocker
             $result.PSTypeNames | Should -Contain 'AWS.ToolExtras.LambdaPSRuntime.ContainerRuntime'
         }
 
@@ -39,14 +50,22 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
         It 'writes the docker path and buildx version to the verbose stream' {
             $verbose = "$(Test-LambdaPSContainerRuntime -Verbose 4>&1 | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] })"
 
-            $verbose | Should -BeLike "*Found docker at '/usr/bin/docker'.*docker buildx available: github.com/docker/buildx v0.17.1.*"
+            $verbose | Should -BeLike "*Found docker at '$script:fakeDocker'.*docker buildx available: github.com/docker/buildx v0.17.1.*"
         }
 
         It 'probes buildx rather than assuming it' {
             $null = Test-LambdaPSContainerRuntime
 
-            Should -Invoke 'docker' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -Times 1 -Exactly `
-                -ParameterFilter { ($args -join ' ') -match 'buildx\s+version' }
+            @(Get-Content -LiteralPath "$script:fakeDocker.args") | Should -Be @('buildx version')
+        }
+
+        # The probe runs the program it found, so a docker function or alias cannot answer for it.
+        It 'probes the docker program it found, not a docker function in the session' {
+            try {
+                Set-Item -Path 'function:global:docker' -Value { 'a docker function' }
+                (Test-LambdaPSContainerRuntime).BuildxVersion | Should -Be 'github.com/docker/buildx v0.17.1'
+            }
+            finally { Remove-Item -Path 'Function:\docker' }
         }
     }
 
@@ -79,13 +98,10 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
 
     Context 'when docker is present but buildx is not' {
         BeforeEach {
+            $script:fakeDocker = New-FakeDockerProgram -Name 'docker-no-buildx.ps1' -Output "docker: 'buildx' is not a docker command." -ExitCode 1
             Mock 'Get-Command' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' `
                 -ParameterFilter { $Name -eq 'docker' -and $CommandType -eq 'Application' } `
-                -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = '/usr/bin/docker' } }
-            Mock 'docker' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
-                $global:LASTEXITCODE = 1
-                "docker: 'buildx' is not a docker command."
-            }
+                -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = $script:fakeDocker } }
         }
 
         # Failing HERE is the whole point: without this probe a deploy would get as far as the image
@@ -109,23 +125,21 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
         }
     }
 
-    # Only the docker program counts: a function or alias named docker (as the test stub defines on a host
-    # without docker) is not the CLI the build runs.
+    # Only the docker program counts: a function or alias named docker is not the CLI the build runs.
     Context 'when only a docker function exists' {
         It 'ignores a docker function and throws DockerNotFound' {
             $emptyBin = [System.IO.Path]::Combine($TestDrive, 'empty-bin')
             $null = New-Item -ItemType Directory -Path $emptyBin -Force
             $savedPath = $env:PATH
-            $added = -not (Test-Path -LiteralPath 'function:global:docker')
             try {
-                if ($added) { Set-Item -Path 'function:global:docker' -Value { } }
+                Set-Item -Path 'function:global:docker' -Value { }
                 $env:PATH = $emptyBin
                 { Test-LambdaPSContainerRuntime } |
                     Should -Throw -ErrorId 'DockerNotFound,Test-LambdaPSContainerRuntime'
             }
             finally {
                 $env:PATH = $savedPath
-                if ($added) { Remove-Item -Path 'Function:\docker' }
+                Remove-Item -Path 'Function:\docker'
             }
         }
     }
@@ -138,14 +152,11 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
             $fakeDocker = [System.IO.Path]::Combine($bin, 'docker')
             Set-Content -LiteralPath $fakeDocker -Value "#!/bin/sh`necho `"docker: 'buildx' is not a docker command.`" >&2`nexit 1"
             & chmod +x $fakeDocker
-            # The global stub Add-LambdaPSDockerStub defines on a host without docker. A 'function:global:'
-            # path does not resolve with -LiteralPath, so the stub is found and removed by its plain path.
-            $stub = Get-Item -Path 'Function:\docker' -ErrorAction SilentlyContinue
+            # First on PATH, ahead of the stand-in Add-LambdaPSDockerStub puts there on a host without docker.
             $savedPath = $env:PATH
             $savedNative = $global:PSNativeCommandUseErrorActionPreference
             $savedAction = $global:ErrorActionPreference
             try {
-                if ($stub) { Remove-Item -Path 'Function:\docker' }
                 $env:PATH = $bin + [System.IO.Path]::PathSeparator + $env:PATH
                 $global:PSNativeCommandUseErrorActionPreference = $true
                 $global:ErrorActionPreference = 'Stop'
@@ -156,7 +167,6 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 $global:PSNativeCommandUseErrorActionPreference = $savedNative
                 $global:ErrorActionPreference = $savedAction
                 $env:PATH = $savedPath
-                if ($stub) { Set-Item -Path 'function:global:docker' -Value $stub.ScriptBlock }
             }
         }
     }
