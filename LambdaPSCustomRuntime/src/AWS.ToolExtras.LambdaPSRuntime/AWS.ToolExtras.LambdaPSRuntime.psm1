@@ -4,7 +4,7 @@
 # makes, so adoption of this module can be counted apart from raw cmdlet usage. The identifier is
 # treated as STABLE: the 'AWS.ToolExtras.LambdaPSRuntime' portion must not change, since renaming it
 # would break continuity of the adoption metric. The version suffix is read from the manifest.
-$script:LambdaPSModuleVersion = (Import-PowerShellDataFile -Path ([System.IO.Path]::Combine($PSScriptRoot, 'AWS.ToolExtras.LambdaPSRuntime.psd1'))).ModuleVersion
+$script:LambdaPSModuleVersion = (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, 'AWS.ToolExtras.LambdaPSRuntime.psd1'))).ModuleVersion
 $script:LambdaPSClientAppId = "AWS.ToolExtras.LambdaPSRuntime#$script:LambdaPSModuleVersion"
 
 # Module settings, one data file per area under Config/ (for example Config/pwsh.psd1 is
@@ -21,7 +21,7 @@ $newConfigError = {
 }
 foreach ($file in @(Get-ChildItem -LiteralPath $configPath -Filter '*.psd1' -ErrorAction SilentlyContinue)) {
     try {
-        $script:Config[$file.BaseName] = Import-PowerShellDataFile -Path $file.FullName -ErrorAction Stop
+        $script:Config[$file.BaseName] = Import-PowerShellDataFile -LiteralPath $file.FullName -ErrorAction Stop
     }
     catch {
         throw (& $newConfigError "The module's Config/$($file.Name) could not be read: $($_.Exception.Message)" 'ConfigUnreadable' InvalidData $file.Name)
@@ -56,8 +56,8 @@ if ($missingSetting) {
 }
 
 # Dot-source all private helper functions, then public functions.
-$private = @(Get-ChildItem -Path ([System.IO.Path]::Combine($PSScriptRoot, 'Private')) -Filter '*.ps1' -ErrorAction SilentlyContinue)
-$public = @(Get-ChildItem -Path ([System.IO.Path]::Combine($PSScriptRoot, 'Public')) -Filter '*.ps1' -ErrorAction SilentlyContinue)
+$private = @(Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, 'Private')) -Filter '*.ps1' -ErrorAction SilentlyContinue)
+$public = @(Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, 'Public')) -Filter '*.ps1' -ErrorAction SilentlyContinue)
 
 foreach ($file in @($private + $public)) {
     . $file.FullName

@@ -145,6 +145,24 @@ Describe 'Module import' -Tag 'Component' {
 }
 
 Describe 'Module loader' -Tag 'Component' {
+    # Square brackets are wildcard characters to a -Path parameter, so the loader must read its own
+    # files by literal path.
+    It 'imports from a folder whose path contains square brackets, with every Private/ and Public/ function' {
+        $copy = [System.IO.Path]::Combine($TestDrive, '[x]', 'AWS.ToolExtras.LambdaPSRuntime')
+        $null = New-Item -ItemType Directory -Path $copy -Force
+        Get-ChildItem -LiteralPath $script:moduleRoot -Force | Where-Object Name -ne 'Tests' |
+            Copy-Item -Destination $copy -Recurse -Force
+        $functionFiles = @('Private', 'Public' | ForEach-Object { [System.IO.Path]::Combine($script:moduleRoot, $_) } |
+            Where-Object { Test-Path -LiteralPath $_ } | ForEach-Object { Get-ChildItem -LiteralPath $_ -Filter '*.ps1' })
+        $manifest = [System.IO.Path]::Combine($copy, 'AWS.ToolExtras.LambdaPSRuntime.psd1')
+        $command = "try { Import-Module -Name '$manifest' -ErrorAction Stop; 'IMPORTED'; 'DEFINED:' + @(& (Get-Module AWS.ToolExtras.LambdaPSRuntime) { param(`$names) `$names | Where-Object { Get-Command -Name `$_ -CommandType Function -ErrorAction SilentlyContinue } } @('$(($functionFiles.BaseName) -join "','")')).Count } catch { 'FAILED: ' + `$_.FullyQualifiedErrorId + ' | ' + `$_.Exception.Message }"
+
+        $output = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command $command 2>&1 | Out-String
+
+        $output | Should -BeLike '*IMPORTED*'
+        $output | Should -BeLike "*DEFINED:$($functionFiles.Count)*"
+    }
+
     It 'leaves only its settings in the module scope' {
         # An empty module's script scope holds only PowerShell's automatic variables, plus $foreach,
         # which PowerShell leaves behind after any foreach loop.
