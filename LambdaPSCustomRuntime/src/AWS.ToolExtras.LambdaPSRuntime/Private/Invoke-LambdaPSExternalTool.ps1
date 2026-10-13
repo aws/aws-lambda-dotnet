@@ -7,8 +7,11 @@ function Invoke-LambdaPSExternalTool {
         array, then inspects $LASTEXITCODE. Every line the tool writes, to stdout or stderr, goes to
         the host as it arrives, so the function returns nothing. On a non-zero exit it raises a
         terminating error ('ExternalToolFailed', OperationStopped) whose exception carries the last 50
-        lines in .Data['Output'] (string[]), for a caller that explains the failure. A name that
-        resolves to no command is a terminating CommandNotFoundException.
+        lines in .Data['Output'] (string[]), for a caller that explains the failure.
+
+        The name is resolved to an executable file only (Get-Command -CommandType Application), and
+        that file is run: a function or alias of the same name in the session does not run instead.
+        A name that resolves to no executable is a terminating CommandNotFoundException.
 
         It runs a standalone CLI executable (for example docker) as a child process, and loads no
         assembly.
@@ -36,12 +39,12 @@ function Invoke-LambdaPSExternalTool {
         [string[]]$ArgumentList
     )
 
-    $null = Get-Command -Name $Executable -ErrorAction Stop
+    $application = Get-Command -Name $Executable -CommandType Application -ErrorAction Stop | Select-Object -First 1
     # The exit code is checked below; with the user's preference on, pwsh would raise its own error first.
     $PSNativeCommandUseErrorActionPreference = $false
     $tail = [System.Collections.Generic.Queue[string]]::new()
     # One Out-Host for the whole stream; each line reaches the host as it arrives.
-    & $Executable @ArgumentList 2>&1 | ForEach-Object {
+    & $application.Source @ArgumentList 2>&1 | ForEach-Object {
         # A stderr line arrives as an ErrorRecord; its text is the line.
         $line = [string]$_
         $tail.Enqueue($line)

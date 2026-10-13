@@ -117,3 +117,51 @@ while ($true) {
             Should -Throw '*neither asked for its first event nor exited within 3 seconds*'
     }
 }
+
+# This host may have docker installed, so each case runs in a child pwsh whose PATH has none.
+Describe 'Add-LambdaPSDockerStub' -Tag 'Component' {
+    BeforeAll {
+        # Runs $Body in a child pwsh with Helpers/DockerStub.ps1 loaded and an empty folder as PATH.
+        function Invoke-WithoutDocker {
+            param([Parameter(Mandatory)] [string]$Body)
+            $emptyPath = [System.IO.Path]::Combine($TestDrive, "no-docker-$([guid]::NewGuid().ToString('n'))")
+            $null = New-Item -ItemType Directory -Path $emptyPath
+            $command = @"
+`$env:PATH = '$emptyPath'
+. '$([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'DockerStub.ps1'))'
+$Body
+"@
+            (Invoke-InChildPwsh -Command $command).Output -split "`n"
+        }
+    }
+
+    It 'puts a docker executable first on PATH that records each call''s arguments' {
+        $output = Invoke-WithoutDocker -Body @'
+$stub = Add-LambdaPSDockerStub
+'RESOLVED:' + (Get-Command -Name docker -CommandType Application).Source
+'STUB:' + $stub.Path
+& docker build --tag x .
+& docker version
+'CALLS:' + ((Get-Content -LiteralPath $stub.CallLog) -join '|')
+'FUNCTION:' + (Test-Path -LiteralPath 'function:docker')
+'@
+        $stubPath = ($output | Where-Object { $_ -like 'STUB:*' }).Substring(5)
+        $output | Should -Contain "RESOLVED:$stubPath"
+        $output | Should -Contain 'CALLS:build --tag x .|version'
+        $output | Should -Contain 'FUNCTION:False'
+    }
+
+    It 'is undone by Remove-LambdaPSDockerStub' {
+        $output = Invoke-WithoutDocker -Body @'
+$before = $env:PATH
+$stub = Add-LambdaPSDockerStub
+Remove-LambdaPSDockerStub
+'PATH RESTORED:' + ($env:PATH -eq $before)
+'RESOLVES:' + [bool](Get-Command -Name docker -ErrorAction SilentlyContinue)
+'FOLDER LEFT:' + (Test-Path -LiteralPath $stub.Directory)
+'@
+        $output | Should -Contain 'PATH RESTORED:True'
+        $output | Should -Contain 'RESOLVES:False'
+        $output | Should -Contain 'FOLDER LEFT:False'
+    }
+}

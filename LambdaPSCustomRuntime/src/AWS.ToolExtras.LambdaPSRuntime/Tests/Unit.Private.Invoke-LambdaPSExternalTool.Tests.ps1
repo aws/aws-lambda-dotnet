@@ -103,6 +103,68 @@ Describe 'Invoke-LambdaPSExternalTool' -Tag 'Unit' {
         }
     }
 
+    Context 'when a function or alias has the executable''s name' {
+        BeforeAll {
+            # A stand-in executable first on PATH that records that it ran.
+            $script:toolDirectory = [System.IO.Path]::Combine($TestDrive, 'tool-bin')
+            $null = New-Item -ItemType Directory -Path $script:toolDirectory -Force
+            $script:toolLog = [System.IO.Path]::Combine($script:toolDirectory, 'ran.log')
+            if ($IsWindows) {
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($script:toolDirectory, 'Invoke-LambdaPSTestTool.cmd')) -Value "@echo %*>>`"$script:toolLog`""
+            }
+            else {
+                $tool = [System.IO.Path]::Combine($script:toolDirectory, 'Invoke-LambdaPSTestTool')
+                Set-Content -LiteralPath $tool -Value "#!/bin/sh`nprintf '%s\n' `"`$*`" >> '$script:toolLog'"
+                [System.IO.File]::SetUnixFileMode($tool, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute')
+            }
+            $script:savedPath = $env:PATH
+            $env:PATH = $script:toolDirectory + [System.IO.Path]::PathSeparator + $env:PATH
+        }
+
+        AfterAll {
+            $env:PATH = $script:savedPath
+        }
+
+        BeforeEach {
+            Remove-Item -LiteralPath $script:toolLog -ErrorAction SilentlyContinue
+        }
+
+        It 'runs the executable, not a function of the same name' {
+            InModuleScope $script:moduleName -Parameters @{ toolLog = $script:toolLog } {
+                param($toolLog)
+                function script:Invoke-LambdaPSTestTool { 'FUNCTION RAN' }
+                try {
+                    Mock Out-Host -MockWith { }
+                    Invoke-LambdaPSExternalTool -Executable 'Invoke-LambdaPSTestTool' -ArgumentList 'build', '--tag', 'x'
+                    Should -Invoke Out-Host -Times 0 -Exactly -ParameterFilter { $InputObject -eq 'FUNCTION RAN' }
+                }
+                finally {
+                    Remove-Item -LiteralPath 'function:script:Invoke-LambdaPSTestTool'
+                }
+                Get-Content -LiteralPath $toolLog | Should -Be 'build --tag x'
+            }
+        }
+
+        It 'runs the executable, not an alias of the same name' {
+            InModuleScope $script:moduleName -Parameters @{ toolLog = $script:toolLog; pwshPath = $script:pwshPath } {
+                param($toolLog, $pwshPath)
+                Set-Alias -Name 'Invoke-LambdaPSTestTool' -Value $pwshPath -Scope Script
+                try {
+                    Invoke-LambdaPSExternalTool -Executable 'Invoke-LambdaPSTestTool' -ArgumentList 'version'
+                }
+                finally {
+                    Remove-Item -LiteralPath 'alias:Invoke-LambdaPSTestTool'
+                }
+                Get-Content -LiteralPath $toolLog | Should -Be 'version'
+            }
+        }
+
+        It 'refuses a name that is only a function, as for a missing executable' {
+            { Invoke-InFreshRunspace -Command "function lambdaps-test-function-only { 'FUNCTION RAN' }; & (Get-Module $script:moduleName) { Invoke-LambdaPSExternalTool -Executable 'lambdaps-test-function-only' -ArgumentList 'x'; 'CONTINUED' }" } |
+                Should -Throw "*'lambdaps-test-function-only' is not recognized*"
+        }
+    }
+
     # Pester runs every It inside a try, which would stop the caller in-process either way.
     It 'stops its caller when the executable does not exist' {
         # Script-terminating: the whole script stops, so Invoke on the runspace throws.
