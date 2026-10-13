@@ -17,13 +17,15 @@ else is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)
 of one, and discard stray output (for example `$null = $list.Add($x)`), which would otherwise be sent
 as part of an array.
 
-The handler setting (`_HANDLER`) takes one of three forms: `<script>.ps1`, `<script>.ps1::<function>`
-or `Module::<module>::<function>`. If the handler cannot be loaded, the function fails at start-up and
-the invoke reports why: a handler setting that is not one of those forms, a missing or unparsable
-script, a handler function that does not exist, a module that does not import, or, for a
-`<script>.ps1::<function>` handler, any terminating error in the script's top-level code (which runs
-once, at start-up). The handler can be a function, filter or cmdlet, or an alias to one of these or to
-a script file.
+A handler receives the event and the context as its first two arguments, so start it with
+`param($LambdaInput, $LambdaContext)`: without that block, `$LambdaInput` and `$LambdaContext` are
+`$null`. The handler setting (`_HANDLER`) takes one of three forms: `<script>.ps1`,
+`<script>.ps1::<function>` or `Module::<module>::<function>`. If the handler cannot be loaded, the
+function fails at start-up and the invoke reports why: a handler setting that is not one of those
+forms, a missing or unparsable script, a handler function that does not exist, a module that does not
+import, or, for a `<script>.ps1::<function>` handler, any terminating error in the script's top-level
+code (which runs once, at start-up). The handler can be a function, filter or cmdlet, or an alias to
+one of these or to a script file.
 
 The event is converted from JSON before the handler runs. An event with two keys that differ only in
 case (for example `id` and `ID`, as in a query string `?id=1&ID=2` passed on by an HTTP front end)
@@ -37,6 +39,11 @@ top-level code of a `<script>.ps1::<function>` script or a handler module, such 
 `continue` fails start-up, but `exit` stops only that script or module import, and start-up goes on
 without the rest of it, so do not use `exit` there. In a `<script>.ps1` handler, `exit` ends only the
 script: its exit code is ignored, and what it wrote before is sent as the response.
+
+The Layer and SelfContainedZip targets run pwsh in invariant-globalization mode, because the
+`provided.al2023` base has no ICU library, so culture-specific code fails there: a named culture such
+as `[cultureinfo]'de-DE'`, or formatting with one, throws. The RuntimeImage and ContainerFunction
+targets install ICU and support it.
 
 Lambda reuses the runtime's session for the invocations that follow. After each one, the runtime
 removes any jobs (including thread jobs still running) and remoting sessions the invocation left, and
