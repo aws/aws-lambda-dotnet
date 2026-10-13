@@ -73,9 +73,10 @@ function New-LambdaPSRuntimeDeployment {
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
-                                AWSPowerShell.NetCore in -IncludeModule), ModuleVersionRequired,
-                                ModuleVersionSpelling, ModuleVersionConflict, DependencyNameMissing,
-                                DependencyNameIsPath, DependencyVersionUnpinned,
+                                AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
+                                -IncludeModule name that is a wildcard or a path),
+                                ModuleVersionRequired, ModuleVersionSpelling, ModuleVersionConflict,
+                                DependencyNameMissing, DependencyNameIsPath, DependencyVersionUnpinned,
                                 ModuleClosureNotSettled, ModuleNotFoundLocally,
                                 ModuleRepositoryNotFound, ModuleDownloadFailed,
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
