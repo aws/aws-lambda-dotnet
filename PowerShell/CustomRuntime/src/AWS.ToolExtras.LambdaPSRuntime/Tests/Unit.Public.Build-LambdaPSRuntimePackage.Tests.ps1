@@ -423,6 +423,25 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         @($result.ModulesStaged | ForEach-Object ToString) | Should -Be @('LambdaPSFake.Req 1.0.0')
     }
 
+    It 'throws HandlerNotResolved, before downloading pwsh, for a project with two root scripts and no -HandlerScript' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-two-scripts')
+        $null = Copy-Item -LiteralPath $script:reqProj -Destination $proj -Recurse
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'helpers.ps1')) -Value 'function Get-Greeting { ''hi'' }'
+        Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { -not $ValidateOnly } -MockWith { throw 'not expected' }
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-two-scripts.zip')) -PwshArchivePath $script:fakeTarball -MissingModuleAction Stop } |
+            Should -Throw -ErrorId 'HandlerNotResolved,Build-LambdaPSRuntimePackage'
+    }
+
+    It 'reads the named handler''s requirements when -HandlerScript picks one of two root scripts' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-two-scripts-named')
+        $null = Copy-Item -LiteralPath $script:reqProj -Destination $proj -Recurse
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'helpers.ps1')) -Value 'function Get-Greeting { ''hi'' }'
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-two-scripts-named.zip')) -PwshArchivePath $script:fakeTarball -HandlerScript 'handler.ps1' -MissingModuleAction Stop } |
+            Should -Throw -ErrorId 'ModuleNotFoundLocally,Build-LambdaPSRuntimePackage'
+    }
+
     It 'throws HandlerScriptNotFound for a -HandlerScript that is not in the project' {
         { Build-LambdaPSRuntimePackage -Path $script:reqProj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-req-typo.zip')) -PwshArchivePath $script:fakeTarball -HandlerScript 'hanlder.ps1' } |
             Should -Throw -ErrorId 'HandlerScriptNotFound,Build-LambdaPSRuntimePackage'

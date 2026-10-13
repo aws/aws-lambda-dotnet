@@ -43,7 +43,7 @@ function Build-LambdaPSRuntimePackage {
         Errors it can raise, by error ID:
           - The project: ProjectNotFound, ProjectFileNotFound, ContextSourceNotFound,
             InvalidProjectMarker, TargetNotResolved, TargetMismatch, UnsupportedTarget,
-            PowerShellVersionRequired, HandlerScriptNotFound, InvalidHandlerPath.
+            PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath.
           - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
           - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
@@ -85,8 +85,8 @@ function Build-LambdaPSRuntimePackage {
         read again to extract it, so it must not be writable by other users.
     .PARAMETER HandlerScript
         For SelfContainedZip (ignored, with a warning, for a Layer), the handler script whose
-        '#Requires -Modules' are staged under modules/ (for example 'handler.ps1'). When omitted, it is the sole root .ps1 other than runtime.ps1; if
-        none can be identified, no requirements are read. It is found as Compress-LambdaPSFunctionPackage
+        '#Requires -Modules' are staged under modules/ (for example 'handler.ps1'). When omitted, it is the sole root .ps1 other than runtime.ps1;
+        with none, no requirements are read, and with more than one it fails with HandlerNotResolved. It is found as Compress-LambdaPSFunctionPackage
         finds its handler: resolved against the project folder, its file name matched case-sensitively as
         on Lambda, and its real path (every link followed) in the project. Otherwise it fails with
         HandlerScriptNotFound. Off Windows, a '\' in it fails with InvalidHandlerPath: separate folders
@@ -327,6 +327,16 @@ function Build-LambdaPSRuntimePackage {
             else {
                 $scripts = @(Get-ChildItem -LiteralPath $root -Filter '*.ps1' -File | Where-Object Name -ne 'runtime.ps1')
                 if ($scripts.Count -eq 1) { $scripts[0].Name }
+                elseif ($scripts.Count -gt 1) {
+                    # Several root scripts are ambiguous: guessing would ship a package without the handler's modules.
+                    $PSCmdlet.ThrowTerminatingError(
+                        [System.Management.Automation.ErrorRecord]::new(
+                            [System.ArgumentException]::new(
+                                ("Could not determine the handler script in '$Path': it has more than one .ps1 at its root " +
+                                 "besides runtime.ps1 ($(($scripts.Name | Sort-Object) -join ', ')). " +
+                                 'Pass -HandlerScript (for example -HandlerScript handler.ps1).'), 'HandlerScript'),
+                            'HandlerNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path))
+                }
             }
             if ($handlerName) {
                 # Found as Compress-LambdaPSFunctionPackage finds it (Resolve-LambdaPSHandlerPath): by its real
