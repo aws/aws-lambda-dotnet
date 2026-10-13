@@ -13,18 +13,32 @@ AfterAll {
 
 Describe 'Build-LambdaPSRuntimeImage stops on a failed docker build (no enclosing try)' -Tag 'Component' {
     It 'emits no image object when docker exits non-zero' {
-        # The real Invoke-LambdaPSExternalTool runs; 'docker' is a stand-in that fails, as a broken
-        # build would. The cmdlet must stop there, not go on to report the image as built.
-        $stub = {
-            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker' } }
-            function script:docker { $script:LambdaPSCalls.Add('docker'); $global:LASTEXITCODE = 1 }
+        # The real Invoke-LambdaPSExternalTool runs a stand-in docker program that logs its call and
+        # fails, as a broken build would. It is both the Path the container-runtime check returns and
+        # the first docker on PATH, so the build reaches it whether it runs that Path or looks docker up
+        # by name. The cmdlet must stop there, not go on to report the image as built.
+        $dockerDirectory = [System.IO.Path]::Combine($TestDrive, 'failing-docker')
+        $null = New-Item -ItemType Directory -Path $dockerDirectory
+        $callLog = [System.IO.Path]::Combine($dockerDirectory, 'docker-calls.log')
+        if ($IsWindows) {
+            $docker = [System.IO.Path]::Combine($dockerDirectory, 'docker.cmd')
+            Set-Content -LiteralPath $docker -Value "@echo %*>>`"$callLog`"`r`n@exit /b 1"
         }
+        else {
+            $docker = [System.IO.Path]::Combine($dockerDirectory, 'docker')
+            Set-Content -LiteralPath $docker -Value "#!/bin/sh`nprintf '%s\n' `"`$*`" >> '$callLog'`nexit 1"
+            [System.IO.File]::SetUnixFileMode($docker, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute')
+        }
+        $stub = @"
+`$env:PATH = '$dockerDirectory' + [System.IO.Path]::PathSeparator + `$env:PATH
+function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '$docker'; BuildxVersion = 'v0' } }
+"@
         $projectPath = [System.IO.Path]::Combine($TestDrive, 'img')
         $null = New-Item -ItemType Directory -Path $projectPath
         Set-Content -LiteralPath ([System.IO.Path]::Combine($projectPath, 'Dockerfile')) -Value 'FROM scratch'
-        $result = Invoke-InFreshRunspace -Stub $stub.ToString() -Command "Build-LambdaPSRuntimeImage -Path '$projectPath' -Tag rt:v1"
+        $result = Invoke-InFreshRunspace -Stub $stub -Command "Build-LambdaPSRuntimeImage -Path '$projectPath' -Tag rt:v1"
 
-        $result.Calls | Should -Contain 'docker'
+        @(Get-Content -LiteralPath $callLog -ErrorAction SilentlyContinue) | Should -BeLike '*build*'
         $result.Output | Should -BeNullOrEmpty
         $result.Errors.FullyQualifiedErrorId | Should -Contain 'ExternalToolFailed,Build-LambdaPSRuntimeImage'
     }
