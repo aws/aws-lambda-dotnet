@@ -8,7 +8,10 @@ function Get-LambdaPSCredentialParameter {
         hashtable that each seam splats onto every AWS.Tools cmdlet it calls (-CredentialParameter).
         When none were bound the hashtable is empty, so AWS.Tools resolves credentials the usual way:
         the shell's default credentials (Set-AWSCredential), environment variables, the default
-        profile, or the instance or container role.
+        profile, or the instance or container role. With -SessionState, credentials the caller set
+        with Set-AWSCredential in its own scope (a deploy script, for example) are returned as
+        -Credential, because the module's AWS.Tools calls cannot see them there; global ones are left
+        to AWS.Tools, which reads them itself.
 
         A relative -ProfileLocation is returned resolved against the current PowerShell location, so
         the profile check below and the AWS.Tools calls read the same file. A -ProfileLocation on
@@ -19,10 +22,13 @@ function Get-LambdaPSCredentialParameter {
         with its default credentials. The lookup reads the credential files only; it makes no AWS call.
     .PARAMETER BoundParameters
         The calling cmdlet's $PSBoundParameters.
+    .PARAMETER SessionState
+        The public cmdlet's $PSCmdlet.SessionState, the session state of its caller. Read only when
+        none of -ProfileName, -ProfileLocation and -Credential was bound.
     .OUTPUTS
         System.Collections.Hashtable
     .EXAMPLE
-        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters
+        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
 
         Returns @{ ProfileName = 'dev' } when the cmdlet was called with -ProfileName dev.
     #>
@@ -31,13 +37,30 @@ function Get-LambdaPSCredentialParameter {
     param(
         [Parameter(Mandatory)]
         [ValidateNotNull()]
-        [System.Collections.Generic.IDictionary[string, object]]$BoundParameters
+        [System.Collections.Generic.IDictionary[string, object]]$BoundParameters,
+
+        [Parameter()]
+        [System.Management.Automation.SessionState]$SessionState
     )
 
     $credentialParameter = @{}
     foreach ($name in 'ProfileName', 'ProfileLocation', 'Credential') {
         if ($BoundParameters.ContainsKey($name) -and $null -ne $BoundParameters[$name]) {
             $credentialParameter[$name] = $BoundParameters[$name]
+        }
+    }
+    if ($credentialParameter.Count -eq 0 -and $null -ne $SessionState) {
+        # Set-AWSCredential stores them in StoredAWSCredentials. Get-AWSCredential returns them as the
+        # AWSCredentials -Credential takes, but only when it runs in the caller's session state.
+        $stored = $SessionState.PSVariable.GetValue('StoredAWSCredentials')
+        $globalStored = Get-Variable -Name 'StoredAWSCredentials' -Scope Global -ValueOnly -ErrorAction Ignore
+        if ($null -ne $stored -and -not [object]::ReferenceEquals($stored, $globalStored)) {
+            $credentials = @($SessionState.InvokeCommand.InvokeScript($SessionState, [scriptblock]::Create('AWS.Tools.Common\Get-AWSCredential'), @()))
+            $credentialsType = 'Amazon.Runtime.AWSCredentials' -as [type]
+            if ($credentials.Count -eq 1 -and $null -ne $credentialsType) {
+                $credential = $credentials[0].PSObject.BaseObject
+                if ($credentialsType.IsInstanceOfType($credential)) { $credentialParameter.Credential = $credential }
+            }
         }
     }
     if ($credentialParameter.ContainsKey('ProfileLocation')) {

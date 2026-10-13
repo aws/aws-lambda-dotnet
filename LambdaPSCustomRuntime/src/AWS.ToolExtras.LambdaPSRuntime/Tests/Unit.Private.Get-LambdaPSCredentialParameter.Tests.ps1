@@ -151,3 +151,78 @@ catch { 'FQID: ' + `$_.FullyQualifiedErrorId; 'MESSAGE: ' + `$_.Exception.Messag
         $output | Should -BeLike "*'lambdaps-test-no-such-profile' was not found in the local credential store*"
     }
 }
+
+# Set-AWSCredential without -Scope sets the credentials in the scope it runs in, such as a deploy
+# script, where the module's own code and the AWS.Tools cmdlets it calls cannot see them. A public
+# cmdlet passes its caller's session state, so the credentials a script set are passed on as
+# -Credential. Each test runs in a child pwsh with an empty credential store of its own.
+Describe 'Get-LambdaPSCredentialParameter with the caller''s session state' -Tag 'Unit' {
+    BeforeAll {
+        # Defines Invoke-LambdaPSTestDeploy, a module cmdlet that takes -ProfileName and -ProfileLocation
+        # and prints what Get-LambdaPSCredentialParameter returns, then runs $ScriptText as a script file.
+        function Invoke-DeployScriptInChild {
+            param(
+                [Parameter(Mandatory)] [string]$ScriptText,
+                [string]$SessionStateText = '-SessionState $PSCmdlet.SessionState'
+            )
+            $deployScript = Join-Path $TestDrive "deploy-$([guid]::NewGuid().ToString('n')).ps1"
+            Set-Content -LiteralPath $deployScript -Value $ScriptText
+            $command = @"
+`$env:AWS_SHARED_CREDENTIALS_FILE = '$script:emptyStore'
+`$env:AWS_CONFIG_FILE = '$script:emptyStore'
+& (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
+    function Invoke-LambdaPSTestDeploy {
+        [CmdletBinding()]
+        param([string]`$ProfileName, [string]`$ProfileLocation)
+        `$result = Get-LambdaPSCredentialParameter -BoundParameters `$PSBoundParameters $SessionStateText
+        'KEYS:' + ((`$result.Keys | Sort-Object) -join ',')
+        if (`$result.Credential) { 'ACCESSKEY:' + `$result.Credential.GetCredentials().AccessKey }
+    }
+    Set-Item -Path 'function:global:Invoke-LambdaPSTestDeploy' -Value `${function:Invoke-LambdaPSTestDeploy}
+}
+& '$deployScript'
+"@
+            (Invoke-InChildPwsh -Command $command).Output
+        }
+
+        $script:emptyStore = Join-Path $TestDrive 'caller-empty-store'
+        Set-Content -LiteralPath $script:emptyStore -Value ''
+        $script:profileFile = Join-Path $TestDrive 'caller-credentials'
+        Set-Content -LiteralPath $script:profileFile -Value "[dev]`naws_access_key_id = AKIAEXAMPLE`naws_secret_access_key = example"
+    }
+
+    It 'passes on the credentials a script set with Set-AWSCredential' {
+        $output = Invoke-DeployScriptInChild -ScriptText @'
+Set-AWSCredential -AccessKey AKIASCRIPTSCOPE -SecretKey example
+Invoke-LambdaPSTestDeploy
+'@
+        $output | Should -BeLike '*KEYS:Credential*'
+        $output | Should -BeLike '*ACCESSKEY:AKIASCRIPTSCOPE*'
+    }
+
+    It 'uses the profile the caller named, not the credentials a script set' {
+        $output = Invoke-DeployScriptInChild -ScriptText @"
+Set-AWSCredential -AccessKey AKIASCRIPTSCOPE -SecretKey example
+Invoke-LambdaPSTestDeploy -ProfileName dev -ProfileLocation '$script:profileFile'
+"@
+        $output | Should -BeLike '*KEYS:ProfileLocation,ProfileName*'
+        $output | Should -Not -BeLike '*ACCESSKEY:*'
+    }
+
+    # AWS.Tools reads global credentials itself, so they are left to it, as without -SessionState.
+    It 'returns nothing for credentials set globally' {
+        $output = Invoke-DeployScriptInChild -ScriptText @'
+Set-AWSCredential -AccessKey AKIAGLOBALSCOPE -SecretKey example -Scope Global
+Invoke-LambdaPSTestDeploy
+'@
+        $output | Should -BeLike "*KEYS:`n*"
+    }
+
+    It 'returns nothing for credentials a script set when no session state is passed' {
+        $output = Invoke-DeployScriptInChild -SessionStateText '' -ScriptText @'
+Set-AWSCredential -AccessKey AKIASCRIPTSCOPE -SecretKey example
+Invoke-LambdaPSTestDeploy
+'@
+        $output | Should -BeLike "*KEYS:`n*"
+    }
+}

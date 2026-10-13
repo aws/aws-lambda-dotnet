@@ -203,3 +203,63 @@ Clear-AWSDefaultConfiguration -SkipProfileStore
             Should -BeLike '*ERROR: RegionNotResolved*'
     }
 }
+
+# Set-DefaultAWSRegion without -Scope sets the region in the scope it runs in, such as a deploy script,
+# where the module's own code cannot see it. A public cmdlet passes its caller's session state, so the
+# region a script set is found. Each test runs in a child pwsh, which has no default region of its own.
+Describe 'Resolve-LambdaPSRegion with the caller''s session state' -Tag 'Unit' {
+    BeforeAll {
+        # Defines Invoke-LambdaPSTestDeploy, a module cmdlet that resolves the region as $ResolveText does,
+        # and runs $ScriptText as a script file that calls it.
+        function Invoke-DeployScriptInChild {
+            param(
+                [Parameter(Mandatory)] [string]$ResolveText,
+                [Parameter(Mandatory)] [string]$ScriptText,
+                [hashtable]$Environment = @{}
+            )
+            $deployScript = Join-Path $TestDrive "deploy-$([guid]::NewGuid().ToString('n')).ps1"
+            Set-Content -LiteralPath $deployScript -Value $ScriptText
+            $setEnvironment = ($Environment.GetEnumerator() | ForEach-Object { "`$env:$($_.Key) = '$($_.Value)'" }) -join "`n"
+            $command = @"
+foreach (`$name in 'AWS_REGION', 'AWS_DEFAULT_REGION', 'AWS_PROFILE') { [Environment]::SetEnvironmentVariable(`$name, `$null) }
+`$env:AWS_CONFIG_FILE = '$script:emptyConfig'
+`$env:AWS_SHARED_CREDENTIALS_FILE = '$script:emptyConfig'
+`$env:AWS_EC2_METADATA_DISABLED = 'true'
+$setEnvironment
+& (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
+    function Invoke-LambdaPSTestDeploy {
+        [CmdletBinding()]
+        param()
+        $ResolveText
+    }
+    Set-Item -Path 'function:global:Invoke-LambdaPSTestDeploy' -Value `${function:Invoke-LambdaPSTestDeploy}
+}
+& '$deployScript'
+"@
+            (Invoke-InChildPwsh -Command $command).Output
+        }
+
+        $script:emptyConfig = Join-Path $TestDrive 'caller-empty-config'
+        Set-Content -LiteralPath $script:emptyConfig -Value ''
+    }
+
+    It 'uses the region a script set with Set-DefaultAWSRegion, over AWS_REGION' {
+        Invoke-DeployScriptInChild -ResolveText 'Resolve-LambdaPSRegion -SessionState $PSCmdlet.SessionState' -Environment @{ AWS_REGION = 'us-west-2' } -ScriptText @'
+Set-DefaultAWSRegion -Region ap-south-1
+'REGION:' + (Invoke-LambdaPSTestDeploy)
+'@ | Should -BeLike '*REGION:ap-south-1*'
+    }
+
+    It 'goes on to the next source when the caller set no region' {
+        Invoke-DeployScriptInChild -ResolveText 'Resolve-LambdaPSRegion -SessionState $PSCmdlet.SessionState' -Environment @{ AWS_REGION = 'us-west-2' } -ScriptText @'
+'REGION:' + (Invoke-LambdaPSTestDeploy)
+'@ | Should -BeLike '*REGION:us-west-2*'
+    }
+
+    It 'uses a global Set-DefaultAWSRegion when no session state is passed' {
+        Invoke-DeployScriptInChild -ResolveText 'Resolve-LambdaPSRegion' -Environment @{ AWS_REGION = 'us-west-2' } -ScriptText @'
+Set-DefaultAWSRegion -Region ap-south-1 -Scope Global
+'REGION:' + (Invoke-LambdaPSTestDeploy)
+'@ | Should -BeLike '*REGION:ap-south-1*'
+    }
+}

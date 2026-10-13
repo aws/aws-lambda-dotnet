@@ -7,7 +7,9 @@ function Resolve-LambdaPSRegion {
         resolve it themselves) but to compose the ECR image URI and to name it in messages. So when
         -Region is omitted, this resolves it the way an AWS.Tools cmdlet would, in this order:
 
-          1. The shell's default region (Set-DefaultAWSRegion), from Get-DefaultAWSRegion.
+          1. The shell's default region (Set-DefaultAWSRegion). With -SessionState, it is read from the
+             public cmdlet's caller, so a region a script set is found; without it, Get-DefaultAWSRegion
+             finds only a global one.
           2. The region of the -ProfileName profile, read from -ProfileLocation or the default
              credential files.
           3. AWS.Tools' own resolver: the default profile, read from -ProfileLocation or the default
@@ -23,24 +25,36 @@ function Resolve-LambdaPSRegion {
     .PARAMETER CredentialParameter
         The caller's credential parameters (from Get-LambdaPSCredentialParameter). Only ProfileName
         and ProfileLocation are read.
+    .PARAMETER SessionState
+        The public cmdlet's $PSCmdlet.SessionState, the session state of its caller. Set-DefaultAWSRegion
+        without -Scope sets the region in the caller's scope (a deploy script, for example), where the
+        module's own code cannot see it.
     .OUTPUTS
         System.String
     .EXAMPLE
-        $Region = Resolve-LambdaPSRegion -CredentialParameter $credentialParameter
+        $Region = Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState
 
-        Returns, for example, 'us-east-1' after Set-DefaultAWSRegion us-east-1.
+        Returns, for example, 'us-east-1' after the caller ran Set-DefaultAWSRegion us-east-1.
     #>
     [CmdletBinding()]
     [OutputType([string])]
     param(
         [Parameter()]
         [ValidateNotNull()]
-        [hashtable]$CredentialParameter = @{}
+        [hashtable]$CredentialParameter = @{},
+
+        [Parameter()]
+        [System.Management.Automation.SessionState]$SessionState
     )
 
-    $shellDefault = Get-DefaultAWSRegion -ErrorAction SilentlyContinue
-    if ($null -ne $shellDefault -and -not [string]::IsNullOrWhiteSpace([string]$shellDefault.Region)) {
-        return [string]$shellDefault.Region
+    $shellDefault = if ($null -ne $SessionState) {
+        [string]$SessionState.PSVariable.GetValue('StoredAWSRegion')
+    }
+    else {
+        [string](Get-DefaultAWSRegion -ErrorAction SilentlyContinue).Region
+    }
+    if (-not [string]::IsNullOrWhiteSpace($shellDefault)) {
+        return $shellDefault
     }
 
     if ($CredentialParameter.ContainsKey('ProfileName')) {
