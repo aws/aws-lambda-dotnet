@@ -41,18 +41,33 @@ param($LambdaInput, $LambdaContext)
         }
     }
 
-    It 'refuses <Requirement>, which is too large to package, pointing at AWS.Tools.*' -ForEach @(
-        @{ Requirement = 'AWSPowerShell.NetCore'; Line = '#Requires -Modules AWSPowerShell.NetCore' }
-        @{ Requirement = 'AWSPowerShell'; Line = "#Requires -Modules @{ ModuleName = 'AWSPowerShell'; ModuleVersion = '4.1.0' }" }
+    It 'refuses <Requirement>, giving its own reason, pointing at AWS.Tools.*' -ForEach @(
+        @{ Requirement = 'AWSPowerShell.NetCore'; Line = '#Requires -Modules AWSPowerShell.NetCore'; Reason = "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"; Other = '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*' }
+        @{ Requirement = 'AWSPowerShell'; Line = "#Requires -Modules @{ ModuleName = 'AWSPowerShell'; ModuleVersion = '4.1.0' }"; Reason = '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'; Other = "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*" }
     ) {
         $path = Join-Path $TestDrive "handler-monolithic-$Requirement.ps1"
         Set-Content -LiteralPath $path -Value ($Line, 'param($LambdaInput, $LambdaContext)')
 
-        InModuleScope $script:moduleName -Parameters @{ p = $path; name = $Requirement } {
-            param($p, $name)
+        InModuleScope $script:moduleName -Parameters @{ p = $path; name = $Requirement; reason = $Reason; other = $Other } {
+            param($p, $name, $reason, $other)
             $err = { Get-LambdaPSRequiredModule -Path $p } |
                 Should -Throw -ErrorId 'AWSPowerShellModuleNotSupported' -PassThru
-            $err.Exception.Message | Should -BeLike "*'$name'*too large to package for Lambda*AWS.Tools.*"
+            $err.Exception.Message | Should -BeLike "*'$name' (#Requires -Modules), which cannot be packaged for Lambda: *Require the AWS.Tools.* modules for the services you use instead*"
+            $err.Exception.Message | Should -BeLike $reason
+            $err.Exception.Message | Should -Not -BeLike $other
+        }
+    }
+
+    It 'gives each module its own reason when a handler requires both' {
+        $path = Join-Path $TestDrive 'handler-monolithic-both.ps1'
+        Set-Content -LiteralPath $path -Value ('#Requires -Modules AWSPowerShell, AWSPowerShell.NetCore', 'param($LambdaInput, $LambdaContext)')
+
+        InModuleScope $script:moduleName -Parameters @{ p = $path } {
+            param($p)
+            $err = { Get-LambdaPSRequiredModule -Path $p } | Should -Throw -ErrorId 'AWSPowerShellModuleNotSupported' -PassThru
+            $err.Exception.Message | Should -BeLike "*'AWSPowerShell' and 'AWSPowerShell.NetCore'*"
+            $err.Exception.Message | Should -BeLike '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
+            $err.Exception.Message | Should -BeLike "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"
         }
     }
 

@@ -449,9 +449,25 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure.Error.FullyQualifiedErrorId | Should -Be 'AWSPowerShellModuleNotSupported'
             $closure.Error.CategoryInfo.Category | Should -Be 'InvalidArgument'
             $closure.Error.TargetObject | Should -Be $Name
-            $closure.Error.Exception.Message | Should -BeLike "Module '$Name' (-IncludeModule or -Module) is too large to package for Lambda. Require the AWS.Tools.* modules *"
+            $closure.Error.Exception.Message | Should -BeLike "Module '$Name' (-IncludeModule or -Module) cannot be packaged for Lambda: *. Require the AWS.Tools.* modules *"
+            $desktop = '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
+            $netCore = "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"
+            # Each module's own reason, and not the other's: -eq ignores case, as the check does.
+            $reason, $other = if ($Name -eq 'AWSPowerShell') { $desktop, $netCore } else { $netCore, $desktop }
+            $closure.Error.Exception.Message | Should -BeLike $reason
+            $closure.Error.Exception.Message | Should -Not -BeLike $other
             @($closure.Resolved).Count | Should -Be 0
             Should -Invoke 'Find-LambdaPSModule' -Times 0 -Exactly
+        }
+    }
+
+    It 'gives each module its own reason when -Module names both' {
+        InModuleScope $script:moduleName {
+            $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell', 'AWSPowerShell.NetCore'
+            $closure.Error.FullyQualifiedErrorId | Should -Be 'AWSPowerShellModuleNotSupported'
+            $closure.Error.Exception.Message | Should -BeLike "Module 'AWSPowerShell' and 'AWSPowerShell.NetCore' (-IncludeModule or -Module)*"
+            $closure.Error.Exception.Message | Should -BeLike '*AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda*'
+            $closure.Error.Exception.Message | Should -BeLike "*AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB limit for a .zip package and its layers*"
         }
     }
 

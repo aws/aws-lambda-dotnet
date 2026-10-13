@@ -52,12 +52,21 @@ function Get-LambdaPSRequiredModule {
         return
     }
 
-    # The monolithic AWSPowerShell modules are far too large to package for Lambda; the AWS.Tools.*
-    # modules split the same cmdlets by service.
+    # AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7
+    # on Lambda. AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed: more than
+    # Lambda's 250 MB limit for a .zip package and its layers. The AWS.Tools.* modules split the same
+    # cmdlets by service.
     $monolithic = @($ast.ScriptRequirements.RequiredModules | Where-Object { $_.Name -in 'AWSPowerShell', 'AWSPowerShell.NetCore' })
     if ($monolithic.Count -gt 0) {
+        $reasons = [ordered]@{
+            'AWSPowerShell'         = 'AWSPowerShell is the Windows PowerShell (Desktop edition) module and does not run in PowerShell 7 on Lambda'
+            'AWSPowerShell.NetCore' = "AWSPowerShell.NetCore holds every AWS service, at over 600 MB installed, more than Lambda's 250 MB " +
+                'limit for a .zip package and its layers, and far larger than the AWS.Tools.* modules a handler needs'
+        }
+        # -contains ignores case, so 'awspowershell.netcore' gets the AWSPowerShell.NetCore reason.
+        $why = @($reasons.Keys | Where-Object { @($monolithic.Name) -contains $_ } | ForEach-Object { $reasons[$_] }) -join '; '
         $message = "'$fullPath' requires $(@($monolithic | ForEach-Object { "'$($_.Name)'" }) -join ' and ') (#Requires -Modules), " +
-            'which is too large to package for Lambda. Require the AWS.Tools.* modules for the services you use instead ' +
+            "which cannot be packaged for Lambda: $why. Require the AWS.Tools.* modules for the services you use instead " +
             "(for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '<version>' }), each pinned with a RequiredVersion."
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.ArgumentException]::new($message, 'Path'),
