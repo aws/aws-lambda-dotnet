@@ -6,16 +6,24 @@ function Initialize-LambdaPSEcrRepository {
         Seam over the ECR cmdlets (AWS.Tools.ECR) that prepares a repository for a runtime-image push.
         It binds no AWS SDK assembly directly. Three steps:
 
-          1. Get-ECRRepository, then New-ECRRepository (with scan on push) only when the repository
-             is absent. When that create is declined or run under -WhatIf, steps 2 and 3 are skipped:
-             they need the repository.
-          2. The Lambda image-pull grant, scoped to this account and -RuntimeArn. The existing policy
-             is READ and the grant MERGED in (Merge-LambdaPSEcrPullPolicy); nothing is written when
-             Lambda already has access for this runtime, with a warning when that existing grant
-             does not pin the account.
-             Set-ECRRepositoryPolicy replaces a policy wholesale, so writing a fixed policy would
-             delete every other grant on an existing repository.
-          3. docker login to the registry, so the following buildx push is authorized.
+          1. Get-ECRRepository. When the repository is absent and its create is declined or run under
+             -WhatIf, steps 2 and 3 are skipped, and nothing is created.
+          2. docker login to the registry, so the following buildx push is authorized. It runs before
+             the create, so a failed login creates no repository. It is skipped when the docker config
+             ($env:DOCKER_CONFIG, or .docker in the user's home folder) hands this registry to the
+             amazon-ecr-credential-helper (credHelpers, or else credsStore, set to ecr-login): that
+             helper supplies ECR tokens itself and cannot store a login.
+          3. New-ECRRepository (with scan on push) when the repository is absent, then the Lambda
+             image-pull grant, scoped to this account and -RuntimeArn. The existing policy is READ and
+             the grant MERGED in (Merge-LambdaPSEcrPullPolicy); nothing is written when Lambda already
+             has access for this runtime, with a warning when that existing grant does not pin the
+             account. Set-ECRRepositoryPolicy replaces a policy wholesale, so writing a fixed policy
+             would delete every other grant on an existing repository.
+
+        Known limit: ECR has no conditional policy write. Two deploys that share one -RepositoryName
+        and run at the same time each read the policy, merge in their grant and write the whole
+        policy, so the last write wins and the other runtime's grant can be lost. Run such deploys
+        one at a time, or give each runtime its own repository.
 
         Not-found conditions are recognized by exception identity through Test-LambdaPSServiceError,
         which walks the InnerException chain. That walk is required: AWS.Tools wraps the SDK
@@ -36,8 +44,8 @@ function Initialize-LambdaPSEcrRepository {
     .EXAMPLE
         Initialize-LambdaPSEcrRepository -RepositoryName powershell-runtime -AccountId 111122223333 -RuntimeArn arn:aws:lambda:us-east-1:111122223333:runtime/my-ps -Region us-east-1
 
-        Creates the repository if it does not exist, merges in the Lambda pull grant scoped to the
-        runtime, and logs docker in to the registry. Returns nothing.
+        Logs docker in to the registry, creates the repository if it does not exist, and merges in
+        the Lambda pull grant scoped to the runtime. Returns nothing.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]
@@ -76,14 +84,78 @@ function Initialize-LambdaPSEcrRepository {
         if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'RepositoryNotFoundException')) { throw }
     }
 
+    if (-not $existing -and -not $PSCmdlet.ShouldProcess($RepositoryName, 'Create ECR repository')) {
+        # Declined or -WhatIf: the repository does not exist, so there is no policy to read or
+        # write and nothing to push to.
+        Write-Verbose "ECR repository '$RepositoryName' was not created; the pull grant and docker login are skipped."
+        return
+    }
+
+    # Authenticate the local container CLI to ECR so the subsequent build --push succeeds
+    # (otherwise docker returns "denied: requested access to the resource is denied"). This comes
+    # before the create, so a login that fails leaves no new repository behind.
+    # Uses the ECR cmdlet for the token and the docker CLI for the login (no SDK binding).
+    if ($PSCmdlet.ShouldProcess($RepositoryName, 'docker login to ECR')) {
+        $login = Get-ECRLoginCommand -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
+        # Log in against the BARE registry host (strip any https:// scheme). docker stores the
+        # credential under the key you pass; buildx --push looks it up by bare host, so a
+        # scheme-qualified login lands under a key buildx never finds -> "denied" on push.
+        $registry = $login.Endpoint -replace '^https?://', ''
+
+        # docker picks a registry's credential helper from credHelpers, or else credsStore. The
+        # amazon-ecr-credential-helper (ecr-login) gets ECR tokens itself and cannot store one, so a
+        # docker login through it fails; the push authenticates without it.
+        $dockerConfigDirectory = if ($env:DOCKER_CONFIG) { $env:DOCKER_CONFIG } else {
+            [System.IO.Path]::Combine([System.Environment]::GetFolderPath('UserProfile'), '.docker')
+        }
+        $dockerConfigPath = [System.IO.Path]::Combine($dockerConfigDirectory, 'config.json')
+        $credentialHelper = $null
+        if ([System.IO.File]::Exists($dockerConfigPath)) {
+            # A config docker cannot read is docker's to report, at login.
+            $dockerConfig = try { [System.IO.File]::ReadAllText($dockerConfigPath) | ConvertFrom-Json -AsHashtable -ErrorAction Stop } catch { $null }
+            if ($dockerConfig -is [System.Collections.IDictionary]) {
+                $helpers = $dockerConfig['credHelpers']
+                $credentialHelper = if ($helpers -is [System.Collections.IDictionary] -and $helpers.Contains($registry)) {
+                    $helpers[$registry]
+                }
+                else { $dockerConfig['credsStore'] }
+            }
+        }
+
+        if ([string]$credentialHelper -eq 'ecr-login') {
+            Write-Verbose "docker login skipped: the docker config at '$dockerConfigPath' hands '$registry' to the ECR credential helper."
+        }
+        else {
+            # The exit code is checked below; with the user's preference on, pwsh would raise its own
+            # error first and lose docker's output.
+            $PSNativeCommandUseErrorActionPreference = $false
+            # The password goes in on stdin, so docker's output never contains it and is safe to show.
+            $loginOutput = ($login.Password | & docker login --username $login.Username --password-stdin $registry 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the
+                # error with its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would
+                # also reach the caller's -ErrorVariable naming this internal helper.
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("docker login to ECR registry '$registry' failed (exit $LASTEXITCODE): $loginOutput"),
+                    'EcrDockerLoginFailed', [System.Management.Automation.ErrorCategory]::AuthenticationError, $RepositoryName)
+            }
+            # With no credential helper configured, docker stores the registry token (valid for about 12
+            # hours) unencrypted in its config file and says so, naming the file. Raise that as a warning
+            # rather than leave it in the Verbose output. Docker's wording is not a contract: unmatched,
+            # it stays Verbose.
+            if ("$loginOutput" -match 'stored unencrypted') {
+                $tokenFile = if ("$loginOutput" -match 'stored unencrypted in (?<path>\S.*?)\.?\s*(?:\r?\n|$)') { $Matches['path'] } else { $dockerConfigPath }
+                Write-Warning ("docker stored the ECR login token for '$registry' unencrypted in '$tokenFile'. The " +
+                    'token is valid for about 12 hours. To keep it out of that file, configure a docker ' +
+                    'credential store (osxkeychain, wincred, pass or secretservice), or the ' +
+                    'amazon-ecr-credential-helper, which gets ECR tokens itself so no login is stored.')
+            }
+            if ($loginOutput) { Write-Verbose "docker login: $loginOutput" }
+        }
+    }
+
     $created = $false
     if (-not $existing) {
-        if (-not $PSCmdlet.ShouldProcess($RepositoryName, 'Create ECR repository')) {
-            # Declined or -WhatIf: the repository does not exist, so there is no policy to read or
-            # write and no registry to log in to.
-            Write-Verbose "ECR repository '$RepositoryName' was not created; the pull grant and docker login are skipped."
-            return
-        }
         try {
             # Scan on push: the repository holds the image every function on the runtime runs.
             $null = New-ECRRepository -RepositoryName $RepositoryName -ImageScanningConfiguration_ScanOnPush $true -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
@@ -124,38 +196,5 @@ function Initialize-LambdaPSEcrRepository {
         if ($PSCmdlet.ShouldProcess($RepositoryName, $policyAction)) {
             $null = Set-ECRRepositoryPolicy -RepositoryName $RepositoryName -PolicyText $mergedPolicy -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
         }
-    }
-
-    # Authenticate the local container CLI to ECR so the subsequent build --push succeeds
-    # (otherwise docker returns "denied: requested access to the resource is denied").
-    # Uses the ECR cmdlet for the token and the docker CLI for the login (no SDK binding).
-    if ($PSCmdlet.ShouldProcess($RepositoryName, 'docker login to ECR')) {
-        $login = Get-ECRLoginCommand -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
-        # Log in against the BARE registry host (strip any https:// scheme). docker stores the
-        # credential under the key you pass; buildx --push looks it up by bare host, so a
-        # scheme-qualified login lands under a key buildx never finds -> "denied" on push.
-        $registry = $login.Endpoint -replace '^https?://', ''
-        # The exit code is checked below; with the user's preference on, pwsh would raise its own error
-        # first and lose docker's output.
-        $PSNativeCommandUseErrorActionPreference = $false
-        # The password goes in on stdin, so docker's output never contains it and is safe to show.
-        $loginOutput = ($login.Password | & docker login --username $login.Username --password-stdin $registry 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the error
-            # with its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would also reach
-            # the caller's -ErrorVariable naming this internal helper.
-            throw [System.Management.Automation.ErrorRecord]::new(
-                [System.InvalidOperationException]::new("docker login to ECR registry '$registry' failed (exit $LASTEXITCODE): $loginOutput"),
-                'EcrDockerLoginFailed', [System.Management.Automation.ErrorCategory]::AuthenticationError, $RepositoryName)
-        }
-        # With no credential helper configured, docker stores the registry token (valid for about 12
-        # hours) unencrypted in its config file and says so. Raise that as a warning rather than leave
-        # it in the Verbose output. Docker's wording is not a contract: unmatched, it stays Verbose.
-        if ("$loginOutput" -match 'stored unencrypted') {
-            Write-Warning ("docker stored the ECR login token for '$registry' unencrypted in its config file " +
-                '(~/.docker/config.json). The token is valid for about 12 hours. To keep it out of that file, ' +
-                'configure a docker credential helper, such as amazon-ecr-credential-helper.')
-        }
-        if ($loginOutput) { Write-Verbose "docker login: $loginOutput" }
     }
 }
