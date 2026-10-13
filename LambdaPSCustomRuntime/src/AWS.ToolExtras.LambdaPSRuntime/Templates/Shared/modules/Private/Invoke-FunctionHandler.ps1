@@ -19,14 +19,14 @@ function private:Invoke-FunctionHandler {
         [Parameter(Mandatory)] $private:LambdaContext
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Invoke-FunctionHandler]Start: Invoke-FunctionHandler' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Invoke-FunctionHandler]Start: Invoke-FunctionHandler' }
 
     # -NoEnumerate keeps a JSON array an array: [] is an empty array and [x] a one-element array,
     # rather than $null and x.
     # ConvertFrom-Json's own message for an event it cannot convert (for example two keys that differ only
     # in case) suggests a switch the customer cannot pass, so the runtime words the error itself.
     try {
-        $private:LambdaInput = ConvertFrom-Json -InputObject $private:runtimeNextInvocationResponse.incomingEvent -NoEnumerate -ErrorAction Stop
+        $private:LambdaInput = Microsoft.PowerShell.Utility\ConvertFrom-Json -InputObject $private:runtimeNextInvocationResponse.incomingEvent -NoEnumerate -ErrorAction Stop
     }
     catch {
         $private:jsonError = $_.Exception.Message -replace '\s*Please use the -AsHashTable switch instead\.', ''
@@ -65,7 +65,7 @@ function private:Invoke-FunctionHandler {
         }
         elseif ($script:LambdaPSRuntimeDepthWarnedFor -cne $private:depthValue) {
             $script:LambdaPSRuntimeDepthWarnedFor = $private:depthValue
-            Write-Host "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
+            Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
         }
     }
 
@@ -78,7 +78,7 @@ function private:Invoke-FunctionHandler {
         # Return plain data (hashtables, PSCustomObjects, arrays, strings, numbers): a rich .NET object
         # such as Get-Item's output references other objects without end, and serializing it that deep
         # takes minutes and exhausts memory. POWERSHELL_RUNTIME_JSON_DEPTH (1-100) lowers the depth.
-        $private:responseString = ConvertTo-Json -InputObject $private:functionInvocationResponse -Compress -Depth $private:depth
+        $private:responseString = Microsoft.PowerShell.Utility\ConvertTo-Json -InputObject $private:functionInvocationResponse -Compress -Depth $private:depth
     }
     else {
         $private:responseString = $private:functionInvocationResponse

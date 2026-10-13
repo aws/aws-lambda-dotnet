@@ -30,7 +30,7 @@ function private:Send-FunctionHandlerError {
         [switch]$NoStackTrace
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
     # The message alone does not say where the handler failed, so log the script position and stack.
     # Lambda makes each stdout line its own log event, so the error is written as one line with its
     # newlines turned into carriage returns, as the Node.js and Python runtimes do: one failure is one
@@ -40,13 +40,13 @@ function private:Send-FunctionHandlerError {
         if ($private:Exception.InvocationInfo) { $private:Exception.InvocationInfo.PositionMessage }
         if ($private:Exception.ScriptStackTrace) { $private:Exception.ScriptStackTrace }
     ) -join "`n"
-    Write-Host ($private:logText -replace '\r?\n', "`r")
+    Microsoft.PowerShell.Utility\Write-Host ($private:logText -replace '\r?\n', "`r")
 
-    $private:body = ConvertTo-Json -Compress -InputObject @{
+    $private:body = Microsoft.PowerShell.Utility\ConvertTo-Json -Compress -InputObject @{
         errorMessage = $private:Exception.Exception.Message
         errorType    = $private:Exception.CategoryInfo.Reason
         # One frame per entry, as the other Lambda runtimes send it; the invoke result shows it.
-        stackTrace   = @(if (-not $NoStackTrace) { [string]$private:Exception.ScriptStackTrace -split '\r?\n' | Where-Object { $_ } })
+        stackTrace   = @(if (-not $NoStackTrace) { [string]$private:Exception.ScriptStackTrace -split '\r?\n' | Microsoft.PowerShell.Core\Where-Object { $_ } })
     }
     $private:headers = @(@{
         Key = 'Lambda-Runtime-Function-Error-Type'
@@ -58,6 +58,6 @@ function private:Send-FunctionHandlerError {
         _SendRuntimeApiRequest $private:HttpClient $Uri $private:body $private:headers
     }
     catch {
-        Write-Host "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
+        Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
     }
 }

@@ -19,9 +19,9 @@ function private:Get-LambdaNextInvocation {
         [System.Net.Http.HttpClient]$private:HttpClient
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Start: Get-LambdaNextInvocation' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Start: Get-LambdaNextInvocation' }
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Create GET request to Runtime API' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Create GET request to Runtime API' }
 
     $private:request = [System.Net.Http.HttpRequestMessage]::new()
     $private:request.Headers.Add('User-Agent', "aws-lambda-powershell/$env:POWERSHELL_VERSION")
@@ -30,13 +30,13 @@ function private:Get-LambdaNextInvocation {
 
     try {
         # Get the next invocation
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Get the next invocation' }
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Get the next invocation' }
         $private:response = $private:HttpClient.SendAsync($private:request).GetAwaiter().GetResult()
     }
     catch {
         # The Runtime API could not be reached: let the event loop ask again after a short pause.
-        Write-Host "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable, retrying: $($_.Exception.Message)"
-        Start-Sleep -Milliseconds 100
+        Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable, retrying: $($_.Exception.Message)"
+        Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 100
         return $null
     }
     finally {
@@ -52,22 +52,22 @@ function private:Get-LambdaNextInvocation {
                 $private:status, $private:errorBody))
     }
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Read the response content' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Read the response content' }
     $private:incomingEvent = $private:response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Generate the correct response headers' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Generate the correct response headers' }
     $private:incomingHeaders = @{}
     foreach ($private:header in $private:response.Headers) {
         $private:incomingHeaders[$private:header.Key] = $private:header.Value
     }
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Create a response object' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Create a response object' }
     $private:NextInvocationResponseObject = [pscustomobject]@{
         headers       = $private:incomingHeaders
         incomingEvent = $private:incomingEvent
     }
 
     $private:response.Dispose()
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Get-LambdaNextInvocation]Return response object' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Get-LambdaNextInvocation]Return response object' }
     return [pscustomobject]$private:NextInvocationResponseObject
 }

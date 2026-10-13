@@ -339,6 +339,11 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toploop.ps1')) -Value '$script:seen = foreach ($i in 1..3) { if ($i -eq 2) { break }; $i }', 'function Handle { param($LambdaInput, $LambdaContext) "loaded:$script:seen" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'other.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ Kind = ''script file''; N = $LambdaInput.n }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nested.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ a = @{ b = @{ c = @{ d = @{ e = 5 } } } } }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'shadow.ps1')) -Value @(
+            'function Set-LambdaContext { ''customer Set-LambdaContext'' }'
+            'function ConvertTo-Json { ''customer ConvertTo-Json'' }'
+            'function Handle { param($LambdaInput, $LambdaContext) @{ ContextType = $LambdaContext.GetType().Name; Id = $LambdaContext.AwsRequestId; Own = (ConvertTo-Json 1) } }'
+        )
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -354,6 +359,13 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
             $null = New-Item -ItemType Directory -Path $root -Force
             Set-Content -LiteralPath ([System.IO.Path]::Combine($root, "$($module.Name).psm1")) -Value $module.Code
         }
+        # A handler module that exports functions named like the runtime's own.
+        $shadowModuleRoot = [System.IO.Path]::Combine($script:taskRoot, 'modules', 'ShadowMod')
+        $null = New-Item -ItemType Directory -Path $shadowModuleRoot -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($shadowModuleRoot, 'ShadowMod.psm1')) -Value @(
+            'function Send-FunctionHandlerResponse { ''customer Send-FunctionHandlerResponse'' }'
+            'function Handle { param($LambdaInput, $LambdaContext) @{ From = ''shadow module''; Id = $LambdaContext.AwsRequestId } }'
+        )
         # A module no handler imports: its function loads on first use.
         $autoModuleRoot = [System.IO.Path]::Combine($script:taskRoot, 'modules', 'AutoLoad')
         $null = New-Item -ItemType Directory -Path $autoModuleRoot -Force
@@ -723,6 +735,22 @@ public class InvokeBin : PSCmdlet {
         $warning = "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$Value', which is not a whole number from 1 to 100; using 100."
         ([regex]::Matches($log, [regex]::Escape($warning))).Count | Should -Be $Warnings
         ([regex]::Matches($log, 'POWERSHELL_RUNTIME_JSON_DEPTH is ')).Count | Should -Be $Warnings
+    }
+
+    # The handler script is dot-sourced, and a handler module imported, into the scope the runtime runs
+    # in, so the runtime calls its own commands module-qualified: a handler's command of the same name
+    # stays the handler's and does not replace the runtime's.
+    It 'keeps its own commands when the handler defines ones of the same name (<Handler>)' -ForEach @(
+        @{ Handler = 'shadow.ps1::Handle'; Expected = @{ ContextType = 'LambdaContext'; Id = 'req-1'; Own = 'customer ConvertTo-Json' } }
+        @{ Handler = 'Module::ShadowMod::Handle'; Expected = @{ From = 'shadow module'; Id = 'req-1' } }
+    ) {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}' -TimeoutSeconds 30)
+
+        $posts.Count | Should -Be 1
+        $posts[0].Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
+        # Valid JSON from the runtime's ConvertTo-Json, with the runtime's $LambdaContext.
+        $result = $posts[0].Body | ConvertFrom-Json
+        foreach ($key in $Expected.Keys) { $result.$key | Should -Be $Expected[$key] }
     }
 
     It 'sets _X_AMZN_TRACE_ID for its own invocation only' {

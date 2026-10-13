@@ -41,13 +41,13 @@ function private:Set-PSModulePath {
             (Microsoft.PowerShell.Archive), Start-ThreadJob (ThreadJob), Get-CimInstance
             (CimCmdlets) — with 'The term ... is not recognized'.
     #>
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Set-PSModulePath]Start: Set-PSModulePath' }
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Set-PSModulePath]Setting PSModulePath environment variable' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Set-PSModulePath]Start: Set-PSModulePath' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Set-PSModulePath]Setting PSModulePath environment variable' }
     $env:PSModulePath = @(
         [System.IO.Path]::Combine($env:LAMBDA_TASK_ROOT, 'modules'), # Function package modules — wins
         '/opt/modules', # User supplied modules as part of Lambda Layers
-        (Split-Path -Parent $PSScriptRoot), # Runtime default modules (this file is in <modules>/Private)
+        (Microsoft.PowerShell.Management\Split-Path -Parent $PSScriptRoot), # Runtime default modules (this file is in <modules>/Private)
         [System.IO.Path]::Combine($PSHOME, 'Modules') # Modules shipped with pwsh — last
-    ) | Select-Object -Unique | Join-String -Separator ':'
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host "[RUNTIME-Set-PSModulePath]PSModulePath environment variable set to: $($env:PSModulePath)" }
+    ) | Microsoft.PowerShell.Utility\Select-Object -Unique | Microsoft.PowerShell.Utility\Join-String -Separator ':'
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Set-PSModulePath]PSModulePath environment variable set to: $($env:PSModulePath)" }
 }

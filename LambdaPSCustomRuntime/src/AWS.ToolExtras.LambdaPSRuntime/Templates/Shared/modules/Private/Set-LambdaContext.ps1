@@ -12,9 +12,9 @@ function Private:Set-LambdaContext {
             In the Lambda runtime, runtime.ps1 loads it at start-up.
     #>
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Set-LambdaContext]Start: Set-LambdaContext' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Set-LambdaContext]Start: Set-LambdaContext' }
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Set-LambdaContext]Creating LambdaContext' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Set-LambdaContext]Creating LambdaContext' }
     $private:LambdaContext = [Amazon.Lambda.PowerShell.Internal.LambdaContext]::new(
         $env:AWS_LAMBDA_FUNCTION_NAME,
         $env:AWS_LAMBDA_FUNCTION_VERSION,
@@ -28,6 +28,6 @@ function Private:Set-LambdaContext {
         [double]$env:AWS_LAMBDA_RUNTIME_DEADLINE_MS
     )
     # ClientContext and Identity are the caller's data, so they stay out of the log.
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host "[RUNTIME-Set-LambdaContext]Return LambdaContext: $($private:LambdaContext | Select-Object -Property * -ExcludeProperty ClientContext, Identity | ConvertTo-Json -Compress)" }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Set-LambdaContext]Return LambdaContext: $($private:LambdaContext | Microsoft.PowerShell.Utility\Select-Object -Property * -ExcludeProperty ClientContext, Identity | Microsoft.PowerShell.Utility\ConvertTo-Json -Compress)" }
     return $private:LambdaContext
 }

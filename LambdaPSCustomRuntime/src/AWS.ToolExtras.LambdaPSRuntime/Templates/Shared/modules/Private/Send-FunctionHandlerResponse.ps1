@@ -21,7 +21,7 @@ function private:Send-FunctionHandlerResponse {
         $private:InvocationResponse
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host '[RUNTIME-Send-FunctionHandlerResponse]Start: Send-FunctionHandlerResponse' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Send-FunctionHandlerResponse]Start: Send-FunctionHandlerResponse' }
     $private:uri = "http://$env:AWS_LAMBDA_RUNTIME_API/2018-06-01/runtime/invocation/$env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID/response"
 
     _SendRuntimeApiRequest $private:HttpClient $private:uri $private:InvocationResponse

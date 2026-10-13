@@ -28,7 +28,7 @@ function _SendRuntimeApiRequest {
     $private:request.RequestUri = $private:Uri
     $private:request.Content = [System.Net.Http.StringContent]::new($private:Body)
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host "[RUNTIME-SendRuntimeApiRequest]Sending POST $private:Uri ($($private:Body.Length) characters)" }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-SendRuntimeApiRequest]Sending POST $private:Uri ($($private:Body.Length) characters)" }
 
     try {
         $private:runtimeResponse = $private:HttpClient.SendAsync($private:request).GetAwaiter().GetResult()
@@ -39,7 +39,7 @@ function _SendRuntimeApiRequest {
     try {
         $private:runtimeResponseContent = $private:runtimeResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
 
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Write-Host "[RUNTIME-SendRuntimeApiRequest]Runtime API Response: $private:runtimeResponseContent" }
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-SendRuntimeApiRequest]Runtime API Response: $private:runtimeResponseContent" }
 
         # The Runtime API answers 202 when it accepts a post. Anything else means Lambda did NOT take
         # it -- for example 413 for a response over the payload limit. Ignoring the status would send
