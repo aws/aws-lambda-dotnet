@@ -7,7 +7,7 @@
 RootModule = 'pwsh-runtime.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.6'
+ModuleVersion = '0.1.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -16,13 +16,13 @@ CompatiblePSEditions = 'Core'
 GUID = 'd8728acd-6b96-4593-99ea-61ef1c7f3b18'
 
 # Author of this module
-Author = 'Amazon.com, Inc'
+Author = 'Amazon.com, Inc.'
 
 # Company or vendor of this module
 CompanyName = 'Amazon Web Services'
 
 # Copyright statement for this module
-Copyright = '(c) 2022 Amazon Web Services. All rights reserved.'
+Copyright = '(c) 2026 Amazon.com, Inc. or its affiliates. All Rights Reserved.'
 
 # Description of the functionality provided by this module
 Description = 'The PowerShell custom runtime for AWS Lambda makes it easy to run Lambda functions written in PowerShell.'
@@ -100,6 +100,8 @@ PrivateData = @{
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = 'AWS','Lambda'
 
+        # This runtime is derived from the AWSLabs aws-lambda-powershell-runtime project; its license and
+        # project links are kept.
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/awslabs/aws-lambda-powershell-runtime/blob/main/LICENSE'
 

@@ -1,7 +1,18 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-function _SendRuntimeApiRequest {
+# Not declared private: like its siblings, because they call it from their own scope, and a private:
+# function is not visible there.
+function Send-RuntimeApiRequest {
+    <#
+        .SYNOPSIS
+            POST a body to the Lambda Runtime API.
+
+        .DESCRIPTION
+            Sends the body to the given Runtime API URI with the runtime's User-Agent and any extra
+            headers, and throws when the Runtime API does not accept it (any status but 2xx), so the
+            caller can report or log why.
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Position=0)]
@@ -28,7 +39,7 @@ function _SendRuntimeApiRequest {
     $private:request.RequestUri = $private:Uri
     $private:request.Content = [System.Net.Http.StringContent]::new($private:Body)
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-SendRuntimeApiRequest]Sending POST $private:Uri ($($private:Body.Length) characters)" }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Send-RuntimeApiRequest]Sending POST $private:Uri ($($private:Body.Length) characters)" }
 
     try {
         $private:runtimeResponse = $private:HttpClient.SendAsync($private:request).GetAwaiter().GetResult()
@@ -39,7 +50,7 @@ function _SendRuntimeApiRequest {
     try {
         $private:runtimeResponseContent = $private:runtimeResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
 
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-SendRuntimeApiRequest]Runtime API Response: $private:runtimeResponseContent" }
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Send-RuntimeApiRequest]Runtime API Response: $private:runtimeResponseContent" }
 
         # The Runtime API answers 202 when it accepts a post. Anything else means Lambda did NOT take
         # it -- for example 413 for a response over the payload limit. Ignoring the status would send

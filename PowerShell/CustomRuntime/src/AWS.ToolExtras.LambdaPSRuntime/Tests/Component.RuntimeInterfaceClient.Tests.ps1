@@ -136,7 +136,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
         }
 
         It 'accepts a 202 without error' {
-            . ([System.IO.Path]::Combine($script:Modules, 'Private', '_SendRuntimeApiRequest.ps1'))
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(202, '{"status":"OK"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -149,7 +149,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
         }
 
         It 'throws, naming the status, when the response is rejected' {
-            . ([System.IO.Path]::Combine($script:Modules, 'Private', '_SendRuntimeApiRequest.ps1'))
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(413, '{"errorType":"RequestEntityTooLarge"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -163,7 +163,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
         }
 
         It 'logs, rather than dies, when the error report itself is rejected' {
-            . ([System.IO.Path]::Combine($script:Modules, 'Private', '_SendRuntimeApiRequest.ps1'))
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(500, 'boom')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -176,7 +176,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
         }
 
         It 'logs where the handler failed, not just the message' {
-            . ([System.IO.Path]::Combine($script:Modules, 'Private', '_SendRuntimeApiRequest.ps1'))
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $client = [System.Net.Http.HttpClient]::new([LambdaPSTests.Fakes.FixedStatusHandler]::new(202, ''))
             $handler = Join-Path $TestDrive "throws.ps1"

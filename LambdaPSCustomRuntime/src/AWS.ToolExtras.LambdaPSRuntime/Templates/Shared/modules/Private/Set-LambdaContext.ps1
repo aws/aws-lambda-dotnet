@@ -1,7 +1,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-function Private:Set-LambdaContext {
+function private:Set-LambdaContext {
     <#
         .SYNOPSIS
             Creates a Lambda context object from environment variables.
