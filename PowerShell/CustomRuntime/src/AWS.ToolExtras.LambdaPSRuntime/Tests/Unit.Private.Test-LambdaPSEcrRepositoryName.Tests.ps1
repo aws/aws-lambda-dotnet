@@ -51,7 +51,15 @@ Describe 'Test-LambdaPSEcrRepositoryName' -Tag 'Unit' {
         @{ Case = 'a trailing newline'; Name = "my-runtime`n"; Expected = $false }
         @{ Case = 'a trailing slash'; Name = 'team/'; Expected = $false }
         @{ Case = 'an empty path component'; Name = 'team//runtime'; Expected = $false }
-        @{ Case = 'a doubled separator'; Name = 'my--runtime'; Expected = $false }
+        # ECR joins letters or digits with '.', '_', '__' or any run of '-', and nothing else.
+        @{ Case = 'two hyphens'; Name = 'my--runtime'; Expected = $true }
+        @{ Case = 'a run of hyphens'; Name = 'a---b'; Expected = $true }
+        @{ Case = 'two underscores'; Name = 'my__runtime'; Expected = $true }
+        @{ Case = 'two underscores in a namespace'; Name = 'team__a/my__runtime'; Expected = $true }
+        @{ Case = 'two dots'; Name = 'my..runtime'; Expected = $false }
+        @{ Case = 'an underscore next to a hyphen'; Name = 'my_-runtime'; Expected = $false }
+        @{ Case = 'three underscores'; Name = 'my___runtime'; Expected = $false }
+        @{ Case = 'a dot next to a hyphen'; Name = 'my.-runtime'; Expected = $false }
     ) {
         InModuleScope $script:moduleName -Parameters @{ Name = $Name; Expected = $Expected } {
             param($Name, $Expected)
