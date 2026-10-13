@@ -89,13 +89,15 @@ function New-LambdaPSFunctionProject {
         version-range specs are rejected. A module that is not installed locally is handled according
         to -MissingModuleAction. Defaults to none. Alias: -Module.
         A specification for AWSPowerShell or AWSPowerShell.NetCore is an AWSPowerShellModuleNotSupported
-        error (use the AWS.Tools.* modules), and one without RequiredVersion a ModuleVersionRequired
-        error. Resolving the dependencies stops with ModuleVersionConflict when a module is needed at versions no one
-        version meets; ModuleVersionSpelling when the module found has the version written another way
-        (PowerShell matches versions exactly, so 1.2 is not 1.2.0) or is above a dependency's
-        MaximumVersion; DependencyNameMissing, DependencyNameIsPath or DependencyVersionUnpinned when a
-        manifest's RequiredModules entry has no name, names a path, or has no valid version; and
-        ModuleClosureNotSettled when the dependency versions do not settle.
+        error (use the AWS.Tools.* modules), a name with a wildcard (*, ? or [) or a path (rooted, or
+        with / or \) a ModuleNameInvalid error, and one without RequiredVersion a ModuleVersionRequired
+        error. Resolving the dependencies stops with ModuleVersionConflict when a module is needed at
+        versions no one version meets; ModuleVersionSpelling when the module found has the version
+        written another way (PowerShell matches versions exactly, so 1.2 is not 1.2.0) or is above a
+        dependency's MaximumVersion; DependencyNameMissing, DependencyNameIsPath or
+        DependencyVersionUnpinned when a manifest's RequiredModules entry has no name, names a path,
+        or has no valid version; and ModuleClosureNotSettled when the dependency versions do not
+        settle.
     .PARAMETER MissingModuleAction
         What to do with a module (or dependency) that is not available locally:
           Save     (default) download it into a temporary folder, stage it, and delete the folder. The
