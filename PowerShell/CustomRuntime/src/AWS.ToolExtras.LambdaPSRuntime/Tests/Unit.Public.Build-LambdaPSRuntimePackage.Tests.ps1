@@ -560,6 +560,17 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
             Should -Throw -ErrorId 'ModuleVersionRequired,Build-LambdaPSRuntimePackage'
     }
 
+    # Each module is named exactly: a pinned #Requires that names a module by its path is refused, not loaded.
+    It 'throws ModuleNameInvalid for a #Requires that names a module by its path' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-req-path')
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $handlerFile = [System.IO.Path]::Combine($proj, 'handler.ps1')
+        Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules @{ ModuleName = './lib/LambdaPSFake.Path.psd1'; RequiredVersion = '1.0.0' }") + @(Get-Content -LiteralPath $handlerFile))
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-req-path.zip')) -PwshArchivePath $script:fakeTarball -MissingModuleAction Stop -WhatIf } |
+            Should -Throw -ErrorId 'ModuleNameInvalid,Build-LambdaPSRuntimePackage'
+    }
+
     It 'still refuses a pinned version the project does not ship' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-vendored-other')
         $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
