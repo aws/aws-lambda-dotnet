@@ -29,7 +29,9 @@
 @{
     IncludeDefaultRules = $true
 
+    # ParseError is listed so a file that does not parse is reported: it yields only ParseError records.
     Severity = @(
+        'ParseError'
         'Error'
         'Warning'
         'Information'

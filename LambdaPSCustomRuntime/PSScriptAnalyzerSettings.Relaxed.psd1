@@ -1,6 +1,6 @@
 # PSScriptAnalyzer contract for Tests/ and Templates/ -- code that is NOT shipping cmdlet source and
 # is legitimately written to different rules. `build.ps1 -Task Lint` reports findings from this scope
-# but does not fail on them (it still fails on Error severity).
+# but does not fail on them (it still fails on Error and ParseError severity).
 #
 # Each exclusion below is excluded because the pattern it flags is CORRECT in these directories. None
 # of these rules is excluded for the module source, which is linted with the strict
@@ -8,7 +8,9 @@
 @{
     IncludeDefaultRules = $true
 
+    # ParseError is listed so a file that does not parse is reported: it yields only ParseError records.
     Severity = @(
+        'ParseError'
         'Error'
         'Warning'
         'Information'

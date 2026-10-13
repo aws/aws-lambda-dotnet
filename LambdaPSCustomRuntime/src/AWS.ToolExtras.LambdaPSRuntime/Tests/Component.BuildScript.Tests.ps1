@@ -22,6 +22,69 @@ Describe 'build.ps1 -Task All' -Tag 'Component' {
     }
 }
 
+# A file that does not parse yields only ParseError records, so a lint that leaves that severity out
+# passes it. Each case lints a small tree of its own with a copy of build.ps1 and the two settings
+# files, in a child pwsh.
+Describe 'build.ps1 -Task Lint and parse errors' -Tag 'Component' {
+    BeforeAll {
+        # Builds a tree with one clean Private/ file, plus $BrokenFile (relative to the module folder)
+        # holding a script with a missing brace, and runs -Task Lint on it. Returns the exit code and output.
+        function Invoke-LintOnTree {
+            param([string]$Name, [string]$BrokenFile)
+            $root = [System.IO.Path]::Combine($TestDrive, $Name)
+            $module = [System.IO.Path]::Combine($root, 'src', 'AWS.ToolExtras.LambdaPSRuntime')
+            $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($module, 'Private')) -Force
+            $repository = Split-Path -Parent $script:buildScript
+            foreach ($file in 'build.ps1', 'PSScriptAnalyzerSettings.psd1', 'PSScriptAnalyzerSettings.Relaxed.psd1') {
+                Copy-Item -LiteralPath ([System.IO.Path]::Combine($repository, $file)) -Destination $root
+            }
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($module, 'Private', 'Get-LambdaPSClean.ps1')) -Value "function Get-LambdaPSClean {`n    [CmdletBinding()]`n    [OutputType([string])]`n    param()`n    'clean'`n}"
+            if ($BrokenFile) {
+                $broken = [System.IO.Path]::Combine($module, $BrokenFile)
+                $null = New-Item -ItemType Directory -Path (Split-Path -Parent $broken) -Force
+                Set-Content -LiteralPath $broken -Value "Describe 'broken' {`n    It 'never closes' {`n        1 | Should -Be 1`n"
+            }
+            $output = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -File ([System.IO.Path]::Combine($root, 'build.ps1')) -Task Lint 2>&1 | Out-String
+            [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+        }
+    }
+
+    It 'reports ParseError with each settings file' -ForEach @(
+        @{ Settings = 'PSScriptAnalyzerSettings.psd1' }
+        @{ Settings = 'PSScriptAnalyzerSettings.Relaxed.psd1' }
+    ) {
+        $fixture = [System.IO.Path]::Combine($TestDrive, "broken-$Settings.ps1")
+        Set-Content -LiteralPath $fixture -Value "function Get-Broken {`n    'never closes'`n"
+        $settingsPath = [System.IO.Path]::Combine((Split-Path -Parent $script:buildScript), $Settings)
+        $command = "Import-Module PSScriptAnalyzer; @(Invoke-ScriptAnalyzer -Path '$fixture' -Settings '$settingsPath' | ForEach-Object { 'FINDING:' + `$_.Severity }) -join ','"
+
+        $output = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command $command 2>&1 | Out-String
+
+        $output | Should -BeLike '*FINDING:ParseError*'
+    }
+
+    It 'fails when a file in Tests/ does not parse' {
+        $result = Invoke-LintOnTree -Name 'lint-broken-test' -BrokenFile ([System.IO.Path]::Combine('Tests', 'Broken.Tests.ps1'))
+
+        $result.ExitCode | Should -Not -Be 0
+        $result.Output | Should -BeLike '*parse-error finding(s)*'
+    }
+
+    It 'fails when a file in the module source does not parse' {
+        $result = Invoke-LintOnTree -Name 'lint-broken-source' -BrokenFile ([System.IO.Path]::Combine('Private', 'Get-LambdaPSBroken.ps1'))
+
+        $result.ExitCode | Should -Not -Be 0
+        $result.Output | Should -BeLike '*finding(s) in the module source*'
+    }
+
+    It 'passes a tree whose files all parse' {
+        $result = Invoke-LintOnTree -Name 'lint-clean'
+
+        $result.ExitCode | Should -Be 0
+        $result.Output | Should -BeLike '*PSScriptAnalyzer (strict): module source clean.*'
+    }
+}
+
 # The integration suite deploys to AWS, so only -Task Integration runs it. Invoke-Test is read out of build.ps1 and
 # run here with Invoke-Pester and Import-Module stood in for, so nothing is re-imported or run.
 Describe 'build.ps1 integration suite' -Tag 'Component' {

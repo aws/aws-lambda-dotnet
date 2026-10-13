@@ -123,7 +123,8 @@ function Invoke-LintPath {
 #
 #   RELAXED (Tests/, Templates/) is code with legitimately different patterns -- mockable stub
 #           signatures, bootstrap console logging. Findings are reported for visibility but only
-#           Error severity fails the task. See PSScriptAnalyzerSettings.Relaxed.psd1.
+#           Error severity, and a file that does not parse, fail the task. See
+#           PSScriptAnalyzerSettings.Relaxed.psd1.
 function Invoke-Lint {
     $minPssa = [version]'1.21.0'
     $pssa = Get-Module -ListAvailable PSScriptAnalyzer |
@@ -167,7 +168,7 @@ function Invoke-Lint {
     }
     Write-Host 'PSScriptAnalyzer (strict): module source clean.'
 
-    # --- Scope 2: tests and templates. Reported; only Error severity fails. ---
+    # --- Scope 2: tests and templates. Reported; only Error and ParseError severity fail. ---
     $relaxedPaths = @(
         (Join-Path $moduleRoot 'Tests')
         (Join-Path $moduleRoot 'Templates')
@@ -178,13 +179,13 @@ function Invoke-Lint {
         $relaxedFindings = @(
             $relaxedPaths | ForEach-Object { Invoke-LintPath -Path $_ -Settings $relaxedSettings }
         )
-        $relaxedErrors = @($relaxedFindings | Where-Object Severity -eq 'Error')
+        $relaxedErrors = @($relaxedFindings | Where-Object { [string]$_.Severity -in 'Error', 'ParseError' })
 
         if ($relaxedErrors.Count -gt 0) {
             $relaxedErrors |
                 Format-Table @{ n = 'File'; e = { Split-Path -Leaf $_.ScriptPath } }, Line, RuleName, Message -Wrap |
                 Out-String | Write-Host
-            throw "PSScriptAnalyzer reported $($relaxedErrors.Count) error-severity finding(s) in Tests/ or Templates/."
+            throw "PSScriptAnalyzer reported $($relaxedErrors.Count) error-severity or parse-error finding(s) in Tests/ or Templates/."
         }
 
         if ($relaxedFindings.Count -gt 0) {

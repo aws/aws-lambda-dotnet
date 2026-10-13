@@ -257,7 +257,7 @@ are held to different standards:
 | Scope | Settings | Gate |
 | --- | --- | --- |
 | `Public/`, `Private/`, `Config/`, `*.psm1`, `*.psd1` | `PSScriptAnalyzerSettings.psd1` (default rules, no exclusions) | **any** finding fails |
-| `Tests/`, `Templates/` | `PSScriptAnalyzerSettings.Relaxed.psd1` | only `Error` severity fails |
+| `Tests/`, `Templates/` | `PSScriptAnalyzerSettings.Relaxed.psd1` | only `Error` and `ParseError` (a file that does not parse) fail |
 
 Where a rule is statically wrong about the source, it
 is suppressed **at the site** with `[Diagnostics.CodeAnalysis.SuppressMessageAttribute]` and a
