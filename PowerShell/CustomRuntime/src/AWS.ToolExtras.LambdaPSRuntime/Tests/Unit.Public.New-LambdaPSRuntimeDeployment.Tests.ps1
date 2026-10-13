@@ -388,6 +388,35 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the build
+    # can only fail, and the deploy would have replaced -ProjectPath first; so the preflight refuses it.
+    Context 'arm64 pwsh hash' {
+        It 'refuses arm64 for a pwsh version with no pinned arm64 hash, under -WhatIf too, leaving -ProjectPath untouched' -ForEach @(
+            @{ WhatIf = $true }, @{ WhatIf = $false }
+        ) {
+            $project = [System.IO.Path]::Combine($TestDrive, "arm64-$WhatIf")
+            $null = New-Item -ItemType Directory -Path $project
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR"}'
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) -Value 'mine'
+
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.21 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf } |
+                Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike '*7.4.21*-Architecture x86_64*-PwshVersion*Nothing was created.'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
+            Get-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) | Should -Be 'mine'
+        }
+
+        It 'deploys <Case>' -ForEach @(
+            @{ Case = 'arm64 for a pwsh version with a pinned arm64 hash'; PwshVersion = '7.4.20'; Architecture = 'arm64' }
+            @{ Case = 'x86_64 for a pwsh version with no pinned arm64 hash'; PwshVersion = '7.4.21'; Architecture = 'x86_64' }
+        ) {
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion $PwshVersion -Architecture $Architecture -Region us-east-1 -RepositoryName rt -WarningAction SilentlyContinue
+            $result.PwshVersion | Should -Be $PwshVersion
+            Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+    }
+
     Context 'region' {
         It 'uses the region AWS.Tools would use when -Region is omitted' {
             Mock 'Resolve-LambdaPSRegion' -ModuleName $script:moduleName -MockWith { 'ap-southeast-2' }

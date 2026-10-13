@@ -67,7 +67,8 @@ function New-LambdaPSRuntimeDeployment {
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
                                 RuntimeServiceAccessDenied, RuntimeVersionCheckFailed,
-                                RuntimeVersionExists, RuntimeAliasCheckFailed
+                                RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
+                                (-Architecture arm64 for a pwsh version with no pinned arm64 hash)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleVersionRequired,
@@ -76,7 +77,7 @@ function New-LambdaPSRuntimeDeployment {
                                 ModuleClosureNotSettled, ModuleNotFoundLocally,
                                 ModuleRepositoryNotFound, ModuleDownloadFailed,
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
-          build and push        PwshArm64HashNotPinned, ExternalToolFailed, EcrDockerLoginFailed
+          build and push        ExternalToolFailed, EcrDockerLoginFailed
           publish               RuntimeVersionNotActive, RuntimeVersionTimeout,
                                 RuntimeImageArchitectureMismatch
         A call the service refuses at another point surfaces the AWS.Tools error.
@@ -274,6 +275,23 @@ function New-LambdaPSRuntimeDeployment {
         $Region = $Region.ToLowerInvariant()
         # Resolve pwsh first: an unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $resolvedPwshVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
+        # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
+        # build can only fail, after Stage 2 has replaced -ProjectPath, so refuse here, under -WhatIf too.
+        if ($Architecture -eq 'arm64') {
+            $pinnedHashes = $script:Config.pwsh.ArchiveSha256[$resolvedPwshVersion]
+            if ($null -eq $pinnedHashes -or [string]::IsNullOrWhiteSpace([string]$pinnedHashes.arm64)) {
+                $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
+                        -not [string]::IsNullOrWhiteSpace([string]$script:Config.pwsh.ArchiveSha256[$_].arm64) } |
+                    Sort-Object { [version]$_ }) -join ', '
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
+                             "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
+                             "arm64 hash ($pinnedArm64). Nothing was created.")),
+                        'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
+            }
+        }
         if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
             $ProjectPath = [System.IO.Path]::Combine((Get-Location).Path, "$RuntimeName-runtime")
         }
