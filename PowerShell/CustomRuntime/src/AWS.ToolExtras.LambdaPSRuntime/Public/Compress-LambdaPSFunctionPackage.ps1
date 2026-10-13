@@ -49,8 +49,8 @@ function Compress-LambdaPSFunctionPackage {
             InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath.
           - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
           - Modules (-IncludeModule and the handler's #Requires): ModuleVersionRequired (a #Requires that does not pin
-            an exact RequiredVersion), AWSPowerShellModuleNotSupported (a #Requires on the monolithic
-            AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
+            an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires
+            that names the monolithic AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
             DependencyVersionUnpinned, ModuleNotFoundLocally (-MissingModuleAction Stop),
             ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleInstallerNotFound,
@@ -66,6 +66,8 @@ function Compress-LambdaPSFunctionPackage {
         Aliased as -Module.
         A module's dependency declared without a name fails with DependencyNameMissing, and one whose
         version differs from an available version only in a trailing .0 with ModuleVersionSpelling.
+        AWSPowerShell or AWSPowerShell.NetCore fails with AWSPowerShellModuleNotSupported: name the
+        AWS.Tools.* modules for the services you use instead.
     .PARAMETER MissingModuleAction
         What to do with a module (or dependency) that is not available locally:
           Save     (default) download it into a temporary folder, stage it, and delete the folder. The
