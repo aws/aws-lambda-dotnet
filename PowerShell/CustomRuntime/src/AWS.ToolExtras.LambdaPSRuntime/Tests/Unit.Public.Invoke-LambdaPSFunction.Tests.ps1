@@ -1,6 +1,7 @@
 BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PayloadStream.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
 }
 
 AfterAll {
@@ -278,5 +279,36 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             { $piped | Invoke-LambdaPSFunction -ErrorAction SilentlyContinue } | Should -Throw '*Function not found: missing*'
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly
         }
+    }
+}
+
+# Set-DefaultAWSRegion and Set-AWSCredential without -Scope set the region and credentials in the scope
+# they run in, such as a script, where Invoke-LMFunction, called from this module, cannot see them. The
+# cmdlet reads them through its caller's session state. Run in a child pwsh with an empty credential store.
+Describe 'Invoke-LambdaPSFunction from a script that set its own region and credentials' -Tag 'Unit' {
+    It 'invokes in the region and with the credentials the script set, and an ARN''s region still wins' {
+        $emptyStore = [System.IO.Path]::Combine($TestDrive, 'scoped-empty-store')
+        Set-Content -LiteralPath $emptyStore -Value ''
+        $invokeScript = [System.IO.Path]::Combine($TestDrive, 'scoped-invoke.ps1')
+        Set-Content -LiteralPath $invokeScript -Value @'
+Set-DefaultAWSRegion -Region eu-north-1
+Set-AWSCredential -AccessKey AKIASCRIPTSCOPE -SecretKey example
+$null = Invoke-LambdaPSFunction -FunctionName hello
+$null = Invoke-LambdaPSFunction -FunctionName arn:aws:lambda:eu-west-1:111122223333:function:hello
+'@
+        $stub = {
+            function script:Invoke-LMFunction {
+                param($FunctionName, $Region, $ClientConfig, $Payload, $LogType, $Qualifier, $ProfileName, $ProfileLocation, $Credential, $ErrorAction)
+                $key = if ($Credential) { $Credential.GetCredentials().AccessKey } else { 'none' }
+                $script:LambdaPSCalls.Add("Invoke $Region $key")
+                [PSCustomObject]@{ Payload = [System.IO.MemoryStream]::new([System.Text.Encoding]::UTF8.GetBytes('{}')); LogResult = $null; FunctionError = $null }
+            }
+        }
+        $command = "`$env:AWS_SHARED_CREDENTIALS_FILE = `$env:AWS_CONFIG_FILE = '$emptyStore'; `$env:AWS_REGION = 'ap-south-1'; & '$invokeScript'"
+
+        $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command
+
+        $result.Output | Should -Not -BeLike '*ERROR:*'
+        $result.Calls | Should -Be @('Invoke eu-north-1 AKIASCRIPTSCOPE', 'Invoke eu-west-1 AKIASCRIPTSCOPE')
     }
 }

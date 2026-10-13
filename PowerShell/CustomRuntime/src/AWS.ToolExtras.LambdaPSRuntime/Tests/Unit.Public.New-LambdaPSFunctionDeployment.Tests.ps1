@@ -1,6 +1,7 @@
 BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
 
 
     # A lone handler script and a prepared folder to package.
@@ -1231,5 +1232,42 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.RuntimeAlias | Should -Be 'staging'
         $result.Handler | Should -Be 'entry.ps1'
         $result.Timeout | Should -Be 300
+    }
+}
+
+# Set-DefaultAWSRegion and Set-AWSCredential without -Scope set the region and credentials in the scope
+# they run in, such as a deploy script, where the module's own code cannot see them. The deploy reads
+# them through its caller's session state. Run in a child pwsh with an empty credential store.
+Describe 'New-LambdaPSFunctionDeployment from a script that set its own region and credentials' -Tag 'Unit' {
+    It 'deploys into the region and with the credentials the script set' {
+        $handler = [System.IO.Path]::Combine($TestDrive, 'scoped-handler.ps1')
+        Set-Content -LiteralPath $handler -Value 'param($LambdaInput, $LambdaContext)'
+        $emptyStore = [System.IO.Path]::Combine($TestDrive, 'scoped-empty-store')
+        Set-Content -LiteralPath $emptyStore -Value ''
+        $deployScript = [System.IO.Path]::Combine($TestDrive, 'scoped-deploy.ps1')
+        Set-Content -LiteralPath $deployScript -Value @"
+Set-DefaultAWSRegion -Region eu-north-1
+Set-AWSCredential -AccessKey AKIASCRIPTSCOPE -SecretKey example
+New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath '$handler' -RuntimeName rt -Role arn:aws:iam::111122223333:role/r -PackagePath '$TestDrive/scoped.zip' -Confirm:`$false
+"@
+        $stub = {
+            function script:Get-LambdaPSRuntimeArn { 'arn:aws:lambda:eu-north-1:111122223333:runtime/rt' }
+            function script:Get-LambdaPSRuntimeAliasArchitecture { , [string[]]@('x86_64') }
+            function script:Get-LambdaPSFunctionBinding { $null }
+            function script:Compress-LambdaPSFunctionPackage { [PSCustomObject]@{ PackagePath = $OutFile; ModulesStaged = @() } }
+            function script:Publish-LambdaPSFunction {
+                param($FunctionName, $Region, $CredentialParameter)
+                $key = if ($CredentialParameter.Credential) { $CredentialParameter.Credential.GetCredentials().AccessKey } else { 'none' }
+                $script:LambdaPSCalls.Add("Publish $Region $key")
+                [PSCustomObject]@{ FunctionName = $FunctionName; Arn = 'arn:aws:lambda:eu-north-1:111122223333:function:fn' }
+            }
+        }
+        # AWS_REGION names another region, so a deploy that misses the script's region goes there instead.
+        $command = "`$env:AWS_SHARED_CREDENTIALS_FILE = `$env:AWS_CONFIG_FILE = '$emptyStore'; `$env:AWS_REGION = 'ap-south-1'; `$null = & '$deployScript'"
+
+        $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command
+
+        $result.Output | Should -Not -BeLike '*ERROR:*'
+        $result.Calls | Should -Be @('Publish eu-north-1 AKIASCRIPTSCOPE')
     }
 }

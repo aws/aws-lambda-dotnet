@@ -47,14 +47,15 @@ function Invoke-LambdaPSFunction {
         An optional function version or alias to invoke.
     .PARAMETER Region
         The AWS region the function lives in. Accepts pipeline input by property name. When omitted
-        and -FunctionName is a function ARN, the region in the ARN is used; otherwise Invoke-LMFunction
-        resolves the region the way every AWS.Tools cmdlet does. A -Region that differs from the region
+        and -FunctionName is a function ARN, the region in the ARN is used; otherwise a region set with
+        Set-DefaultAWSRegion, including one a calling script set for itself, and without one
+        Invoke-LMFunction resolves the region the way every AWS.Tools cmdlet does. A -Region that differs from the region
         in a function ARN fails with FunctionRegionMismatch.
     .PARAMETER ProfileName
         The name of the AWS credential profile to use, as for any AWS.Tools cmdlet. When no credential
-        parameter is given, AWS.Tools resolves credentials the usual way: the shell's default
-        (Set-AWSCredential), environment variables, the default profile, or the instance or container
-        role. A profile that is not found (in -ProfileLocation, or the default credential stores) fails
+        parameter is given, credentials set with Set-AWSCredential are used, including ones a calling
+        script set for itself; otherwise AWS.Tools resolves them the usual way: environment variables,
+        the default profile, or the instance or container role. A profile that is not found (in -ProfileLocation, or the default credential stores) fails
         with ProfileNotFound before any AWS call.
     .PARAMETER ProfileLocation
         The location of the shared credentials file, as for any AWS.Tools cmdlet. Used with
@@ -126,7 +127,8 @@ function Invoke-LambdaPSFunction {
     process {
         try {
             # Credential parameters the caller gave, splatted onto Invoke-LMFunction.
-            $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters
+            # The caller's session state, so credentials a script set for itself are used too.
+            $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
             # Serialize the payload. A string is assumed to be JSON already and sent verbatim; any other
             # object is converted to JSON. An omitted payload sends nothing.
             $payloadJson = $null
@@ -164,6 +166,11 @@ function Invoke-LambdaPSFunction {
             $effectiveRegion = $Region
             if ([string]::IsNullOrWhiteSpace($effectiveRegion)) {
                 $effectiveRegion = $arnRegion
+            }
+            # A region a script set with Set-DefaultAWSRegion is in the caller's scope, where
+            # Invoke-LMFunction, called from this module, cannot see it.
+            if ([string]::IsNullOrWhiteSpace($effectiveRegion)) {
+                $effectiveRegion = [string]$PSCmdlet.SessionState.PSVariable.GetValue('StoredAWSRegion')
             }
             if (-not [string]::IsNullOrWhiteSpace($effectiveRegion)) { $invokeParams['Region'] = $effectiveRegion }
 

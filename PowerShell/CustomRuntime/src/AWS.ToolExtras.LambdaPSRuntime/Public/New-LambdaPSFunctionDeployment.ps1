@@ -102,14 +102,14 @@ function New-LambdaPSFunctionDeployment {
     .PARAMETER Region
         The AWS region to deploy into. When omitted and -FunctionName is a function ARN, the region in
         the ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's
-        default (Set-DefaultAWSRegion), the -ProfileName profile's region, the default profile's
+        default (Set-DefaultAWSRegion, including one a calling script set for itself), the -ProfileName profile's region, the default profile's
         region, AWS_REGION, the AWS_PROFILE profile's region, or the instance or container's.
         AWS_DEFAULT_REGION is not read. With none of those it fails with RegionNotResolved.
     .PARAMETER ProfileName
         The name of the AWS credential profile to use, as for any AWS.Tools cmdlet. When no credential
-        parameter is given, AWS.Tools resolves credentials the usual way: the shell's default
-        (Set-AWSCredential), environment variables, the default profile, or the instance or container
-        role. A profile that is not found (in -ProfileLocation, or the default credential stores) fails
+        parameter is given, credentials set with Set-AWSCredential are used, including ones a calling
+        script set for itself; otherwise AWS.Tools resolves them the usual way: environment variables,
+        the default profile, or the instance or container role. A profile that is not found (in -ProfileLocation, or the default credential stores) fails
         with ProfileNotFound before any AWS call.
     .PARAMETER ProfileLocation
         The location of the shared credentials file, as for any AWS.Tools cmdlet. Used with
@@ -288,13 +288,14 @@ function New-LambdaPSFunctionDeployment {
     # testable offline with the seams mocked. No AWS SDK assembly is bound directly.
     try {
         # Credential parameters the caller gave, passed to every seam that calls AWS.
-        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters
+        # The caller's session state, so credentials and a region a script set for itself are used too.
+        $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
         # A function ARN names its region and the function; use them rather than the ambient region,
         # where the function cannot be found, and rather than an ARN as a file name.
         $functionParts = Split-LambdaPSFunctionArn -FunctionName $FunctionName
         $packageName = $functionParts.Name
         if (-not $PSBoundParameters.ContainsKey('Region')) {
-            $Region = if ($functionParts.Region) { $functionParts.Region } else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter }
+            $Region = if ($functionParts.Region) { $functionParts.Region } else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState }
         }
         elseif ($functionParts.Region -and $Region -ne $functionParts.Region) {
             # A different -Region would only reach Lambda as a not-found for the ARN.
