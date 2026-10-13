@@ -52,6 +52,25 @@ Describe 'Copy-LambdaPSFolderContent' -Tag 'Unit' {
         Test-Path -LiteralPath ([System.IO.Path]::Combine($script:destination, 'sub', 'loop')) | Should -BeFalse
     }
 
+    It 'skips, with a warning, a junction that leads out of the folder' -Skip:(-not $IsWindows) {
+        # A junction needs no Developer Mode, so it is the link a Windows user is most likely to have.
+        $outside = Join-Path $TestDrive "outside-$([guid]::NewGuid().ToString('N'))"
+        $null = New-Item -ItemType Directory -Path $outside -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($outside, 'credentials')) -Value 'SECRET'
+        $junction = [System.IO.Path]::Combine($script:source, 'outside')
+        $null = New-Item -ItemType Junction -Path $junction -Target $outside
+
+        $junctionWarnings = InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination } {
+            param($Source, $Destination)
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -WarningVariable warnings -WarningAction SilentlyContinue
+            @($warnings | ForEach-Object { "$_" })
+        }
+
+        Test-Path -LiteralPath ([System.IO.Path]::Combine($script:destination, 'outside')) | Should -BeFalse
+        $junctionWarnings | Should -Contain ("Skipped '$junction': it links to '$((Resolve-Path -LiteralPath $outside).ProviderPath)', " +
+            "outside '$((Resolve-Path -LiteralPath $script:source).ProviderPath)'.")
+    }
+
     It 'treats a -Path reached through a link like the folder itself' -Skip:$IsWindows {
         # A module folder linked into the PSModulePath: the inner link points at the real folder.
         $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($script:source, 'inside.ps1')) -Target ([System.IO.Path]::Combine($script:source, 'a.ps1'))
