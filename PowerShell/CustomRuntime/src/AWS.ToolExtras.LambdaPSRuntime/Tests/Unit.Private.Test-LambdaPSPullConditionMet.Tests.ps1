@@ -13,6 +13,11 @@ Describe 'Test-LambdaPSPullConditionMet' -Tag 'Unit' {
         @{ Case = 'a wildcard under ArnLike, lower-case key'; Json = '{"ArnLike":{"aws:sourcearn":"arn:aws:lambda:*:111122223333:runtime/*"}}'; Expected = $true }
         @{ Case = 'an IfExists operator'; Json = '{"StringEqualsIfExists":{"aws:SourceAccount":"111122223333"}}'; Expected = $true }
         @{ Case = 'a list of values, one matching'; Json = '{"StringEquals":{"aws:SourceAccount":["999988887777","111122223333"]}}'; Expected = $true }
+        # Shapes the function cannot evaluate fail closed.
+        @{ Case = 'a Condition that is not an object'; Json = '"x"'; Expected = $false }
+        @{ Case = 'an operator whose value is not an object'; Json = '{"StringEquals":"x"}'; Expected = $false }
+        @{ Case = 'an empty value list'; Json = '{"StringEquals":{"aws:SourceAccount":[]}}'; Expected = $false }
+        @{ Case = 'a value list with no match'; Json = '{"StringEquals":{"aws:SourceAccount":["999988887777","444455556666"]}}'; Expected = $false }
         @{ Case = 'another runtime'; Json = '{"ArnLike":{"aws:SourceArn":"arn:aws:lambda:us-east-1:111122223333:runtime/other"}}'; Expected = $false }
         @{ Case = 'a different case in the value'; Json = '{"StringEquals":{"aws:SourceArn":"arn:aws:lambda:us-east-1:111122223333:runtime/MY-PS"}}'; Expected = $false }
         @{ Case = 'a negated operator'; Json = '{"ArnNotLike":{"aws:SourceArn":"arn:aws:lambda:us-east-1:111122223333:runtime/other"}}'; Expected = $false }

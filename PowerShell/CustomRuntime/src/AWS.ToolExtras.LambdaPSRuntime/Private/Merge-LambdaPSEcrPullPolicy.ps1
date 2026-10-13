@@ -26,7 +26,8 @@ function Merge-LambdaPSEcrPullPolicy {
                                          is left as it is, with a warning unless one condition key
                                          pins the account: all of its aws:SourceAccount values, or
                                          the account components of all of its aws:SourceArn values,
-                                         are free of * and ?.
+                                         are free of * and ?. A key under an ...IfExists operator
+                                         does not pin it: a request without the key also meets it.
           * Anything else             -> the existing statements unchanged, plus the scoped statement.
                                          That includes a Lambda grant conditioned on something else
                                          (another runtime or account, a negated operator, a key this
@@ -111,11 +112,14 @@ function Merge-LambdaPSEcrPullPolicy {
         if (Test-LambdaPSPullConditionMet -Condition $statement['Condition'] -AccountId $AccountId -RuntimeArn $RuntimeArn) {
             # A met Condition names only aws:SourceArn and aws:SourceAccount. Unless one of them pins the
             # account (every value free of * and ?; for an ARN, its account component), the grant is open
-            # to any account's Lambda (a confused deputy). It is not edited, but say so.
+            # to any account's Lambda (a confused deputy). It is not edited, but say so. An ...IfExists
+            # operator is also met by a request without the key, so its keys pin nothing.
             $condition = $statement['Condition']
             $pinned = $false
             if ($condition -is [System.Collections.IDictionary]) {
-                foreach ($block in $condition.Values) {
+                foreach ($operator in $condition.Keys) {
+                    if (([string]$operator) -like '*IfExists') { continue }
+                    $block = $condition[$operator]
                     foreach ($key in $block.Keys) {
                         $accounts = @($block[$key] | ForEach-Object {
                                 $value = [string]$_

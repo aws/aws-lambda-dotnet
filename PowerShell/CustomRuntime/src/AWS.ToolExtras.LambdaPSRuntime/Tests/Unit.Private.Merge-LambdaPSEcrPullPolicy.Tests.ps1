@@ -48,6 +48,8 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         @{ Case = 'a StringLike ARN prefix'; Condition = ',"Condition":{"StringLike":{"aws:SourceArn":"arn:*"}}' }
         @{ Case = 'an account list that includes *'; Condition = ',"Condition":{"StringLike":{"aws:SourceAccount":["111122223333","*"]}}' }
         @{ Case = 'a ? account pattern'; Condition = ',"Condition":{"StringLike":{"aws:SourceAccount":"????????????"}}' }
+        # An ...IfExists operator is also met by a request that does not carry the key.
+        @{ Case = 'an IfExists account'; Condition = ',"Condition":{"StringEqualsIfExists":{"aws:SourceAccount":"111122223333"}}' }
     ) {
         $text = '{"Version":"2012-10-17","Statement":[{"Sid":"Open","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"ecr:*"' + $Condition + '}]}'
         InModuleScope $script:moduleName -Parameters @{ Text = $text } {
@@ -63,6 +65,7 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         @{ Case = 'this runtime'; Condition = '{"StringEquals":{"aws:SourceArn":"arn:aws:lambda:us-east-1:111122223333:runtime/my-ps"}}' }
         @{ Case = 'this account''s runtimes'; Condition = '{"ArnLike":{"aws:SourceArn":"arn:aws:lambda:*:111122223333:runtime/*"}}' }
         @{ Case = 'this account, with any ARN'; Condition = '{"StringLike":{"aws:SourceAccount":"111122223333","aws:SourceArn":"*"}}' }
+        @{ Case = 'this account, beside an IfExists key'; Condition = '{"StringEquals":{"aws:SourceAccount":"111122223333"},"StringEqualsIfExists":{"aws:SourceArn":"arn:aws:lambda:us-east-1:111122223333:runtime/my-ps"}}' }
     ) {
         $text = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"ecr:*","Condition":' + $Condition + '}]}'
         InModuleScope $script:moduleName -Parameters @{ Text = $text } {
@@ -148,7 +151,6 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         }
     }
 
-    # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
     It 'rejects a runtime ARN with an uppercase <Case> at parameter binding' -ForEach @(
         @{ Case = 'partition'; RuntimeArn = 'arn:AWS:lambda:us-east-1:111122223333:runtime/my-ps' }
         @{ Case = 'region'; RuntimeArn = 'arn:aws:lambda:US-EAST-1:111122223333:runtime/my-ps' }
@@ -160,6 +162,7 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         }
     }
 
+    # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
     It 'rejects <Case> in non-ASCII digits at parameter binding' -ForEach @(
         @{ Case = 'an account'; Arguments = @{ AccountId = "11112222333$([char]0x0663)"; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps' } }
         @{ Case = 'a runtime ARN'; Arguments = @{ AccountId = '111122223333'; RuntimeArn = "arn:aws:lambda:us-east-1:11112222333$([char]0x0663):runtime/my-ps" } }
