@@ -190,6 +190,11 @@ function Invoke-LambdaPSFunction {
                 $responseText = $responsePayload
             }
 
+            # Whether the payload is JSON. Test-Json with -ErrorAction Ignore records nothing; a parse that
+            # fails, even inside try/catch, would reach the caller's -ErrorVariable.
+            $isJson = -not [string]::IsNullOrEmpty($responseText) -and
+                (Test-Json -Json $responseText -Options IgnoreComments, AllowTrailingCommas -ErrorAction Ignore)
+
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
             if ($IncludeLog -and -not [string]::IsNullOrEmpty($response.LogResult)) {
                 $log = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response.LogResult))
@@ -204,7 +209,7 @@ function Invoke-LambdaPSFunction {
             if (-not [string]::IsNullOrEmpty($response.FunctionError)) {
                 $detail = if (-not [string]::IsNullOrEmpty($responseText)) { ": $responseText" } else { '.' }
                 $errorPayload = $responseText
-                if (-not [string]::IsNullOrEmpty($responseText)) {
+                if ($isJson) {
                     try { $errorPayload = ConvertFrom-Json -InputObject $responseText -ErrorAction Stop } catch { $errorPayload = $responseText }
                 }
                 $PSCmdlet.WriteError(
@@ -221,7 +226,9 @@ function Invoke-LambdaPSFunction {
 
             # Return parsed output when the payload is JSON; fall back to the raw string otherwise.
             # -NoEnumerate and the comma keep a JSON array an array: '[1]' stays a one-element array
-            # and '[]' an empty one, rather than being unrolled into a scalar or nothing.
+            # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON that
+            # ConvertFrom-Json still refuses (keys that differ only in case) is returned as text.
+            if (-not $isJson) { return $responseText }
             try {
                 $parsed = ConvertFrom-Json -InputObject $responseText -NoEnumerate -ErrorAction Stop
                 return , $parsed

@@ -107,6 +107,13 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
+        # Region names are matched without regard to case, so the same region in capitals is no mismatch.
+        It 'accepts a -Region that differs from the ARN''s only in case' {
+            $null = Invoke-LambdaPSFunction -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -Region EU-WEST-1
+
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Region -eq 'EU-WEST-1' }
+        }
+
         It 'accepts a -Region equal to the ARN''s, and adds none for a plain name' {
             $null = Invoke-LambdaPSFunction -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -Region eu-west-1
             $null = Invoke-LambdaPSFunction -FunctionName hello
@@ -155,6 +162,22 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $result = Invoke-LambdaPSFunction -FunctionName hello
 
             $result | Should -Be 'plain text'
+        }
+
+        # A caller that checks -ErrorVariable must not see a successful invoke as a failed one.
+        It 'leaves -ErrorVariable empty for a successful invoke whose payload is <Case>' -ForEach @(
+            @{ Case = 'not JSON'; Body = 'plain text'; Expected = 'plain text' }
+            @{ Case = 'JSON'; Body = '{"ok":"yes"}'; Expected = 'yes' }
+        ) {
+            $script:okBody = $Body
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream $script:okBody); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors
+
+            @($errors).Count | Should -Be 0
+            $(if ($result -is [string]) { $result } else { $result.ok }) | Should -Be $Expected
         }
 
         It 'returns nothing for an empty payload' {
@@ -234,9 +257,10 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
 
             $null = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors -ErrorAction SilentlyContinue
 
-            # -ErrorVariable also collects the JSON parse error the cmdlet catches, so pick the record.
-            $record = @($errors | Where-Object { $_.FullyQualifiedErrorId -eq 'FunctionInvocationError,Invoke-LambdaPSFunction' })
+            # The function error is the only record: finding that the payload is not JSON adds none.
+            $record = @($errors)
             $record.Count | Should -Be 1
+            $record[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
             $record[0].TargetObject | Should -Be $Target
             $record[0].Exception.Message | Should -BeLike $Message
         }
