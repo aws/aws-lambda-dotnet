@@ -61,8 +61,9 @@ function Test-LambdaPSBootstrapEnvironment {
     }
     # An absolute-path pwsh is self-locating, so neither PATH nor LD_LIBRARY_PATH must be set.
     $absolute = $pwsh.Program.StartsWith('/')
-    $setsPath = $pwsh.Environment.ContainsKey('PATH')
-    $setsLdLibraryPath = $pwsh.Environment.ContainsKey('LD_LIBRARY_PATH')
+    # An empty value finds nothing, so it counts as not set.
+    $setsPath = $pwsh.Environment.ContainsKey('PATH') -and $pwsh.Environment['PATH'].Length -gt 0
+    $setsLdLibraryPath = $pwsh.Environment.ContainsKey('LD_LIBRARY_PATH') -and $pwsh.Environment['LD_LIBRARY_PATH'].Length -gt 0
     $noInheritedEnvironment = 'A bootstrap cannot rely on inherited environment variables (a customer-managed runtime ignores the image''s ENV, and a layer or .zip has none)'
 
     # Assigned but not exported: it reaches pwsh only if the variable was already exported, which

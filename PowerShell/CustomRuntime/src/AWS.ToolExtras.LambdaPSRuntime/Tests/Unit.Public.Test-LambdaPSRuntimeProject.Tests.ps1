@@ -555,7 +555,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         ) {
             $content = "#!/bin/sh`n" + (($Lines | ForEach-Object { $_.Replace('<invariant>', $script:invariant).Replace('<exec>', $script:exec) }) -join "`n") + "`n"
             $dir = & $script:newLayerProject ($Case -replace '\W', '-') $content
-            $failed = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue | Where-Object { -not $_.Passed })
+            $failed = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Where-Object { -not $_.Passed })
             @($failed.RuleId) | Should -BeNullOrEmpty -Because $content
         }
 
@@ -564,10 +564,13 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Case = 'the flag set to 0 on a pwsh command run without exec'; Rule = 'R-Globalization'; Lines = @('DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0 /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'a tee into /opt before a ;'; Rule = 'R-ReservedWrite'; Lines = @('<invariant>', 'echo x | tee /opt/start.log; ls /tmp', '<exec>') }
             @{ Case = 'the flag set to 0 through /usr/bin/env'; Rule = 'R-Globalization'; Lines = @('exec /usr/bin/env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0 /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'PATH exported empty, for a pwsh found on PATH'; Rule = 'R-Env-Path'; Lines = @('<invariant>', 'export PATH= LD_LIBRARY_PATH=', 'exec pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'LD_LIBRARY_PATH exported empty, for a pwsh found on PATH'; Rule = 'R-Env-LdLibraryPath'; Lines = @('<invariant>', 'export PATH=/opt/powershell LD_LIBRARY_PATH=', 'exec pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'a mkdir under /opt'; Rule = 'R-ReservedWrite'; Lines = @('<invariant>', 'mkdir -p /opt/cache', '<exec>') }
         ) {
             $content = "#!/bin/sh`n" + (($Lines | ForEach-Object { $_.Replace('<invariant>', $script:invariant).Replace('<exec>', $script:exec) }) -join "`n") + "`n"
             $dir = & $script:newLayerProject ($Case -replace '\W', '-') $content
-            $failed = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue | Where-Object { -not $_.Passed })
+            $failed = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Where-Object { -not $_.Passed })
             @($failed.RuleId) | Should -Contain $Rule -Because $content
         }
     }
@@ -595,6 +598,16 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Case = 'a tee in a subshell'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', '(echo x | tee /opt/x)', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'an unknown command before the exec'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', '/opt/tools/prepare.sh', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'exec -a NAME, which only bash takes'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec -a pwsh /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            # Each part of a pipeline runs in a subshell, so an export there never reaches pwsh.
+            @{ Case = 'an export after a pipe'; Lines = @('echo start | export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an export before a pipe'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 | cat', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'a pipeline continued on the next line'; Lines = @('echo start |', 'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            # sh stops at these with a syntax error, before pwsh runs.
+            @{ Case = 'a redirect with no target'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo started >', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an operator after an operator'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo a > > /tmp/x', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an empty pipeline element'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', '| echo hi', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an empty statement'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo a ;; echo b', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'a quoted export assignment'; Lines = @('export "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1"', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
         ) {
             $dir = & $script:newShape ($Case -replace '\W', '-') $Lines
             $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -WarningVariable warnings -WarningAction SilentlyContinue)
@@ -660,6 +673,10 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Case = 'the flag set through /usr/bin/env'; Lines = @('exec /usr/bin/env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'the flag set through /bin/env'; Lines = @('exec /bin/env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'exec --'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec -- /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an export, then a pipeline after a ;'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1; echo start | tee /tmp/start.log', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'a redirect to a file, and a trailing ;'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo started > /tmp/start.log;', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'two statements on a line'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo a; echo b', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'an export with the value quoted'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT="1"', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
         ) {
             $dir = & $script:newShape ($Case -replace '\W', '-') $Lines
             $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -WarningVariable warnings)
@@ -705,7 +722,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'still fails a clear violation in a known form: a tee into /opt' {
             $dir = & $script:newShape 'tee-opt' @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo x | tee /opt/x', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1')
-            (Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue | Where-Object RuleId -eq 'R-ReservedWrite').Passed | Should -BeFalse
+            (Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Where-Object RuleId -eq 'R-ReservedWrite').Passed | Should -BeFalse
         }
 
         It 'names an unknown command once, and says only once that it is not evaluated' {
@@ -718,7 +735,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         It 'fails an unverified rule under -UnverifiedAsFailure, on the error stream' {
             $dir = & $script:newShape 'as-failure' @('if true; then :; fi', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1')
             $errors = @()
-            $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -UnverifiedAsFailure -ErrorVariable errors -ErrorAction SilentlyContinue)
+            $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -UnverifiedAsFailure -ErrorVariable errors -ErrorAction SilentlyContinue -WarningAction SilentlyContinue)
             @($findings | Where-Object { $_.Unverified -and -not $_.Passed }).Count | Should -Be 5
             @($errors | Where-Object { $_.FullyQualifiedErrorId -like 'R-Globalization,*' }).Count | Should -Be 1
         }
@@ -798,6 +815,34 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         }
     }
 
+    Context 'where pwsh runs from' {
+        # The scaffolded image removes the pwsh the package installs, so only the target's own copy runs.
+        It 'fails R-RuntimePath for a <Target> bootstrap that runs <Program>' -ForEach @(
+            @{ Target = 'CMR'; Program = '/usr/bin/pwsh'; Script = '/var/runtime/runtime.ps1' }
+            @{ Target = 'CMR'; Program = '/opt/microsoft/powershell/7/pwsh'; Script = '/var/runtime/runtime.ps1' }
+            @{ Target = 'Layer'; Program = '/var/task/powershell/pwsh'; Script = '/opt/runtime.ps1' }
+        ) {
+            $dir = [System.IO.Path]::Combine($TestDrive, "outside-root-$Target-$($Program -replace '\W', '-')")
+            $null = New-Item -ItemType Directory -Path $dir -Force
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($dir, 'bootstrap'), "#!/bin/sh`nexport DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`nexec $Program -NoProfile -NonInteractive -File $Script`n")
+            $finding = Test-LambdaPSRuntimeProject -Path $dir -Target $Target -ErrorAction SilentlyContinue | Where-Object RuleId -eq 'R-RuntimePath'
+            $finding.Passed | Should -BeFalse
+            $finding.Message | Should -BeLike "Bootstrap runs pwsh from '$Program', which is outside *"
+        }
+
+        It 'passes R-RuntimePath for a <Target> bootstrap that runs <Program>' -ForEach @(
+            @{ Target = 'CMR'; Program = '/var/runtime/powershell/pwsh'; Script = '/var/runtime/runtime.ps1' }
+            @{ Target = 'Layer'; Program = '/opt/powershell/pwsh'; Script = '/opt/runtime.ps1' }
+            @{ Target = 'SelfContainedZip'; Program = '/var/task/powershell/pwsh'; Script = '/var/task/runtime.ps1' }
+            @{ Target = 'CMR'; Program = 'pwsh'; Script = '/var/runtime/runtime.ps1' }
+        ) {
+            $dir = [System.IO.Path]::Combine($TestDrive, "inside-root-$Target-$($Program -replace '\W', '-')")
+            $null = New-Item -ItemType Directory -Path $dir -Force
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($dir, 'bootstrap'), "#!/bin/sh`nexport DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`nexec $Program -NoProfile -NonInteractive -File $Script`n")
+            (Test-LambdaPSRuntimeProject -Path $dir -Target $Target -ErrorAction SilentlyContinue | Where-Object RuleId -eq 'R-RuntimePath').Passed | Should -BeTrue
+        }
+    }
+
     Context '-Target and the marker' {
         It 'lints against an explicit -Target rather than the marker' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'target-override')
@@ -818,6 +863,14 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $finding.Passed | Should -BeFalse
             $finding.Message | Should -BeLike 'Bootstrap does not reference /opt.*'
             Test-LambdaPSRuntimeProject -Path $dir -Quiet | Should -BeTrue -Because 'its own marker says SelfContainedZip'
+        }
+
+        It 'says under -Verbose that a project with no marker is checked as CMR' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'target-no-marker')
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4' -Target Layer
+            Remove-Item -LiteralPath ([System.IO.Path]::Combine($dir, 'lambdaps-runtime.json'))
+            $verbose = @(Test-LambdaPSRuntimeProject -Path $dir -Quiet -Verbose 4>&1 | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] })
+            ($verbose.Message -join ' ') | Should -BeLike '*has no lambdaps-runtime.json naming a target, so it is checked as a CMR project.*'
         }
 
         It 'does not read a marker that is not valid when -Target is given' {
@@ -927,6 +980,17 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @($failed | ForEach-Object { "$($_.RuleId) $($_.Path)" }) | Should -Be @("R-Globalization $selfContained")
             @($errors | ForEach-Object { "$($_.FullyQualifiedErrorId) $($_.TargetObject)" }) |
                 Should -Be @("R-Globalization,Test-LambdaPSRuntimeProject $selfContained", "BootstrapNotFound,Test-LambdaPSRuntimeProject $function")
+        }
+
+        It 'reports a path on another provider as ProjectNotFound for that item, and checks the next project' {
+            $errors = @()
+            $findings = @('Env:', $script:pipeA | Test-LambdaPSRuntimeProject -ErrorVariable errors -ErrorAction SilentlyContinue)
+            @($errors.FullyQualifiedErrorId) | Should -Be @('ProjectNotFound,Test-LambdaPSRuntimeProject')
+            $errors[0].TargetObject | Should -Be 'Env:'
+            $errors[0].Exception.Message | Should -BeLike '*provider*'
+            $findings.Count | Should -Be 7
+            $findings | ForEach-Object { $_.Path | Should -Be $script:pipeA }
+            @('Env:', $script:pipeA | Test-LambdaPSRuntimeProject -Quiet) | Should -Be @($false)
         }
 
         It 'sets Path to the full path when the project is given relative to the current location' {

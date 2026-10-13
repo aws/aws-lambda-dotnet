@@ -28,25 +28,30 @@ function Read-LambdaPSBootstrap {
             $null when none does.
           - Environment: the exported variables the pwsh statement inherits, by name
             (case-sensitive), with the command's own assignments applied over them.
-          - Writes: the files the code writes to, through an output redirect or tee.
+          - Writes: the files and folders the code writes to, through an output redirect, tee or
+            mkdir.
 
         The known forms, one statement per line or separated by ';', are what the scaffolded
         bootstraps write plus documented variants: comments and blank lines; assignments
-        ('NAME=VALUE'); 'export' of names or assignments; an 'exec' that only redirects
+        ('NAME=VALUE'); 'export' of names or unquoted assignments; an 'exec' that only redirects
         ('exec 2>&1', 'exec >/tmp/log 2>&1'); the plain commands echo, printf, cd, cat, tee, mkdir,
         ls, pwd, true, false and ':', with redirects and pipes (for example 'echo started | tee
-        /tmp/log'); and one pwsh statement in the forms
-        'exec .../pwsh ...', 'NAME=1 exec .../pwsh ...', 'exec env NAME=1 .../pwsh ...' and
-        'NAME=1 .../pwsh ...' without exec, where env may also be /usr/bin/env or /bin/env and exec
-        may take '--'. Nothing after an exec of pwsh runs. Anything else is
-        named in Unrecognised: any other command word (eval, sh -c, trap, env, unset, set, timeout,
-        or a wrapper around pwsh, for example), export with an option, a '$' expansion in a write
-        target or in PATH, LD_LIBRARY_PATH or DOTNET_SYSTEM_GLOBALIZATION_INVARIANT, a relative write
-        target, printf -v, a shebang interpreter other than /bin/sh, /usr/bin/sh, /bin/bash or /usr/bin/bash, whitespace other
+        /tmp/log'); and one pwsh statement in the forms 'exec .../pwsh ...', 'NAME=1 exec .../pwsh
+        ...', 'exec env NAME=1 .../pwsh ...' and 'NAME=1 .../pwsh ...' without exec, where env may
+        also be /usr/bin/env or /bin/env and exec may take '--'. Nothing after an exec of pwsh runs.
+        Anything else is named in Unrecognised: any other command word (eval, sh -c, trap, env,
+        unset, set, timeout, or a wrapper around pwsh, for example), export with an option, a quoted
+        export assignment ('export "NAME=1"') or another export argument that is not a variable
+        name, an export or assignment in a pipeline (each part of a pipeline runs in a subshell), a
+        '$' expansion in a write target or in PATH, LD_LIBRARY_PATH or
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT, a relative write target, printf -v, a shebang
+        interpreter other than /bin/sh, /usr/bin/sh, /bin/bash or /usr/bin/bash, whitespace other
         than a space or a tab, a function, an if/case/loop block, a here-doc, a command
-        substitution, a variable as the program, a '\' line continuation, an '&&' or '||' list, a
-        background '&', a subshell, a sourced file, a quote left open at the end of a line, an exec
-        of another program, or more than one pwsh invocation.
+        substitution, a variable as the program, a '\' line continuation, a pipeline continued on
+        the next line (a line ending in '|'), an '&&' or '||' list, a background '&', a subshell, a
+        sourced file, a quote left open at the end of a line, a redirect with no target, an
+        operator after an operator, an empty statement or pipeline element (which sh refuses as a
+        syntax error), an exec of another program, or more than one pwsh invocation.
 
         When the file cannot be used it returns an AWS.ToolExtras.LambdaPSRuntime.BootstrapReadError
         instead, with ErrorId (BootstrapNotFound or BootstrapNotReadable), Category and Message, for
@@ -183,6 +188,9 @@ function Read-LambdaPSBootstrap {
         }
         $quote = [char]0
         $substitution = 0
+        # sh refuses these with a syntax error and stops before pwsh runs.
+        $isEmpty = { param($Segment) $Segment.Words.Count -eq 0 -and $Segment.Redirects.Count -eq 0 }
+        $endRedirect = { if ($null -ne $pendingRedirect) { & $note 'a redirect with no target'; $pendingRedirect = $null } }
         $i = 0
         while ($i -lt $Line.Length) {
             $c = $Line[$i]
@@ -210,10 +218,18 @@ function Read-LambdaPSBootstrap {
             if ($c -eq '$' -and $i + 1 -lt $Line.Length -and $Line[$i + 1] -eq '(') { & $note 'a command substitution'; $null = $word.Append('$('); $inWord = $true; $substitution++; $i += 2; continue }
             if ($substitution -gt 0 -and ($c -eq '(' -or $c -eq ')')) { if ($c -eq '(') { $substitution++ } else { $substitution-- }; $null = $word.Append($c); $i++; continue }
             if ($c -eq '(' -or $c -eq ')') { & $note 'a subshell or function'; . $flush; $i++; continue }
-            if ($c -eq ';') { . $flush; $statement.Segments.Add($segment); $statements.Add($statement); $statement = & $newStatement; $segment = & $newSegment; $i++; continue }
+            if ($c -eq ';') {
+                . $flush; . $endRedirect
+                if (& $isEmpty $segment) {
+                    if ($statement.Segments.Count -gt 0) { & $note 'an empty pipeline element' } else { & $note 'an empty statement' }
+                }
+                $statement.Segments.Add($segment); $statements.Add($statement); $statement = & $newStatement; $segment = & $newSegment; $i++; continue
+            }
             if ($c -eq '|') {
                 if ($i + 1 -lt $Line.Length -and $Line[$i + 1] -eq '|') { & $note "an '&&' or '||' list"; $i += 2; continue }
-                . $flush; $statement.Segments.Add($segment); $segment = & $newSegment; $i++; continue
+                . $flush; . $endRedirect
+                if (& $isEmpty $segment) { & $note 'an empty pipeline element' }
+                $statement.Segments.Add($segment); $segment = & $newSegment; $i++; continue
             }
             if ($c -eq '&' -and -not ($i + 1 -lt $Line.Length -and $Line[$i + 1] -eq '>')) {
                 if ($i + 1 -lt $Line.Length -and $Line[$i + 1] -eq '&') { & $note "an '&&' or '||' list"; $i += 2; continue }
@@ -224,6 +240,7 @@ function Read-LambdaPSBootstrap {
                 # A redirect: an fd number just before it belongs to it, and the target follows.
                 $fd = if ($inWord -and $word.ToString() -match '\A[0-9]+\z' -and $quoteAt -lt 0) { $word.ToString() } else { $null }
                 if ($null -ne $fd) { $null = $word.Clear(); $inWord = $false } else { . $flush }
+                if ($null -ne $pendingRedirect) { & $note 'an operator after an operator'; $pendingRedirect = $null }
                 $op = [System.Text.StringBuilder]::new()
                 while ($i -lt $Line.Length -and '<>&|'.Contains($Line[$i])) { $null = $op.Append($Line[$i]); $i++ }
                 $opText = $op.ToString()
@@ -244,7 +261,9 @@ function Read-LambdaPSBootstrap {
         }
         if ($quote -ne [char]0) { & $note 'a quote left open at the end of a line' }
         . $flush
-        if ($null -ne $pendingRedirect) { $segment.Redirects.Add($pendingRedirect) }
+        . $endRedirect
+        # A line that ends in '|' carries the pipeline onto the next line, which is read on its own here.
+        if ($statement.Segments.Count -gt 0 -and (& $isEmpty $segment)) { & $note 'a pipeline continued on the next line' }
         $statement.Segments.Add($segment)
         $statements.Add($statement)
         , $statements
@@ -280,6 +299,8 @@ function Read-LambdaPSBootstrap {
         if ($lines[$n] -cmatch '\A\s*(function\s+)?[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)') { & $note 'a function' }
         foreach ($statement in (& $scanLine $lines[$n])) {
             $first = $true
+            # Each part of a pipeline runs in a subshell, so its exports and assignments never reach pwsh.
+            $inPipeline = $statement.Segments.Count -gt 1
             foreach ($segment in $statement.Segments) {
                 $words = $segment.Words
                 foreach ($redirect in $segment.Redirects) {
@@ -299,6 +320,7 @@ function Read-LambdaPSBootstrap {
                     $index++
                 }
                 if ($index -ge $words.Count) {
+                    if ($inPipeline) { & $note 'an export or assignment in a pipeline'; $first = $false; continue }
                     # Assignments alone set shell variables.
                     foreach ($name in $prefix.Keys) {
                         if (-not $variables.ContainsKey($name)) { $variables[$name] = [PSCustomObject]@{ Value = $null; Exported = $false } }
@@ -310,6 +332,7 @@ function Read-LambdaPSBootstrap {
                 if ($blockWords -ccontains $command) { & $note 'an if, case or loop block' }
                 if ($command -ceq '.' -or $command -ceq 'source') { & $note 'a sourced file' }
                 if ($command -ceq 'export') {
+                    if ($inPipeline) { & $note 'an export or assignment in a pipeline'; $first = $false; continue }
                     for ($j = $index + 1; $j -lt $words.Count; $j++) {
                         $name = $null; $value = $null
                         if ($words[$j].Text.StartsWith('-')) { & $note 'export with an option'; continue }
@@ -318,14 +341,15 @@ function Read-LambdaPSBootstrap {
                             if ($words[$j].Dollar -and $ruleVariables -ccontains $name) { & $note "a variable expansion in $name" }
                         }
                         elseif ($words[$j].Text -cmatch '\A[A-Za-z_][A-Za-z0-9_]*\z') { $name = $words[$j].Text }
-                        if ($null -eq $name) { continue }
+                        elseif ($words[$j].Text -cmatch $assignment) { & $note 'a quoted export assignment'; continue }
+                        else { & $note 'an export argument that is not a variable name'; continue }
                         if (-not $variables.ContainsKey($name)) { $variables[$name] = [PSCustomObject]@{ Value = $null; Exported = $false } }
                         if ($null -ne $value) { $variables[$name].Value = $value }
                         $variables[$name].Exported = $true
                     }
                     $first = $false; continue
                 }
-                if ($command -ceq 'tee') {
+                if ($command -ceq 'tee' -or $command -ceq 'mkdir') {
                     for ($j = $index + 1; $j -lt $words.Count; $j++) {
                         if ($words[$j].Text.StartsWith('-')) { continue }
                         if ($words[$j].Dollar) { & $note 'a variable expansion in a write target' }

@@ -58,7 +58,8 @@ function Test-LambdaPSRuntimeProject {
         function.
 
         The target is resolved from the lambdaps-runtime.json marker written at scaffold time; when
-        the marker is absent it defaults to CMR. Pass -Target to override the marker explicitly.
+        the marker is absent it defaults to CMR, and -Verbose says so. Pass -Target to override the
+        marker explicitly.
 
         PSModulePath order is intentionally not checked: where a customer places modules (the function
         package, a layer, or the runtime) and in which precedence is their choice, not a runtime
@@ -77,11 +78,11 @@ function Test-LambdaPSRuntimeProject {
     .PARAMETER Path
         The project directory to lint. Must contain a bootstrap file. Accepts pipeline input: a path
         string, a directory from Get-Item (FullName), or a New-LambdaPSRuntimeDeployment result
-        (ProjectPath). An empty path, a missing directory (or a file in its place), a missing
-        bootstrap (or a link to nothing), a bootstrap that cannot be read (empty, larger than 1 MB,
-        not a regular file, such as a FIFO or a device, a link loop, or a file you may not read), or
-        a lambdaps-runtime.json that is not
-        valid is a non-terminating ProjectNotFound, BootstrapNotFound, BootstrapNotReadable or
+        (ProjectPath). An empty path, a missing directory (or a file in its place, or a path on
+        another provider such as Env:), a missing bootstrap (or a link to nothing), a bootstrap that
+        cannot be read (empty, larger than 1 MB, not a regular file, such as a FIFO or a device, a
+        link loop, or a file you may not read), or a lambdaps-runtime.json that is not valid is a
+        non-terminating ProjectNotFound, BootstrapNotFound, BootstrapNotReadable or
         InvalidProjectMarker error for that item, and the next piped project is still checked. The
         TargetObject of each of these errors, and of each rule failure, is the project's full path;
         for a blank path, or a path on a provider other than the file system, it is the path as given.
@@ -187,10 +188,18 @@ function Test-LambdaPSRuntimeProject {
             # answer, with no error record. Every error's TargetObject is the project's full path; a
             # path on another provider stays as given.
             $blank = [string]::IsNullOrWhiteSpace($Path)
-            $projectPath = if ($blank) { $Path } else { try { Resolve-LambdaPSPath -Path $Path } catch { $Path } }
+            # The provider is read directly: an error caught from Resolve-LambdaPSPath would still be
+            # collected by the caller's -ErrorVariable.
+            $provider = $null
+            if (-not $blank) { try { $null = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path, [ref]$provider, [ref]$null) } catch { $provider = $null } }
+            $otherProvider = $null -ne $provider -and $provider.Name -ne 'FileSystem'
+            $projectPath = if ($blank -or $otherProvider) { $Path } else { try { Resolve-LambdaPSPath -Path $Path } catch { $Path } }
             $problem = $null
             if ($blank) {
                 $problem = @{ ErrorId = 'ProjectNotFound'; Category = 'ObjectNotFound'; Exception = [System.IO.DirectoryNotFoundException]::new('No project directory was given (the path is empty).') }
+            }
+            elseif ($otherProvider) {
+                $problem = @{ ErrorId = 'ProjectNotFound'; Category = 'ObjectNotFound'; Exception = [System.IO.DirectoryNotFoundException]::new("'$Path' is a path on the $($provider.Name) provider, not a project directory. Pass a file-system path.") }
             }
             elseif (Test-Path -LiteralPath $Path -PathType Leaf) {
                 $problem = @{ ErrorId = 'ProjectNotFound'; Category = 'ObjectNotFound'; Exception = [System.IO.DirectoryNotFoundException]::new("'$Path' is a file, not a project directory.") }
@@ -216,7 +225,8 @@ function Test-LambdaPSRuntimeProject {
                     if ($_.FullyQualifiedErrorId -notlike 'InvalidProjectMarker*') { throw }
                     $problem = @{ ErrorId = 'InvalidProjectMarker'; Category = 'InvalidData'; Exception = $_.Exception }
                 }
-                $effectiveTarget = if ($marker -and $marker.Target) { $marker.Target } else { 'CMR' }
+                $effectiveTarget = if ($marker -and $marker.Target) { $marker.Target }
+                else { Write-Verbose "'$projectPath' has no lambdaps-runtime.json naming a target, so it is checked as a CMR project."; 'CMR' }
             }
             if ($problem) {
                 if ($Quiet) { $allPassed = $false; return }
