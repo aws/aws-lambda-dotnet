@@ -17,6 +17,8 @@ function Write-LambdaPSZipArchive {
             the OS it runs on (Windows, on a Windows build host).
           - Top-level files named in -ExcludeTopLevel are left out (case-insensitive); nested files of
             the same name are kept.
+          - Off Windows, where '\' is an ordinary file-name character, a file with '\' in its name
+            fails with BackslashInFileName: Lambda would extract it as a different path.
           - The archive is written to a temporary file beside -DestinationPath and moved into place
             only when it is complete, so an existing .zip is replaced only by a complete one and a
             failure never leaves a partial .zip behind.
@@ -85,11 +87,22 @@ function Write-LambdaPSZipArchive {
             # times.
             $files = [System.Collections.Generic.SortedDictionary[string, System.IO.FileInfo]]::new([System.StringComparer]::Ordinal)
             foreach ($file in Get-ChildItem -LiteralPath $sourceFull -Recurse -File -Force) {
-                $entryName = [System.IO.Path]::GetRelativePath($sourceFull, $file.FullName) -replace '\\', '/'
+                $entryName = [System.IO.Path]::GetRelativePath($sourceFull, $file.FullName)
+                # Only Windows separates folders with '\'. Elsewhere it is part of a file name, and a zip entry
+                # name that holds it would be extracted as a different path (or replace another file).
+                if ($IsWindows) { $entryName = $entryName -replace '\\', '/' }
+                elseif ($entryName.Contains('\')) {
+                    # Raised with `throw`: the public cmdlet that called this rethrows it with its own $PSCmdlet.
+                    throw [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new(
+                            "The file '$entryName' has a '\' in its name. A .zip separates folders with '/', so Lambda would extract it as a different path. Rename the file."),
+                        'BackslashInFileName', [System.Management.Automation.ErrorCategory]::InvalidArgument, $entryName)
+                }
                 if (-not $entryName.Contains('/') -and $excluded.Contains($entryName)) {
                     continue
                 }
-                $files[$entryName] = $file
+                # Add, not the indexer: two files can never share one entry name silently.
+                $files.Add($entryName, $file)
             }
             $entryTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
             foreach ($pair in $files.GetEnumerator()) {

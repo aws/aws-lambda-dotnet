@@ -46,7 +46,8 @@ function Compress-LambdaPSFunctionPackage {
 
         Errors it can raise, by error ID:
           - The source: ProjectNotFound, SourceNotPowerShell, NotAFunctionProject, InvalidProjectMarker,
-            InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath.
+            InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath, BackslashInFileName (off Windows,
+            a file with '\' in its name).
           - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
           - Modules (-IncludeModule and the handler's #Requires): ModuleVersionRequired (a #Requires that does not pin
             an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires

@@ -98,6 +98,37 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
         finally { $archive.Dispose() }
     }
 
+    # Off Windows '\' is part of a file name, not a folder separator, so a name holding it is refused
+    # rather than stored as a different path (where it could also replace a real file of that path).
+    It 'refuses a file with a backslash in its name, writing no package' -Skip:$IsWindows {
+        $stage = Join-Path $TestDrive 'backslash-stage'
+        $null = New-Item -ItemType Directory -Path (Join-Path $stage 'lib') -Force
+        'real' | Set-Content -LiteralPath (Join-Path $stage 'lib/data.txt')
+        # Written through .NET: PowerShell's own path handling reads '\' as a separator on every OS.
+        [System.IO.File]::WriteAllText([System.IO.Path]::Combine($stage, 'lib\data.txt'), 'other')
+        $zip = Join-Path $TestDrive 'backslash-out/package.zip'
+
+        { InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+                param($Stage, $Zip)
+                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+            } } | Should -Throw -ErrorId 'BackslashInFileName'
+        Test-Path -LiteralPath $zip | Should -BeFalse
+        @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
+    }
+
+    It 'names a file in a subfolder with a forward slash' {
+        $stage = Join-Path $TestDrive 'subfolder-stage'
+        $null = New-Item -ItemType Directory -Path (Join-Path $stage 'lib') -Force
+        'real' | Set-Content -LiteralPath (Join-Path $stage 'lib/data.txt')
+        $zip = Join-Path $TestDrive 'subfolder.zip'
+
+        InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+            param($Stage, $Zip)
+            Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+        }
+        Get-ZipEntryNames -ZipPath $zip | Should -Be @('lib/data.txt')
+    }
+
     # The archive is written beside the destination and swapped in only when complete, so a failed
     # rebuild keeps the previous package. A file this user cannot read makes the write fail part-way
     # (root reads it anyway, hence the skip).

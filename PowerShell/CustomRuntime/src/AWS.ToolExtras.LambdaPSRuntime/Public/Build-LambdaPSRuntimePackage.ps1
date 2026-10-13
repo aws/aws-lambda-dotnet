@@ -43,7 +43,8 @@ function Build-LambdaPSRuntimePackage {
         Errors it can raise, by error ID:
           - The project: ProjectNotFound, ProjectFileNotFound, ContextSourceNotFound,
             InvalidProjectMarker, TargetNotResolved, TargetMismatch, UnsupportedTarget,
-            PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath.
+            PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath,
+            BackslashInFileName (off Windows, a file with '\' in its name).
           - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
           - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
