@@ -141,6 +141,22 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
         }
     }
 
+    # A name starting with '.' is hidden on Linux and macOS; it is still the function's folder.
+    Context 'a project folder whose name starts with a dot' {
+        It 'packages it' {
+            $project = [System.IO.Path]::Combine($TestDrive, '.fn-dot')
+            $null = New-LambdaPSFunctionProject -Path $project -Handler 'handler'
+            $outFile = [System.IO.Path]::Combine($TestDrive, 'fn-dot.zip')
+
+            $null = Compress-LambdaPSFunctionPackage -Path $project -OutFile $outFile -ErrorVariable compressErrors
+
+            # A hidden folder that is read without -Force reports an error and is then not looked into.
+            $compressErrors | Should -BeNullOrEmpty
+            $entries = Get-ZipEntryNames -ZipPath $outFile
+            $entries | Should -Contain 'handler.ps1'
+        }
+    }
+
     Context 'reproducible packages' {
         It 'writes a byte-identical package when unchanged code is packaged twice' {
             $project = [System.IO.Path]::Combine($TestDrive, 'fn-repro')

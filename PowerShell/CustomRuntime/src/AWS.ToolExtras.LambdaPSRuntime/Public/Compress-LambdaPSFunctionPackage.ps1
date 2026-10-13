@@ -164,7 +164,8 @@ function Compress-LambdaPSFunctionPackage {
                     'ProjectNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Path))
         }
 
-        $source = Get-Item -LiteralPath $Path
+        # -Force: a folder or file whose name starts with "." is hidden on Linux and macOS.
+        $source = Get-Item -LiteralPath $Path -Force
         $isFile = -not $source.PSIsContainer
         if ($isFile -and $source.Extension -ne '.ps1') {
             $PSCmdlet.ThrowTerminatingError(
