@@ -123,10 +123,11 @@ function New-LambdaPSFunctionDeployment {
         minimum-version and version-range specs are rejected. Versions are never resolved implicitly.
         A staged module whose manifest has a RequiredModules entry with no name fails with
         DependencyNameMissing, and a module present only under another spelling of the version needed
-        ('1.0' when '1.0.0' is pinned) fails with ModuleVersionSpelling. An -IncludeModule entry, or a
-        handler's '#Requires -Modules', naming AWSPowerShell or AWSPowerShell.NetCore fails with
-        AWSPowerShellModuleNotSupported: use the AWS.Tools.* modules for the services the handler uses
-        instead. Alias: -Module.
+        ('1.0' when '1.0.0' is pinned) fails with ModuleVersionSpelling. AWSPowerShell (the Windows
+        PowerShell module, which doesn't run in PowerShell 7) and AWSPowerShell.NetCore (over 600 MB,
+        more than Lambda's 250 MB package limit) fail with AWSPowerShellModuleNotSupported, whether
+        named in -IncludeModule or in a handler's #Requires; name the AWS.Tools.* modules for the
+        services you use instead. Alias: -Module.
     .PARAMETER MissingModuleAction
         What to do with a module (or dependency) that is not available locally, forwarded to
         Compress-LambdaPSFunctionPackage: Save (default; download into a temporary folder that is
