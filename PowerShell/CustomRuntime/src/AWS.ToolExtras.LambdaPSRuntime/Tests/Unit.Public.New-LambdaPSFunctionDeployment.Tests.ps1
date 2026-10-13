@@ -132,6 +132,23 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Path -eq $hidden }
         }
 
+        It 'packages a folder whose name starts with ''.'', resolving its handler' {
+            $hidden = Join-Path $TestDrive '.hidden-fn'
+            $null = New-Item -ItemType Directory -Path $hidden -Force
+            Set-Content -LiteralPath (Join-Path $hidden 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+            $splat = @{
+                FunctionName = 'hello'; ProjectPath = $hidden
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+                PackagePath = (Join-Path $TestDrive 'hidden-folder.zip')
+            }
+
+            $result = New-LambdaPSFunctionDeployment @splat
+
+            $result.Handler | Should -Be 'handler.ps1'
+            $result.ProjectPath | Should -Be (Get-Item -LiteralPath $hidden -Force).FullName
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Path -eq $hidden }
+        }
+
         It 'prefers the manifest.json ScriptFile when several root scripts exist' {
             $splat = @{
                 FunctionName = 'hello'; ProjectPath = $script:folderManifest
