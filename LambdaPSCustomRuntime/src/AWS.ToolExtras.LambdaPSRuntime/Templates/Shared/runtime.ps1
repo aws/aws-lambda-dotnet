@@ -143,6 +143,8 @@ try {
         if ($private:__LambdaPSRuntimeHandler.handlerType -ne 'Script') {
             $private:__LambdaPSRuntimeCommandTypes = [System.Management.Automation.CommandTypes]'Function, Filter, Alias, Cmdlet'
             $private:__LambdaPSRuntimeAllowedTypes = @('Function', 'Filter', 'Cmdlet')
+            # Set before it is read: a handler script dot-sourced here may have turned on strict mode.
+            $private:__LambdaPSRuntimeAlias = $null
             $private:__LambdaPSRuntimeCommand = $ExecutionContext.InvokeCommand.GetCommand(
                 $private:__LambdaPSRuntimeHandler.functionName, $private:__LambdaPSRuntimeCommandTypes)
             if ($private:__LambdaPSRuntimeCommand -is [System.Management.Automation.AliasInfo]) {

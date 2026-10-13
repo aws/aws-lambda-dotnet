@@ -344,6 +344,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
             'function ConvertTo-Json { ''customer ConvertTo-Json'' }'
             'function Handle { param($LambdaInput, $LambdaContext) @{ ContextType = $LambdaContext.GetType().Name; Id = $LambdaContext.AwsRequestId; Own = (ConvertTo-Json 1) } }'
         )
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'strict.ps1')) -Value 'Set-StrictMode -Version Latest', 'function Handle { param($LambdaInput, $LambdaContext) @{ Kind = ''strict'' } }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -425,6 +426,7 @@ public class InvokeBin : PSCmdlet {
 
     # The handler is called with '&', so every command kind '&' runs is a handler, not only a function.
     It 'runs a <Kind> handler' -ForEach @(
+        @{ Kind = 'function in a strict-mode script'; Handler = 'strict.ps1::Handle'; Expected = '*"Kind":"strict"*' }
         @{ Kind = 'filter'; Handler = 'fn.ps1::Handle-Filter'; Expected = '*"Kind":"filter"*' }
         @{ Kind = 'script alias'; Handler = 'fn.ps1::Handle-Alias'; Expected = '*"Kind":"filter"*' }
         @{ Kind = 'alias to an alias'; Handler = 'fn.ps1::Chain-Alias'; Expected = '*"Kind":"filter"*' }
@@ -462,6 +464,7 @@ public class InvokeBin : PSCmdlet {
         @{ Case = 'invalid _HANDLER'; Handler = 'nonsense'; Message = "Invalid Lambda Handler: _HANDLER is 'nonsense'. Use one of <script>.ps1, <script>.ps1::<function> or Module::<module>::<function>."; Type = 'RuntimeException'; Stack = $null }
         @{ Case = 'missing module'; Handler = 'Module::NoSuchMod::Handle'; Message = '*NoSuchMod*'; Type = 'FileNotFoundException'; Stack = $null }
         @{ Case = 'misspelled function'; Handler = 'fn.ps1::Invok'; Message = 'Handler function not found: Invok*'; Type = 'CommandNotFoundException'; Stack = $null }
+        @{ Case = 'misspelled function in a strict-mode script'; Handler = 'strict.ps1::Handel'; Message = 'Handler function not found: Handel (_HANDLER strict.ps1::Handel)'; Type = 'CommandNotFoundException'; Stack = $null }
         @{ Case = 'misspelled module function'; Handler = 'Module::MyMod::Invoke-Typo'; Message = 'Handler function not found: Invoke-Typo*'; Type = 'CommandNotFoundException'; Stack = $null }
         @{ Case = 'whitespace _HANDLER'; Handler = ' '; Message = "Invalid Lambda Handler: _HANDLER is ' '. Use one of <script>.ps1, <script>.ps1::<function> or Module::<module>::<function>."; Type = 'RuntimeException'; Stack = $null }
         @{ Case = 'empty function name'; Handler = 'fn.ps1::'; Message = "Invalid Lambda Handler: _HANDLER is 'fn.ps1::'. Use one of <script>.ps1, <script>.ps1::<function> or Module::<module>::<function>."; Type = 'RuntimeException'; Stack = $null }
