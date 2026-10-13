@@ -11,6 +11,7 @@ BeforeAll {
 
 AfterAll {
     $env:DOCKER_CONFIG = $script:hostDockerConfig
+    Remove-LambdaPSDockerStub
     Remove-LambdaPSTestModule
 }
 
