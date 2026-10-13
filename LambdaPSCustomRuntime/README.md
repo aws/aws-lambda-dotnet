@@ -148,7 +148,8 @@ Every cmdlet has full comment-based help (`Get-Help <Name> -Full`).
 
 The runtime reads two environment variables, set on the function: `POWERSHELL_RUNTIME_VERBOSE=TRUE`
 logs its start-up and per-invocation steps, and `POWERSHELL_RUNTIME_JSON_DEPTH` (1-100, default 100)
-is the depth to which a handler's output is serialized. Return plain data from handlers; a rich .NET
+is the depth to which a handler's output is serialized; an invalid value uses 100 and writes a warning to
+the function log. Return plain data from handlers; a rich .NET
 object (for example from `Get-Item`) serialized that deep can exhaust memory. Every scaffolded
 project's README describes both. For a function bound to a customer-managed runtime,
 `New-LambdaPSFunctionDeployment -EnvironmentVariable` sets them, with the function's other environment
