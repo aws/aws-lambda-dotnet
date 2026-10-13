@@ -19,16 +19,18 @@ function Get-LambdaPSModuleClosure {
                     walked. MinimumOnly is true when only ModuleVersion entries ask for the module.
           Pending   the -Pending keys the walk reached; treated as present but not walked (used under
                     -WhatIf, where a download is only previewed)
-          Error     a ready-to-throw ModuleVersionRequired, DependencyNameIsPath,
-                    DependencyNameMissing, DependencyVersionUnpinned, ModuleVersionConflict,
-                    ModuleVersionSpelling, ModuleClosureNotSettled or (with -RequireAll)
-                    ModuleNotFoundLocally ErrorRecord, or $null. It is returned rather than thrown so
-                    the error is attributed to the calling cmdlet.
+          Error     a ready-to-throw AWSPowerShellModuleNotSupported, ModuleVersionRequired,
+                    DependencyNameIsPath, DependencyNameMissing, DependencyVersionUnpinned,
+                    ModuleVersionConflict, ModuleVersionSpelling, ModuleClosureNotSettled or (with
+                    -RequireAll) ModuleNotFoundLocally ErrorRecord, or $null. It is returned rather
+                    than thrown so the error is attributed to the calling cmdlet.
 
-        Every -Module specification must pin an exact RequiredVersion (Get-LambdaPSModulePinError);
-        the first that does not is returned as Error before anything is walked. Every caller that
-        downloads, stages or checks a module set walks it here, so this is the one place the rule is
-        enforced for -IncludeModule and -Module.
+        A -Module specification that names AWSPowerShell or AWSPowerShell.NetCore (any case, with or
+        without a version) is returned as an AWSPowerShellModuleNotSupported Error: those modules are
+        too large to package for Lambda. Every other -Module specification must pin an exact
+        RequiredVersion (Get-LambdaPSModulePinError); the first that does not is returned as Error
+        before anything is walked. Every caller that downloads, stages or checks a module set walks it
+        here, so this is the one place both rules are enforced for -IncludeModule and -Module.
 
         PowerShell's own modules (Test-LambdaPSBuiltInModule: Microsoft.PowerShell.Utility,
         .Management, .Security, .Host, .Diagnostics, .Core, CimCmdlets, Microsoft.WSMan.Management,
@@ -104,6 +106,21 @@ function Get-LambdaPSModuleClosure {
         [Parameter()]
         [switch]$SkipInstalled
     )
+
+    # The monolithic AWSPowerShell modules are far too large to package for Lambda, as for a
+    # handler's #Requires (Get-LambdaPSRequiredModule). Checked before the pin, so a bare name gets
+    # this advice rather than a request for a version. -in ignores case, as PowerShell does.
+    $monolithic = @($Module | Where-Object { $_.Name -in 'AWSPowerShell', 'AWSPowerShell.NetCore' })
+    if ($monolithic.Count -gt 0) {
+        $names = @($monolithic | ForEach-Object { "'$($_.Name)'" }) -join ' and '
+        $message = "Module $names (-IncludeModule or -Module) is too large to package for Lambda. Require the " +
+            "AWS.Tools.* modules for the services you use instead (for example @{ ModuleName = 'AWS.Tools.S3'; " +
+            "RequiredVersion = '<version>' }), each pinned with a RequiredVersion."
+        $monolithicError = [System.Management.Automation.ErrorRecord]::new(
+            [System.ArgumentException]::new($message, 'Module'),
+            'AWSPowerShellModuleNotSupported', [System.Management.Automation.ErrorCategory]::InvalidArgument, $monolithic[0].Name)
+        return [PSCustomObject]@{ Resolved = @(); Missing = @(); Pending = @(); Error = $monolithicError }
+    }
 
     foreach ($spec in $Module) {
         $pinError = Get-LambdaPSModulePinError -Specification $spec

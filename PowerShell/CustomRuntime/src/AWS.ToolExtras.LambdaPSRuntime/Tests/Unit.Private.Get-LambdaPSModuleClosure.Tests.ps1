@@ -434,6 +434,34 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         }
     }
 
+    It 'returns AWSPowerShellModuleNotSupported for <Case>, before walking anything' -ForEach @(
+        @{ Case = "a pinned 'AWSPowerShell' hashtable"; Spec = @{ ModuleName = 'AWSPowerShell'; RequiredVersion = '4.1.0' }; Name = 'AWSPowerShell' }
+        @{ Case = "a pinned 'AWSPowerShell.NetCore' hashtable"; Spec = @{ ModuleName = 'AWSPowerShell.NetCore'; RequiredVersion = '4.1.0' }; Name = 'AWSPowerShell.NetCore' }
+        @{ Case = "an unpinned 'AWSPowerShell' hashtable"; Spec = @{ ModuleName = 'AWSPowerShell'; ModuleVersion = '4.1.0' }; Name = 'AWSPowerShell' }
+        @{ Case = "the string 'AWSPowerShell'"; Spec = 'AWSPowerShell'; Name = 'AWSPowerShell' }
+        @{ Case = "the string 'AWSPowerShell.NetCore'"; Spec = 'AWSPowerShell.NetCore'; Name = 'AWSPowerShell.NetCore' }
+        @{ Case = "the string 'awspowershell.netcore' in another case"; Spec = 'awspowershell.netcore'; Name = 'awspowershell.netcore' }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Spec = $Spec; Name = $Name } {
+            param($Spec, $Name)
+            Mock 'Find-LambdaPSModule'
+            $closure = Get-LambdaPSModuleClosure -Module @(@{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' }, $Spec)
+            $closure.Error.FullyQualifiedErrorId | Should -Be 'AWSPowerShellModuleNotSupported'
+            $closure.Error.CategoryInfo.Category | Should -Be 'InvalidArgument'
+            $closure.Error.TargetObject | Should -Be $Name
+            $closure.Error.Exception.Message | Should -BeLike "Module '$Name' (-IncludeModule or -Module) is too large to package for Lambda. Require the AWS.Tools.* modules *"
+            @($closure.Resolved).Count | Should -Be 0
+            Should -Invoke 'Find-LambdaPSModule' -Times 0 -Exactly
+        }
+    }
+
+    It 'checks the AWSPowerShell names exactly, so a module whose name only starts with one is not refused' {
+        InModuleScope $script:moduleName {
+            $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell.Extensions'
+            $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleVersionRequired'
+        }
+    }
+
     It 'returns ModuleNotFoundLocally for a missing module only with -RequireAll' {
         InModuleScope $script:moduleName {
             $spec = @{ ModuleName = 'LambdaPSFake.NotInstalled'; RequiredVersion = '1.0.0' }

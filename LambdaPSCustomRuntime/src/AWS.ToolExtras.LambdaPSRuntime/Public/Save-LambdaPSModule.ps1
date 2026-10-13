@@ -41,6 +41,9 @@ function Save-LambdaPSModule {
         production use; modules that came from PSGallery get a second warning that PSGallery is not
         recommended as a direct production dependency.
         Errors it can stop with (FullyQualifiedErrorId starts with):
+          AWSPowerShellModuleNotSupported
+                                      a -Module specification that names AWSPowerShell or
+                                      AWSPowerShell.NetCore, which are too large for Lambda
           ModuleVersionRequired       a -Module specification without an exact RequiredVersion
           DependencyNameIsPath, DependencyNameMissing, DependencyVersionUnpinned
                                       a RequiredModules entry that names a path, has no name, or

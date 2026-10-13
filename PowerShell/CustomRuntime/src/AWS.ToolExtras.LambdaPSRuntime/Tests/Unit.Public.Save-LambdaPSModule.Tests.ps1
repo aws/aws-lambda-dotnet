@@ -58,6 +58,13 @@ Describe 'Save-LambdaPSModule' -Tag 'Unit' {
             Should -Throw -ErrorId 'ModuleVersionRequired,Save-LambdaPSModule'
     }
 
+    It 'stops with AWSPowerShellModuleNotSupported for -Module AWSPowerShell, writing nothing' {
+        $target = Join-Path $TestDrive 'monolithic'
+        { Save-LambdaPSModule -Module 'AWSPowerShell' -Path $target } |
+            Should -Throw -ErrorId 'AWSPowerShellModuleNotSupported,Save-LambdaPSModule'
+        Test-Path -LiteralPath $target | Should -BeFalse
+    }
+
     It 'downloads an installed module from -ModuleRepository instead of copying the installed one' {
         $installed = Join-Path $TestDrive 'mirror-installed'
         $null = New-FakeModule -Root $installed -Name 'LambdaPSFake.Mirrored' -Version '1.0.0'
