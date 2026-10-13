@@ -143,7 +143,7 @@ Describe 'build.ps1 integration suite' -Tag 'Component' {
         try {
             Mock Import-Module { }
             function Invoke-Pester { param($Configuration) }
-            $testsPath = [System.IO.Path]::Combine($TestDrive, 'Tests')
+            Set-Variable -Name testsPath -Value ([System.IO.Path]::Combine($TestDrive, 'Tests'))
             Set-Variable -Name sourceGlob -Value @([System.IO.Path]::Combine($TestDrive, 'Public', '*.ps1'))
             Set-Variable -Name SkipCoverage -Value $false
             . $script:invokeTestFile
