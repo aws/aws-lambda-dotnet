@@ -12,8 +12,8 @@ function Copy-LambdaPSModuleFolder {
         copied in full rather than matching nothing.
 
         A new destination is written as a dot-prefixed sibling folder (.<Version>.partial-<random>)
-        and renamed into place only when the copy is complete (retried briefly while Windows reports
-        the folder in use). The sibling is removed in a finally block, which also runs when the copy
+        and renamed into place only when the copy is complete (retried briefly on an I/O or access
+        error, which on Windows is usually a scanner holding the new folder). The sibling is removed in a finally block, which also runs when the copy
         is stopped (Ctrl+C), so a failed or stopped copy never leaves a partial module version that a
         later run would trust. An existing destination is copied into in place and left for its owner
         if the copy fails. The caller has already confirmed the write.
@@ -54,8 +54,9 @@ function Copy-LambdaPSModuleFolder {
     try {
         Copy-LambdaPSFolderContent -Path $Path -Destination $staging
         # On Windows an antivirus scanner or the search indexer can hold a handle on a fresh folder for
-        # a moment, so the rename fails as "in use". Retry briefly; a destination that appeared in the
-        # meantime is a conflict and fails at once, as does any other error.
+        # a moment, so the rename fails as "in use". Any I/O or access error is retried briefly, on
+        # every OS; a destination that appeared in the meantime is a conflict and fails at once, as
+        # does any other error.
         for ($attempt = 1; ; $attempt++) {
             if (Test-Path -LiteralPath $Destination) {
                 throw [System.IO.IOException]::new("Cannot move '$staging' to '$Destination': the destination already exists.")

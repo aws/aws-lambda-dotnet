@@ -5,7 +5,7 @@ function Get-LambdaPSModulePinError {
     .DESCRIPTION
         The single source of the exact-pin rule, applied to every module set by
         Get-LambdaPSModuleClosure and, for '#Requires -Modules' (so the error can name the script),
-        by Compress-LambdaPSFunctionPackage. A specification is acceptable only when it pins an exact
+        by the packagers (Compress-LambdaPSFunctionPackage and Build-LambdaPSRuntimePackage). A specification is acceptable only when it pins an exact
         RequiredVersion: the RequiredVersion property must be set AND both the minimum-version
         property (Version) and the MaximumVersion property must be null. Minimum-version specs and
         version-range specs are rejected; this tooling never resolves 'latest'.

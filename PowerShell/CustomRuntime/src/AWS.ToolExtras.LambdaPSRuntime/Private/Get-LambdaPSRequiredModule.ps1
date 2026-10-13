@@ -8,11 +8,15 @@ function Get-LambdaPSRequiredModule {
         ScriptRequirements.RequiredModules). This lets a customer declare a function's bundled modules
         inline in the handler, as an alternative to passing them through -IncludeModule.
 
-        This helper only extracts; it does not enforce the exact-pin rule. Compress-LambdaPSFunctionPackage
-        validates each returned specification with Get-LambdaPSModulePinError, which also decides
-        -IncludeModule pins, so there is a single place that decides what an acceptable pin is. It returns an array (empty
-        when the script declares no module requirements). It reads the file only and makes no AWS
-        call.
+        It does not enforce the exact-pin rule: the packagers (Compress-LambdaPSFunctionPackage and
+        Build-LambdaPSRuntimePackage) validate each returned specification with
+        Get-LambdaPSModulePinError, which also decides -IncludeModule pins, so there is a single place
+        that decides what an acceptable pin is. It returns an array (empty when the script declares no
+        module requirements). It reads the file only and makes no AWS call.
+
+        It stops with HandlerScriptNotFound when -Path is not a file, and with
+        AWSPowerShellModuleNotSupported when the script requires AWSPowerShell or AWSPowerShell.NetCore
+        (Get-LambdaPSAWSPowerShellModuleReason gives each module's reason).
     .PARAMETER Path
         The handler script (.ps1) to read the '#Requires -Modules' statements from.
     .OUTPUTS

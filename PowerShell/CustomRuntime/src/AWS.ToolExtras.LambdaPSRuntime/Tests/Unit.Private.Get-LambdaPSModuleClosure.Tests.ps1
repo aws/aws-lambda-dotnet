@@ -181,6 +181,9 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure = Get-LambdaPSModuleClosure -Module $specs -SearchPath $root
             $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleVersionConflict'
             $closure.Error.Exception.Message | Should -BeLike "*1.0.0 (requested), 1.0 (required by LambdaPSFake.Exact 1.0.0)*"
+            # A dependency's version is its parent's manifest entry, so the advice is not to pin it.
+            $closure.Error.Exception.Message | Should -BeLike ("*change the version requested in -Module, or choose another " +
+                "version of the module that requires 'LambdaPSFake.Base', so that one version satisfies them all.*")
         }
     }
 
@@ -515,6 +518,20 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             $closure = Get-LambdaPSModuleClosure -Module 'AWSPowerShell.Extensions'
             $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleVersionRequired'
+        }
+    }
+
+    It 'says a dependency with only a MaximumVersion has no pin, not no version' {
+        $root = Join-Path $TestDrive 'closure-maximum-only'
+        $null = New-FakeModule -Root $root -Name 'LambdaPSFake.Top' -Version '1.0.0' `
+            -Requires "@(@{ ModuleName = 'LambdaPSFake.Dep'; MaximumVersion = '1.9.0' })"
+
+        InModuleScope $script:moduleName -Parameters @{ root = $root } {
+            param($root)
+            $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Top'; RequiredVersion = '1.0.0' } -SearchPath $root
+            $closure.Error.FullyQualifiedErrorId | Should -Be 'DependencyVersionUnpinned'
+            $closure.Error.Exception.Message | Should -BeLike ("Dependency 'LambdaPSFake.Dep' of module 'LambdaPSFake.Top' 1.0.0 has only a " +
+                "MaximumVersion ('1.9.0'), which is not a pin. *")
         }
     }
 

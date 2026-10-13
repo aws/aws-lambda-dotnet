@@ -10,8 +10,8 @@ function Get-LambdaPSModuleDependency {
         RequiredModules entries from the module's .psd1 manifest.
 
         Each entry is returned as Name, Version, Kind ('Exact' or 'Minimum') and MaximumVersion (or
-        $null). An entry with no version (a bare name, or a hashtable with only ModuleName) has an
-        empty Version and Kind 'Minimum'; the walk rejects it. When the manifest cannot be read, the
+        $null). An entry with no version (a bare name, a hashtable with only ModuleName, or one with
+        only a MaximumVersion) has an empty Version and Kind 'Minimum'; the walk rejects it. When the manifest cannot be read, the
         PSModuleInfo entries are returned as 'Exact', which is the strictest reading.
     .PARAMETER Module
         The PSModuleInfo of the module (from Get-Module -ListAvailable).

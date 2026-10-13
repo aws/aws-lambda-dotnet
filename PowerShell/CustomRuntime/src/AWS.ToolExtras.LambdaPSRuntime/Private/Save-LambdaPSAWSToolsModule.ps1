@@ -105,7 +105,8 @@ function Save-LambdaPSAWSToolsModule {
     }
     catch {
         $message = "Could not import AWS.Tools.Installer $($installer.Version): $($_.Exception.Message) " +
-            'AWS.Tools.Installer requires the PowerShellGet module to be present.'
+            'AWS.Tools.Installer requires the PowerShellGet module; if PowerShellGet is installed, the ' +
+            'error above is the cause.'
         # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the error
         # with its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would also reach the
         # caller's -ErrorVariable naming this internal helper.

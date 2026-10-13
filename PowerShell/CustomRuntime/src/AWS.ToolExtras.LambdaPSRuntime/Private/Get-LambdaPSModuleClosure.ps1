@@ -359,8 +359,10 @@ function Get-LambdaPSModuleClosure {
                     break
                 }
                 if ([string]::IsNullOrWhiteSpace($dependency.Version)) {
-                    $message = "Dependency '$($dependency.Name)' of module '$($item.Name)' $version has no " +
-                        "version. Pinning '$($dependency.Name)' in -Module does not change that entry. " + (& $entryAdvice $item $version $dependency.Name)
+                    # A MaximumVersion alone is a ceiling, not a version this walk could choose.
+                    $what = if ($dependency.MaximumVersion) { "only a MaximumVersion ('$($dependency.MaximumVersion)'), which is not a pin" } else { 'no version' }
+                    $message = "Dependency '$($dependency.Name)' of module '$($item.Name)' $version has $what. " +
+                        "Pinning '$($dependency.Name)' in -Module does not change that entry. " + (& $entryAdvice $item $version $dependency.Name)
                     $walkError = [System.Management.Automation.ErrorRecord]::new(
                         [System.ArgumentException]::new($message, 'Module'),
                         'DependencyVersionUnpinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $dependency.Name)
@@ -390,8 +392,8 @@ function Get-LambdaPSModuleClosure {
                         "$range ($($_.RequiredBy))"
                     } | Select-Object -Unique) -join ', '
                 $message = "Module '$name' is needed at more than one version: $detail. A function loads a " +
-                    'single version of a module, so pin every request and dependency to one version that ' +
-                    'satisfies them all.'
+                    "single version of a module: change the version requested in -Module, or choose another " +
+                    "version of the module that requires '$name', so that one version satisfies them all."
                 $walkError = [System.Management.Automation.ErrorRecord]::new(
                     [System.ArgumentException]::new($message, 'Module'),
                     'ModuleVersionConflict', [System.Management.Automation.ErrorCategory]::InvalidArgument, $name)

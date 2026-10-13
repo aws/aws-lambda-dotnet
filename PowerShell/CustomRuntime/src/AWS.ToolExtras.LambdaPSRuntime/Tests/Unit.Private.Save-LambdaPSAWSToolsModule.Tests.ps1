@@ -189,8 +189,11 @@ function Install-AWSToolsModule {
             Mock 'Get-Module' -ParameterFilter { $ListAvailable -and $Name -eq 'AWS.Tools.Installer' } -MockWith { }
             Mock 'Save-LambdaPSModuleFromRepository' -MockWith { throw 'an installer saved earlier in the run must be reused' }
 
-            { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir } |
-                Should -Throw -ErrorId 'AWSToolsInstallerImportFailed'
+            $err = { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir } |
+                Should -Throw -ErrorId 'AWSToolsInstallerImportFailed' -PassThru
+            # The import's own error comes first; PowerShellGet is named as one possible cause, not the cause.
+            $err.Exception.Message | Should -BeLike ("Could not import AWS.Tools.Installer 2.0.9: *LambdaPSFake.NotInstalled* " +
+                'AWS.Tools.Installer requires the PowerShellGet module; if PowerShellGet is installed, the error above is the cause.')
         }
     }
 

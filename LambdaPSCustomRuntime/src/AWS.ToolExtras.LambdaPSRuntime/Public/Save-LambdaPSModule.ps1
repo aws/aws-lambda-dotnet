@@ -56,7 +56,9 @@ function Save-LambdaPSModule {
                                       a module is present only under another spelling of its version,
                                       or the versions do not settle
           ModuleRepositoryNotFound    a -ModuleRepository name or pattern that matches no registered
-                                      repository, or one PSResourceGet cannot use
+                                      repository, or one PSResourceGet cannot use; or, when
+                                      AWS.Tools.Installer must be fetched without -ModuleRepository,
+                                      PSGallery is not registered
           ModuleInstallerNotFound, AWSToolsInstallerImportFailed, ModuleDownloadFailed
                                       PSResourceGet is missing, AWS.Tools.Installer cannot be
                                       imported, or a download fails
