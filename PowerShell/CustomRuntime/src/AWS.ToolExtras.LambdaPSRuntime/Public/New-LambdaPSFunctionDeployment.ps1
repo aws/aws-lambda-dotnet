@@ -166,7 +166,8 @@ function New-LambdaPSFunctionDeployment {
         omitted, a redeploy leaves the existing environment unchanged. The runtime reads two settings of
         its own from the environment: POWERSHELL_RUNTIME_VERBOSE (TRUE writes the runtime's own progress
         to the function log) and POWERSHELL_RUNTIME_JSON_DEPTH (1-100, the depth to which the handler's
-        output is serialized to JSON; 100 by default).
+        output is serialized to JSON; 100 by default, and an invalid value uses 100 and writes a warning
+        to the function log).
     .PARAMETER PackagePath
         Where to write the packaged .zip. Defaults to ./<FunctionName>.zip under the current location.
     .OUTPUTS
