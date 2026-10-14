@@ -63,6 +63,10 @@ function New-LambdaPSRuntimeDeployment {
         read-only preflights run under -WhatIf too, so a deploy that would fail on them fails there
         as well.
 
+        Progress lines (the Docker toolchain found, the target image URI, and each stage as it
+        completes) are written to the Information stream with the tag LambdaPSDeploy, so they are
+        shown only with -InformationAction Continue; -InformationVariable collects them.
+
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
                                 UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
@@ -80,7 +84,9 @@ function New-LambdaPSRuntimeDeployment {
                                 DependencyNameMissing, DependencyNameIsPath, DependencyVersionUnpinned,
                                 ModuleClosureNotSettled, ModuleNotFoundLocally,
                                 ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleFolderIncomplete
-                                (a module version folder with no <Name>.psd1),
+                                (a module version folder with no <Name>.psd1), ModuleGuidMismatch (the
+                                module's name and version exist only with another GUID than the one
+                                -IncludeModule names),
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
           build and push        ExternalToolFailed, EcrDockerLoginFailed
           publish               RuntimeVersionNotActive, RuntimeVersionTimeout, RuntimeVersionWaitFailed
@@ -119,16 +125,18 @@ function New-LambdaPSRuntimeDeployment {
         anything is downloaded.
     .PARAMETER Region
         The AWS region to deploy into. When omitted, the region AWS.Tools would use: the shell's
-        default (Set-DefaultAWSRegion), the -ProfileName profile's region, the default profile's
-        region, AWS_REGION, the AWS_PROFILE profile's region, or the instance or container's.
+        default (Set-DefaultAWSRegion, including one a calling script set for itself), the
+        -ProfileName profile's region, the default profile's region, AWS_REGION, the AWS_PROFILE
+        profile's region, or the instance or container's.
         AWS_DEFAULT_REGION is not read. With none of those it fails with RegionNotResolved. Region
         names are lowercase, so a region given in another case (US-EAST-1) is used as us-east-1.
     .PARAMETER ProfileName
         The name of the AWS credential profile to use, as for any AWS.Tools cmdlet. When no credential
-        parameter is given, AWS.Tools resolves credentials the usual way: the shell's default
-        (Set-AWSCredential), environment variables, the default profile, or the instance or container
-        role. A -ProfileName that is not in the local credential store (read from -ProfileLocation
-        when given) stops the deploy with ProfileNotFound before any AWS call.
+        parameter is given, credentials set with Set-AWSCredential are used, including ones a calling
+        script set for itself; otherwise AWS.Tools resolves them the usual way: environment variables,
+        the default profile, or the instance or container role. A profile that is not found (in
+        -ProfileLocation, or the default credential stores) fails with ProfileNotFound before any AWS
+        call.
     .PARAMETER ProfileLocation
         The location of the shared credentials file, as for any AWS.Tools cmdlet. Used with
         -ProfileName.
@@ -179,10 +187,10 @@ function New-LambdaPSRuntimeDeployment {
         -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
         when its stage ran, and declining that stage alone is warned about with the command that points it.
     .EXAMPLE
-        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 -Region us-east-1
+        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 -Region us-east-1 -InformationAction Continue
 
         Runs the full flow with the ECR repository defaulted to the runtime name, alias 'production',
-        version 'v1', and x86_64 architecture.
+        version 'v1', and x86_64 architecture, showing a progress line as each stage completes.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
 
