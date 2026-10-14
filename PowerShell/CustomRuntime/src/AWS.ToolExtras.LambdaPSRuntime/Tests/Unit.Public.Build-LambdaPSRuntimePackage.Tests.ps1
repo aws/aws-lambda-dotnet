@@ -273,6 +273,25 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         (Get-FileHash -LiteralPath $tarball -Algorithm SHA256).Hash | Should -Be $before
     }
 
+    # The tarball is extracted straight into the package, so a link in it would ship the file it points to.
+    It 'throws PackageEntryIsLink for a -PwshArchivePath tarball that holds a link, writing no package' -Skip:$IsWindows {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'layer-tar-link')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $linkSrc = [System.IO.Path]::Combine($TestDrive, 'link-pwsh-src')
+        $null = New-Item -ItemType Directory -Path $linkSrc
+        Copy-Item -LiteralPath ([System.IO.Path]::Combine($TestDrive, 'fake-pwsh-src', 'pwsh')) -Destination $linkSrc
+        $outside = [System.IO.Path]::Combine($TestDrive, 'outside-credentials')
+        Set-Content -LiteralPath $outside -Value 'secret'
+        $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($linkSrc, 'libfoo.so')) -Target $outside
+        $tarball = [System.IO.Path]::Combine($TestDrive, 'link-pwsh.tar.gz')
+        & $script:tar -czf $tarball -C $linkSrc .
+        $out = [System.IO.Path]::Combine($TestDrive, 'layer-tar-link.zip')
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $tarball -WarningAction SilentlyContinue } |
+            Should -Throw -ErrorId 'PackageEntryIsLink,Build-LambdaPSRuntimePackage'
+        Test-Path -LiteralPath $out | Should -BeFalse
+    }
+
     It 'throws OutFileExists when the destination exists without -Force' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-proj2')
         $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer

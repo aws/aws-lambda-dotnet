@@ -118,6 +118,28 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
         @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
     }
 
+    # A file link would ship the file it points to, which can be outside -Path; a folder link would ship nothing.
+    It 'refuses a <Case>, writing no package' -ForEach @(
+        @{ Case = 'file link to a file outside -Path'; Folder = $false }
+        @{ Case = 'folder link'; Folder = $true }
+    ) {
+        if ($IsWindows) { Set-ItResult -Skipped -Because 'creating a symbolic link needs elevation on Windows'; return }
+        $stage = Join-Path $TestDrive "link-stage-$Folder"
+        $null = New-Item -ItemType Directory -Path (Join-Path $stage 'powershell/dir') -Force
+        'a' | Set-Content -LiteralPath (Join-Path $stage 'powershell/dir/a.txt')
+        $outside = Join-Path $TestDrive "outside-$Folder.txt"
+        'secret' | Set-Content -LiteralPath $outside
+        $target = if ($Folder) { Join-Path $stage 'powershell/dir' } else { $outside }
+        $null = New-Item -ItemType SymbolicLink -Path (Join-Path $stage 'powershell/linked') -Target $target
+        $zip = Join-Path $TestDrive "link-out-$Folder/package.zip"
+
+        { InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+                param($Stage, $Zip)
+                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+            } } | Should -Throw -ErrorId 'PackageEntryIsLink'
+        Test-Path -LiteralPath $zip | Should -BeFalse
+    }
+
     It 'names a file in a subfolder with a forward slash' {
         $stage = Join-Path $TestDrive 'subfolder-stage'
         $null = New-Item -ItemType Directory -Path (Join-Path $stage 'lib') -Force

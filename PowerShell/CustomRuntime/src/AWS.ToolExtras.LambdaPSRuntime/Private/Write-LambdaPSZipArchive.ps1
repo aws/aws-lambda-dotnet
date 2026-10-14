@@ -17,6 +17,8 @@ function Write-LambdaPSZipArchive {
             the OS it runs on (Windows, on a Windows build host).
           - Top-level files named in -ExcludeTopLevel are left out (case-insensitive); nested files of
             the same name are kept.
+          - A file or folder that is a link fails with PackageEntryIsLink: the package holds files, and a
+            link would ship whatever it points to, inside -Path or not.
           - Off Windows, where '\' is an ordinary file-name character, a file with '\' in its name
             fails with BackslashInFileName: Lambda would extract it as a different path.
           - The archive is written to a temporary file beside -DestinationPath and moved into place
@@ -86,8 +88,17 @@ function Write-LambdaPSZipArchive {
             # files give the same bytes whatever the file system's listing order and the files' modification
             # times.
             $files = [System.Collections.Generic.SortedDictionary[string, System.IO.FileInfo]]::new([System.StringComparer]::Ordinal)
-            foreach ($file in Get-ChildItem -LiteralPath $sourceFull -Recurse -File -Force) {
+            foreach ($file in Get-ChildItem -LiteralPath $sourceFull -Recurse -Force) {
                 $entryName = [System.IO.Path]::GetRelativePath($sourceFull, $file.FullName)
+                # A link would ship what it points to (a file link is read through, which can reach a file
+                # outside -Path) or nothing (a folder link is not walked), so the stage must hold no links.
+                if ($null -ne $file.LinkTarget) {
+                    throw [System.Management.Automation.ErrorRecord]::new(
+                        [System.IO.IOException]::new(
+                            "'$entryName' in the package is a link (to '$($file.LinkTarget)'). The package must hold the file itself, not a link to it."),
+                        'PackageEntryIsLink', [System.Management.Automation.ErrorCategory]::InvalidData, $entryName)
+                }
+                if ($file.PSIsContainer) { continue }
                 # Only Windows separates folders with '\'. Elsewhere it is part of a file name, and a zip entry
                 # name that holds it would be extracted as a different path (or replace another file).
                 if ($IsWindows) { $entryName = $entryName -replace '\\', '/' }

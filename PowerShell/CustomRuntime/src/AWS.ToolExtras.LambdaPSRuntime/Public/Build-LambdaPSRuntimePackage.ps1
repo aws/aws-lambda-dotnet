@@ -50,7 +50,7 @@ function Build-LambdaPSRuntimePackage {
             is the -PwshArchivePath tarball).
           - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
-            ContextCompileFailed.
+            ContextCompileFailed, PackageEntryIsLink (a link in the tarball).
           - The handler's modules (SelfContainedZip only): ModuleNameInvalid (a #Requires naming a wildcard
             or a path), ModuleVersionRequired (a #Requires that does not pin an exact RequiredVersion), AWSPowerShellModuleNotSupported (a #Requires on the
             AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
