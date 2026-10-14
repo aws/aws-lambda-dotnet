@@ -132,6 +132,8 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             $err = { Build-LambdaPSRuntimeImage -Path $script:unpinned -Tag 'rt:v1' -Architecture arm64 } |
                 Should -Throw -ErrorId 'PwshArm64HashNotPinned,Build-LambdaPSRuntimeImage' -PassThru
             $err.Exception.Message | Should -BeLike '*-Architecture x86_64*'
+            $err.Exception.Message | Should -BeLike '*powershell-7.4.2-linux-arm64.tar.gz*'
+            $err.CategoryInfo.Category | Should -Be 'InvalidArgument'
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Test-LambdaPSContainerRuntime' -Times 0 -Exactly
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 0 -Exactly
         }
@@ -196,6 +198,20 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             $null = New-Item -ItemType Directory -Path $noDockerfile -Force
             { Build-LambdaPSRuntimeImage -Path $noDockerfile -Tag 'rt:v1' } |
                 Should -Throw -ErrorId 'DockerfileNotFound,Build-LambdaPSRuntimeImage'
+        }
+
+        # A container-free project has no Dockerfile, so the error names the cmdlet that builds it.
+        It 'names <Cmdlet> when the project without a Dockerfile is <Case>' -ForEach @(
+            @{ Case = 'a Layer project'; Cmdlet = 'Build-LambdaPSRuntimePackage' }
+            @{ Case = 'a function project'; Cmdlet = 'Compress-LambdaPSFunctionPackage' }
+        ) {
+            $proj = [System.IO.Path]::Combine($TestDrive, "no-dockerfile-$Cmdlet")
+            if ($Cmdlet -eq 'Build-LambdaPSRuntimePackage') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer }
+            else { $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' }
+
+            $err = { Build-LambdaPSRuntimeImage -Path $proj -Tag 'rt:v1' } |
+                Should -Throw -ErrorId 'DockerfileNotFound,Build-LambdaPSRuntimeImage' -PassThru
+            $err.Exception.Message | Should -BeLike "*$Cmdlet*"
         }
 
         It 'propagates a docker failure and emits no success object' {

@@ -19,7 +19,7 @@ function Build-LambdaPSRuntimePackage {
              staged under modules/ the way Compress-LambdaPSFunctionPackage does. The folder is copied
              with its hidden files, so keep secrets such as .env files out of it, and by the same rules as
              Compress-LambdaPSFunctionPackage, whose help lists what is left out (.git, links that leave
-             the folder or loop back into it, -OutFile, ...) and which skips warn; a zip file at the top
+             the folder or loop back into it, -OutFile and its .partial files, ...) and which skips warn; a zip file at the top
              level ships with a warning. The project's lambdaps-runtime.json and README.md at its top
              level are left out too. A required file (bootstrap, runtime.ps1,
              PowerShellLambdaContext.cs) that is a link leaving the project is not packaged, so the build
@@ -57,7 +57,8 @@ function Build-LambdaPSRuntimePackage {
             AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
             DependencyVersionUnpinned, ModuleNotFoundLocally (-MissingModuleAction Stop),
-            ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleInstallerNotFound,
+            ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleFolderIncomplete (a module version
+            folder with no <Name>.psd1), ModuleInstallerNotFound,
             AWSToolsInstallerImportFailed.
     .PARAMETER Path
         The scaffolded project directory (as produced by New-LambdaPSRuntimeProject -Target Layer or
@@ -104,7 +105,8 @@ function Build-LambdaPSRuntimePackage {
         available version only in a trailing .0 fails with ModuleVersionSpelling.
     .PARAMETER ModuleRepository
         For SelfContainedZip (ignored, with a warning, for a Layer): the PSResourceGet repositories to
-        download non-AWS.Tools modules from, in order, as on Compress-LambdaPSFunctionPackage. Every name must match a registered PSResourceGet repository, or the
+        download non-AWS.Tools modules from, in order, as on Compress-LambdaPSFunctionPackage. Every
+        name, or pattern with `*` wildcards, must match a registered PSResourceGet repository, or the
         cmdlet stops with ModuleRepositoryNotFound before anything is downloaded.
     .PARAMETER Force
         Overwrite the destination .zip if it already exists.
@@ -120,9 +122,9 @@ function Build-LambdaPSRuntimePackage {
 
         Builds the Lambda layer .zip for the scaffolded layer project, no Docker.
     .EXAMPLE
-        Build-LambdaPSRuntimePackage -Path ./fn -OutFile ./fn.zip -Architecture arm64 -PwshArchivePath ./powershell-7.4.20-linux-arm64.tar.gz
+        Build-LambdaPSRuntimePackage -Path ./hello -OutFile ./hello.zip -Architecture arm64 -PwshArchivePath ./powershell-7.4.20-linux-arm64.tar.gz
 
-        Builds an arm64 self-contained function .zip from a pre-vetted pwsh tarball.
+        Builds an arm64 .zip of the self-contained function project ./hello from a pre-vetted pwsh tarball.
     #>
     [CmdletBinding(SupportsShouldProcess, PositionalBinding = $false)]
     [OutputType('AWS.ToolExtras.LambdaPSRuntime.RuntimePackage')]
@@ -449,7 +451,9 @@ function Build-LambdaPSRuntimePackage {
             #    marker and README are scaffolding, and powershell/ and the DLL are this build's outputs.
             $exclude = @('lambdaps-runtime.json', 'README.md', 'PowerShellLambdaContext.dll', 'powershell') |
                 ForEach-Object { [System.IO.Path]::Combine($root, $_) }
-            Copy-LambdaPSFunctionSource -Path $root -Destination $stage -ExcludePath (@($exclude) + $destination)
+            # The partial .zip an interrupted run left beside -OutFile is never part of the project.
+            $partials = @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetDirectoryName($destination)) -Filter "$([System.IO.Path]::GetFileName($destination)).*.partial" -File -Force -ErrorAction SilentlyContinue | ForEach-Object FullName)
+            Copy-LambdaPSFunctionSource -Path $root -Destination $stage -ExcludePath (@($exclude) + $destination + $partials)
             # The required files are checked again in what was staged: one that is a link leaving the project
             # is skipped by the copy, and the package would not start without it.
             foreach ($required in @('bootstrap', 'runtime.ps1', 'PowerShellLambdaContext.cs')) {

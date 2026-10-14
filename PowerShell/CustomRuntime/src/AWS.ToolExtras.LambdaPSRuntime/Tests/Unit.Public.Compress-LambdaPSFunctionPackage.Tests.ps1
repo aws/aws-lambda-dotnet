@@ -141,6 +141,22 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
         }
     }
 
+    # An interrupted run leaves <OutFile>.<random>.partial beside -OutFile; inside the folder it is not code.
+    Context 'a partial package left in the folder by an interrupted run' {
+        It 'leaves it out of the package' {
+            $project = [System.IO.Path]::Combine($TestDrive, 'fn-partial')
+            $null = New-LambdaPSFunctionProject -Path $project -Handler 'handler'
+            $outFile = [System.IO.Path]::Combine($project, 'fn.zip')
+            Set-Content -LiteralPath "$outFile.abc123.partial" -Value 'half a zip'
+
+            $null = Compress-LambdaPSFunctionPackage -Path $project -OutFile $outFile
+
+            $entries = Get-ZipEntryNames -ZipPath $outFile
+            $entries | Should -Contain 'handler.ps1'
+            @($entries | Where-Object { $_ -like '*.partial' }) | Should -BeNullOrEmpty
+        }
+    }
+
     # A name starting with '.' is hidden on Linux and macOS; it is still the function's folder.
     Context 'a project folder whose name starts with a dot' {
         It 'packages it' {

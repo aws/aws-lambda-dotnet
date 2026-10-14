@@ -3,9 +3,9 @@ function Test-LambdaPSContainerRuntime {
     .SYNOPSIS
         Preflights the Docker CLI used to build Lambda runtime and container-function images.
     .DESCRIPTION
-        Preflight probe used by the deployment orchestrator. It checks that the 'docker' CLI is on
-        PATH and that its 'buildx' subcommand is available, because that is exactly what the image
-        build shells out to:
+        Preflight probe that New-LambdaPSRuntimeDeployment and Build-LambdaPSRuntimeImage run. It checks
+        that the 'docker' CLI is on PATH and that its 'buildx' subcommand is installed, because that is
+        exactly what the image build shells out to:
 
             docker buildx build --provenance=false --output type=image,oci-mediatypes=false ...
 
@@ -32,7 +32,7 @@ function Test-LambdaPSContainerRuntime {
     .EXAMPLE
         Test-LambdaPSContainerRuntime
 
-        Confirms docker and docker buildx are usable and returns the CLI path.
+        Confirms docker and docker buildx are installed and returns the CLI path. The docker daemon is not checked.
     .EXAMPLE
         (Test-LambdaPSContainerRuntime).BuildxVersion
 

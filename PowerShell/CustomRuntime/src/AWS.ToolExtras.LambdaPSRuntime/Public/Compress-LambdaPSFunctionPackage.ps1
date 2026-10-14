@@ -31,7 +31,8 @@ function Compress-LambdaPSFunctionPackage {
 
         A folder is packaged with its hidden files, so keep secrets such as .env files out of it. Always
         left out, silently: .git directories and links into them, -OutFile itself when it is inside the
-        folder, and links to it or to another excluded path. Left out with a warning: symbolic links
+        folder, the <OutFile>.*.partial files an interrupted run leaves beside it, and links to any of
+        these or to another excluded path. Left out with a warning: symbolic links
         that point outside the folder, links to something that does not exist, links whose target
         cannot be resolved (for example two links that point at each other), and folder links back to
         a folder they were reached through (the folder itself, a folder above the link, or two folders
@@ -56,7 +57,8 @@ function Compress-LambdaPSFunctionPackage {
             that names the AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
             DependencyVersionUnpinned, ModuleNotFoundLocally (-MissingModuleAction Stop),
-            ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleInstallerNotFound,
+            ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleFolderIncomplete (a module version
+            folder with no <Name>.psd1), ModuleInstallerNotFound,
             AWSToolsInstallerImportFailed.
     .PARAMETER Path
         The function code to package: a folder, or a single .ps1 script. Alias: -ProjectPath.
@@ -91,8 +93,9 @@ function Compress-LambdaPSFunctionPackage {
         so a same-named package in a higher-priority feed would be used. AWS.Tools modules always come
         from the AWS.Tools.zip that AWS.Tools.Installer downloads; when the installer itself must be
         fetched, it comes from these repositories (PSGallery when this is omitted) and, on Windows, only
-        when its Authenticode signature is valid. Every name must match a registered PSResourceGet repository, or the
-        cmdlet stops with ModuleRepositoryNotFound before anything is downloaded.
+        when its Authenticode signature is valid. Every name, or pattern with `*` wildcards, must match
+        a registered PSResourceGet repository, or the cmdlet stops with ModuleRepositoryNotFound before
+        anything is downloaded.
     .PARAMETER HandlerScript
         The handler script whose '#Requires -Modules' to read (for example 'handler.ps1'). When
         omitted, it is resolved from a manifest.json ScriptFile if present, otherwise from the sole
@@ -118,11 +121,11 @@ function Compress-LambdaPSFunctionPackage {
 
         Packages the ./hello project into ./hello.zip with the handler and modules at the root.
     .EXAMPLE
-        (Compress-LambdaPSFunctionPackage -Path ./handler.ps1 -OutFile ./hello.zip).ModulesStaged
+        (Compress-LambdaPSFunctionPackage -Path ./handler.ps1 -OutFile ./handler.zip).ModulesStaged
 
         Lists every module that ended up in the package, including dependencies.
     .EXAMPLE
-        Compress-LambdaPSFunctionPackage -Path ./handler.ps1 -OutFile ./hello.zip -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
+        Compress-LambdaPSFunctionPackage -Path ./handler.ps1 -OutFile ./handler-s3.zip -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
         Zips a single handler script plus the requested module (and any its #Requires declares).
     #>
@@ -311,7 +314,9 @@ function Compress-LambdaPSFunctionPackage {
                 Copy-Item -LiteralPath $source.FullName -Destination ([System.IO.Path]::Combine($stage, $source.Name)) -Force
             }
             else {
-                Copy-LambdaPSFunctionSource -Path $source.FullName -Destination $stage -ExcludePath $destination
+                # The partial .zip an interrupted run left beside -OutFile is never part of the code.
+                $partials = @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetDirectoryName($destination)) -Filter "$([System.IO.Path]::GetFileName($destination)).*.partial" -File -Force -ErrorAction SilentlyContinue | ForEach-Object FullName)
+                Copy-LambdaPSFunctionSource -Path $source.FullName -Destination $stage -ExcludePath (@($destination) + $partials)
             }
 
             # The handler is checked again in what was staged: one that is a link leaving the source is

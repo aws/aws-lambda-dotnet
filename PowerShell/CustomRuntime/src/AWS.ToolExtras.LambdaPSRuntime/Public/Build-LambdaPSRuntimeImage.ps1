@@ -9,6 +9,9 @@ function Build-LambdaPSRuntimeImage {
         New-LambdaPSFunctionProject -Target Container) with provenance disabled and OCI media types
         turned off, and either loads the image locally or pushes it.
 
+        A Container project's Dockerfile copies the project folder into the image with its hidden files
+        (COPY . /var/task, less what .dockerignore lists), so keep secrets such as .env files out of it.
+
         The image ships the modules in the project's modules/ folder; it does not stage a handler's
         '#Requires -Modules'. Put the modules a container function needs in modules/, with
         Save-LambdaPSModule or New-LambdaPSFunctionProject -IncludeModule.
@@ -96,23 +99,34 @@ function Build-LambdaPSRuntimeImage {
         $root = Resolve-LambdaPSPath -Path $Path
         $dockerfilePath = [System.IO.Path]::Combine($root, 'Dockerfile')
         if (-not (Test-Path -LiteralPath $dockerfilePath -PathType Leaf)) {
+            # A container-free project has no Dockerfile: name the cmdlet that builds it.
+            $marker = try { Get-LambdaPSProjectMarker -Path $root } catch { $null }
+            $functionManifest = if ($null -eq $marker) { try { Get-LambdaPSFunctionManifest -Path $root } catch { $null } }
+            $advice = if ($marker -and @('Layer', 'SelfContainedZip') -contains $marker.Target) {
+                " It is a $($marker.Target) project: build it with Build-LambdaPSRuntimePackage."
+            }
+            elseif ($null -ne $functionManifest) {
+                ' It is a function project: package it with Compress-LambdaPSFunctionPackage.'
+            }
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
-                    [System.IO.FileNotFoundException]::new("No Dockerfile found in '$Path'."),
+                    [System.IO.FileNotFoundException]::new("No Dockerfile found in '$Path'.$advice"),
                     'DockerfileNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $dockerfilePath))
         }
 
         # A version with no pinned arm64 hash is scaffolded amd64-only, with the placeholder left in the
         # Dockerfile; building it for arm64 would only fail inside docker, after the base image pull.
-        if ($Architecture -eq 'arm64' -and [System.IO.File]::ReadAllText($dockerfilePath).Contains('__PWSH_ARM64_SHA256__')) {
+        $dockerfileText = [System.IO.File]::ReadAllText($dockerfilePath)
+        if ($Architecture -eq 'arm64' -and $dockerfileText.Contains('__PWSH_ARM64_SHA256__')) {
+            $pwshVersion = if ($dockerfileText -match '(?m)^ARG PWSH_VERSION=(\S+)') { $Matches[1] } else { '<version>' }
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new(
-                        ("The Dockerfile in '$Path' has no SHA256 for the pwsh arm64 tarball (__PWSH_ARM64_SHA256__ is still a " +
-                         'placeholder, because this module pins no arm64 hash for its pwsh version), so it builds linux/amd64 only. ' +
-                         'Build with -Architecture x86_64, scaffold a pwsh version that has a pinned arm64 hash, or replace the ' +
-                         'placeholder with the SHA256 of the official powershell-<version>-linux-arm64.tar.gz.')),
-                    'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidOperation, $dockerfilePath))
+                        ("The Dockerfile in '$Path' has no SHA256 for the pwsh $pwshVersion arm64 tarball (__PWSH_ARM64_SHA256__ is " +
+                         "still a placeholder, because this module pins no arm64 hash for pwsh $pwshVersion), so it builds linux/amd64 " +
+                         'only. Build with -Architecture x86_64, scaffold a pwsh version that has a pinned arm64 hash, or replace the ' +
+                         "placeholder with the SHA256 of the official powershell-$pwshVersion-linux-arm64.tar.gz.")),
+                    'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $dockerfilePath))
         }
 
         # The same docker and buildx check as the deploy preflight (DockerNotFound / DockerBuildxNotFound).
