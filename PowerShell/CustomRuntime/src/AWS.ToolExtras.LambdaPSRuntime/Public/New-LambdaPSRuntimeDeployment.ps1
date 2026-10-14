@@ -449,12 +449,16 @@ function New-LambdaPSRuntimeDeployment {
                 }
                 elseif ($state -eq 'ACTIVE') {
                     # Running the named Update-LMCRuntimeAlias points the alias at this existing version, so
-                    # say which of the alias's architectures that version lacks (none when the alias is already
-                    # on it). The note is best effort: an alias that is missing or cannot be read, or a version
-                    # that reports no architecture, gets none, and the refusal stands either way.
+                    # say which of the alias's architectures that version lacks. An alias already on the
+                    # version needs no command. The read is best effort: an alias that is missing or cannot
+                    # be read, or a version that reports no architecture, gets no note, and the refusal
+                    # stands either way.
                     $moveNote = ''
+                    $aliasOnVersion = $false
                     try {
                         $currentAlias = Get-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias -Region $Region -ClientConfig $lambdaCoreConfig @credentialParameter -ErrorAction Stop
+                        # Version names are case-sensitive.
+                        $aliasOnVersion = [string]$currentAlias.RuntimeVersion -ceq $RuntimeVersion
                         [string[]]$aliasArchitecture = Get-LambdaPSReportedArchitecture -Compatibility $currentAlias.Compatibility
                         [string[]]$droppedArchitecture = @()
                         if ($existingArchitecture.Count -gt 0) {
@@ -466,11 +470,25 @@ function New-LambdaPSRuntimeDeployment {
                                 "their next cold start until they are redeployed with -Architecture $Architecture.")
                         }
                     }
-                    catch { $moveNote = '' }
-                    (" If an earlier run published it but did not move the alias, run Update-LMCRuntimeAlias " +
-                     "-RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $RuntimeVersion -Region $Region" +
-                     "$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter) " +
-                     "(New-LMCRuntimeAlias if the alias does not exist yet).$moveNote")
+                    catch { $moveNote = ''; $aliasOnVersion = $false }
+                    if ($aliasOnVersion) {
+                        " Alias '$RuntimeAlias' already points at it."
+                    }
+                    else {
+                        (" If an earlier run published it but did not move the alias, run Update-LMCRuntimeAlias " +
+                         "-RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $RuntimeVersion -Region $Region" +
+                         "$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter) " +
+                         "(New-LMCRuntimeAlias if the alias does not exist yet).$moveNote")
+                    }
+                }
+                elseif ($state -eq 'CREATING') {
+                    # An earlier run may have stopped while the version was still being created (for example
+                    # RuntimeVersionTimeout); running again is refused, so give the commands that finish it.
+                    $commandArguments = "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)"
+                    (" It is still being created; check with Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments. " +
+                     "Once it is ACTIVE and its Compatibility.Architectures is '$Architecture', point the alias at it with " +
+                     "Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $RuntimeVersion $commandArguments " +
+                     '(New-LMCRuntimeAlias if the alias does not exist yet).')
                 }
                 else { '' }
                 $PSCmdlet.ThrowTerminatingError(

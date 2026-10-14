@@ -847,17 +847,64 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1*'
         }
 
-        It 'names no alias command for an existing version that is <State>' -ForEach @(
-            @{ State = 'FAILED' }, @{ State = 'CREATING' }
-        ) {
+        It 'names no alias command for an existing version that is FAILED' {
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'v1'; State = $State; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                [PSCustomObject]@{ Name = 'v1'; State = 'FAILED'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
             }
             $err = $null
             try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
             $err.Exception.Message | Should -Not -BeLike '*Update-LMCRuntimeAlias*'
+            $err.Exception.Message | Should -Not -BeLike '*still being created*'
+        }
+
+        # Running again is refused, so a version an earlier run left in CREATING gets the commands that finish it.
+        It 'says an existing CREATING version is still being created and gives the commands to finish it' {
+            $credentialFile = [System.IO.Path]::Combine($TestDrive, 'credentials')
+            Set-Content -LiteralPath $credentialFile -Value "[dev]`naws_access_key_id = AKIAEXAMPLE`naws_secret_access_key = example"
+            Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'v1'; State = 'CREATING'; Compatibility = [PSCustomObject]@{ Architectures = @() } }
+            }
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 -Architecture arm64 -ProfileName dev -ProfileLocation $credentialFile } catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
+            $err.Exception.Message | Should -BeLike "*version 'v1' (CREATING)*"
+            $err.Exception.Message | Should -BeLike "*untouched. It is still being created; check with Get-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile'. Once it is ACTIVE and its Compatibility.Architectures is 'arm64', point the alias at it with Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile' (New-LMCRuntimeAlias if the alias does not exist yet)."
+        }
+
+        # An alias already on the existing version needs no command; one on another version still gets it.
+        It 'names no alias command when the alias already points at the existing ACTIVE version' {
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+            }
+            Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'v1'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+            }
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
+            $err.Exception.Message | Should -BeLike "*untouched. Alias 'production' already points at it."
+            $err.Exception.Message | Should -Not -BeLike '*LMCRuntimeAlias*'
+        }
+
+        It 'names the alias command when the alias points at <Case>' -ForEach @(
+            @{ Case = 'another version'; AliasVersion = 'v0' }
+            @{ Case = 'a version whose name differs only in case'; AliasVersion = 'V1' }
+        ) {
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = $AliasVersion; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+            }
+            Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'v1'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+            }
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
+
+            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1*'
+            $err.Exception.Message | Should -Not -BeLike '*already points at it*'
         }
 
         # The service's text is one sentence of the message, ended with a full stop whether or not it has one.
