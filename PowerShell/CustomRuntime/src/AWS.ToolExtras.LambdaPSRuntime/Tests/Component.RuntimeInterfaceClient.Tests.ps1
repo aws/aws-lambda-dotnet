@@ -141,6 +141,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'accepts a 202 without error' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
+            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(202, '{"status":"OK"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -154,6 +155,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'throws, naming the status, when the response is rejected' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
+            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(413, '{"errorType":"RequestEntityTooLarge"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -168,6 +170,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'logs, rather than dies, when the error report itself is rejected' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
+            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(500, 'boom')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -181,6 +184,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'logs where the handler failed, not just the message' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
+            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $client = [System.Net.Http.HttpClient]::new([LambdaPSTests.Fakes.FixedStatusHandler]::new(202, ''))
             $handler = Join-Path $TestDrive "throws.ps1"
@@ -350,6 +354,12 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         )
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'strict.ps1')) -Value 'Set-StrictMode -Version Latest', 'function Handle { param($LambdaInput, $LambdaContext) @{ Kind = ''strict'' } }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'callerctx.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '@{ Client = $LambdaContext.ClientContext; Identity = $LambdaContext.Identity; ClientType = "$($LambdaContext.ClientContext.GetType().Name)"; IdentityType = "$($LambdaContext.Identity.GetType().Name)" }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'aliasshadow.ps1')) -Value @(
+            'function Fake-Post { ''customer post'' }'
+            'Set-Alias -Name Send-RuntimeApiRequest -Value Fake-Post -Scope Global'
+            'function Handle { param($LambdaInput, $LambdaContext) @{ From = ''alias shadow''; Id = $LambdaContext.AwsRequestId } }'
+        )
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'samename.ps1')) -Value 'function Send-RuntimeApiRequest { param($LambdaInput, $LambdaContext) @{ From = ''handler named Send-RuntimeApiRequest''; Id = $LambdaContext.AwsRequestId } }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -371,6 +381,15 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($shadowModuleRoot, 'ShadowMod.psm1')) -Value @(
             'function Send-FunctionHandlerResponse { ''customer Send-FunctionHandlerResponse'' }'
             'function Handle { param($LambdaInput, $LambdaContext) @{ From = ''shadow module''; Id = $LambdaContext.AwsRequestId } }'
+        )
+        # A handler module that exports an alias named like the runtime's request helper.
+        $aliasExportRoot = [System.IO.Path]::Combine($script:taskRoot, 'modules', 'AliasExport')
+        $null = New-Item -ItemType Directory -Path $aliasExportRoot -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($aliasExportRoot, 'AliasExport.psm1')) -Value @(
+            'function Fake-Post { ''customer post'' }'
+            'Set-Alias -Name Send-RuntimeApiRequest -Value Fake-Post'
+            'function Handle { param($LambdaInput, $LambdaContext) @{ From = ''alias export''; Id = $LambdaContext.AwsRequestId } }'
+            'Export-ModuleMember -Function Handle, Fake-Post -Alias Send-RuntimeApiRequest'
         )
         # A module no handler imports: its function loads on first use.
         $autoModuleRoot = [System.IO.Path]::Combine($script:taskRoot, 'modules', 'AutoLoad')
@@ -751,6 +770,9 @@ public class InvokeBin : PSCmdlet {
     It 'keeps its own commands when the handler defines ones of the same name (<Handler>)' -ForEach @(
         @{ Handler = 'shadow.ps1::Handle'; Expected = @{ ContextType = 'LambdaContext'; Id = 'req-1'; Own = 'customer ConvertTo-Json' } }
         @{ Handler = 'Module::ShadowMod::Handle'; Expected = @{ From = 'shadow module'; Id = 'req-1' } }
+        @{ Handler = 'aliasshadow.ps1::Handle'; Expected = @{ From = 'alias shadow'; Id = 'req-1' } }
+        @{ Handler = 'Module::AliasExport::Handle'; Expected = @{ From = 'alias export'; Id = 'req-1' } }
+        @{ Handler = 'samename.ps1::Send-RuntimeApiRequest'; Expected = @{ From = 'handler named Send-RuntimeApiRequest'; Id = 'req-1' } }
     ) {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}' -TimeoutSeconds 30)
 

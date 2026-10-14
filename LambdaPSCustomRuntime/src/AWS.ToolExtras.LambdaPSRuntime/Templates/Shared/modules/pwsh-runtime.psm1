@@ -12,3 +12,7 @@ $privateFunctionsPath = Join-Path $PSScriptRoot 'Private'
 Get-ChildItem -Path $privateFunctionsPath -Filter '*.ps1' | ForEach-Object {
     . $_.FullName
 }
+
+# The response and error senders call the request helper through this binding, not by name: a name is
+# looked up in the scope the handler shares, where a handler's alias or function of the same name wins.
+$script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}

@@ -135,11 +135,11 @@ try {
             }
         }
 
-        # The handler is called with '&', so look its name up as '&' resolves it, and literally: a function,
-        # filter, alias or cmdlet, not an executable on PATH, a wildcard pattern, or one of this runtime's
-        # own functions (which '&' cannot call). An alias is judged by the command it resolves to, which may
-        # also be a script file: an alias to nothing, to an executable or to a runtime function is refused
-        # too. A misspelled name would otherwise fail every event.
+        # Look the handler's name up as '&' resolves it, and literally: a function, filter, alias or cmdlet,
+        # not an executable on PATH, a wildcard pattern, or one of this runtime's own functions. An alias is
+        # judged by the command it resolves to, which may also be a script file: an alias to nothing, to an
+        # executable or to a runtime function is refused too. A misspelled name would otherwise fail every
+        # event. The command found here is the one each invocation runs.
         if ($private:__LambdaPSRuntimeHandler.handlerType -ne 'Script') {
             $private:__LambdaPSRuntimeCommandTypes = [System.Management.Automation.CommandTypes]'Function, Filter, Alias, Cmdlet'
             $private:__LambdaPSRuntimeAllowedTypes = @('Function', 'Filter', 'Cmdlet')
@@ -178,6 +178,7 @@ try {
                 }
                 throw [System.Management.Automation.CommandNotFoundException]::new("$private:__LambdaPSRuntimeNotFound (_HANDLER $env:_HANDLER)")
             }
+            Microsoft.PowerShell.Utility\Add-Member -InputObject $private:__LambdaPSRuntimeHandler -NotePropertyName command -NotePropertyValue $private:__LambdaPSRuntimeCommand
         }
     }
     catch {

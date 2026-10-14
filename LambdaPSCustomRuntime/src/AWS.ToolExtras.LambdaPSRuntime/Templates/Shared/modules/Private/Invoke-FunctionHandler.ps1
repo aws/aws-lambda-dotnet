@@ -33,7 +33,11 @@ function private:Invoke-FunctionHandler {
         throw [System.ArgumentException]::new(
             "The event could not be converted from JSON, so the handler was not called: $private:jsonError")
     }
-    $private:handlerCommand = if ($private:HandlerArray.handlerType -eq 'Script') { $private:HandlerArray.scriptFilePath } else { $private:HandlerArray.functionName }
+    # The runtime passes the command its start-up check resolved (in the scope the handler shares), so
+    # that command runs here, not a module command that happens to have the handler's name.
+    $private:handlerCommand = if ($private:HandlerArray.handlerType -eq 'Script') { $private:HandlerArray.scriptFilePath }
+    elseif ($private:HandlerArray.PSObject.Properties['command']) { $private:HandlerArray.command }
+    else { $private:HandlerArray.functionName }
 
     # A break or continue in the handler that is not inside a loop of its own goes up the call stack to
     # the nearest enclosing loop. For an unlabelled one this is that loop, so the call is cut short here

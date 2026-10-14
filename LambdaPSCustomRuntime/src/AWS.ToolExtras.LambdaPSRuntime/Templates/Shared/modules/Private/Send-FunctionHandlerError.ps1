@@ -55,7 +55,7 @@ function private:Send-FunctionHandlerError {
     # If the error report itself is rejected there is nothing further to tell Lambda; log why (so the
     # resulting timeout has a cause in the function log) rather than let the event loop die.
     try {
-        Send-RuntimeApiRequest $private:HttpClient $Uri $private:body $private:headers
+        & $script:SendRuntimeApiRequest $private:HttpClient $Uri $private:body $private:headers
     }
     catch {
         Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
