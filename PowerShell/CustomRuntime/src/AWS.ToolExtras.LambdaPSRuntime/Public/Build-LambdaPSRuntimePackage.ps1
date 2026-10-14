@@ -42,7 +42,8 @@ function Build-LambdaPSRuntimePackage {
         Build-LambdaPSRuntimeImage instead. This cmdlet makes no AWS API calls.
 
         Errors it can raise, by error ID:
-          - The project: ProjectNotFound, ProjectFileNotFound, ContextSourceNotFound,
+          - The project: ProjectNotFound, NotARuntimeProject (a function project: use
+            Compress-LambdaPSFunctionPackage), ProjectFileNotFound, ContextSourceNotFound,
             InvalidProjectMarker, TargetNotResolved, TargetMismatch, UnsupportedTarget,
             PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath,
             BackslashInFileName (off Windows, a file with '\' in its name).
@@ -186,6 +187,19 @@ function Build-LambdaPSRuntimePackage {
 
         # Resolve target and PowerShell version from the marker unless overridden.
         $marker = Get-LambdaPSProjectMarker -Path $root
+        # A function project (the scaffolder's manifest.json, no marker) is handler code for a runtime deployed
+        # separately: it is packaged with Compress-LambdaPSFunctionPackage, not built here.
+        if ($null -eq $marker) {
+            $functionManifest = try { Get-LambdaPSFunctionManifest -Path $root } catch { $null }
+            if ($null -ne $functionManifest) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new(
+                            ("'$Path' is a function project (it has a manifest.json from New-LambdaPSFunctionProject and no " +
+                             'lambdaps-runtime.json marker), not a runtime project. Package it with Compress-LambdaPSFunctionPackage.'), 'Path'),
+                        'NotARuntimeProject', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path))
+            }
+        }
 
         # The bootstrap is written for the scaffolded target (/opt for a layer, /var/task for a function
         # zip), so building it as the other target would give a package that does not start.

@@ -790,6 +790,19 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
             Should -Throw -ErrorId 'TargetNotResolved,Build-LambdaPSRuntimePackage' -PassThru
         $err.Exception.Message | Should -BeLike '*No lambdaps-runtime.json marker*-Target Layer*'
     }
+
+    # A function project is handler code for a separately deployed runtime, so it names the cmdlet that packages it.
+    It 'throws NotARuntimeProject naming Compress-LambdaPSFunctionPackage for a function project, <Case>' -ForEach @(
+        @{ Case = 'with no -Target'; Extra = @{} }
+        @{ Case = 'with -Target SelfContainedZip'; Extra = @{ Target = 'SelfContainedZip'; PowerShellVersion = '7.4' } }
+    ) {
+        $proj = [System.IO.Path]::Combine($TestDrive, "err-function-$($Extra.Count)")
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler'
+
+        $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, "err-function-$($Extra.Count).zip")) -PwshArchivePath $script:fakeTarball @Extra } |
+            Should -Throw -ErrorId 'NotARuntimeProject,Build-LambdaPSRuntimePackage' -PassThru
+        $err.Exception.Message | Should -BeLike '*Compress-LambdaPSFunctionPackage*'
+    }
 }
 
 # A downloaded tarball is ~70 MB in the temp folder, so every run removes it; a caller's is theirs.
