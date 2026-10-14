@@ -46,7 +46,8 @@ function Build-LambdaPSRuntimePackage {
             InvalidProjectMarker, TargetNotResolved, TargetMismatch, UnsupportedTarget,
             PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath,
             BackslashInFileName (off Windows, a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+            is the -PwshArchivePath tarball).
           - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
             ContextCompileFailed.
@@ -302,6 +303,17 @@ function Build-LambdaPSRuntimePackage {
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Output file '$destination' already exists. Use -Force to overwrite."),
                     'OutFileExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $destination))
+        }
+        # -Force replaces an existing file, so a -OutFile that is the -PwshArchivePath tarball (by its real path,
+        # every link followed) would replace the tarball with the package.
+        if (-not [string]::IsNullOrWhiteSpace($PwshArchivePath)) {
+            $comparison = if ($IsLinux) { [System.StringComparison]::Ordinal } else { [System.StringComparison]::OrdinalIgnoreCase }
+            if ([string]::Equals((Get-LambdaPSRealPath -Path $destination), (Get-LambdaPSRealPath -Path (Resolve-LambdaPSPath -Path $PwshArchivePath)), $comparison)) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new("-OutFile '$destination' is the -PwshArchivePath tarball itself, so writing the package would replace it. Write the .zip somewhere else.", 'OutFile'),
+                        'OutFileIsSource', [System.Management.Automation.ErrorCategory]::InvalidArgument, $destination))
+            }
         }
 
         # tar extracts the pwsh tarball, so a host without it fails here rather than after the download.

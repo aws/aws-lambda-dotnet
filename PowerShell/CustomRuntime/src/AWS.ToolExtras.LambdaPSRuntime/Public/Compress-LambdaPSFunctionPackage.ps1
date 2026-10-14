@@ -48,7 +48,8 @@ function Compress-LambdaPSFunctionPackage {
           - The source: ProjectNotFound, SourceNotPowerShell, NotAFunctionProject, InvalidProjectMarker,
             InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath, BackslashInFileName (off Windows,
             a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory.
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+            is the single-file -Path).
           - Modules (-IncludeModule and the handler's #Requires): ModuleNameInvalid (-IncludeModule or a
             #Requires naming a wildcard or a path), ModuleVersionRequired (a #Requires that does not pin
             an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires
@@ -201,6 +202,17 @@ function Compress-LambdaPSFunctionPackage {
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.IO.IOException]::new("Output file '$destination' already exists. Use -Force to overwrite."),
                     'OutFileExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $destination))
+        }
+        # -Force replaces an existing file, so a -OutFile that is the source itself (by its real path, every link
+        # followed) would replace the code with its own package.
+        if ($isFile) {
+            $comparison = if ($IsLinux) { [System.StringComparison]::Ordinal } else { [System.StringComparison]::OrdinalIgnoreCase }
+            if ([string]::Equals((Get-LambdaPSRealPath -Path $destination), (Get-LambdaPSRealPath -Path $source.FullName), $comparison)) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new("-OutFile '$destination' is the function code '$Path' itself, so writing the package would replace it. Write the .zip somewhere else.", 'OutFile'),
+                        'OutFileIsSource', [System.Management.Automation.ErrorCategory]::InvalidArgument, $destination))
+            }
         }
 
         # Resolve the handler script and its '#Requires -Modules' from the source, before ShouldProcess,

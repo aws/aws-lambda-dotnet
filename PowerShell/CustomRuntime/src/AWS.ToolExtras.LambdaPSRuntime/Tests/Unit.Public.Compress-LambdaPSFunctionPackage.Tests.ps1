@@ -288,6 +288,26 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
             $result.PackagePath | Should -Be ([System.IO.Path]::GetFullPath($outFile))
         }
 
+        # -Force replaces an existing -OutFile, so the source itself (or a link to it) is refused, leaving it as it was.
+        It 'throws OutFileIsSource, even with -Force, when -OutFile is <Case>' -ForEach @(
+            @{ Case = 'the single-file source'; Link = $false }
+            @{ Case = 'a link to the single-file source'; Link = $true }
+        ) {
+            if ($Link -and $IsWindows) { Set-ItResult -Skipped -Because 'creating a symbolic link needs elevation on Windows'; return }
+            $src = [System.IO.Path]::Combine($TestDrive, "only-copy-$Link.ps1")
+            Set-Content -LiteralPath $src -Value 'param($LambdaInput, $LambdaContext) ''my only copy'''
+            $outFile = if ($Link) {
+                $linkPath = [System.IO.Path]::Combine($TestDrive, "only-copy-link-$Link.zip")
+                $null = New-Item -ItemType SymbolicLink -Path $linkPath -Target $src
+                $linkPath
+            }
+            else { $src }
+
+            { Compress-LambdaPSFunctionPackage -Path $src -OutFile $outFile -Force } |
+                Should -Throw -ErrorId 'OutFileIsSource,Compress-LambdaPSFunctionPackage'
+            Get-Content -LiteralPath $src -Raw | Should -Match 'my only copy'
+        }
+
         It 'throws SourceNotPowerShell when a single-file source is not a .ps1' {
             $src = [System.IO.Path]::Combine($TestDrive, 'notes.txt')
             Set-Content -LiteralPath $src -Value 'hi'

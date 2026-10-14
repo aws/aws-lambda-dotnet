@@ -260,6 +260,19 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         @(Get-ChildItem -LiteralPath $out -Force) | Should -BeNullOrEmpty
     }
 
+    # -Force replaces an existing -OutFile, so the -PwshArchivePath tarball itself is refused, leaving it as it was.
+    It 'throws OutFileIsSource, even with -Force, when -OutFile is the -PwshArchivePath tarball' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'layer-out-tarball')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $tarball = [System.IO.Path]::Combine($TestDrive, 'own-pwsh.tar.gz')
+        Copy-Item -LiteralPath $script:fakeTarball -Destination $tarball
+        $before = (Get-FileHash -LiteralPath $tarball -Algorithm SHA256).Hash
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile $tarball -PwshArchivePath $tarball -Force } |
+            Should -Throw -ErrorId 'OutFileIsSource,Build-LambdaPSRuntimePackage'
+        (Get-FileHash -LiteralPath $tarball -Algorithm SHA256).Hash | Should -Be $before
+    }
+
     It 'throws OutFileExists when the destination exists without -Force' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-proj2')
         $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
