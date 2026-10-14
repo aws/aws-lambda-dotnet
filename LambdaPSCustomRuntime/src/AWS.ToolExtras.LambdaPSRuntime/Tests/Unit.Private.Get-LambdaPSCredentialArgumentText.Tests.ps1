@@ -20,4 +20,13 @@ Describe 'Get-LambdaPSCredentialArgumentText' -Tag 'Unit' {
             Get-LambdaPSCredentialArgumentText -CredentialParameter $Parameter | Should -BeExactly $Expected
         }
     }
+
+    It 'names Set-AWSCredential for credentials the caller''s script set rather than passed' {
+        InModuleScope $script:moduleName {
+            $parameter = @{ Credential = [object]::new() }
+            Add-Member -InputObject $parameter -NotePropertyName 'LambdaPSCredentialSource' -NotePropertyValue 'SetAWSCredential'
+            Get-LambdaPSCredentialArgumentText -CredentialParameter $parameter |
+                Should -BeExactly ' -Credential <the credentials your script set with Set-AWSCredential>'
+        }
+    }
 }

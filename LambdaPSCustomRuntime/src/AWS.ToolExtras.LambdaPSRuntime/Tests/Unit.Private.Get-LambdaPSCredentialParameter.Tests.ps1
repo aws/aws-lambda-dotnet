@@ -177,6 +177,7 @@ Describe 'Get-LambdaPSCredentialParameter with the caller''s session state' -Tag
         `$result = Get-LambdaPSCredentialParameter -BoundParameters `$PSBoundParameters $SessionStateText
         'KEYS:' + ((`$result.Keys | Sort-Object) -join ',')
         if (`$result.Credential) { 'ACCESSKEY:' + `$result.Credential.GetCredentials().AccessKey }
+        'TEXT:' + (Get-LambdaPSCredentialArgumentText -CredentialParameter `$result)
     }
     Set-Item -Path 'function:global:Invoke-LambdaPSTestDeploy' -Value `${function:Invoke-LambdaPSTestDeploy}
 }
@@ -198,6 +199,7 @@ Invoke-LambdaPSTestDeploy
 '@
         $output | Should -BeLike '*KEYS:Credential*'
         $output | Should -BeLike '*ACCESSKEY:AKIASCRIPTSCOPE*'
+        $output | Should -BeLike '*TEXT: -Credential <the credentials your script set with Set-AWSCredential>*'
     }
 
     It 'uses the profile the caller named, not the credentials a script set' {

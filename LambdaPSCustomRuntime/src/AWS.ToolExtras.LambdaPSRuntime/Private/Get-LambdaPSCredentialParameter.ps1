@@ -10,7 +10,8 @@ function Get-LambdaPSCredentialParameter {
         the shell's default credentials (Set-AWSCredential), environment variables, the default
         profile, or the instance or container role. With -SessionState, credentials the caller set
         with Set-AWSCredential in its own scope (a deploy script, for example) are returned as
-        -Credential, because the module's AWS.Tools calls cannot see them there; global ones are left
+        -Credential, because the module's AWS.Tools calls cannot see them there, and the table then
+        carries the note property LambdaPSCredentialSource = 'SetAWSCredential'. Global ones are left
         to AWS.Tools, which reads them itself.
 
         A relative -ProfileLocation is returned resolved against the current PowerShell location, so
@@ -59,7 +60,11 @@ function Get-LambdaPSCredentialParameter {
             $credentialsType = 'Amazon.Runtime.AWSCredentials' -as [type]
             if ($credentials.Count -eq 1 -and $null -ne $credentialsType) {
                 $credential = $credentials[0].PSObject.BaseObject
-                if ($credentialsType.IsInstanceOfType($credential)) { $credentialParameter.Credential = $credential }
+                if ($credentialsType.IsInstanceOfType($credential)) {
+                    $credentialParameter.Credential = $credential
+                    # A note, not a key, so the table still splats onto AWS.Tools; error messages read it.
+                    Add-Member -InputObject $credentialParameter -NotePropertyName 'LambdaPSCredentialSource' -NotePropertyValue 'SetAWSCredential'
+                }
             }
         }
     }

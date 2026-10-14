@@ -8,7 +8,8 @@ function Get-LambdaPSCredentialArgumentText {
         credentials, possibly in another account. This returns the -ProfileName the caller passed, their
         -ProfileLocation as an absolute path, and a -Credential placeholder when they passed an
         AWSCredentials object (which cannot be written out), each with a leading space; or an empty
-        string when they passed none.
+        string when they passed none. For credentials the caller's script set with Set-AWSCredential
+        (the table's LambdaPSCredentialSource note), the placeholder says so.
     .PARAMETER CredentialParameter
         The credential parameters from Get-LambdaPSCredentialParameter.
     .OUTPUTS
@@ -33,6 +34,11 @@ function Get-LambdaPSCredentialArgumentText {
             $text += " -$name '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent([string]$CredentialParameter[$name]))'"
         }
     }
-    if ($CredentialParameter.ContainsKey('Credential')) { $text += ' -Credential <the credentials you deployed with>' }
+    if ($CredentialParameter.ContainsKey('Credential')) {
+        $text += if ($CredentialParameter.PSObject.Properties['LambdaPSCredentialSource'].Value -eq 'SetAWSCredential') {
+            ' -Credential <the credentials your script set with Set-AWSCredential>'
+        }
+        else { ' -Credential <the credentials you deployed with>' }
+    }
     return $text
 }
