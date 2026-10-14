@@ -58,7 +58,8 @@ function Compress-LambdaPSFunctionPackage {
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
             DependencyVersionUnpinned, ModuleNotFoundLocally (-MissingModuleAction Stop),
             ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleFolderIncomplete (a module version
-            folder with no <Name>.psd1), ModuleInstallerNotFound,
+            folder with no <Name>.psd1), ModuleGuidMismatch (the module and version exist only with a
+            different GUID than the requirement names), ModuleInstallerNotFound,
             AWSToolsInstallerImportFailed.
     .PARAMETER Path
         The function code to package: a folder, or a single .ps1 script. Alias: -ProjectPath.
