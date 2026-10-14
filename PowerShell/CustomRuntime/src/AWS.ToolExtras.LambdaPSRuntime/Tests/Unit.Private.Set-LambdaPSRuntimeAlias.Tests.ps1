@@ -115,6 +115,27 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
         }
     }
 
+    It 'writes the alias state from the <Cmdlet> response to the verbose stream' -ForEach @(
+        @{ Cmdlet = 'New-LMCRuntimeAlias'; Exists = $false }
+        @{ Cmdlet = 'Update-LMCRuntimeAlias'; Exists = $true }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Exists = $Exists } {
+            param($Exists)
+            function New-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            function Update-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }
+            if ($Exists) { Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1' } } }
+            else { Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Alias does not exist') } }
+            # State is an SDK ConstantClass, which converts to its Value string.
+            Mock 'New-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
+            Mock 'Update-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
+
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v2'; Region = 'us-east-1' }
+            $verbose = @(Set-LambdaPSRuntimeAlias @splat -Verbose 4>&1 | ForEach-Object { "$_" })
+            $verbose | Should -Contain "Alias 'production' points at 'v2' (state: ACTIVE)."
+        }
+    }
+
     It 'calls no alias cmdlet under -WhatIf' {
         InModuleScope $script:moduleName {
             function New-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }

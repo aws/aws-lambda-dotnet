@@ -291,7 +291,7 @@ function New-LambdaPSRuntimeDeployment {
         # Resolve pwsh first: an unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $resolvedPwshVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
-        # build can only fail, after Stage 2 has replaced -ProjectPath, so refuse here, under -WhatIf too.
+        # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
         if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
             # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
@@ -331,7 +331,7 @@ function New-LambdaPSRuntimeDeployment {
                     'InvalidRepositoryName', [System.Management.Automation.ErrorCategory]::InvalidArgument, $effectiveRepository))
         }
 
-        # Stage 2 replaces -ProjectPath, deleting what is in it. Only a runtime-image project this module
+        # Stage 1 replaces -ProjectPath, deleting what is in it. Only a runtime-image project this module
         # scaffolded (a lambdaps-runtime.json marker with Target CMR) is replaced; a file, or any other
         # non-empty directory (including a function or layer project), is refused here, before anything
         # is read from or created in AWS.
@@ -382,8 +382,8 @@ function New-LambdaPSRuntimeDeployment {
             }
         }
 
-        # Stage 1: Preflight (read-only; always runs, even under -WhatIf).
-        Write-Verbose 'Stage 1: Preflight the Docker build toolchain.'
+        # Preflight (read-only; always runs, even under -WhatIf).
+        Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
         $runtimeProbe = Test-LambdaPSContainerRuntime
         Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
 
@@ -548,7 +548,7 @@ function New-LambdaPSRuntimeDeployment {
             }
         }
 
-        # ModulesStaged is read from the scaffolded project's modules/ folder after Stage 2 -- what the
+        # ModulesStaged is read from the scaffolded project's modules/ folder after Stage 1 -- what the
         # image will actually contain, including transitive dependencies -- not from -IncludeModule. It
         # stays empty under -WhatIf, because nothing was scaffolded.
         $modulesStaged = @()
@@ -556,13 +556,13 @@ function New-LambdaPSRuntimeDeployment {
         $imageDigest = $null
         $publishUri = $imageUri
 
-        # Stage 2: Scaffold and stage modules. Module staging is delegated to the scaffolder:
+        # Stage 1: Scaffold and stage modules. Module staging is delegated to the scaffolder:
         # -IncludeModule is forwarded to New-LambdaPSRuntimeProject, which copies them from the local
         # machine. This is the ONLY module handling in this cmdlet.
         # -Force is passed so a re-deploy is repeatable, which means an existing directory at
         # $ProjectPath is REPLACED (its contents deleted). The ShouldProcess message says so, so -WhatIf
         # and -Confirm disclose it rather than silently discarding a customized project.
-        Write-Verbose "Stage 2: Scaffold runtime project at '$ProjectPath'."
+        Write-Verbose "Stage 1: Scaffold runtime project at '$ProjectPath'."
         $scaffoldAction = if ((Test-Path -LiteralPath $ProjectPath -PathType Container) -and @(Get-ChildItem -LiteralPath $ProjectPath -Force).Count -gt 0) {
             "Replace existing directory with a scaffolded PowerShell $PowerShellVersion runtime project (existing contents are deleted)"
         }
@@ -599,11 +599,11 @@ function New-LambdaPSRuntimeDeployment {
         }
         else { $declinedStage = 'scaffold' }
 
-        # Stage 3: Build the image locally, then ensure the ECR repo, then push. Building first means a
+        # Stage 2: Build the image locally, then ensure the ECR repo, then push. Building first means a
         # failed build (for example a package that cannot install for the target platform) stops before
         # anything exists in AWS; creating the repository first would leave an empty one behind.
         # The push build reuses BuildKit's cache from the local build, so it only exports and pushes.
-        Write-Verbose "Stage 3: Build image, ensure ECR repository, push image."
+        Write-Verbose "Stage 2: Build image, ensure ECR repository, push image."
         if ($declinedStage) {
             Write-Warning "Skipped building and pushing the image, because the $declinedStage stage was declined."
         }
@@ -625,8 +625,8 @@ function New-LambdaPSRuntimeDeployment {
         }
         elseif (-not $WhatIfPreference) { $declinedStage = 'build and push' }
 
-        # Stage 4: Publish the runtime version.
-        Write-Verbose "Stage 4: Publish version '$RuntimeVersion' of runtime '$RuntimeName'."
+        # Stage 3: Publish the runtime version.
+        Write-Verbose "Stage 3: Publish version '$RuntimeVersion' of runtime '$RuntimeName'."
         if ($declinedStage) {
             Write-Warning "Skipped publishing the runtime version, because the $declinedStage stage was declined."
         }
@@ -646,8 +646,8 @@ function New-LambdaPSRuntimeDeployment {
         }
         elseif (-not $WhatIfPreference) { $declinedStage = 'publish' }
 
-        # Stage 5: Point the alias at the published version.
-        Write-Verbose "Stage 5: Point alias '$RuntimeAlias' at '$RuntimeVersion'."
+        # Stage 4: Point the alias at the published version.
+        Write-Verbose "Stage 4: Point alias '$RuntimeAlias' at '$RuntimeVersion'."
         if ($declinedStage) {
             Write-Warning "Skipped pointing alias '$RuntimeAlias' at '$RuntimeVersion', because the $declinedStage stage was declined."
         }

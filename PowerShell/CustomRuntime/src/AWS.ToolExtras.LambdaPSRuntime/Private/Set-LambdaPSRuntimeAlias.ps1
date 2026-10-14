@@ -73,17 +73,21 @@ function Set-LambdaPSRuntimeAlias {
         }
         if ($aliasExists) {
             Write-Verbose "Alias '$RuntimeAlias' exists; repointing to $RuntimeVersion."
-            $null = Update-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
+            $response = Update-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
         }
         else {
             try {
-                $null = New-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
+                $response = New-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
             }
             catch {
                 if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
                 Write-Verbose "Alias '$RuntimeAlias' was created concurrently; repointing to $RuntimeVersion."
-                $null = Update-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
+                $response = Update-LMCRuntimeAlias @aliasParams @CredentialParameter -ErrorAction Stop
             }
+        }
+        # The response carries the alias's state and the version it now points at.
+        if ($null -ne $response) {
+            Write-Verbose "Alias '$RuntimeAlias' points at '$($response.RuntimeVersion)' (state: $($response.State))."
         }
     }
 }

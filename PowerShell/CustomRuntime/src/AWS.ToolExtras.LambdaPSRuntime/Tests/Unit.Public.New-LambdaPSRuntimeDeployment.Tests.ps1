@@ -1049,6 +1049,16 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $script:calls -join ',' | Should -Be 'scaffold,build,repo,push,publish,alias'
         }
 
+        It 'labels the verbose stage lines Preflight, then Stage 1 to 4' {
+            $verbose = @(New-LambdaPSRuntimeDeployment @script:splat -Verbose 4>&1 |
+                Where-Object { $_ -is [System.Management.Automation.VerboseRecord] } | ForEach-Object { "$_" })
+            $labels = @($verbose | Where-Object { $_ -match '\A(Preflight|Stage \d+):' } | ForEach-Object { $Matches[1] })
+
+            $labels | Should -Be @('Preflight', 'Stage 1', 'Stage 2', 'Stage 3', 'Stage 4')
+            $verbose | Should -Contain "Stage 1: Scaffold runtime project at '$((Get-Location).Path)$([System.IO.Path]::DirectorySeparatorChar)my-ps-runtime'."
+            $verbose | Should -Contain "Stage 4: Point alias 'production' at 'v1'."
+        }
+
         It 'creates no ECR repository when the local build fails' {
             Mock 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -ParameterFilter { -not $ImageUri } -MockWith {
                 throw [System.Management.Automation.ErrorRecord]::new(
