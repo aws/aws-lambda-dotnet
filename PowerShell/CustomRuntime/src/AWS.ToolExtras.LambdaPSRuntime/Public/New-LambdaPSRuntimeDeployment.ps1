@@ -67,6 +67,7 @@ function New-LambdaPSRuntimeDeployment {
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
                                 UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
+                                TargetNotReadable (a -ProjectPath that cannot be listed),
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
                                 RuntimeServiceAccessDenied, RuntimeVersionCheckFailed,
                                 RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
@@ -78,7 +79,8 @@ function New-LambdaPSRuntimeDeployment {
                                 ModuleVersionRequired, ModuleVersionSpelling, ModuleVersionConflict,
                                 DependencyNameMissing, DependencyNameIsPath, DependencyVersionUnpinned,
                                 ModuleClosureNotSettled, ModuleNotFoundLocally,
-                                ModuleRepositoryNotFound, ModuleDownloadFailed,
+                                ModuleRepositoryNotFound, ModuleDownloadFailed, ModuleFolderIncomplete
+                                (a module version folder with no <Name>.psd1),
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
           build and push        ExternalToolFailed, EcrDockerLoginFailed
           publish               RuntimeVersionNotActive, RuntimeVersionTimeout, RuntimeVersionWaitFailed
@@ -332,6 +334,17 @@ function New-LambdaPSRuntimeDeployment {
                     'TargetIsFile', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
         }
         if (Test-Path -LiteralPath $ProjectPath -PathType Container) {
+            # A folder that cannot be listed is not an empty one; refuse it here, before any AWS call,
+            # as the scaffolder (Assert-LambdaPSScaffoldPath) would.
+            try { $existingItems = @(Get-ChildItem -LiteralPath $ProjectPath -Force -ErrorAction Stop) }
+            catch {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.UnauthorizedAccessException]::new(
+                            ("Target '$ProjectPath' cannot be listed, so it cannot be checked for files the scaffold " +
+                             "would write over: $($_.Exception.Message) Choose a directory you can read."), $_.Exception),
+                        'TargetNotReadable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $ProjectPath))
+            }
             $existingMarker = Get-LambdaPSProjectMarker -Path $ProjectPath
             if ($null -ne $existingMarker -and [string]::IsNullOrWhiteSpace([string]$existingMarker.Target)) {
                 $PSCmdlet.ThrowTerminatingError(
@@ -350,7 +363,7 @@ function New-LambdaPSRuntimeDeployment {
                              'image project, so it was not replaced. Pass an empty or new directory. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
-            if ($null -eq $existingMarker -and @(Get-ChildItem -LiteralPath $ProjectPath -Force).Count -gt 0) {
+            if ($null -eq $existingMarker -and $existingItems.Count -gt 0) {
                 $PSCmdlet.ThrowTerminatingError(
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(

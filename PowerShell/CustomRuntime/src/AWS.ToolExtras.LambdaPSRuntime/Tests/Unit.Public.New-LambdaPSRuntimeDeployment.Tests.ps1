@@ -1281,6 +1281,21 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.ProjectPath | Should -Be ([System.IO.Path]::Combine($TestDrive, 'rel-rt'))
         }
 
+        # A folder that cannot be listed is not an empty one: refuse it before any AWS call, as the scaffolder would.
+        It 'refuses a -ProjectPath that cannot be listed with TargetNotReadable, before any AWS call' -Skip:($IsWindows -or ((id -u) -eq '0')) {
+            $locked = [System.IO.Path]::Combine($script:projectPath, 'locked')
+            $null = New-Item -ItemType Directory -Path $locked
+            chmod 000 $locked
+            try {
+                $err = { New-LambdaPSRuntimeDeployment @script:splat -ProjectPath $locked -WhatIf } |
+                    Should -Throw -ErrorId 'TargetNotReadable,New-LambdaPSRuntimeDeployment' -PassThru
+                $err.Exception.Message | Should -BeLike "Target '$locked' cannot be listed, so it cannot be checked for files the scaffold would write over:*Choose a directory you can read."
+                Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
+                Should -Invoke 'Get-LMCRuntime' -ModuleName $script:moduleName -Times 0 -Exactly
+            }
+            finally { chmod 755 $locked }
+        }
+
         It 'scaffolds into an existing empty directory' {
             $null = New-LambdaPSRuntimeDeployment @script:splat
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly
