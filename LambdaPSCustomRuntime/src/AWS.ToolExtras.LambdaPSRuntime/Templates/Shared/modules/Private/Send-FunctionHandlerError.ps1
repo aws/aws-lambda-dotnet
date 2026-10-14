@@ -7,7 +7,8 @@ function private:Send-FunctionHandlerError {
             POST function invocation error back to Runtime API.
 
         .DESCRIPTION
-            POST function invocation error back to Runtime API.
+            Writes the error to the function log as one line, then posts its message, type and stack trace
+            to the Runtime API.
 
         .PARAMETER Uri
             Where to post the error. Defaults to the current invocation's /error; the runtime passes

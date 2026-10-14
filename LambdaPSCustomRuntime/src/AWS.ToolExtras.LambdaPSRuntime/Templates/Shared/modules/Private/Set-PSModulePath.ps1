@@ -7,7 +7,8 @@ function private:Set-PSModulePath {
             Modify $env:PSModulePath to support Lambda module file paths.
 
         .DESCRIPTION
-            Modify $env:PSModulePath to support Lambda module file paths.
+            Sets $env:PSModulePath to the function's, the layers', the runtime's and pwsh's module folders, in
+            that order.
 
         .Notes
             FUNCTION-FIRST order. Because pwsh module resolution is POSITIONAL (first match on

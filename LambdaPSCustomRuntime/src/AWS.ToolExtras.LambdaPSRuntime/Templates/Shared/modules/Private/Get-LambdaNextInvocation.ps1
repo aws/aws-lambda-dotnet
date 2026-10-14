@@ -7,11 +7,11 @@ function private:Get-LambdaNextInvocation {
             Get /NEXT invocation from AWS Lambda Runtime API.
 
         .DESCRIPTION
-            Get /NEXT invocation from AWS Lambda Runtime API.
+            Asks the Runtime API for the next event and returns its body and headers.
 
         .Notes
-            Returns $null when the Runtime API cannot be reached (the event loop waits briefly and asks
-            again). Throws when the Runtime API answers with an error status: Lambda documents that the
+            Returns $null, after a short pause, when the Runtime API cannot be reached; the event loop then
+            asks again. Throws when the Runtime API answers with an error status: Lambda documents that the
             runtime should then exit, and the event loop exits 1 on this throw so Lambda can restart it.
     #>
     param (

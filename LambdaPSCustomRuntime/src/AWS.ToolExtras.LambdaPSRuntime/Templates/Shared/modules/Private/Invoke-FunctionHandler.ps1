@@ -7,7 +7,8 @@ function private:Invoke-FunctionHandler {
             Invoke Lambda handler function.
 
         .DESCRIPTION
-            Invoke Lambda handler function.
+            Converts the event from JSON, runs the handler with the event and the context, and returns its
+            output: a string as it is, anything else as JSON.
 
         .Notes
             Runs the entire script if the handler is the script, or function from script/module.

@@ -7,10 +7,8 @@ function private:Set-HandlerEnvironmentVariables {
             Set default and AWS Lambda specific environment variables for each invocation.
 
         .DESCRIPTION
-            Set default and AWS Lambda specific environment variables for each invocation.
-
-        .Notes
-
+            Points TEMP, TMP and TMPDIR at /tmp and sets the invocation's request ID, client context,
+            Cognito identity, deadline, function ARN and trace ID from the event's headers.
     #>
     [CmdletBinding()]
     param (

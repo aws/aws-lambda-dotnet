@@ -7,10 +7,7 @@ function private:Send-FunctionHandlerResponse {
             POST function response back to Runtime API.
 
         .DESCRIPTION
-            POST function response back to Runtime API.
-
-        .Notes
-
+            Posts the handler's output to the Runtime API as this invocation's response.
     #>
     [CmdletBinding()]
     param (

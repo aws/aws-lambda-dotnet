@@ -3,19 +3,28 @@
 Set these as environment variables on the function:
 
 - `POWERSHELL_RUNTIME_VERBOSE=TRUE` writes the runtime's own progress (each step of start-up and of
-  every invocation) to the function log. It does not turn on `Write-Verbose` output from the handler
-  or the modules it uses: set `$VerbosePreference` in the handler for that.
+  every invocation) to the function log. It does not turn on `Write-Verbose` output from the handler or
+  the modules it uses: set `$VerbosePreference` in the handler for that.
 - `POWERSHELL_RUNTIME_JSON_DEPTH` (1-100, default 100) is the depth to which the handler's output is
   serialized to JSON; any other value uses 100, and the runtime writes a warning naming the value to
   the function log once. Return plain data (hashtables, PSCustomObjects, arrays, strings, numbers): a
   rich .NET object, such as the output of `Get-Item`, references other objects without end, and
   serializing it that deep can exhaust the function's memory or time. Lower the depth if a handler must
-  return one.
+  return one; values nested deeper than the depth are sent as their type name (for example
+  `System.Collections.Hashtable`).
 
-Everything the handler writes to the pipeline is its response. A string is sent as it is; anything
-else is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)` to send a JSON array
-of one, and discard stray output (for example `$null = $list.Add($x)`), which would otherwise be sent
-as part of an array.
+Everything the handler writes to the pipeline is its response. A string is sent as it is; anything else
+is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)` to send a JSON array of
+one, and discard stray output (for example `$null = $list.Add($x)`), which would otherwise be sent as
+part of an array. A handler that writes nothing to the pipeline returns an empty body.
+
+`Write-Host` and `Write-Warning` output goes to the function log; `Write-Information` and
+`Write-Verbose` output goes there only when the handler sets `$InformationPreference` or
+`$VerbosePreference`. `Write-Error` does not fail the invocation: the handler goes on and its output is
+the response. A `throw`, or a command run with `-ErrorAction Stop` that fails, fails the invocation and
+reports the error. `$LambdaContext` has `AwsRequestId`, `ClientContext`, `FunctionName`,
+`FunctionVersion`, `Identity`, `InvokedFunctionArn`, `LogGroupName`, `LogStreamName`,
+`MemoryLimitInMB`, `RemainingTime` and `GetRemainingTimeInMillis()`.
 
 A handler receives the event and the context as its first two arguments, so start it with
 `param($LambdaInput, $LambdaContext)`: without that block, `$LambdaInput` and `$LambdaContext` are
@@ -42,8 +51,8 @@ script: its exit code is ignored, and what it wrote before is sent as the respon
 
 The Layer and SelfContainedZip targets run pwsh in invariant-globalization mode, because the
 `provided.al2023` base has no ICU library, so culture-specific code fails there: a named culture such
-as `[cultureinfo]'de-DE'`, or formatting with one, throws. The RuntimeImage and ContainerFunction
-targets install ICU and support it.
+as `[cultureinfo]'de-DE'`, or formatting with one, throws. The CMR and Container targets install ICU
+and support it.
 
 Lambda reuses the runtime's session for the invocations that follow. After each one, the runtime
 removes any jobs (including thread jobs still running) and remoting sessions the invocation left, and

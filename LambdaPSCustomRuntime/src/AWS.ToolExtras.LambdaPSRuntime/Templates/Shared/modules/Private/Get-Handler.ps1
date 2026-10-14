@@ -7,7 +7,8 @@ function private:Get-Handler {
             Parse _HANDLER environment variable.
 
         .DESCRIPTION
-            Parse _HANDLER environment variable.
+            Splits the handler setting into its form (Script, Function or Module), the script path or module
+            name, and the function name, and throws when it is not one of the three forms.
 
         .Notes
             Valid "_HANDLER" options:
