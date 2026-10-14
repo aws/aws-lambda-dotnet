@@ -703,7 +703,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'runs <Ran> and warns about the rest when -Confirm is answered <Answers>' -ForEach @(
             @{ Answers = @('Y', 'N'); Ran = 'Scaffold'; Warnings = @('Skipped publishing the runtime version, because the build and push stage was declined', "Skipped pointing alias 'production' at 'v7', because the build and push stage was declined") }
             @{ Answers = @('Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push'; Warnings = @("Skipped pointing alias 'production' at 'v7', because the publish stage was declined") }
-            @{ Answers = @('Y', 'Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push,Publish'; Warnings = @("Alias 'production' was not pointed at 'v7', because that stage was declined. Point it later with Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1") }
+            @{ Answers = @('Y', 'Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push,Publish'; Warnings = @("Alias 'production' was not pointed at 'v7', because that stage was declined. Point it later with New-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1.") }
         ) {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
@@ -728,6 +728,36 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $output = $result.Output -replace '\s+', ' '
             foreach ($warning in $Warnings) { $output | Should -BeLike "*$warning*" }
             if ($Ran -notlike '*Publish*') { $output | Should -BeLike '*ARN= *' }
+        }
+
+        # The preflight read says whether the alias exists, so the warning names the one command that applies.
+        It 'names only <AliasCommand> when the alias stage is declined and the alias <Case>' -ForEach @(
+            @{ Case = 'exists'; AliasCommand = 'Update-LMCRuntimeAlias'; Other = 'New-LMCRuntimeAlias'; Alias = '[PSCustomObject]@{ Name = ''production''; RuntimeVersion = ''v6'' }' }
+            @{ Case = 'does not exist'; AliasCommand = 'New-LMCRuntimeAlias'; Other = 'Update-LMCRuntimeAlias'; Alias = 'throw [System.InvalidOperationException]::new(''not found'', [LambdaPSTests.Fakes.ResourceNotFoundException]::new(''Runtime alias does not exist''))' }
+        ) {
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
+                function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
+                function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
+                function script:Get-LambdaPSStagedModule { }
+                function script:Build-LambdaPSRuntimeImage { param($Path, $Architecture, $Tag, $ImageUri)
+                    if ($ImageUri) { [PSCustomObject]@{ ImageUri = $ImageUri; ImageDigest = 'sha256:abc123' } } }
+                function script:Initialize-LambdaPSEcrRepository { }
+                function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish'); [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v7' } }
+                function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $project = [System.IO.Path]::Combine($TestDrive, "decline-alias-$($AliasCommand)")
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString() + "`nfunction script:Get-LMCRuntimeAlias { $Alias }") -Command $command -Answer 'Y', 'Y', 'Y', 'N'
+
+            ($result.Calls -join ',') | Should -Be 'Scaffold,Publish'
+            $output = $result.Output -replace '\s+', ' '
+            $output | Should -BeLike "*Point it later with $AliasCommand -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1.*"
+            $output | Should -Not -BeLike "*$Other*"
         }
 
         # Under -Confirm each stage asks once; accepting them all runs every stage, in order, and the version is

@@ -177,7 +177,7 @@ function New-LambdaPSRuntimeDeployment {
         including the dependencies followed from -IncludeModule. RuntimeArn, ImageDigest and
         ModulesStaged are empty under -WhatIf, and for the stages skipped when one is declined under
         -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
-        when its stage ran, and declining that stage alone is warned about with the command to move it.
+        when its stage ran, and declining that stage alone is warned about with the command that points it.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 -Region us-east-1
 
@@ -401,6 +401,8 @@ function New-LambdaPSRuntimeDeployment {
         #   so the alias is read and the move is warned about before anything is created.
         $lambdaCoreConfig = Get-LambdaPSClientConfig -Service LambdaCore
         $runtimeExists = $true
+        # The alias as read for a new version; it stays null when the runtime or the alias does not exist.
+        $currentAlias = $null
         try {
             $null = Get-LMCRuntime -RuntimeName $RuntimeName -Region $Region -ClientConfig $lambdaCoreConfig @credentialParameter -ErrorAction Stop
         }
@@ -652,11 +654,12 @@ function New-LambdaPSRuntimeDeployment {
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
         }
         elseif (-not $WhatIfPreference) {
-            # The version is published, but functions bound to the alias stay where they are.
+            # The version is published, but functions bound to the alias stay where they are. The preflight
+            # read says whether the alias exists, so name the one command that moves or creates it.
+            $aliasCommand = if ($null -ne $currentAlias) { 'Update-LMCRuntimeAlias' } else { 'New-LMCRuntimeAlias' }
             Write-Warning ("Alias '$RuntimeAlias' was not pointed at '$RuntimeVersion', because that stage was declined. " +
-                "Point it later with Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias " +
-                "-RuntimeVersion $RuntimeVersion -Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter) " +
-                '(New-LMCRuntimeAlias if the alias does not exist yet).')
+                "Point it later with $aliasCommand -RuntimeName $RuntimeName -Name $RuntimeAlias " +
+                "-RuntimeVersion $RuntimeVersion -Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter).")
         }
 
         [PSCustomObject]@{
