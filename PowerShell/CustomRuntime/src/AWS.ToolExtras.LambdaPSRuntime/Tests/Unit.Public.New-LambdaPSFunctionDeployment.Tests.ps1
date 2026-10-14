@@ -581,8 +581,54 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
                 FunctionName = 'hello'; ProjectPath = (Join-Path $TestDrive 'missing.ps1')
                 RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
             }
-            { New-LambdaPSFunctionDeployment @splat } |
-                Should -Throw -ErrorId 'ProjectNotFound,New-LambdaPSFunctionDeployment'
+            $err = { New-LambdaPSFunctionDeployment @splat } |
+                Should -Throw -ErrorId 'ProjectNotFound,New-LambdaPSFunctionDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike '*was not found. Pass a .ps1 or a folder of handler code, or scaffold one with New-LambdaPSFunctionProject -Path <dir> -Handler handler.'
+        }
+
+        # Packaging replaces the file at -PackagePath, so only a .zip may be there; anything else is the
+        # user's file, and is refused before packaging, under -WhatIf too.
+        It 'refuses a -PackagePath that is <Case>, and leaves it unchanged (WhatIf <WhatIf>)' -ForEach @(
+            @{ Case = 'the single-file source'; Folder = $false; WhatIf = $false }
+            @{ Case = 'the single-file source'; Folder = $false; WhatIf = $true }
+            @{ Case = 'another file in a folder source'; Folder = $true; WhatIf = $false }
+            @{ Case = 'another file in a folder source'; Folder = $true; WhatIf = $true }
+        ) {
+            $root = Join-Path $TestDrive "package-path-$([guid]::NewGuid().ToString('n'))"
+            $null = New-Item -ItemType Directory -Path $root
+            $handler = Join-Path $root 'handler.ps1'
+            Set-Content -LiteralPath $handler -Value 'param($LambdaInput, $LambdaContext)'
+            $library = Join-Path $root 'lib.ps1'
+            Set-Content -LiteralPath $library -Value 'function Get-Value { 1 }'
+            $splat = @{
+                FunctionName = 'hello'; RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+                ProjectPath = if ($Folder) { $root } else { $handler }; Handler = 'handler.ps1'
+                PackagePath = if ($Folder) { $library } else { $handler }
+            }
+            $before = Get-FileHash -LiteralPath $splat.PackagePath
+
+            $err = { New-LambdaPSFunctionDeployment @splat -WhatIf:$WhatIf } |
+                Should -Throw -ErrorId 'PackagePathNotZip,New-LambdaPSFunctionDeployment' -PassThru
+
+            $err.Exception.Message | Should -BeLike "*packaging would overwrite it*"
+            (Get-FileHash -LiteralPath $splat.PackagePath).Hash | Should -Be $before.Hash
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        # An earlier package in the source folder is the documented 'cd fn; -ProjectPath .' case, and is replaced.
+        It 'accepts a -PackagePath that is an existing .zip inside the folder source' {
+            $root = Join-Path $TestDrive 'package-path-zip'
+            $null = New-Item -ItemType Directory -Path $root
+            Set-Content -LiteralPath (Join-Path $root 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+            $zip = Join-Path $root 'hello.zip'
+            Set-Content -LiteralPath $zip -Value 'an earlier package'
+            Push-Location $root
+            try { $result = New-LambdaPSFunctionDeployment -FunctionName hello -ProjectPath . -RuntimeName my-ps -Role 'arn:aws:iam::111122223333:role/r' -Region us-east-1 }
+            finally { Pop-Location }
+
+            $result.PackagePath | Should -Be $zip
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $OutFile -eq $zip -and $Force }
         }
 
         # Only the runtime read maps a refusal to RuntimeServiceAccessDenied (Get-LambdaPSRuntimeArn); the
@@ -793,7 +839,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $err = { New-LambdaPSFunctionDeployment -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -ProjectPath $script:handlerFile `
                     -RuntimeName my-ps -Role 'arn:aws:iam::111122223333:role/r' -Region us-west-2 -PackagePath (Join-Path $TestDrive 'explicit.zip') } |
                 Should -Throw -ErrorId 'FunctionRegionMismatch,New-LambdaPSFunctionDeployment' -PassThru
-            $err.Exception.Message | Should -BeLike "*region 'eu-west-1', but -Region is 'us-west-2'*"
+            $err.Exception.Message | Should -BeLike "*region 'eu-west-1', but -Region is 'us-west-2'. Omit -Region, or pass -Region eu-west-1."
             Should -Invoke 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
@@ -932,6 +978,12 @@ Describe 'New-LambdaPSFunctionDeployment -Role' -Tag 'Unit' {
         $attribute = (Get-Command New-LambdaPSFunctionDeployment).Parameters['Role'].Attributes |
             Where-Object { $_ -is [System.Management.Automation.ValidatePatternAttribute] }
         $Role | Should -Match $attribute.RegexPattern
+    }
+
+    It 'refuses a role ARN whose fixed parts are in capitals' {
+        Mock 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -MockWith { throw 'must not package' }
+        { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $TestDrive -RuntimeName rt -Role 'ARN:AWS:IAM::111122223333:ROLE/r' -Region us-east-1 } |
+            Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionDeployment' -ExpectedMessage '*is not an IAM role ARN*'
     }
 
     # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
@@ -1085,16 +1137,34 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
 
         $err = { New-LambdaPSFunctionDeployment @script:redeploy -Architecture arm64 } |
             Should -Throw -ErrorId 'ArchitectureMismatch,New-LambdaPSFunctionDeployment' -PassThru
-        $err.Exception.Message | Should -BeLike "*alias 'staging'*stays bound to alias 'staging'*pass -RuntimeAlias*"
+        $err.Exception.Message | Should -BeLike "*alias 'staging'*stays bound to alias 'staging'*pass -RuntimeAlias to bind it to another alias."
         Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 0 -Exactly
     }
 
-    It 'checks the alias given with -RuntimeAlias, and reads no binding when -Handler and -Architecture are given too' {
-        Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { throw 'must not read the binding when -Handler, -RuntimeAlias and -Architecture are given' }
-
+    It 'checks the alias given with -RuntimeAlias, with -Handler and -Architecture given too' {
         $null = New-LambdaPSFunctionDeployment @script:redeploy -RuntimeAlias live -Handler handler.ps1 -Architecture x86_64
 
         Should -Invoke 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $RuntimeAlias -eq 'live' }
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly
+    }
+
+    # Naming every setting the live function would supply does not skip the check that it can run this code.
+    It 'refuses <Case> before packaging when -Handler, -RuntimeAlias and -Architecture are all given (WhatIf <WhatIf>)' -ForEach @(
+        @{ Case = 'a python function'; Runtime = 'python3.12'; PackageType = 'Zip'; WhatIf = $false }
+        @{ Case = 'a python function'; Runtime = 'python3.12'; PackageType = 'Zip'; WhatIf = $true }
+        @{ Case = 'a container-image function'; Runtime = $null; PackageType = 'Image'; WhatIf = $false }
+        @{ Case = 'a container-image function'; Runtime = $null; PackageType = 'Image'; WhatIf = $true }
+    ) {
+        $script:tuned.RuntimeArn = ''
+        $script:tuned.Handler = 'lambda_function.lambda_handler'
+        $script:tuned.Runtime = $Runtime
+        $script:tuned.PackageType = $PackageType
+
+        { New-LambdaPSFunctionDeployment @script:redeploy -RuntimeAlias live -Handler handler.ps1 -Architecture x86_64 -WhatIf:$WhatIf } |
+            Should -Throw -ErrorId 'FunctionNotRuntimeBound,New-LambdaPSFunctionDeployment'
+
+        Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 0 -Exactly
     }
 
     # A setting not given keeps the function's value: its architecture too, when the alias it will be
@@ -1111,6 +1181,23 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         foreach ($key in $Extra.Keys) { $splat[$key] = $Extra[$key] }
 
         $result = New-LambdaPSFunctionDeployment @splat
+
+        $result.Architecture | Should -Be 'arm64'
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'arm64' }
+    }
+
+    # With nothing reported to check against, the function's own architecture is all there is to go on.
+    It 'keeps an arm64 function''s architecture when the alias it is bound to by <Case> reports none' -ForEach @(
+        @{ Case = 'default'; Extra = @{} }
+        @{ Case = '-RuntimeAlias'; Extra = @{ RuntimeAlias = 'live' } }
+        @{ Case = '-RuntimeName'; Extra = @{ RuntimeName = 'other-ps' } }
+    ) {
+        $script:tuned.Architecture = 'arm64'
+        Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@() }
+        $splat = $script:redeploy.Clone()
+        foreach ($key in $Extra.Keys) { $splat[$key] = $Extra[$key] }
+
+        $result = New-LambdaPSFunctionDeployment @splat -WarningAction SilentlyContinue
 
         $result.Architecture | Should -Be 'arm64'
         Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'arm64' }
@@ -1188,6 +1275,21 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.RuntimeAlias | Should -Be 'second'
         ($warnings -join ' ') | Should -BeLike "*ScriptFile 'handler.ps1'*keeps its handler*"
         ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'production'*keeps that alias*"
+    }
+
+    It 'says the function is bound with no alias when manifest.json names one' {
+        $project = Join-Path $TestDrive 'tuned-no-alias'
+        $null = New-Item -ItemType Directory -Path $project -Force
+        Set-Content -LiteralPath (Join-Path $project 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"handler.ps1","ScriptFile":"handler.ps1","RuntimeAlias":"production"}'
+        $script:tuned.Handler = 'handler.ps1'
+        $script:tuned.RuntimeAlias = ''
+        $splat = $script:redeploy.Clone()
+        $splat.ProjectPath = $project
+
+        $null = New-LambdaPSFunctionDeployment @splat -WarningVariable warnings -WarningAction SilentlyContinue
+
+        ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'production', but function 'hello' is bound to the runtime with no alias, so it stays that way. Pass -RuntimeAlias to change it.*"
     }
 
     It 'keeps the live handler when the folder has several root scripts and no manifest' {

@@ -15,9 +15,9 @@ function Split-LambdaPSFunctionArn {
         System.Management.Automation.PSCustomObject (Name, Region; Region is $null unless a full ARN
         names it)
     .EXAMPLE
-        Split-LambdaPSFunctionArn -FunctionName arn:aws:lambda:eu-west-1:111122223333:function:hello
+        Split-LambdaPSFunctionArn -FunctionName arn:aws:lambda:us-east-1:111122223333:function:hello
 
-        Returns Name 'hello' and Region 'eu-west-1'.
+        Returns Name 'hello' and Region 'us-east-1'.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]

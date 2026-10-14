@@ -11,8 +11,10 @@ function New-LambdaPSFunctionDeployment {
         -ProjectPath (alias -ScriptPath) is your code, not a scaffold target: a lone .ps1 is zipped
         for you, and a prepared folder is packaged as-is (via Compress-LambdaPSFunctionPackage).
         Modules requested with -IncludeModule, plus any the handler script declares with
-        '#Requires -Modules', are staged under modules/ in the package. Nothing is scaffolded and your
-        source directory is not modified.
+        '#Requires -Modules', are staged under modules/ in the package. Nothing is scaffolded, and the
+        package is the only file written: by default under the current location, so it lands in the
+        source when that is the current location. A .zip at -PackagePath inside a folder source is left
+        out of the next package, with a warning.
 
         You supply -RuntimeName and -RuntimeAlias; the runtime ARN is looked up for you. The alias
         selects the runtime version at cold start, so the function follows runtime updates without
@@ -141,8 +143,9 @@ function New-LambdaPSFunctionDeployment {
         so a same-named package in a higher-priority feed would be used. AWS.Tools modules always come
         from the AWS.Tools.zip that AWS.Tools.Installer downloads; when the installer itself must be
         fetched, it comes from these repositories (PSGallery when this is omitted) and, on Windows, only
-        when its Authenticode signature is valid. A name that matches no registered PSResourceGet
-        repository fails with ModuleRepositoryNotFound before anything is downloaded.
+        when its Authenticode signature is valid. Every name, or pattern with `*` wildcards, must match
+        a registered PSResourceGet repository, or the deploy stops with ModuleRepositoryNotFound before
+        anything is downloaded.
     .PARAMETER Architecture
         The function architecture: x86_64 or arm64. When omitted, a scaffolded project's manifest.json
         supplies it (and it is checked like an explicit value); otherwise a redeploy keeps the
@@ -174,6 +177,9 @@ function New-LambdaPSFunctionDeployment {
         to the function log).
     .PARAMETER PackagePath
         Where to write the packaged .zip. Defaults to ./<FunctionName>.zip under the current location.
+        An existing .zip there is replaced. A path that is the single-file source, or an existing file
+        that is not a .zip, fails with PackagePathNotZip before anything is packaged, so that file is
+        not overwritten.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.FunctionDeployment
 
@@ -231,7 +237,8 @@ function New-LambdaPSFunctionDeployment {
         [string]$RuntimeAlias = 'production',
 
         [Parameter(Mandatory)]
-        [ValidatePattern('^arn:aws[a-z-]*:iam::[0-9]{12}:role/\S+\z', ErrorMessage = "'{0}' is not an IAM role ARN (arn:aws:iam::<account>:role/<name>).")]
+        # Options = 'None': ValidatePattern ignores case by default, and an ARN's fixed parts are lowercase.
+        [ValidatePattern('^arn:aws[a-z-]*:iam::[0-9]{12}:role/\S+\z', Options = 'None', ErrorMessage = "'{0}' is not an IAM role ARN (arn:aws:iam::<account>:role/<name>).")]
         [string]$Role,
 
         [Parameter()]
@@ -303,13 +310,15 @@ function New-LambdaPSFunctionDeployment {
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.ArgumentException]::new(
                         ("-FunctionName '$FunctionName' is a function in region '$($functionParts.Region)', but -Region is " +
-                         "'$Region'. Omit -Region, or pass -Region $($functionParts.Region)."), 'Region'),
+                         "'$Region'. Omit -Region, or pass -Region $($functionParts.Region).")),
                     'FunctionRegionMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
         }
         if (-not (Test-Path -LiteralPath $ProjectPath)) {
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
-                    [System.IO.FileNotFoundException]::new("Source path '$ProjectPath' was not found."),
+                    [System.IO.FileNotFoundException]::new(
+                        ("Source path '$ProjectPath' was not found. Pass a .ps1 or a folder of handler code, or scaffold " +
+                         'one with New-LambdaPSFunctionProject -Path <dir> -Handler handler.')),
                     'ProjectNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $ProjectPath))
         }
         # -Force, so a source whose name starts with '.' (hidden on Linux and macOS) is found too.
@@ -364,12 +373,8 @@ function New-LambdaPSFunctionDeployment {
 
         # A redeploy starts from the live function: what -Handler, -RuntimeAlias and -Architecture leave
         # out comes from the function as it is, not from manifest.json or the folder, which may be older
-        # than it.
-        $existing = $null
-        if (-not $PSBoundParameters.ContainsKey('Handler') -or -not $PSBoundParameters.ContainsKey('RuntimeAlias') -or
-            -not ($PSBoundParameters.ContainsKey('Architecture') -or $architectureFromManifest)) {
-            $existing = Get-LambdaPSFunctionBinding -FunctionName $FunctionName -Region $Region -CredentialParameter $credentialParameter
-        }
+        # than it. It is read even when all three are given, to refuse a function this code cannot run.
+        $existing = Get-LambdaPSFunctionBinding -FunctionName $FunctionName -Region $Region -CredentialParameter $credentialParameter
         # Only a function bound to a customer-managed runtime can run this code. Refuse any other here,
         # before anything is packaged, and under -WhatIf too.
         if ($null -ne $existing -and [string]::IsNullOrEmpty($existing.RuntimeArn)) {
@@ -485,6 +490,20 @@ function New-LambdaPSFunctionDeployment {
         }
         # Report full paths, so the result still names the right files after a Set-Location.
         $PackagePath = Resolve-LambdaPSPath -Path $PackagePath
+        # Packaging replaces the file at -PackagePath. Only a .zip, an earlier package, is replaced: the
+        # single-file source, or any other existing file, is refused here, before anything is packaged.
+        $packageExists = Test-Path -LiteralPath $PackagePath -PathType Leaf
+        $packageIsSource = $packageExists -and -not $source.PSIsContainer -and
+            (Get-LambdaPSRealPath -Path $PackagePath) -eq (Get-LambdaPSRealPath -Path $source.FullName)
+        if ($packageIsSource -or ($packageExists -and [System.IO.Path]::GetExtension($PackagePath) -ne '.zip')) {
+            $what = if ($packageIsSource) { 'the function source' } else { 'an existing file that is not a .zip' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.IOException]::new(
+                        ("-PackagePath '$PackagePath' is $what, and packaging would overwrite it. Pass the path " +
+                         'of a .zip to write, or omit -PackagePath to write ./<FunctionName>.zip.')),
+                    'PackagePathNotZip', [System.Management.Automation.ErrorCategory]::InvalidArgument, $PackagePath))
+        }
 
         # ModulesStaged is taken from what the packager actually staged (Stage 1), not from
         # -IncludeModule, which omits '#Requires'-harvested modules and transitive dependencies. It stays
@@ -505,8 +524,9 @@ function New-LambdaPSFunctionDeployment {
             $keptBinding = $existing
             if ($manifestAliasUsed) {
                 if ($RuntimeAlias -cne $existing.RuntimeAlias) {
+                    $boundTo = if ($existing.RuntimeAlias) { "alias '$($existing.RuntimeAlias)', so it keeps that alias" } else { 'the runtime with no alias, so it stays that way' }
                     Write-Warning ("manifest.json records RuntimeAlias '$RuntimeAlias', but function '$FunctionName' is bound to " +
-                        "alias '$($existing.RuntimeAlias)', so it keeps that alias. Pass -RuntimeAlias to change it.")
+                        "$boundTo. Pass -RuntimeAlias to change it.")
                 }
                 $manifestAliasUsed = $false
                 if (-not $existing.RuntimeAlias) { $RuntimeAlias = 'production' }
@@ -540,9 +560,10 @@ function New-LambdaPSFunctionDeployment {
             $Architecture = if ($keptBinding.Architecture) { $keptBinding.Architecture } else { 'x86_64' }
         }
         elseif ($runtimeArchitectures.Count -eq 0) {
-            # Nothing to check against: a function that keeps its alias keeps its own architecture.
+            # Nothing to check against: an existing function keeps its own architecture, whichever alias
+            # it will be on; only a new one takes x86_64.
             if (-not $architectureStated) {
-                $Architecture = if ($null -ne $keptBinding -and $keptBinding.Architecture) { $keptBinding.Architecture } else { 'x86_64' }
+                $Architecture = if ($null -ne $existing -and $existing.Architecture) { $existing.Architecture } else { 'x86_64' }
             }
             Write-Warning ("Lambda reports no architecture for runtime '$RuntimeName' alias '$RuntimeAlias', so " +
                 "the function's architecture ($Architecture) cannot be verified against it. If they differ, " +
@@ -558,7 +579,7 @@ function New-LambdaPSFunctionDeployment {
                              "'$RuntimeAlias', which is built for [$($runtimeArchitectures -join ', ')]. " +
                              'Lambda would accept this function and every invoke would fail. Omit ' +
                              '-Architecture to use the runtime''s, or bind to an alias built for ' +
-                             "$Architecture.$keptHint"), 'Architecture'),
+                             "$Architecture.$keptHint")),
                         'ArchitectureMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Architecture))
             }
         }
