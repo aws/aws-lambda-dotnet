@@ -42,6 +42,8 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $script:Prefix = 'lambdaps-integration-{0}-' -f (-join (Get-Random -Count 8 -InputObject ([char[]]'abcdefghijklmnopqrstuvwxyz0123456789')))
         # What this run created, in order, each with the script block that removes it.
         $script:Created = [System.Collections.Generic.List[object]]::new()
+        # The registries docker logged in to, logged out of in AfterAll.
+        $script:DockerRegistries = [System.Collections.Generic.List[string]]::new()
         $missing = @('LAMBDAPS_INTEGRATION_REGION', 'LAMBDAPS_INTEGRATION_ACCOUNT', 'LAMBDAPS_INTEGRATION_ROLE_ARN' |
                 Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) })
         if ($missing) { throw "The integration suite needs these environment variables set: $($missing -join ', ')." }
@@ -62,8 +64,9 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         }
         Write-Host "Integration suite: prefix '$script:Prefix', region $script:Region."
 
-        # A resource is recorded BEFORE the call that creates it, so a call that fails part-way is still
-        # cleaned up; removing one that was never created is a not-found, which counts as removed.
+        # A resource whose name is known in advance is recorded BEFORE the call that creates it, so a call
+        # that fails part-way is still cleaned up; removing one that was never created is a not-found,
+        # which counts as removed. A layer version, whose number Lambda assigns, is recorded once created.
         # A function also gets the log group Lambda creates for it on its first invoke. That is recorded
         # first, so it is removed after the function, which could otherwise write to it again.
         function Add-IntegrationResource {
@@ -149,6 +152,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             if (-not $pending -or $attempt -eq 2) { break }
             Start-Sleep -Seconds 15
         }
+        foreach ($registry in $script:DockerRegistries) { $null = & docker logout $registry 2>&1 }
         if (Get-Command Remove-LambdaPSTestModule -ErrorAction SilentlyContinue) { Remove-LambdaPSTestModule }
         if ($failed) {
             $list = ($failed | ForEach-Object { "  $($_.Resource.Kind) '$($_.Resource.Name)': $($_.Message)" }) -join "`n"
@@ -220,8 +224,10 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         }.GetNewClosure()
         $repository = New-ECRRepository -RepositoryName $repositoryName -Region $script:Region -ErrorAction Stop
         $login = Get-ECRLoginCommand -Region $script:Region -ErrorAction Stop
-        $login.Password | & docker login --username $login.Username --password-stdin ($login.Endpoint -replace '^https?://', '') 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'docker login to the ECR registry failed.' }
+        $registry = $login.Endpoint -replace '^https?://', ''
+        $script:DockerRegistries.Add($registry)
+        $loginOutput = $login.Password | & docker login --username $login.Username --password-stdin $registry 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "docker login to the ECR registry $registry failed: $(($loginOutput | ForEach-Object { [string]$_ }) -join ' ')" }
         $image = Build-LambdaPSRuntimeImage -Path $project -ImageUri "$($repository.RepositoryUri):v1"
 
         $functionName = $script:Prefix + 'container'
@@ -251,6 +257,12 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             Remove-ECRRepository -RepositoryName $runtimeName -IgnoreExistingImages $true -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime' -Name $runtimeName -Remove {
+            # Lambda deletes a runtime's versions in the background, and refuses to delete a runtime that
+            # still lists one, so wait (up to two minutes) until none is listed.
+            for ($wait = 0; $wait -lt 24; $wait++) {
+                if (@(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop).Count -eq 0) { break }
+                Start-Sleep -Seconds 5
+            }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime version v1 of' -Name $runtimeName -Remove {
