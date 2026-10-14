@@ -117,6 +117,42 @@ Describe 'Get-LambdaPSPwshArchive' -Tag 'Unit' {
         }
     }
 
+    # Ctrl+C stops the pipeline, which skips catch blocks but runs finally blocks.
+    It 'removes the partial tarball when the download is stopped part-way' {
+        $record = [System.IO.Path]::Combine($TestDrive, 'download-outfile.txt')
+        $ps = [powershell]::Create()
+        try {
+            $null = $ps.AddScript({
+                    param($ModulePath, $Record)
+                    $module = Import-Module $ModulePath -Force -PassThru
+                    & $module {
+                        param($Record)
+                        function Get-LambdaPSPwshArchiveHash { 'AB' * 32 }
+                        # A download in progress: part of the file is written, then the transfer is slow.
+                        function Invoke-WebRequest {
+                            param($Uri, $OutFile, [switch]$UseBasicParsing, $MaximumRetryCount, $RetryIntervalSec, $ConnectionTimeoutSeconds, $OperationTimeoutSeconds)
+                            [System.IO.File]::WriteAllBytes($OutFile, [byte[]]::new(1024))
+                            Set-Content -LiteralPath $Record -Value $OutFile
+                            Start-Sleep -Seconds 60
+                        }
+                        Get-LambdaPSPwshArchive -PwshVersion '7.4.20' -Architecture 'x86_64'
+                    } $Record
+                }).AddArgument($script:modulePath).AddArgument($record)
+            $async = $ps.BeginInvoke()
+            $deadline = [datetime]::UtcNow.AddSeconds(120)
+            while (-not (Test-Path -LiteralPath $record) -and [datetime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+            Test-Path -LiteralPath $record | Should -BeTrue
+            $partial = (Get-Content -LiteralPath $record -Raw).Trim()
+            Test-Path -LiteralPath $partial | Should -BeTrue
+
+            $ps.Stop()
+            try { $null = $ps.EndInvoke($async) } catch { $null = $_ }
+
+            Test-Path -LiteralPath $partial | Should -BeFalse
+        }
+        finally { $ps.Dispose() }
+    }
+
     It 'throws PwshArchiveHashMismatch and does not return when the SHA256 differs' {
         InModuleScope $script:moduleName {
             Mock 'Get-LambdaPSPwshArchiveHash' -MockWith { 'abc123' }

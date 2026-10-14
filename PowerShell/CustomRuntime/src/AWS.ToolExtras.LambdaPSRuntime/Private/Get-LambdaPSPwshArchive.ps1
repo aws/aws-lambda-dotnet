@@ -104,6 +104,9 @@ function Get-LambdaPSPwshArchive {
     $destination = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "lambdaps-$([System.IO.Path]::GetRandomFileName())-$fileName")
 
     Write-Verbose "Downloading $url"
+    # Set only once the hash matches: anything else at $destination (a partial file from a failed or
+    # stopped download, Ctrl+C included, or a file with the wrong hash) is removed on the way out.
+    $verified = $false
     try {
         # Retry a failed HTTP response (a GitHub rate limit or server error), give up on a host that does
         # not connect in time, and fail a download that does not finish in time. A dropped connection is
@@ -113,18 +116,17 @@ function Get-LambdaPSPwshArchive {
             -MaximumRetryCount $download.RetryCount -RetryIntervalSec $download.RetryDelaySeconds `
             -ConnectionTimeoutSeconds $download.ConnectTimeoutSeconds -OperationTimeoutSeconds $download.OperationTimeoutSeconds
         $actual = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        if ($actual -ne $expected) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.Security.SecurityException]::new(
+                        "SHA256 mismatch for '$fileName': expected $expected but got $actual. Refusing to use an unverified interpreter."),
+                    'PwshArchiveHashMismatch', [System.Management.Automation.ErrorCategory]::SecurityError, $fileName)
+        }
+        $verified = $true
     }
-    catch {
-        # An interrupted download leaves a partial file under a name nothing will reuse.
-        Remove-Item -LiteralPath $destination -Force -ErrorAction SilentlyContinue
-        throw
-    }
-    if ($actual -ne $expected) {
-        Remove-Item -LiteralPath $destination -Force -ErrorAction SilentlyContinue
-        throw [System.Management.Automation.ErrorRecord]::new(
-                [System.Security.SecurityException]::new(
-                    "SHA256 mismatch for '$fileName': expected $expected but got $actual. Refusing to use an unverified interpreter."),
-                'PwshArchiveHashMismatch', [System.Management.Automation.ErrorCategory]::SecurityError, $fileName)
+    finally {
+        # In finally, not catch: stopping the pipeline (Ctrl+C) skips catch but still runs finally.
+        if (-not $verified) { Remove-Item -LiteralPath $destination -Force -ErrorAction SilentlyContinue }
     }
 
     return $destination
