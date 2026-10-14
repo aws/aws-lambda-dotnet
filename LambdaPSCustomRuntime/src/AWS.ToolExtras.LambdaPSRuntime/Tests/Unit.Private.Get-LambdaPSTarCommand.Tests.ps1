@@ -71,6 +71,24 @@ Describe 'Get-LambdaPSTarCommand' -Tag 'Unit' {
         }
     }
 
+    It 'returns tar, which is no program, when no tar program is on PATH and a session function is named tar' {
+        InModuleScope $script:moduleName -Parameters @{ SystemRoot = $script:systemRoot } {
+            param($SystemRoot)
+            $savedPath = $env:PATH
+            $env:PATH = [System.IO.Path]::Combine($SystemRoot, 'no-such-folder')
+            function script:tar { 'FUNCTION RAN' }
+            try {
+                $tar = Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot
+                $tar | Should -Be 'tar'
+                Get-Command -Name $tar -CommandType Application -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+            }
+            finally {
+                $env:PATH = $savedPath
+                Remove-Item -LiteralPath 'function:script:tar'
+            }
+        }
+    }
+
     It 'chooses for the current host by default' {
         InModuleScope $script:moduleName {
             Get-LambdaPSTarCommand | Should -Be (Get-LambdaPSTarCommand -OnWindows $IsWindows -SystemRoot $env:SystemRoot)
