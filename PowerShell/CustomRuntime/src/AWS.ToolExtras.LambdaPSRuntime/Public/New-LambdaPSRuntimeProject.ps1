@@ -95,8 +95,10 @@ function New-LambdaPSRuntimeProject {
         PowerShellGet is never used, and repository trust is not bypassed. See Save-LambdaPSModule.
         A download stops with ModuleInstallerNotFound when PSResourceGet is not available,
         AWSToolsInstallerImportFailed when AWS.Tools.Installer cannot be imported, ModuleDownloadFailed
-        when the download does not produce the module, and ModuleFolderIncomplete when a module's
-        version folder exists without its <Name>.psd1 (remove that folder).
+        when the download does not produce the module, ModuleFolderIncomplete when a module's version
+        folder exists without its <Name>.psd1 (remove that folder), and ModuleGuidMismatch when the
+        module's name and version exist only with a GUID other than the one the requirement names
+        (the message gives both).
     .PARAMETER ModuleRepository
         The PSResourceGet repositories to download non-AWS.Tools modules from, in order (for example
         an internal mirror). When omitted, every registered repository is searched in priority order,
