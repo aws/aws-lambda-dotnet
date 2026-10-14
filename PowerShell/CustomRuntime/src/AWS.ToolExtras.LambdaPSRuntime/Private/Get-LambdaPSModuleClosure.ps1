@@ -26,8 +26,9 @@ function Get-LambdaPSModuleClosure {
                     $null. It is returned rather than thrown so the error is attributed to the calling
                     cmdlet.
 
-        A -Module name that is a wildcard (*, ? or [) or a path (rooted, or containing a / or \) is
-        returned as a ModuleNameInvalid Error: each module must be named exactly.
+        A -Module name that is a wildcard (*, ? or [) or a path (rooted, containing a / or \, or made
+        only of dots, such as . or ..) is returned as a ModuleNameInvalid Error: each module must be
+        named exactly.
         A -Module specification that names AWSPowerShell or AWSPowerShell.NetCore (any case, with or
         without a version) is returned as an AWSPowerShellModuleNotSupported Error, giving each
         module's reason (Get-LambdaPSAWSPowerShellModuleReason): AWSPowerShell does not run in
@@ -64,9 +65,9 @@ function Get-LambdaPSModuleClosure {
         whatever the other modules are doing (ModuleClosureNotSettled only after the pass limit).
         When a kept higher choice breaks a maximum, that is a ModuleVersionConflict.
 
-        A RequiredModules entry that names a path (rooted, or containing a / or \) rather than a module
-        is a DependencyNameIsPath error: it would resolve from wherever the path points, or from the
-        current directory, and would not load on Lambda.
+        A RequiredModules entry that names a path (rooted, containing a / or \, or made only of dots)
+        rather than a module is a DependencyNameIsPath error: it would resolve from wherever the path
+        points, or from the current directory, and would not load on Lambda.
 
         A HashSet keyed on "Name Version" dedupes modules and guards against dependency cycles. Makes
         no network call and writes nothing.
@@ -113,11 +114,12 @@ function Get-LambdaPSModuleClosure {
     )
 
     # A -Module name must name one module. Get-Module -FullyQualifiedName would also take a wildcard
-    # (and use the first module it matches) or a manifest path (which does not load on Lambda), and
-    # either would get past the checks below. A dependency that names a path is refused the same way
+    # (and use the first module it matches) or a path (which does not load on Lambda; '.' and '..' are
+    # read as folders relative to the current location), and either would get past the checks below. A dependency that names a path is refused the same way
     # (DependencyNameIsPath).
     foreach ($spec in $Module) {
-        if ([System.IO.Path]::IsPathRooted($spec.Name) -or $spec.Name.IndexOfAny([char[]]@('/', '\', '*', '?', '[')) -ge 0) {
+        if ([System.IO.Path]::IsPathRooted($spec.Name) -or $spec.Name.IndexOfAny([char[]]@('/', '\', '*', '?', '[')) -ge 0 -or
+            $spec.Name.Trim('.').Length -eq 0) {
             $message = "Module '$($spec.Name)' is a wildcard or a path, not a module name. Name each module " +
                 "exactly (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '<version>' })."
             $nameError = [System.Management.Automation.ErrorRecord]::new(
@@ -339,7 +341,8 @@ function Get-LambdaPSModuleClosure {
                     Write-Verbose "Not staging '$($dependency.Name)', required by $key`: it is one of PowerShell's own modules."
                     continue
                 }
-                if ([System.IO.Path]::IsPathRooted($dependency.Name) -or $dependency.Name.IndexOfAny([char[]]@('/', '\')) -ge 0) {
+                if ([System.IO.Path]::IsPathRooted($dependency.Name) -or $dependency.Name.IndexOfAny([char[]]@('/', '\')) -ge 0 -or
+                    $dependency.Name.Trim('.').Length -eq 0) {
                     $message = "Dependency '$($dependency.Name)' of module '$($item.Name)' $version is a path, not a " +
                         'module name. Dependencies are resolved by name and version only; a path would take the ' +
                         "module from wherever it points, and it would not load on Lambda. Change the module's " +

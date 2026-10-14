@@ -61,6 +61,8 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         @{ Case = 'rooted'; Name = '/elsewhere/LambdaPSFake.Other' }
         @{ Case = 'relative'; Name = '../LambdaPSFake.Other' }
         @{ Case = 'backslash'; Name = 'sub\LambdaPSFake.Other' }
+        @{ Case = "'.'"; Name = '.' }
+        @{ Case = "'..'"; Name = '..' }
     ) {
         $root = Join-Path $TestDrive "closure-path-$Case"
         $null = New-FakeModule -Root $root -Name 'LambdaPSFake.PathDep' -Version '1.0.0' `
@@ -481,6 +483,8 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         @{ Case = "the wildcard 'LambdaPSFake.[AB]'"; Name = 'LambdaPSFake.[AB]' }
         @{ Case = 'a manifest path'; Name = 'manifest' }
         @{ Case = 'a relative path'; Name = 'modules/LambdaPSFake.A' }
+        @{ Case = "'.', read as the current folder"; Name = '.' }
+        @{ Case = "'..', read as the parent folder"; Name = '..' }
     ) {
         if ($Name -eq 'manifest') {
             $root = Join-Path $TestDrive 'closure-name-path'
@@ -499,11 +503,15 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
         }
     }
 
-    It 'accepts a dotted module name with no wildcard or path' {
-        InModuleScope $script:moduleName {
-            $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Not-Installed_1'; RequiredVersion = '1.0.0' }
+    It 'accepts a dotted module name with no wildcard or path (<Name>)' -ForEach @(
+        @{ Name = 'LambdaPSFake.Not-Installed_1' }
+        @{ Name = 'LambdaPSFake..Two' }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Name = $Name } {
+            param($Name)
+            $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = $Name; RequiredVersion = '1.0.0' }
             $closure.Error | Should -BeNullOrEmpty
-            @($closure.Missing.Key) | Should -Be @('LambdaPSFake.Not-Installed_1 1.0.0')
+            @($closure.Missing.Key) | Should -Be @("$Name 1.0.0")
         }
     }
 
