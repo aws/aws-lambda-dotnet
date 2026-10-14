@@ -151,6 +151,13 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         }
     }
 
+    It 'rejects a runtime version ARN at parameter binding' {
+        InModuleScope $script:moduleName {
+            { Merge-LambdaPSEcrPullPolicy -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/1' -PolicyText $null } |
+                Should -Throw -ErrorId 'ParameterArgumentValidationError,Merge-LambdaPSEcrPullPolicy'
+        }
+    }
+
     It 'rejects a runtime ARN with an uppercase <Case> at parameter binding' -ForEach @(
         @{ Case = 'partition'; RuntimeArn = 'arn:AWS:lambda:us-east-1:111122223333:runtime/my-ps' }
         @{ Case = 'region'; RuntimeArn = 'arn:aws:lambda:US-EAST-1:111122223333:runtime/my-ps' }

@@ -30,9 +30,9 @@ function Test-LambdaPSPullConditionMet {
     .OUTPUTS
         System.Boolean
     .EXAMPLE
-        Test-LambdaPSPullConditionMet -Condition $statement['Condition'] -AccountId 111122223333 -RuntimeArn $arn
+        Test-LambdaPSPullConditionMet -Condition @{ StringEquals = @{ 'aws:SourceAccount' = '111122223333' } } -AccountId 111122223333 -RuntimeArn arn:aws:lambda:us-east-1:111122223333:runtime/my-ps
 
-        Returns $true when Lambda's pull for that runtime meets the statement's Condition.
+        Returns $true: Lambda's pull for that runtime comes from account 111122223333.
     #>
     [CmdletBinding()]
     [OutputType([bool])]

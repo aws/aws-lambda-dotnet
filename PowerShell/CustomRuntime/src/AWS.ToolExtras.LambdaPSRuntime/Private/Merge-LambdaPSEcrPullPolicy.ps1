@@ -67,7 +67,7 @@ function Merge-LambdaPSEcrPullPolicy {
 
         [Parameter(Mandatory)]
         # Options = 'None': ValidatePattern ignores case by default, and ARN partitions and regions are lowercase.
-        [ValidatePattern('^arn:[a-z0-9-]+:lambda:[a-z0-9-]+:[0-9]{12}:runtime/.+\z', Options = 'None')]
+        [ValidatePattern('^arn:[a-z0-9-]+:lambda:[a-z0-9-]+:[0-9]{12}:runtime/[^/\s]+\z', Options = 'None')]
         [string]$RuntimeArn
     )
 
