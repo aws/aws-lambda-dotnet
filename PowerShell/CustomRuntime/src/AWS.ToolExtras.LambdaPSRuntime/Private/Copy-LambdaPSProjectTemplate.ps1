@@ -6,16 +6,18 @@ function Copy-LambdaPSProjectTemplate {
         Walks every file under each source template root in turn, recreates the relative layout
         beneath the target root, and writes each file as UTF-8 without BOM. The __PWSH_VERSION__ token is
         replaced with the resolved full pwsh version, __PWSH_RELEASE_URL__ with the pwsh release
-        download URL, and __DOWNLOAD_RETRY_COUNT__, __DOWNLOAD_RETRY_DELAY__ and
-        __DOWNLOAD_CONNECT_TIMEOUT__ with the download limits (all from Config/pwsh.psd1), in ANY
-        file that contains them (the CMR and Container Dockerfiles carry them). For every target,
+        download URL, and __DOWNLOAD_RETRY_COUNT__, __DOWNLOAD_RETRY_DELAY__,
+        __DOWNLOAD_CONNECT_TIMEOUT__ and __DOWNLOAD_OPERATION_TIMEOUT__ with the download limits (all
+        from Config/pwsh.psd1), in ANY file that contains them (the CMR and Container Dockerfiles carry
+        them). For every target,
         __TIMEOUT__ and __MEMORY_SIZE__ are replaced with the function timeout and memory from
         Config/function.psd1 (the READMEs carry them). The
         __PWSH_ARM64_SHA256__ token (the CMR and Container Dockerfiles) is replaced with the module's pinned SHA256 of that
         version's linux-arm64 release tarball; if none is pinned, the token is left in place (so an
         arm64 build fails closed while amd64 still builds) and a warning is written. All other
         content is copied as text unchanged, except that the bootstrap is written with LF line endings
-        and each -Token is replaced with its value. Every file is rendered first and then written
+        and each -Token is replaced with its value. Every placeholder is replaced in one pass, so a
+        value written in is never read as a placeholder. Every file is rendered first and then written
         under ONE ShouldProcess for the whole project, so -WhatIf reports a single line (the file count
         and the destination) without touching disk, and -Confirm asks once. Returns the absolute paths
         written.
@@ -80,6 +82,7 @@ function Copy-LambdaPSProjectTemplate {
 
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
+        [ValidatePattern('\A[0-9]+\.[0-9]+\.[0-9]+\z')]
         [string]$PwshVersion,
 
         [Parameter(Mandatory)]
@@ -164,21 +167,25 @@ function Copy-LambdaPSProjectTemplate {
 
         # Substitute the concrete pwsh version, the release download URL and the download retry
         # limits into ANY file carrying the token (the CMR and Container Dockerfiles).
+        # Every placeholder is replaced in one pass, so a value written in (a -RuntimeAlias of
+        # '__ARCHITECTURE__', say) is not itself read as a placeholder.
+        $values = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::Ordinal)
         if ($carriesRuntime) {
             $download = $script:Config.pwsh.Download
-            $text = $text.Replace('__PWSH_VERSION__', $PwshVersion).Replace('__PWSH_RELEASE_URL__', $script:Config.pwsh.ReleaseUrl).
-                Replace('__DOWNLOAD_RETRY_COUNT__', [string]$download.RetryCount).
-                Replace('__DOWNLOAD_RETRY_DELAY__', [string]$download.RetryDelaySeconds).
-                Replace('__DOWNLOAD_CONNECT_TIMEOUT__', [string]$download.ConnectTimeoutSeconds)
+            $values['__PWSH_VERSION__'] = $PwshVersion
+            $values['__PWSH_RELEASE_URL__'] = $script:Config.pwsh.ReleaseUrl
+            $values['__DOWNLOAD_RETRY_COUNT__'] = [string]$download.RetryCount
+            $values['__DOWNLOAD_RETRY_DELAY__'] = [string]$download.RetryDelaySeconds
+            $values['__DOWNLOAD_CONNECT_TIMEOUT__'] = [string]$download.ConnectTimeoutSeconds
+            $values['__DOWNLOAD_OPERATION_TIMEOUT__'] = [string]$download.OperationTimeoutSeconds
         }
         # The function timeout and memory (Config/function.psd1) that the function and layer READMEs
         # suggest; the RuntimeImage README does not.
-        $text = $text.Replace('__TIMEOUT__', [string]$script:Config.function.Timeout).
-            Replace('__MEMORY_SIZE__', [string]$script:Config.function.MemorySize)
+        $values['__TIMEOUT__'] = [string]$script:Config.function.Timeout
+        $values['__MEMORY_SIZE__'] = [string]$script:Config.function.MemorySize
         $isJson = $relative.EndsWith('.json', [System.StringComparison]::OrdinalIgnoreCase)
         foreach ($name in $Token.Keys) {
-            $value = if ($isJson) { ConvertTo-Json -InputObject $Token[$name] -Compress } else { [string]$Token[$name] }
-            $text = $text.Replace([string]$name, $value)
+            $values[[string]$name] = if ($isJson) { ConvertTo-Json -InputObject $Token[$name] -Compress } else { [string]$Token[$name] }
         }
 
         # The CMR and Container Dockerfiles install pwsh on arm64 from the release tarball (there is
@@ -188,7 +195,7 @@ function Copy-LambdaPSProjectTemplate {
         if ($text.Contains('__PWSH_ARM64_SHA256__')) {
             $arm64Hash = Get-LambdaPSPwshArchiveHash -PwshVersion $PwshVersion -Architecture 'arm64'
             if ($arm64Hash) {
-                $text = $text.Replace('__PWSH_ARM64_SHA256__', $arm64Hash)
+                $values['__PWSH_ARM64_SHA256__'] = $arm64Hash
             }
             elseif (-not $warnedArm64Hash) {
                 Write-Warning ("No SHA256 is pinned for the pwsh $PwshVersion arm64 tarball, so the scaffolded " +
@@ -197,6 +204,9 @@ function Copy-LambdaPSProjectTemplate {
                 $warnedArm64Hash = $true
             }
         }
+        # Longest first, so a placeholder that contains another is matched whole.
+        $pattern = (@($values.Keys) | Sort-Object -Property Length -Descending | ForEach-Object { [regex]::Escape($_) }) -join '|'
+        $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) $values[$match.Value] })
         # Everything else is copied unchanged.
 
         # The bootstrap is executed directly by the kernel on Linux, so it must be LF. .gitattributes

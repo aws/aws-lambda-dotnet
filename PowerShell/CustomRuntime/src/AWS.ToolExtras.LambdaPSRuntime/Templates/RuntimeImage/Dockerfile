@@ -40,7 +40,7 @@ RUN set -eu; \
             *) echo "No pinned SHA256 for the pwsh ${PWSH_VERSION} arm64 tarball; cannot build linux/arm64." >&2; exit 1 ;; \
         esac; \
         dnf install -y tar gzip libicu; \
-        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ -o /tmp/pwsh.tar.gz \
+        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ --max-time __DOWNLOAD_OPERATION_TIMEOUT__ -o /tmp/pwsh.tar.gz \
             "__PWSH_RELEASE_URL__/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-arm64.tar.gz"; \
         echo "${PWSH_ARM64_SHA256}  /tmp/pwsh.tar.gz" | sha256sum -c -; \
         mkdir -p /opt/microsoft/powershell/7; \
@@ -48,7 +48,7 @@ RUN set -eu; \
         rm -f /tmp/pwsh.tar.gz; \
     else \
         rpm --import https://packages.microsoft.com/keys/microsoft.asc; \
-        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ https://packages.microsoft.com/config/rhel/9/prod.repo \
+        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ --max-time __DOWNLOAD_OPERATION_TIMEOUT__ https://packages.microsoft.com/config/rhel/9/prod.repo \
             -o /etc/yum.repos.d/microsoft.repo; \
         dnf install -y "powershell-${PWSH_VERSION}"; \
     fi; \

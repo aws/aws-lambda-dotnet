@@ -60,7 +60,9 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         $retry = "--retry $($script:pwshConfig.Download.RetryCount) --retry-delay $($script:pwshConfig.Download.RetryDelaySeconds) " +
             "--connect-timeout $($script:pwshConfig.Download.ConnectTimeoutSeconds) "
         ([regex]::Matches($dockerfile, [regex]::Escape($retry))).Count | Should -Be 2
-        $dockerfile | Should -Not -Match '__DOWNLOAD_RETRY_'
+        # And each download is limited as a whole, so a stalled transfer cannot hang the build.
+        ([regex]::Matches($dockerfile, [regex]::Escape("--max-time $($script:pwshConfig.Download.OperationTimeoutSeconds) "))).Count | Should -Be 2
+        $dockerfile | Should -Not -Match '__DOWNLOAD_'
         $dockerfile | Should -Match 'sha256sum -c'
         # amd64 keeps the GPG-signed RPM path.
         $dockerfile | Should -Match 'packages\.microsoft\.com'
@@ -697,6 +699,49 @@ function script:Save-LambdaPSModuleFromRepository {
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Not -Exist
             @($warnings) | Should -BeNullOrEmpty
         }
+    }
+}
+
+# A write that fails part-way, on a full disk for example, is simulated by a template copy that writes
+# one file and then fails.
+Describe 'New-LambdaPSRuntimeProject when writing the project fails' -Tag 'Unit' {
+    BeforeAll {
+        $script:failingCopy = {
+            $null = New-Item -ItemType Directory -Path $Destination -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($Destination, 'bootstrap')) -Value '#!/bin/sh'
+            throw [System.IO.IOException]::new('No space left on device')
+        }
+    }
+
+    It 'removes what it wrote and raises ProjectWriteFailed, when -Path <Case>' -ForEach @(
+        @{ Case = 'is new'; Create = $false }, @{ Case = 'is an empty folder'; Create = $true }
+    ) {
+        Mock 'Copy-LambdaPSProjectTemplate' -ModuleName $script:moduleName -MockWith $script:failingCopy
+        $target = [System.IO.Path]::Combine($TestDrive, "write-fails-$Create")
+        if ($Create) { $null = New-Item -ItemType Directory -Path $target }
+
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' } |
+            Should -Throw -ErrorId 'ProjectWriteFailed,New-LambdaPSRuntimeProject' -ExpectedMessage '*No space left on device*What this run wrote was removed.*'
+        if ($Create) { @(Get-ChildItem -LiteralPath $target -Force) | Should -BeNullOrEmpty }
+        else { $target | Should -Not -Exist }
+    }
+
+    It 'keeps what it wrote, and says to rerun with -Force, when -Force replaced the contents' {
+        Mock 'Copy-LambdaPSProjectTemplate' -ModuleName $script:moduleName -MockWith $script:failingCopy
+        $target = [System.IO.Path]::Combine($TestDrive, 'write-fails-force')
+        $null = New-Item -ItemType Directory -Path $target
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($target, 'old.txt')) -Value 'old'
+
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force } |
+            Should -Throw -ErrorId 'ProjectWriteFailed,New-LambdaPSRuntimeProject' -ExpectedMessage '*rerun with -Force*'
+        [System.IO.Path]::Combine($target, 'bootstrap') | Should -Exist
+    }
+
+    It 'leaves a successful scaffold whole' {
+        $target = [System.IO.Path]::Combine($TestDrive, 'write-succeeds')
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $written | ForEach-Object { $_ | Should -Exist }
+        [System.IO.Path]::Combine($target, 'lambdaps-runtime.json') | Should -Exist
     }
 }
 

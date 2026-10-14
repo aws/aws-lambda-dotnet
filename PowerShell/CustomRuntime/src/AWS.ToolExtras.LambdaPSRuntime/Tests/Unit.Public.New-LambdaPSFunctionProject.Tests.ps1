@@ -742,7 +742,7 @@ Describe 'New-LambdaPSFunctionProject parameter validation' -Tag 'Unit' {
     ) {
         $projectDir = [System.IO.Path]::Combine($TestDrive, "fn-badhandler-$($Handler -replace '\W', '')")
         { New-LambdaPSFunctionProject -Path $projectDir -Handler $Handler } |
-            Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionProject' -ExpectedMessage "*parameter 'Handler'*"
+            Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionProject' -ExpectedMessage "*parameter 'Handler'*is not a handler script name*set when you deploy*"
         $projectDir | Should -Not -Exist
     }
 

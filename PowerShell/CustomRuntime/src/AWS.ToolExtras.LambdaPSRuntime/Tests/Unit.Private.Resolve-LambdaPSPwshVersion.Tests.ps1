@@ -44,6 +44,22 @@ Describe 'Resolve-LambdaPSPwshVersion' -Tag 'Unit' {
 }
 
 Describe 'Resolve-LambdaPSPwshVersion parameter validation' -Tag 'Unit' {
+    It 'rejects a -PwshVersion that is not x.y.z: <Value>' -ForEach @(
+        @{ Value = '7.4.x/../../evil' }, @{ Value = '7.4.20-rc.1' }, @{ Value = "7.4.20`n" }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Value = $Value } {
+            param($Value)
+            { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4' -PwshVersion $Value } |
+                Should -Throw -ErrorId 'ParameterArgumentValidationError,Resolve-LambdaPSPwshVersion'
+        }
+    }
+
+    It 'takes an empty -PwshVersion as not given' {
+        InModuleScope $script:moduleName {
+            Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4' -PwshVersion '' | Should -Be $script:Config.pwsh.DefaultPatch['7.4']
+        }
+    }
+
     It 'rejects a -PowerShellVersion with a trailing newline' {
         InModuleScope $script:moduleName {
             { Resolve-LambdaPSPwshVersion -PowerShellVersion "7.4`n" } |

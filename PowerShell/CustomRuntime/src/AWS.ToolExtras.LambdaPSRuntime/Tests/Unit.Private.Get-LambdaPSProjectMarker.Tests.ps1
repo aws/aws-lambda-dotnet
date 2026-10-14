@@ -39,6 +39,47 @@ Describe 'Get-LambdaPSProjectMarker' -Tag 'Unit' {
         }
     }
 
+    # An edited version is reported against the marker, not as a parameter error further on.
+    It 'throws InvalidProjectMarker naming the file and field for <Field> <Value>' -ForEach @(
+        @{ Field = 'PwshVersion'; Value = '7.4.x/../../evil' }, @{ Field = 'PwshVersion'; Value = '7.4' }
+        @{ Field = 'PowerShellVersion'; Value = '7' }, @{ Field = 'PowerShellVersion'; Value = '7.4/..' }
+    ) {
+        $dir = Join-Path $TestDrive "marker-bad-$Field-$($Value -replace '\W', '-')"
+        $null = New-Item -ItemType Directory -Path $dir
+        Set-Content -LiteralPath (Join-Path $dir 'lambdaps-runtime.json') -Value (@{ Target = 'Layer'; $Field = $Value } | ConvertTo-Json)
+        InModuleScope $script:moduleName -Parameters @{ Dir = $dir; Field = $Field; Value = $Value } {
+            param($Dir, $Field, $Value)
+            { Get-LambdaPSProjectMarker -Path $Dir } | Should -Throw -ErrorId 'InvalidProjectMarker' -ExpectedMessage "*lambdaps-runtime.json' has $Field '$([System.Management.Automation.WildcardPattern]::Escape($Value))'*"
+        }
+    }
+
+    It 'returns well-formed versions as written' {
+        $dir = Join-Path $TestDrive 'marker-versions-ok'
+        $null = New-Item -ItemType Directory -Path $dir
+        Set-Content -LiteralPath (Join-Path $dir 'lambdaps-runtime.json') -Value '{"Target":"Layer","PowerShellVersion":"7.5","PwshVersion":"7.5.11"}'
+        InModuleScope $script:moduleName -Parameters @{ Dir = $dir } {
+            param($Dir)
+            $marker = Get-LambdaPSProjectMarker -Path $Dir
+            $marker.PowerShellVersion | Should -Be '7.5'
+            $marker.PwshVersion | Should -Be '7.5.11'
+        }
+    }
+
+    It 'writes no error for a folder it cannot read' -Skip:($IsWindows -or ((id -u) -eq '0')) {
+        $dir = Join-Path $TestDrive 'marker-unreadable'
+        $null = New-Item -ItemType Directory -Path $dir
+        [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserWrite')
+        try {
+            InModuleScope $script:moduleName -Parameters @{ Dir = $dir } {
+                param($Dir)
+                $errors = @()
+                Get-LambdaPSProjectMarker -Path $Dir -ErrorVariable errors | Should -BeNullOrEmpty
+                $errors | Should -BeNullOrEmpty
+            }
+        }
+        finally { [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute') }
+    }
+
     # Callers print the Target and return it (Build-LambdaPSRuntimePackage), so a hand-edited 'layer' is 'Layer'.
     It 'returns the canonical spelling of a target written in another case: <Written>' -ForEach @(
         @{ Written = 'layer'; Canonical = 'Layer' }, @{ Written = 'cmr'; Canonical = 'CMR' }

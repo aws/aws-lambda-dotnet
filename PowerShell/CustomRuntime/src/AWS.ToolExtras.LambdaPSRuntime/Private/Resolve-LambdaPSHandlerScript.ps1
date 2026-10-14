@@ -7,8 +7,7 @@ function Resolve-LambdaPSHandlerScript {
         (Compress-LambdaPSFunctionPackage, which reads the script's '#Requires -Modules') and the
         deployer (New-LambdaPSFunctionDeployment, which turns it into the Lambda handler string), so
         the two cannot disagree. Lambda does not reject a handler naming a script that is not in the
-        package: every invoke hangs to the timeout and reports only 'Task timed out', with nothing
-        pointing at the real cause.
+        package: the function deploys, and then fails at start-up with 'Handler script not found'.
 
         Resolution ladder, most specific first:
 

@@ -21,13 +21,19 @@ loop in `runtime.ps1`, `PowerShellLambdaContext.cs` (precompiled to a DLL during
 `New-LambdaPSRuntimeDeployment` builds this image, pushes it to Amazon ECR, publishes it as a
 runtime version and points an alias at it. To do the steps yourself:
 
-1. Create the repository with `New-ECRRepository`, and grant Lambda pull access with
-   `Set-ECRRepositoryPolicy`: a statement allowing principal `lambda.amazonaws.com` the actions
-   `ecr:BatchGetImage` and `ecr:GetDownloadUrlForLayer`, with a `Condition` that
-   `aws:SourceAccount` is your account and `aws:SourceArn` is the runtime's ARN
-   (`arn:<partition>:lambda:<region>:<account>:runtime/<name>`; the partition is `aws` in most
-   regions), so Lambda pulls it for that runtime only. Without the grant, publishing the version fails.
-2. Log docker in to the registry with the user name and password from `Get-ECRLoginCommand`.
+1. Create the repository with `New-ECRRepository`, and grant Lambda pull access. Read the
+   repository's policy with `Get-ECRRepositoryPolicy` (a new repository has none) and add a statement
+   allowing principal `lambda.amazonaws.com` the actions `ecr:BatchGetImage` and
+   `ecr:GetDownloadUrlForLayer`, with a `Condition` that `aws:SourceAccount` is your account and
+   `aws:SourceArn` is the runtime's ARN (`arn:<partition>:lambda:<region>:<account>:runtime/<name>`;
+   the partition is `aws` in most regions), so Lambda pulls it for that runtime only. Write the whole
+   policy back with `Set-ECRRepositoryPolicy`: it replaces the policy, so writing only the new
+   statement removes every other grant on a shared repository. Without the grant, publishing the
+   version fails.
+2. Log docker in to the registry host, written without `https://`
+   (`<account>.dkr.ecr.<region>.amazonaws.com`): pipe the `Password` from `Get-ECRLoginCommand` to
+   `docker login --username AWS --password-stdin <host>`. Skip this step when docker uses the Amazon
+   ECR credential helper (`ecr-login` in `credHelpers` or `credsStore` in `~/.docker/config.json`).
 3. Build and push with `Build-LambdaPSRuntimeImage -Path . -ImageUri <uri>`. Its result's
    `ImageDigest` identifies exactly the image pushed.
 4. Publish with `New-LMCRuntime`, `New-LMCRuntimeVersion -ImageUri <registry>/<repository>@<digest>`

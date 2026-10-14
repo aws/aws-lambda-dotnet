@@ -15,9 +15,11 @@ Build the layer .zip with `Build-LambdaPSRuntimePackage -Path . -OutFile ../laye
 `-Architecture arm64` for Graviton), upload it to Amazon S3 (it is larger than Lambda's
 direct-upload limit), and publish it with `Publish-LMLayerVersion -LayerName <name>
 -CompatibleArchitecture <the architecture you built> -Content_S3Bucket ... -Content_S3Key ...`.
-Functions then use runtime `provided.al2023` with this layer attached, their script name as the
-handler, and a timeout and memory that fit pwsh (Lambda's defaults, 3 seconds and 128 MB, are too
-small): `Publish-LMFunction -Runtime provided.al2023 -Layer <layer-version-arn> -Handler handler.ps1
--Timeout __TIMEOUT__ -MemorySize __MEMORY_SIZE__`.
-A function's architecture must match the layer's: Lambda accepts a mismatch, and every invoke then
-fails.
+Functions then run on `provided.al2023` with this layer attached. Package a function's folder (its
+handler script and any `modules/` it needs) with `Compress-LambdaPSFunctionPackage -Path <folder>
+-OutFile ../function.zip`, and create the function with `Publish-LMFunction -FunctionName <name>
+-Runtime provided.al2023 -Layer <layer-version-arn> -Handler handler.ps1 -Architecture <the
+architecture you built> -Role <exec-role-arn> -Timeout __TIMEOUT__ -MemorySize __MEMORY_SIZE__
+-ZipFilename ../function.zip`. Keep the timeout and memory: Lambda's defaults (3 seconds, 128 MB) are
+too small for pwsh. A function's architecture must match the layer's: Lambda accepts a mismatch, and
+every invoke then fails.

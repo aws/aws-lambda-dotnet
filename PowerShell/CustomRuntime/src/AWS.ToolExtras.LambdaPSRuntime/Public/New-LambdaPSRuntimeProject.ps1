@@ -23,7 +23,8 @@ function New-LambdaPSRuntimeProject {
         Every scaffolded project is the customer's to edit. A lambdaps-runtime.json marker recording
         the target and PowerShell version is written into the output so the validator and future
         tooling can identify the project shape. A template tree missing from the module (an
-        incomplete install) is a TemplateNotFound error.
+        incomplete install) is a TemplateNotFound error. A write that fails part-way, on a full disk for example, is a
+        ProjectWriteFailed error; when -Path was new or empty, what the run wrote is removed first.
 
         For the CMR target, the copy substitutes the concrete pwsh version into the Dockerfile's
         __PWSH_VERSION__ token and the pinned SHA256 of that version's linux-arm64 tarball into its
@@ -47,7 +48,9 @@ function New-LambdaPSRuntimeProject {
         On Linux and macOS an existing -Path must be owned by you, or by root when no group or other
         user can write to it: another user's directory (one created first in a shared folder such as
         /tmp) is a terminating TargetOwnedByAnotherUser error, even with -Force, since that user could
-        change the project while it is written or built. The check is skipped when you run as root.
+        change the project while it is written or built. A directory of yours that every user can
+        write to (o+w, without the sticky bit) is a TargetWritableByOthers error for the same reason:
+        remove that permission with chmod o-w <path>. The checks are skipped when you run as root.
     .PARAMETER PowerShellVersion
         The PowerShell version the project targets, in major.minor form (for example 7.4).
     .PARAMETER PwshVersion
@@ -67,9 +70,11 @@ function New-LambdaPSRuntimeProject {
         (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }); minimum-version and
         version-range specs are rejected. A module that is not installed locally is handled according
         to -MissingModuleAction. Defaults to none. Alias: -Module.
-        A specification for AWSPowerShell or AWSPowerShell.NetCore is an AWSPowerShellModuleNotSupported
-        error (use the AWS.Tools.* modules), a name with a wildcard (*, ? or [) or a path (rooted, or
-        with / or \) a ModuleNameInvalid error, and one without RequiredVersion a ModuleVersionRequired
+        AWSPowerShell (the Windows PowerShell module, which doesn't run in PowerShell 7) and
+        AWSPowerShell.NetCore (over 600 MB, more than Lambda's 250 MB package limit) fail with
+        AWSPowerShellModuleNotSupported: name the AWS.Tools.* modules for the services you use
+        instead. A name with a wildcard (*, ? or [) or a path (rooted, or with / or \) is a
+        ModuleNameInvalid error, and a specification without RequiredVersion a ModuleVersionRequired
         error. Resolving the dependencies stops with ModuleVersionConflict when a module is needed at
         versions no one version meets; ModuleVersionSpelling when the module found has the version
         written another way (PowerShell matches versions exactly, so 1.2 is not 1.2.0) or is above a
@@ -89,8 +94,9 @@ function New-LambdaPSRuntimeProject {
         registered repositories.
         PowerShellGet is never used, and repository trust is not bypassed. See Save-LambdaPSModule.
         A download stops with ModuleInstallerNotFound when PSResourceGet is not available,
-        AWSToolsInstallerImportFailed when AWS.Tools.Installer cannot be imported, and
-        ModuleDownloadFailed when the download does not produce the module.
+        AWSToolsInstallerImportFailed when AWS.Tools.Installer cannot be imported, ModuleDownloadFailed
+        when the download does not produce the module, and ModuleFolderIncomplete when a module's
+        version folder exists without its <Name>.psd1 (remove that folder).
     .PARAMETER ModuleRepository
         The PSResourceGet repositories to download non-AWS.Tools modules from, in order (for example
         an internal mirror). When omitted, every registered repository is searched in priority order,
@@ -107,7 +113,7 @@ function New-LambdaPSRuntimeProject {
         terminating TargetNotEmpty error. Replacing rather than merging is deliberate -- writing over
         the top would leave files the new target does not emit (for example a CMR Dockerfile in a
         re-scaffolded Layer project), producing a project that looks valid and builds into a broken
-        image. Use -WhatIf to see what would be deleted. -Force does not lift the owner check on an
+        image. -WhatIf names the full path of the folder whose contents would be deleted. -Force does not lift the owner check on an
         existing -Path (TargetOwnedByAnotherUser; see -Path).
 
         Under -Confirm the module download (when a module must be downloaded), the install for the
@@ -137,7 +143,7 @@ function New-LambdaPSRuntimeProject {
         Replaces the contents of an existing directory and pins pwsh 7.4.2. That version has no pinned
         arm64 hash, so the project builds linux/amd64 only and a warning says so.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
+        New-LambdaPSRuntimeProject -Path ./rt-s3 -PowerShellVersion 7.4 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
         Scaffolds the project and stages AWS.Tools.S3 5.0.274 (and its dependencies) into
         ./rt/modules, downloading any that are not installed locally.

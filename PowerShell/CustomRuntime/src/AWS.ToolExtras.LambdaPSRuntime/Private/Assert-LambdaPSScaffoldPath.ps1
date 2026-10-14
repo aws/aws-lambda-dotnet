@@ -13,7 +13,8 @@ function Assert-LambdaPSScaffoldPath {
             reported as a non-empty directory and -Force would delete it.
           - On Linux and macOS, an existing -Path (after following a link) must be owned by the
             current user, or by root when no group or other user can write to it
-            (TargetOwnedByAnotherUser), even with -Force. In a shared folder
+            (TargetOwnedByAnotherUser), and must not be writable by every user without the sticky bit
+            (TargetWritableByOthers), even with -Force. In a shared folder
             such as /tmp another user could create the directory first and change the project while
             it is written or built. The check is skipped when the caller is root.
           - An existing -Path must be listable (TargetNotReadable), even with -Force: a folder you
@@ -67,7 +68,9 @@ function Assert-LambdaPSScaffoldPath {
         # Root can change any directory already, so a root-owned target adds no risk unless other
         # users can write to it too (/tmp, /var/tmp, a shared drop folder). A caller running as root
         # (sudo, a CI container) is not refused its own user's checkout.
-        $currentUserId = [long](& id -u)
+        # Run by its resolved path, so a function or alias named 'id' in the session cannot answer.
+        $idCommand = Get-Command -Name 'id' -CommandType Application -ErrorAction Stop | Select-Object -First 1
+        $currentUserId = [long](& $idCommand.Source -u)
         $ownerId = [long]$directory.UnixStat.UserId
         $sharedWrite = [System.IO.UnixFileMode]::GroupWrite -bor [System.IO.UnixFileMode]::OtherWrite
         $safeRootOwned = $ownerId -eq 0 -and ($directory.UnixFileMode -band $sharedWrite) -eq 0
@@ -75,6 +78,17 @@ function Assert-LambdaPSScaffoldPath {
             throw [System.Management.Automation.ErrorRecord]::new(
                 [System.UnauthorizedAccessException]::new("Target '$Path' is owned by another user ($($directory.User)). Choose a directory you own: in a shared folder such as /tmp, another user could change the project while it is written or built."),
                 'TargetOwnedByAnotherUser', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Path)
+        }
+        # A directory every user can write to is shared whoever owns it: another user could change the
+        # project in it too. With the sticky bit (1777) other users cannot replace your files, so it is
+        # accepted. A group-writable one you own is accepted too, since a user-private group
+        # (umask 002) makes that the default for your own folders.
+        $mode = $directory.UnixFileMode
+        if ($currentUserId -ne 0 -and $ownerId -eq $currentUserId -and ($mode -band [System.IO.UnixFileMode]::OtherWrite) -ne 0 -and ($mode -band [System.IO.UnixFileMode]::StickyBit) -eq 0) {
+            $octal = [System.Convert]::ToString([int]$mode, 8)
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.UnauthorizedAccessException]::new("Target '$Path' has mode $octal, so every user can write to it and could change the project while it is written or built. Remove the others' write permission (chmod o-w '$Path'), or choose a directory only you can write to."),
+                'TargetWritableByOthers', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Path)
         }
     }
 

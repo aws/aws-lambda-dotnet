@@ -14,8 +14,8 @@ function Resolve-LambdaPSPwshVersion {
     .PARAMETER PowerShellVersion
         The target PowerShell version in major.minor form (for example '7.4').
     .PARAMETER PwshVersion
-        An explicit full pwsh version (x.y.z) on the -PowerShellVersion major.minor. When supplied,
-        it is returned verbatim.
+        An explicit full pwsh version (x.y.z, digits only) on the -PowerShellVersion major.minor. When
+        supplied, it is returned verbatim.
     .EXAMPLE
         Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4'
 
@@ -32,7 +32,9 @@ function Resolve-LambdaPSPwshVersion {
         [ValidatePattern('\A[0-9]+\.[0-9]+\z')]
         [string]$PowerShellVersion,
 
+        # Empty when not given, as the callers pass their own unset -PwshVersion through.
         [Parameter()]
+        [ValidatePattern('\A([0-9]+\.[0-9]+\.[0-9]+)?\z')]
         [string]$PwshVersion
     )
 

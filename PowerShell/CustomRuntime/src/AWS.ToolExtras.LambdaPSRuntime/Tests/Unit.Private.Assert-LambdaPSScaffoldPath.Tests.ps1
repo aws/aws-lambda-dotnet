@@ -1,5 +1,16 @@
 BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
+
+    # The helper runs 'id' by its resolved path, so another current user is simulated with a fake
+    # 'id' executable that Get-Command is mocked to return: fake-id/<uid> prints <uid>.
+    if (-not $IsWindows) {
+        foreach ($uid in '4294967294', '0') {
+            $fake = [System.IO.Path]::Combine($TestDrive, 'fake-id', $uid)
+            $null = New-Item -ItemType Directory -Path ([System.IO.Path]::GetDirectoryName($fake)) -Force
+            [System.IO.File]::WriteAllText($fake, "#!/bin/sh`necho $uid`n")
+            [System.IO.File]::SetUnixFileMode($fake, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute')
+        }
+    }
 }
 
 AfterAll {
@@ -25,13 +36,56 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
 
     # The owner is simulated by mocking the 'id -u' answer against a directory the test user owns.
     Context 'who may own it' -Skip:$IsWindows {
+        It 'refuses a directory you own that every user can write to, naming its mode and the fix' -Skip:((id -u) -eq '0') {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'mine-shared-777')
+            $null = New-Item -ItemType Directory -Path $dir
+            [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherWrite, OtherExecute')
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                { Assert-LambdaPSScaffoldPath -Path $Path -Force } | Should -Throw -ErrorId 'TargetWritableByOthers' -ExpectedMessage "*has mode 777*chmod o-w '$Path'*"
+            }
+        }
+
+        # Other users cannot replace your files in a sticky folder.
+        It 'accepts a directory you own that every user can write to with the sticky bit (1777)' -Skip:((id -u) -eq '0') {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'mine-shared-1777')
+            $null = New-Item -ItemType Directory -Path $dir
+            [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'StickyBit, UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherWrite, OtherExecute')
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                (Assert-LambdaPSScaffoldPath -Path $Path).Count | Should -Be 0
+            }
+        }
+
+        # A user-private group (umask 002) makes group-writable the default for your own folders.
+        It 'accepts a directory you own that only your group can also write to' -Skip:((id -u) -eq '0') {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'mine-group')
+            $null = New-Item -ItemType Directory -Path $dir
+            [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherExecute')
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                (Assert-LambdaPSScaffoldPath -Path $Path).Count | Should -Be 0
+            }
+        }
+
+        It 'checks the owner with the real id, not a session function named id' -Skip:((id -u) -eq '0') {
+            InModuleScope $script:moduleName {
+                Mock Get-Item { [PSCustomObject]@{ LinkTarget = $null; UnixStat = [PSCustomObject]@{ UserId = 4294967294 }; UnixFileMode = [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute'; User = 'other' } } -ParameterFilter { $LiteralPath -like '*foreign-shadow*' }
+                $dir = [System.IO.Path]::Combine($TestDrive, 'foreign-shadow')
+                $null = New-Item -ItemType Directory -Path $dir -Force
+                function global:id { '0' }
+                try { { Assert-LambdaPSScaffoldPath -Path $dir } | Should -Throw -ErrorId 'TargetOwnedByAnotherUser' }
+                finally { Remove-Item -LiteralPath 'Function:\global:id' -ErrorAction SilentlyContinue }
+            }
+        }
+
         It 'refuses a directory root owns that others can write to (<Mode>), as another user' -ForEach @(
             @{ Mode = 'StickyBit, UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherWrite, OtherExecute' }
             @{ Mode = 'UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute' }
         ) {
             InModuleScope $script:moduleName -Parameters @{ Mode = $Mode } {
                 param($Mode)
-                Mock id { '4294967294' }
+                Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '4294967294') } } -ParameterFilter { $Name -eq 'id' }
                 Mock Get-Item { [PSCustomObject]@{ LinkTarget = $null; UnixStat = [PSCustomObject]@{ UserId = 0 }; UnixFileMode = [System.IO.UnixFileMode]$Mode; User = 'root' } } -ParameterFilter { $LiteralPath -like '*root-shared*' }
                 $dir = [System.IO.Path]::Combine($TestDrive, 'root-shared')
                 $null = New-Item -ItemType Directory -Path $dir -Force
@@ -41,14 +95,14 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
 
         It 'refuses the real /tmp (root-owned, 1777), as another user' -Skip:(-not (Test-Path -LiteralPath '/tmp') -or (Get-Item -LiteralPath '/tmp' -Force).UnixStat.UserId -ne 0) {
             InModuleScope $script:moduleName {
-                Mock id { '4294967294' }
+                Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '4294967294') } } -ParameterFilter { $Name -eq 'id' }
                 { Assert-LambdaPSScaffoldPath -Path '/tmp' -Force } | Should -Throw -ErrorId 'TargetOwnedByAnotherUser'
             }
         }
 
         It 'accepts a directory root owns that only root can write to, as another user' {
             InModuleScope $script:moduleName {
-                Mock id { '4294967294' }
+                Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '4294967294') } } -ParameterFilter { $Name -eq 'id' }
                 Mock Get-Item { [PSCustomObject]@{ LinkTarget = $null; UnixStat = [PSCustomObject]@{ UserId = 0 }; UnixFileMode = [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute'; User = 'root' } } -ParameterFilter { $LiteralPath -like '*root-owned*' }
                 $dir = [System.IO.Path]::Combine($TestDrive, 'root-owned')
                 $null = New-Item -ItemType Directory -Path $dir -Force
@@ -61,7 +115,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
             $null = New-Item -ItemType Directory -Path $dir
             InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
                 param($Path)
-                Mock id { '0' }
+                Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '0') } } -ParameterFilter { $Name -eq 'id' }
                 (Assert-LambdaPSScaffoldPath -Path $Path).Count | Should -Be 0
             }
         }
@@ -111,7 +165,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
             }
             InModuleScope $script:moduleName -Parameters @{ Path = $path; Force = $Force } {
                 param($Path, $Force)
-                Mock id { '4294967294' }
+                Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '4294967294') } } -ParameterFilter { $Name -eq 'id' }
                 { Assert-LambdaPSScaffoldPath -Path $Path -Force:$Force } |
                     Should -Throw -ErrorId 'TargetOwnedByAnotherUser' -ExpectedMessage '*owned by another user*'
             }
@@ -158,7 +212,7 @@ Describe 'Assert-LambdaPSScaffoldPath raised through a calling cmdlet' -Tag 'Uni
             # Rebuilt here, so the call runs in the module and reaches its private helper.
             $Call = [scriptblock]::Create($Call)
             # Another user's directory: the caller's uid is not the owner's.
-            if ($Kind -eq 'owned') { Mock id { '4294967294' } }
+            if ($Kind -eq 'owned') { Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '4294967294') } } -ParameterFilter { $Name -eq 'id' } }
             function Invoke-LambdaPSTestCaller {
                 [CmdletBinding()]
                 param([scriptblock]$Call)

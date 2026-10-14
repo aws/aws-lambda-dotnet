@@ -22,6 +22,11 @@ function Invoke-LambdaPSProjectScaffold {
           3. The project's template tree is written with Copy-LambdaPSProjectTemplate.
           4. -IncludeModule is staged into <Path>/modules with Copy-LambdaPSModuleSet.
 
+        If step 3 or 4 fails, for example on a full disk, the error is a terminating
+        ProjectWriteFailed that carries the original error. When -Path was new or empty, what this run
+        wrote is removed first, so a rerun does not stop at TargetNotEmpty. A -Path whose contents
+        -Force replaced is left as the failure found it.
+
         The temporary download folder is always deleted. Every write is gated by ShouldProcess, here or
         in the helper that performs it: the download in step 1, the install under -MissingModuleAction
         Install (also step 1), and steps 2, 3 and 4 ask once each. Declining the download or step 2
@@ -84,6 +89,7 @@ function Invoke-LambdaPSProjectScaffold {
     )
 
     $downloadRoot = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "lambdaps-modules-$([System.IO.Path]::GetRandomFileName())")
+    $writing = $false
     try {
         # 1. Modules first, so nothing is written or replaced until every module is available.
         $pendingSave = @()
@@ -114,7 +120,8 @@ function Invoke-LambdaPSProjectScaffold {
         # Declining it under -Confirm skips the writes too: writing over the old contents is the hybrid
         # project -Force exists to prevent. Under -WhatIf the later stages are still previewed.
         if ($Existing.Count -gt 0) {
-            if ($PSCmdlet.ShouldProcess($Path, 'Delete existing contents before scaffolding (-Force)')) {
+            # The full path, so the prompt names exactly the folder that would be emptied.
+            if ($PSCmdlet.ShouldProcess((Resolve-LambdaPSPath -Path $Path), 'Delete existing contents before scaffolding (-Force)')) {
                 # Remove the enumerated children rather than a '<Path>/*' wildcard: -LiteralPath does
                 # not expand wildcards, so the wildcard form fails with "Cannot find path".
                 $Existing | Remove-Item -Recurse -Force -ErrorAction Stop -WhatIf:$false -Confirm:$false
@@ -130,6 +137,10 @@ function Invoke-LambdaPSProjectScaffold {
         # final [string[]] cast would join every path into one space-separated string.
         $copyParams = @{} + $TemplateParameter
         $copyParams.Destination = $Path
+        # A write that fails part-way leaves a partial project; when -Path held nothing before, it is
+        # removed again (below).
+        $wasNew = -not (Test-Path -LiteralPath $Path)
+        $writing = -not $WhatIfPreference
         [string[]]$written = Copy-LambdaPSProjectTemplate @copyParams
         # The template always has files, so none written outside -WhatIf means the write was declined
         # under -Confirm. Skip the modules too: a modules/ folder alone is not a project.
@@ -154,6 +165,20 @@ function Invoke-LambdaPSProjectScaffold {
                 if (-not $WhatIfPreference -and (Test-Path -LiteralPath $moduleDir -PathType Container)) { $written += $moduleDir }
             }
         }
+        $writing = $false
+    }
+    catch {
+        if (-not $writing) { throw }
+        $removed = $false
+        if ($Existing.Count -eq 0) {
+            if ($wasNew) { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false }
+            else { Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false }
+            $removed = $true
+        }
+        $outcome = if ($removed) { 'What this run wrote was removed.' } else { 'The project in it is incomplete: rerun with -Force to replace it.' }
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.IO.IOException]::new("Writing the project to '$Path' failed: $($_.Exception.Message) $outcome", $_.Exception),
+            'ProjectWriteFailed', [System.Management.Automation.ErrorCategory]::WriteError, $Path)
     }
     finally {
         if (Test-Path -LiteralPath $downloadRoot) {

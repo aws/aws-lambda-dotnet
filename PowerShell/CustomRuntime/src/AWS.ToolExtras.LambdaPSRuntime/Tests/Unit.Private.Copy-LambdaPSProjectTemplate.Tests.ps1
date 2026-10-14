@@ -78,6 +78,27 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         [System.IO.File]::ReadAllText((Join-Path $destination 'README.md')) | Should -BeExactly "alias 'a`"b\c'"
     }
 
+    It 'does not read a value written in as a placeholder' {
+        $source = Join-Path $TestDrive 'token-once-src'
+        $null = New-Item -ItemType Directory -Path $source -Force
+        [System.IO.File]::WriteAllText((Join-Path $source 'manifest.json'), '{ "Alias": __ALIAS__, "Arch": __ARCH__ }')
+        [System.IO.File]::WriteAllText((Join-Path $source 'README.md'), "alias __ALIAS__, timeout __TIMEOUT__")
+        $destination = Join-Path $TestDrive 'token-once-out'
+
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination } {
+            param($Source, $Destination)
+            $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -Target RuntimeBound `
+                -Token @{ __ALIAS__ = '__ARCH__ __TIMEOUT__'; __ARCH__ = 'arm64' }
+        }
+
+        $manifest = [System.IO.File]::ReadAllText((Join-Path $destination 'manifest.json')) | ConvertFrom-Json
+        $manifest.Alias | Should -BeExactly '__ARCH__ __TIMEOUT__'
+        $manifest.Arch | Should -BeExactly 'arm64'
+        $timeout = InModuleScope $script:moduleName { $script:Config.function.Timeout }
+        [System.IO.File]::ReadAllText((Join-Path $destination 'README.md')) |
+            Should -BeExactly "alias __ARCH__ __TIMEOUT__, timeout $timeout"
+    }
+
     It 'writes no lambdaps-runtime.json marker for RuntimeBound, and needs no pwsh version for it' {
         $source = Join-Path $TestDrive 'bound-src'
         $null = New-Item -ItemType Directory -Path $source -Force
@@ -144,6 +165,21 @@ Describe 'Scaffolded README' -Tag 'Unit' {
         foreach ($text in $NotExpect) { $readme | Should -Not -BeLike "*$text*" }
         $readme | Should -Not -BeLike '*makes no AWS API calls*'
     }
+
+    It 'gives the <Target> README''s <Step> step everything it needs' -ForEach @(
+        @{ Target = 'Layer'; Step = 'function'; Expect = @('Compress-LambdaPSFunctionPackage -Path <folder>', 'Publish-LMFunction -FunctionName <name>', '-Role <exec-role-arn>', '-Architecture <the architecture you built>', '-ZipFilename ../function.zip') }
+        @{ Target = 'CMR'; Step = 'pull grant'; Expect = @('Get-ECRRepositoryPolicy', 'Write the whole policy back with `Set-ECRRepositoryPolicy`', 'removes every other grant') }
+        @{ Target = 'CMR'; Step = 'docker login'; Expect = @('--password-stdin', 'without `https://`', 'credential helper') }
+    ) {
+        $projectDir = [System.IO.Path]::Combine($TestDrive, "readme-step-$Target-$($Step -replace '\W', '-')")
+        InModuleScope $script:moduleName -Parameters @{ Target = $Target; Path = $projectDir } {
+            param($Target, $Path)
+            $null = Copy-LambdaPSProjectTemplate -Path (Get-LambdaPSProjectTemplateRoot -Target $Target) -Destination $Path -PwshVersion '7.4.20' -Target $Target -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+        }
+        # Lines are wrapped, so compare with the line breaks folded to spaces.
+        $readme = (Get-Content -LiteralPath ([System.IO.Path]::Combine($projectDir, 'README.md')) -Raw) -replace '\s+', ' '
+        foreach ($text in $Expect) { $readme | Should -BeLike "*$([System.Management.Automation.WildcardPattern]::Escape($text))*" }
+    }
 }
 
 Describe 'Copy-LambdaPSProjectTemplate parameter validation' -Tag 'Unit' {
@@ -162,6 +198,15 @@ Describe 'Copy-LambdaPSProjectTemplate parameter validation' -Tag 'Unit' {
         InModuleScope $script:moduleName -Parameters @{ Destination = (Join-Path $TestDrive 'kelvin-HandlerScript') } {
             param($Destination)
             { Copy-LambdaPSProjectTemplate -Path (Get-LambdaPSProjectTemplateRoot -Target Container) -Destination $Destination -PwshVersion '7.4.20' -Target Container -PowerShellVersion '7.4' -HandlerScript "$([char]0x212A)fn.ps1" } |
+                Should -Throw -ErrorId 'ParameterArgumentValidationError,Copy-LambdaPSProjectTemplate'
+        }
+    }
+
+    It 'rejects a -PwshVersion that is not x.y.z' {
+        InModuleScope $script:moduleName -Parameters @{ Destination = (Join-Path $TestDrive 'bad-PwshVersion') } {
+            param($Destination)
+            # Layer carries no Dockerfile, so no other step reads the version first.
+            { Copy-LambdaPSProjectTemplate -Path (Get-LambdaPSProjectTemplateRoot -Target Layer) -Destination $Destination -PwshVersion '7.4.x/../../evil' -Target Layer -PowerShellVersion '7.4' } |
                 Should -Throw -ErrorId 'ParameterArgumentValidationError,Copy-LambdaPSProjectTemplate'
         }
     }

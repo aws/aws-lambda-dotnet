@@ -35,7 +35,8 @@ function New-LambdaPSFunctionProject {
         deploy the project with New-LambdaPSFunctionDeployment, or package it with
         Compress-LambdaPSFunctionPackage and create the function with Publish-LMFunction pointed at
         the runtime alias. A template tree missing from the module (an incomplete install) is a
-        TemplateNotFound error.
+        TemplateNotFound error. A write that fails part-way, on a full disk for example, is a
+        ProjectWriteFailed error; when -Path was new or empty, what the run wrote is removed first.
     .PARAMETER Path
         The directory to create the function project in. Alias: -ProjectPath.
         An existing file, or a link to nothing, is a TargetIsFile error, a folder you cannot list
@@ -46,14 +47,17 @@ function New-LambdaPSFunctionProject {
         On Linux and macOS an existing -Path must be owned by you, or by root when no group or other
         user can write to it: another user's directory (one created first in a shared folder such as
         /tmp) is a terminating TargetOwnedByAnotherUser error, even with -Force, since that user could
-        change the project while it is written or built. The check is skipped when you run as root.
+        change the project while it is written or built. A directory of yours that every user can
+        write to (o+w, without the sticky bit) is a TargetWritableByOthers error for the same reason:
+        remove that permission with chmod o-w <path>. The checks are skipped when you run as root.
     .PARAMETER Handler
         The handler name. A bare name ('handler') or a script file name ('handler.ps1') is accepted;
         the emitted handler script is '<name>.ps1' for every target. For RuntimeBound it is also the
         recorded handler string; for Container the Dockerfile's CMD is written to match; for
         SelfContainedZip pass '<name>.ps1' as the function's handler at deploy time. 'runtime' is
         rejected for SelfContainedZip and Container, whose bundled runtime loop is already runtime.ps1,
-        with HandlerNameReserved.
+        with HandlerNameReserved. The '<script>.ps1::<function>' and 'Module::<module>::<function>'
+        handler forms are not scaffolded: set them when you deploy (the function's handler setting).
     .PARAMETER RuntimeAlias
         The runtime alias the function binds to at deploy time (RuntimeBound target). Defaults to
         'production', the same alias New-LambdaPSRuntimeDeployment creates and
@@ -88,9 +92,11 @@ function New-LambdaPSFunctionProject {
         (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }); minimum-version and
         version-range specs are rejected. A module that is not installed locally is handled according
         to -MissingModuleAction. Defaults to none. Alias: -Module.
-        A specification for AWSPowerShell or AWSPowerShell.NetCore is an AWSPowerShellModuleNotSupported
-        error (use the AWS.Tools.* modules), a name with a wildcard (*, ? or [) or a path (rooted, or
-        with / or \) a ModuleNameInvalid error, and one without RequiredVersion a ModuleVersionRequired
+        AWSPowerShell (the Windows PowerShell module, which doesn't run in PowerShell 7) and
+        AWSPowerShell.NetCore (over 600 MB, more than Lambda's 250 MB package limit) fail with
+        AWSPowerShellModuleNotSupported: name the AWS.Tools.* modules for the services you use
+        instead. A name with a wildcard (*, ? or [) or a path (rooted, or with / or \) is a
+        ModuleNameInvalid error, and a specification without RequiredVersion a ModuleVersionRequired
         error. Resolving the dependencies stops with ModuleVersionConflict when a module is needed at
         versions no one version meets; ModuleVersionSpelling when the module found has the version
         written another way (PowerShell matches versions exactly, so 1.2 is not 1.2.0) or is above a
@@ -110,8 +116,9 @@ function New-LambdaPSFunctionProject {
         registered repositories.
         PowerShellGet is never used, and repository trust is not bypassed. See Save-LambdaPSModule.
         A download stops with ModuleInstallerNotFound when PSResourceGet is not available,
-        AWSToolsInstallerImportFailed when AWS.Tools.Installer cannot be imported, and
-        ModuleDownloadFailed when the download does not produce the module.
+        AWSToolsInstallerImportFailed when AWS.Tools.Installer cannot be imported, ModuleDownloadFailed
+        when the download does not produce the module, and ModuleFolderIncomplete when a module's
+        version folder exists without its <Name>.psd1 (remove that folder).
     .PARAMETER ModuleRepository
         The PSResourceGet repositories to download non-AWS.Tools modules from, in order (for example
         an internal mirror). When omitted, every registered repository is searched in priority order,
@@ -127,7 +134,7 @@ function New-LambdaPSFunctionProject {
         is written, so the emitted tree is the whole tree. Without -Force a non-empty target is a
         terminating TargetNotEmpty error. Replacing rather than merging is deliberate -- writing over
         the top would leave files the new target does not emit, producing a hybrid project that looks
-        valid. Use -WhatIf to see what would be deleted. -Force does not lift the owner check on an
+        valid. -WhatIf names the full path of the folder whose contents would be deleted. -Force does not lift the owner check on an
         existing -Path (TargetOwnedByAnotherUser; see -Path).
 
         Under -Confirm the module download (when a module must be downloaded), the install for the
@@ -148,19 +155,19 @@ function New-LambdaPSFunctionProject {
 
         Scaffolds a handler-only (RuntimeBound) function project whose entry point is handler.ps1.
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello -Handler handler -RuntimeAlias prod -Architecture arm64
+        New-LambdaPSFunctionProject -Path ./hello-arm64 -Handler handler -RuntimeAlias prod -Architecture arm64
 
         Scaffolds an arm64 RuntimeBound function project bound to the 'prod' runtime alias.
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4
+        New-LambdaPSFunctionProject -Path ./hello-zip -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4
 
         Scaffolds a self-contained function .zip project bundling PowerShell 7.4 (the default 7.4 pwsh release, added at build time).
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello -Handler handler -Target Container -PowerShellVersion 7.4
+        New-LambdaPSFunctionProject -Path ./hello-image -Handler handler -Target Container -PowerShellVersion 7.4
 
         Scaffolds a container-per-function image project bundling PowerShell 7.4 (the default 7.4 pwsh release).
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello -Handler handler -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
+        New-LambdaPSFunctionProject -Path ./hello-s3 -Handler handler -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
         Scaffolds the function project and stages AWS.Tools.S3 5.0.274 (and its dependencies) into
         ./hello/modules, downloading any that are not installed locally.
@@ -186,7 +193,7 @@ function New-LambdaPSFunctionProject {
         [string]$Path,
 
         [Parameter(Mandatory)]
-        [ValidatePattern('\A[A-Za-z][A-Za-z0-9_-]*(\.ps1)?\z', Options = 'None')]
+        [ValidatePattern('\A[A-Za-z][A-Za-z0-9_-]*(\.ps1)?\z', Options = 'None', ErrorMessage = "'{0}' is not a handler script name: give a name such as 'handler' or 'handler.ps1' (a letter, then letters, digits, '_' or '-'). A '<script>.ps1::<function>' or 'Module::<module>::<function>' handler is set when you deploy, not here.")]
         [string]$Handler,
 
         [Parameter()]
