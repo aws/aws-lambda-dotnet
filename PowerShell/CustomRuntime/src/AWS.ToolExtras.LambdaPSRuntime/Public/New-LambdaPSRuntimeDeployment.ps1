@@ -81,7 +81,8 @@ function New-LambdaPSRuntimeDeployment {
                                 ModuleRepositoryNotFound, ModuleDownloadFailed,
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
           build and push        ExternalToolFailed, EcrDockerLoginFailed
-          publish               RuntimeVersionNotActive, RuntimeVersionTimeout,
+          publish               RuntimeVersionNotActive, RuntimeVersionTimeout, RuntimeVersionWaitFailed
+                                (the new version's state could not be read),
                                 RuntimeImageArchitectureMismatch
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName

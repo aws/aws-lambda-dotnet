@@ -86,6 +86,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
                 # not a rebuild with the tool that just built it.
                 $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.*"
                 $_.Exception.Message | Should -BeLike '*docker buildx imagetools inspect acct.dkr.ecr.us-east-1.amazonaws.com/rt:v1*'
+                $_.Exception.Message | Should -BeLike '*or Lambda could not pull it (check that the repository policy grants lambda.amazonaws.com pull for this runtime''s ARN)*'
                 $_.Exception.Message | Should -Not -BeLike '*Rebuild with*'
             }
             $threw | Should -BeTrue
@@ -220,6 +221,29 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             $err | Should -Not -BeNullOrEmpty
             $err.Exception.Message | Should -Match 'lambda:GetRuntimeVersion'
             $err.FullyQualifiedErrorId | Should -Not -Match 'RuntimeVersionNotActive'
+        }
+    }
+
+    # The runtime and the version exist by then, so the error says so and how to finish, rather than
+    # surfacing the service's error alone (a rerun would be refused: the version exists).
+    It 'wraps a failed read during the wait as RuntimeVersionWaitFailed, naming the created version' {
+        InModuleScope $script:moduleName {
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeVersion') }
+
+            $err = $null
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'production' }
+            catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionWaitFailed'
+            $err.Exception.InnerException.GetType().Name | Should -Be 'AccessDeniedException'
+            $err.Exception.Message | Should -BeLike "Runtime 'my-ps' version 'v1' was created, but its state could not be read: not authorized to perform lambda:GetRuntimeVersion.*"
+            $err.Exception.Message | Should -BeLike '*Get-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1*'
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1*'
         }
     }
 

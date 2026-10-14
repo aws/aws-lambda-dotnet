@@ -126,7 +126,14 @@ function Publish-LambdaPSRuntimeVersion {
 
     # A freshly published version is CREATING; wait for it to settle so an alias can point at it. A
     # version that is not readable yet counts as still being created; any other error stops the wait
-    # with its real cause, rather than being read as a settled state.
+    # with its real cause, rather than being read as a settled state. The version exists by then, so
+    # that error (RuntimeVersionWaitFailed) says so and gives the commands to finish, as the timeout does.
+    $commandArguments = "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $CredentialParameter)"
+    $aliasName = if ($RuntimeAlias) { $RuntimeAlias } else { '<alias>' }
+    $finishCommands = ("check with Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments. " +
+        "Once it is ACTIVE and its Compatibility.Architectures is '$Architecture', point the alias at it with " +
+        "Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $aliasName -RuntimeVersion $RuntimeVersion $commandArguments " +
+        '(New-LMCRuntimeAlias if the alias does not exist yet).')
     $wait = $script:Config.wait.RuntimeVersion
     $rv = $null
     for ($i = 0; $i -lt $wait.Attempts; $i++) {
@@ -134,7 +141,17 @@ function Publish-LambdaPSRuntimeVersion {
             $rv = Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
         }
         catch {
-            if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceNotFoundException')) { throw }
+            if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceNotFoundException')) {
+                $serviceText = $_.Exception.Message.Trim()
+                if ($serviceText -and $serviceText -notmatch '[.!?]["'')\]]*\z') { $serviceText += '.' }
+                $serviceDetail = if ($serviceText) { ": $serviceText" } else { '.' }
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("Runtime '$RuntimeName' version '$RuntimeVersion' was created, but its state could not be " +
+                         "read$serviceDetail The version exists, so running the deploy again is refused; " + $finishCommands),
+                        $_.Exception),
+                    'RuntimeVersionWaitFailed', [System.Management.Automation.ErrorCategory]::ReadError, $RuntimeVersion)
+            }
             $rv = $null
         }
         if ($null -ne $rv -and $rv.State -ne 'CREATING') { break }
@@ -149,16 +166,11 @@ function Publish-LambdaPSRuntimeVersion {
     # Still CREATING after the wait budget: report the timeout rather than letting the caller alias a
     # version that may never become usable. Running the deploy again would be refused, because the
     # version now exists, so the message gives the alias commands to run once it is ACTIVE.
-    $commandArguments = "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $CredentialParameter)"
     if ($null -eq $rv -or $rv.State -eq 'CREATING') {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.TimeoutException]::new(
                 ("Runtime '$RuntimeName' version '$RuntimeVersion' was still being created after " +
-                 "$($wait.Attempts * $wait.IntervalSeconds) seconds. It may still become ACTIVE; check with " +
-                 "Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments. Once it is " +
-                 "ACTIVE and its Compatibility.Architectures is '$Architecture', point the alias at it with Update-LMCRuntimeAlias -RuntimeName $RuntimeName " +
-                 "-Name $(if ($RuntimeAlias) { $RuntimeAlias } else { '<alias>' }) -RuntimeVersion $RuntimeVersion $commandArguments (New-LMCRuntimeAlias if the alias " +
-                 'does not exist yet).')),
+                 "$($wait.Attempts * $wait.IntervalSeconds) seconds. It may still become ACTIVE; " + $finishCommands)),
             'RuntimeVersionTimeout', [System.Management.Automation.ErrorCategory]::OperationTimeout, $RuntimeVersion)
     }
 
@@ -170,7 +182,8 @@ function Publish-LambdaPSRuntimeVersion {
         # the architecture-mismatch error below does.
         $cause = if ($rv.State -eq 'FAILED') {
             (" Check that the image is a Docker v2 Schema 2 manifest: Lambda pulls by digest and rejects OCI " +
-             "('docker buildx imagetools inspect $ImageUri' shows its media type). Version '$RuntimeVersion' " +
+             "('docker buildx imagetools inspect $ImageUri' shows its media type), or Lambda could not pull it " +
+             "(check that the repository policy grants lambda.amazonaws.com pull for this runtime's ARN). Version '$RuntimeVersion' " +
              'already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with ' +
              "Remove-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments.")
         }
