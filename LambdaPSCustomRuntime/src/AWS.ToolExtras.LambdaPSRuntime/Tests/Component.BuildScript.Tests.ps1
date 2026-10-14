@@ -9,6 +9,18 @@ AfterAll {
 
 # PSScriptAnalyzer loads AWS.Tools assemblies while it resolves commands. In the process that then
 # runs the tests, every later import of a different AWS.Tools build fails.
+# Get-Help reads build.ps1's comment-based help only when that help is a block of its own.
+Describe 'build.ps1 help' -Tag 'Component' {
+    It 'shows the synopsis, the -Task description and every example' {
+        $help = Get-Help $script:buildScript -Full
+        $exampleCount = @(Select-String -LiteralPath $script:buildScript -Pattern '^\.EXAMPLE').Count
+
+        ([string]$help.Synopsis).Trim() | Should -BeLike 'Reproducible test / lint entrypoint*'
+        (($help.parameters.parameter | Where-Object name -eq 'Task').description.Text -join ' ') | Should -Not -BeNullOrEmpty
+        @($help.examples.example) | Should -HaveCount $exampleCount
+    }
+}
+
 Describe 'build.ps1 -Task All' -Tag 'Component' {
     It 'runs Lint in its own pwsh process, not in the process that runs the tests' {
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($script:buildScript, [ref]$null, [ref]$null)

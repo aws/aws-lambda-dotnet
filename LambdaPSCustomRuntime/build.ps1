@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+
 <#
 .SYNOPSIS
     Reproducible test / lint entrypoint for the AWS.ToolExtras.LambdaPSRuntime module.
