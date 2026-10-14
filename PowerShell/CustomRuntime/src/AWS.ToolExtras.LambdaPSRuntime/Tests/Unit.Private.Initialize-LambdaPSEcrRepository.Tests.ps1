@@ -7,6 +7,26 @@ BeforeAll {
     # docker config out of every test; a test that needs a config writes its own.
     $script:hostDockerConfig = $env:DOCKER_CONFIG
     $env:DOCKER_CONFIG = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, 'docker-empty'))).FullName
+
+    # The seam runs the docker program it finds with Get-Command, by its path, so a mock of the name
+    # 'docker' never sees the call. Each test points that lookup (mocked below) at a stand-in script
+    # that logs its arguments and stdin, writes the given output and exits with the given code.
+    $script:testDockerDirectory = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, 'fake-docker'))).FullName
+    $script:testDockerPath = [System.IO.Path]::Combine($script:testDockerDirectory, 'docker.ps1')
+    $script:testDockerLog = [System.IO.Path]::Combine($script:testDockerDirectory, 'calls.log')
+    function Set-LambdaPSTestDocker {
+        param([string[]]$Output = @(), [int]$ExitCode = 0)
+        $lines = @(
+            "[System.IO.File]::AppendAllText('$script:testDockerLog', ((`$args -join ' ') + ' stdin=' + (@(`$input) -join '') + [System.Environment]::NewLine))"
+            $Output | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }
+            "exit $ExitCode"
+        )
+        Set-Content -LiteralPath $script:testDockerPath -Value $lines
+        Remove-Item -LiteralPath $script:testDockerLog -ErrorAction SilentlyContinue
+    }
+    function Get-LambdaPSTestDockerCall {
+        if (Test-Path -LiteralPath $script:testDockerLog) { @(Get-Content -LiteralPath $script:testDockerLog) } else { @() }
+    }
 }
 
 AfterAll {
@@ -23,6 +43,10 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     BeforeEach {
         Mock 'Get-LambdaPSClientConfig' -ModuleName $script:moduleName -MockWith {
             [PSCustomObject]@{ ClientAppId = 'AWS.ToolExtras.LambdaPSRuntime#test' }
+        }
+        Set-LambdaPSTestDocker
+        Mock 'Get-Command' -ModuleName $script:moduleName -ParameterFilter { $Name -eq 'docker' } -MockWith {
+            [PSCustomObject]@{ Name = 'docker'; Source = $script:testDockerPath }
         }
     }
 
@@ -43,7 +67,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = 'https://111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' | Should -BeNullOrEmpty
             Should -Invoke 'New-ECRRepository' -Times 1 -Exactly -ParameterFilter { $RepositoryName -eq 'rt' -and $ImageScanningConfiguration_ScanOnPush -eq $true }
@@ -54,14 +77,11 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
                 $RepositoryName -eq 'rt' -and @($p.Statement).Count -eq 1 -and
                 $p.Statement[0].Principal.Service -eq 'lambda.amazonaws.com'
             }
-            # docker login must use the BARE host (scheme stripped), or buildx --push is denied.
-            Should -Invoke 'docker' -Times 1 -Exactly -ParameterFilter {
-                $args -contains '111122223333.dkr.ecr.us-east-1.amazonaws.com' -and
-                ($args -join ' ') -notmatch 'https://'
-            }
-            # The token goes in on stdin, never on the command line where other users can see it.
-            Should -Invoke 'docker' -Times 1 -Exactly -ParameterFilter { $args -contains '--password-stdin' -and $args -notcontains 'tok' }
         }
+        $calls = Get-LambdaPSTestDockerCall
+        # docker login must use the BARE host (scheme stripped), or buildx --push is denied. The token goes
+        # in on stdin, never on the command line where other users can see it.
+        $calls | Should -Be @('login --username AWS --password-stdin 111122223333.dkr.ecr.us-east-1.amazonaws.com stdin=tok')
     }
 
     Context 'docker login' {
@@ -86,7 +106,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         }
 
         It 'throws EcrDockerLoginFailed when docker login fails' {
-            Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Error: denied'; $global:LASTEXITCODE = 1 }
+            Set-LambdaPSTestDocker -Output 'Error: denied' -ExitCode 1
             InModuleScope $script:moduleName {
                 { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' } |
                     Should -Throw -ErrorId 'EcrDockerLoginFailed' -ExpectedMessage '*Error: denied*'
@@ -100,22 +120,19 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             InModuleScope $script:moduleName -Parameters @{ PwshPath = $pwshPath } {
                 param($PwshPath)
                 # pwsh rejects 'login' as an argument and exits non-zero, standing in for a failed docker login.
-                Set-Alias -Name 'docker' -Value $PwshPath -Scope Script
-                try {
-                    $PSNativeCommandUseErrorActionPreference = $true
-                    $err = $null
-                    try { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -ErrorAction Stop }
-                    catch { $err = $_ }
-                    $err.FullyQualifiedErrorId | Should -Be 'EcrDockerLoginFailed'
-                }
-                finally { Remove-Item -Path 'alias:docker' -ErrorAction SilentlyContinue }
+                Mock 'Get-Command' -ParameterFilter { $Name -eq 'docker' } -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = $PwshPath } }
+                $PSNativeCommandUseErrorActionPreference = $true
+                $err = $null
+                try { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -ErrorAction Stop }
+                catch { $err = $_ }
+                $err.FullyQualifiedErrorId | Should -Be 'EcrDockerLoginFailed'
             }
         }
 
         # The deploy cmdlet calls this inside try and rethrows with its own $PSCmdlet; the error it surfaces,
         # and every record -ErrorVariable collects, must name the cmdlet, not this helper.
         It 'surfaces EcrDockerLoginFailed from the calling cmdlet, and names no internal helper in -ErrorVariable' {
-            Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Error: denied'; $global:LASTEXITCODE = 1 }
+            Set-LambdaPSTestDocker -Output 'Error: denied' -ExitCode 1
             InModuleScope $script:moduleName {
                 function Invoke-LambdaPSTestCaller {
                     [CmdletBinding()]
@@ -146,7 +163,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         ) {
             $directory = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, "docker-$([guid]::NewGuid())"))).FullName
             [System.IO.File]::WriteAllText([System.IO.Path]::Combine($directory, 'config.json'), $Config)
-            Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Error saving credentials: not implemented'; $global:LASTEXITCODE = 1 }
+            Set-LambdaPSTestDocker -Output 'Error saving credentials: not implemented' -ExitCode 1
             $previous = $env:DOCKER_CONFIG
             $env:DOCKER_CONFIG = $directory
             try {
@@ -156,7 +173,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
                 }
             }
             finally { $env:DOCKER_CONFIG = $previous }
-            Should -Invoke 'docker' -ModuleName $script:moduleName -Times 0 -Exactly
+            Get-LambdaPSTestDockerCall | Should -BeNullOrEmpty
         }
 
         # docker takes the registry's credHelpers entry over credsStore, and a helper other than
@@ -169,7 +186,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         ) {
             $directory = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, "docker-$([guid]::NewGuid())"))).FullName
             [System.IO.File]::WriteAllText([System.IO.Path]::Combine($directory, 'config.json'), $Config)
-            Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Login Succeeded'; $global:LASTEXITCODE = 0 }
+            Set-LambdaPSTestDocker -Output 'Login Succeeded'
             $previous = $env:DOCKER_CONFIG
             $env:DOCKER_CONFIG = $directory
             try {
@@ -178,16 +195,11 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
                 }
             }
             finally { $env:DOCKER_CONFIG = $previous }
-            Should -Invoke 'docker' -ModuleName $script:moduleName -Times 1 -Exactly
+            @(Get-LambdaPSTestDockerCall).Count | Should -Be 1
         }
 
         It 'names the file docker reports in the unencrypted-token warning' {
-            Mock 'docker' -ModuleName $script:moduleName -MockWith {
-                'WARNING! Your password will be stored unencrypted in /ci/docker/config.json.'
-                'Configure a credential helper to remove this warning.'
-                'Login Succeeded'
-                $global:LASTEXITCODE = 0
-            }
+            Set-LambdaPSTestDocker -Output 'WARNING! Your password will be stored unencrypted in /ci/docker/config.json.', 'Configure a credential helper to remove this warning.', 'Login Succeeded'
             InModuleScope $script:moduleName {
                 Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
                 "$warnings" | Should -BeLike "*unencrypted in '/ci/docker/config.json'.*osxkeychain, wincred, pass or secretservice*"
@@ -195,19 +207,107 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         }
 
         It 'names the docker config file when docker does not say where it stored the token' {
-            Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Your password will be stored unencrypted.'; $global:LASTEXITCODE = 0 }
+            Set-LambdaPSTestDocker -Output 'Your password will be stored unencrypted.'
             InModuleScope $script:moduleName {
                 Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
                 "$warnings" | Should -BeLike "*unencrypted in '$([System.IO.Path]::Combine($env:DOCKER_CONFIG, 'config.json'))'.*"
             }
         }
 
-        It 'warns when docker stores the token unencrypted' {
-            Mock 'docker' -ModuleName $script:moduleName -MockWith {
-                'WARNING! Your password will be stored unencrypted in /home/u/.docker/config.json.'
-                'Login Succeeded'
-                $global:LASTEXITCODE = 0
+        # A function or alias named docker would otherwise receive the ECR token on stdin.
+        It 'runs the docker program, never a session function named docker' {
+            function global:docker { $global:LambdaPSTestHijacked = "$input" }
+            $global:LambdaPSTestHijacked = $null
+            try {
+                InModuleScope $script:moduleName {
+                    function script:docker { $global:LambdaPSTestHijacked = "$input" }
+                    try {
+                        Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1'
+                    }
+                    finally { Remove-Item -Path 'function:script:docker' -ErrorAction SilentlyContinue }
+                }
             }
+            finally { Remove-Item -Path 'function:global:docker' -ErrorAction SilentlyContinue }
+            $global:LambdaPSTestHijacked | Should -BeNullOrEmpty
+            Get-LambdaPSTestDockerCall | Should -Be @('login --username AWS --password-stdin 111122223333.dkr.ecr.us-east-1.amazonaws.com stdin=tok')
+            Remove-Variable -Name 'LambdaPSTestHijacked' -Scope Global
+        }
+
+        It 'throws DockerNotFound when no docker program is on PATH' {
+            Mock 'Get-Command' -ModuleName $script:moduleName -ParameterFilter { $Name -eq 'docker' } -MockWith { }
+            InModuleScope $script:moduleName {
+                { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' } |
+                    Should -Throw -ErrorId 'DockerNotFound'
+            }
+        }
+
+        # The ECR credential helper signs the push with its own AWS credential chain.
+        It 'warns that the ECR credential helper does not use <Case>' -ForEach @(
+            @{ Case = '-ProfileName'; Credential = @{ ProfileName = 'deploy' }; Expected = "*-ProfileLocation or -Credential. To have it use profile 'deploy', set AWS_PROFILE to 'deploy' before the deploy." }
+            @{ Case = '-Credential'; Credential = @{ Credential = 'creds' }; Expected = '*set AWS_PROFILE, or the AWS environment variables, before the deploy. A -Credential object cannot be passed to it.' }
+        ) {
+            $directory = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, "docker-$([guid]::NewGuid())"))).FullName
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($directory, 'config.json'), '{"credsStore":"ecr-login"}')
+            $previous = $env:DOCKER_CONFIG
+            $env:DOCKER_CONFIG = $directory
+            try {
+                InModuleScope $script:moduleName -Parameters @{ Credential = $Credential; Expected = $Expected } {
+                    param($Credential, $Expected)
+                    function script:Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ProfileName, $Credential, $ErrorAction) }
+                    function script:Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ProfileName, $Credential, $ErrorAction) }
+                    function script:Get-ECRLoginCommand { param($Region, $ClientConfig, $ProfileName, $Credential, $ErrorAction) }
+                    Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -CredentialParameter $Credential -WarningVariable warnings -WarningAction SilentlyContinue
+                    @($warnings).Count | Should -Be 1
+                    "$warnings" | Should -BeLike "The docker config at '*' hands '111122223333.dkr.ecr.us-east-1.amazonaws.com' to the ECR credential helper (ecr-login), so docker login is skipped*"
+                    "$warnings" | Should -BeLike $Expected
+                }
+            }
+            finally { $env:DOCKER_CONFIG = $previous }
+            Get-LambdaPSTestDockerCall | Should -BeNullOrEmpty
+        }
+
+        It 'does not warn about the ECR credential helper when no credentials are given' {
+            $directory = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, "docker-$([guid]::NewGuid())"))).FullName
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($directory, 'config.json'), '{"credsStore":"ecr-login"}')
+            $previous = $env:DOCKER_CONFIG
+            $env:DOCKER_CONFIG = $directory
+            try {
+                InModuleScope $script:moduleName {
+                    Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
+                    $warnings | Should -BeNullOrEmpty
+                }
+            }
+            finally { $env:DOCKER_CONFIG = $previous }
+        }
+
+        # docker starts in the PowerShell location, so a relative DOCKER_CONFIG names a folder there.
+        It 'reads a relative DOCKER_CONFIG from the current PowerShell location' {
+            $work = (New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($TestDrive, "work-$([guid]::NewGuid())"))).FullName
+            $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($work, 'dockercfg'))
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($work, 'dockercfg', 'config.json'), '{"credsStore":"ecr-login"}')
+            $previous = $env:DOCKER_CONFIG
+            $env:DOCKER_CONFIG = 'dockercfg'
+            Push-Location -LiteralPath $work
+            try {
+                [System.Environment]::CurrentDirectory | Should -Not -Be $work
+                InModuleScope $script:moduleName {
+                    Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1'
+                }
+            }
+            finally { Pop-Location; $env:DOCKER_CONFIG = $previous }
+            Get-LambdaPSTestDockerCall | Should -BeNullOrEmpty
+        }
+
+        It 'strips the quotes docker puts around the file it names' {
+            Set-LambdaPSTestDocker -Output 'WARNING! Your password will be stored unencrypted in "/ci/docker config/config.json".', 'Login Succeeded'
+            InModuleScope $script:moduleName {
+                Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
+                "$warnings" | Should -BeLike "*unencrypted in '/ci/docker config/config.json'. The token*"
+            }
+        }
+
+        It 'warns when docker stores the token unencrypted' {
+            Set-LambdaPSTestDocker -Output 'WARNING! Your password will be stored unencrypted in /home/u/.docker/config.json.', 'Login Succeeded'
             InModuleScope $script:moduleName {
                 Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
                 ($warnings -join ' ') | Should -BeLike '*unencrypted*credential store*'
@@ -232,7 +332,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' | Should -BeNullOrEmpty
             Should -Invoke 'New-ECRRepository' -Times 0 -Exactly
@@ -259,7 +358,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             $null = Initialize-LambdaPSEcrRepository -RepositoryName 'shared' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1'
 
@@ -287,7 +385,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             $null = Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' -WarningVariable warnings -WarningAction SilentlyContinue
             Should -Invoke 'Set-ECRRepositoryPolicy' -Times 0 -Exactly
@@ -333,7 +430,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' } |
                 Should -Throw -ExceptionType ([System.InvalidOperationException]) -ExpectedMessage 'wrapped'
@@ -361,7 +457,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.us-east-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' | Should -BeNullOrEmpty
             # Not created by this call, so the policy is READ before writing, not assumed empty.
@@ -388,7 +483,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Mock 'Get-ECRLoginCommand' -MockWith {
                 [PSCustomObject]@{ Username = 'AWS'; Password = 'tok'; Endpoint = '111122223333.dkr.ecr.eu-west-1.amazonaws.com' }
             }
-            Mock 'docker' -MockWith { $global:LASTEXITCODE = 0 }
 
             Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:eu-west-1:111122223333:runtime/rt' -Region 'eu-west-1' -CredentialParameter @{ ProfileName = 'p' }
             foreach ($command in 'Get-ECRRepository', 'New-ECRRepository', 'Get-ECRRepositoryPolicy', 'Set-ECRRepositoryPolicy', 'Get-ECRLoginCommand') {
@@ -426,7 +520,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     }
 
     It 'creates no repository and writes no policy when docker login fails' {
-        Mock 'docker' -ModuleName $script:moduleName -MockWith { 'Error: denied'; $global:LASTEXITCODE = 1 }
+        Set-LambdaPSTestDocker -Output 'Error: denied' -ExitCode 1
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
@@ -451,7 +545,6 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     }
 
     It 'reads the policy of an existing repository under -WhatIf, but writes nothing and does not log in' {
-        Mock 'docker' -ModuleName $script:moduleName -MockWith { $global:LASTEXITCODE = 0 }
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
@@ -472,11 +565,10 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
                 Should -Invoke $command -Times 0 -Exactly
             }
         }
-        Should -Invoke 'docker' -ModuleName $script:moduleName -Times 0 -Exactly
+        Get-LambdaPSTestDockerCall | Should -BeNullOrEmpty
     }
 
     It 'rethrows a create error other than already-exists, and writes no policy' {
-        Mock 'docker' -ModuleName $script:moduleName -MockWith { $global:LASTEXITCODE = 0 }
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
@@ -500,6 +592,20 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             Should -Invoke 'Get-ECRRepositoryPolicy' -Times 0 -Exactly
             Should -Invoke 'Set-ECRRepositoryPolicy' -Times 0 -Exactly
         }
+    }
+
+    It 'rejects <Case> at parameter binding, before any ECR call' -ForEach @(
+        @{ Case = 'an account that is not 12 digits'; AccountId = '11112222333'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' }
+        @{ Case = 'a runtime version ARN'; AccountId = '111122223333'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/rt/version/1' }
+        @{ Case = 'an uppercase region'; AccountId = '111122223333'; RuntimeArn = 'arn:aws:lambda:US-EAST-1:111122223333:runtime/rt' }
+    ) {
+        Mock 'Get-ECRRepository' -ModuleName $script:moduleName -MockWith { }
+        InModuleScope $script:moduleName -Parameters @{ AccountId = $AccountId; RuntimeArn = $RuntimeArn } {
+            param($AccountId, $RuntimeArn)
+            { Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId $AccountId -RuntimeArn $RuntimeArn -Region 'us-east-1' } |
+                Should -Throw -ErrorId 'ParameterArgumentValidationError,Initialize-LambdaPSEcrRepository'
+        }
+        Should -Invoke 'Get-ECRRepository' -ModuleName $script:moduleName -Times 0 -Exactly
     }
 
     It 'rejects a whitespace repository at parameter binding' {

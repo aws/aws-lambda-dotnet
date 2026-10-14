@@ -8,11 +8,16 @@ function Initialize-LambdaPSEcrRepository {
 
           1. Get-ECRRepository. When the repository is absent and its create is declined or run under
              -WhatIf, steps 2 and 3 are skipped, and nothing is created.
-          2. docker login to the registry, so the following buildx push is authorized. It runs before
-             the create, so a failed login creates no repository. It is skipped when the docker config
-             ($env:DOCKER_CONFIG, or .docker in the user's home folder) hands this registry to the
-             amazon-ecr-credential-helper (credHelpers, or else credsStore, set to ecr-login): that
-             helper supplies ECR tokens itself and cannot store a login.
+          2. docker login to the registry, so the following buildx push is authorized. It runs the
+             docker program found on PATH, never a function or alias of that name, and fails with
+             DockerNotFound when there is none. It runs before the create, so a failed login creates
+             no repository. It is skipped when the docker config ($env:DOCKER_CONFIG, resolved against
+             the current PowerShell location, or .docker in the user's home folder) hands this
+             registry to the amazon-ecr-credential-helper (credHelpers, or else credsStore, set to
+             ecr-login): that helper supplies ECR tokens itself and cannot store a login. The helper
+             gets the push credentials from its own AWS credential chain (AWS_PROFILE, the AWS
+             environment variables, the default profile), not from -CredentialParameter, so a
+             warning says so when -CredentialParameter is given.
           3. New-ECRRepository (with scan on push) when the repository is absent, then the Lambda
              image-pull grant, scoped to this account and -RuntimeArn. The existing policy is READ and
              the grant MERGED in (Merge-LambdaPSEcrPullPolicy); nothing is written when Lambda already
@@ -55,11 +60,13 @@ function Initialize-LambdaPSEcrRepository {
         [string]$RepositoryName,
 
         [Parameter(Mandatory)]
-        [ValidateNotNullOrWhiteSpace()]
+        [ValidatePattern('^[0-9]{12}\z')]
         [string]$AccountId,
 
         [Parameter(Mandatory)]
-        [ValidateNotNullOrWhiteSpace()]
+        # The same patterns as Merge-LambdaPSEcrPullPolicy, so a bad value fails before anything is created.
+        # Options = 'None': ValidatePattern ignores case by default, and ARN partitions and regions are lowercase.
+        [ValidatePattern('^arn:[a-z0-9-]+:lambda:[a-z0-9-]+:[0-9]{12}:runtime/[^/\s]+\z', Options = 'None')]
         [string]$RuntimeArn,
 
         [Parameter(Mandatory)]
@@ -105,12 +112,17 @@ function Initialize-LambdaPSEcrRepository {
         # docker picks a registry's credential helper from credHelpers, or else credsStore. The
         # amazon-ecr-credential-helper (ecr-login) gets ECR tokens itself and cannot store one, so a
         # docker login through it fails; the push authenticates without it.
-        $dockerConfigDirectory = if ($env:DOCKER_CONFIG) { $env:DOCKER_CONFIG } else {
+        # docker starts in the current PowerShell location, so a relative DOCKER_CONFIG is resolved
+        # against that location, not the .NET process directory.
+        $dockerConfigDirectory = if ($env:DOCKER_CONFIG) {
+            try { Resolve-LambdaPSPath -Path $env:DOCKER_CONFIG } catch { $null }
+        }
+        else {
             [System.IO.Path]::Combine([System.Environment]::GetFolderPath('UserProfile'), '.docker')
         }
-        $dockerConfigPath = [System.IO.Path]::Combine($dockerConfigDirectory, 'config.json')
+        $dockerConfigPath = if ($dockerConfigDirectory) { [System.IO.Path]::Combine($dockerConfigDirectory, 'config.json') }
         $credentialHelper = $null
-        if ([System.IO.File]::Exists($dockerConfigPath)) {
+        if ($dockerConfigPath -and [System.IO.File]::Exists($dockerConfigPath)) {
             # A config docker cannot read is docker's to report, at login.
             $dockerConfig = try { [System.IO.File]::ReadAllText($dockerConfigPath) | ConvertFrom-Json -AsHashtable -ErrorAction Stop } catch { $null }
             if ($dockerConfig -is [System.Collections.IDictionary]) {
@@ -124,13 +136,35 @@ function Initialize-LambdaPSEcrRepository {
 
         if ([string]$credentialHelper -eq 'ecr-login') {
             Write-Verbose "docker login skipped: the docker config at '$dockerConfigPath' hands '$registry' to the ECR credential helper."
+            # The helper signs the push with its own AWS credential chain, so the credentials given to
+            # this call reach the ECR cmdlets but not the push.
+            if ($CredentialParameter.Count -gt 0) {
+                $advice = if ($CredentialParameter['ProfileName']) {
+                    " To have it use profile '$($CredentialParameter['ProfileName'])', set AWS_PROFILE to '$($CredentialParameter['ProfileName'])' before the deploy."
+                }
+                else { " To have it use other credentials, set AWS_PROFILE, or the AWS environment variables, before the deploy." }
+                if ($CredentialParameter.Contains('Credential')) { $advice += ' A -Credential object cannot be passed to it.' }
+                Write-Warning ("The docker config at '$dockerConfigPath' hands '$registry' to the ECR credential helper " +
+                    '(ecr-login), so docker login is skipped and the push uses the credentials the helper finds ' +
+                    '(AWS_PROFILE, the AWS environment variables, the default profile), not -ProfileName, ' +
+                    "-ProfileLocation or -Credential.$advice")
+            }
         }
         else {
+            # Run the docker program by its path, so a session function or alias named docker never
+            # receives the ECR token.
+            $docker = Get-Command -Name 'docker' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $docker) {
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(('The docker CLI was not found on PATH. Docker is required to ' +
+                        'push the runtime image. To install Docker, see https://docs.docker.com/engine/install/.')),
+                    'DockerNotFound', [System.Management.Automation.ErrorCategory]::NotInstalled, 'docker')
+            }
             # The exit code is checked below; with the user's preference on, pwsh would raise its own
             # error first and lose docker's output.
             $PSNativeCommandUseErrorActionPreference = $false
             # The password goes in on stdin, so docker's output never contains it and is safe to show.
-            $loginOutput = ($login.Password | & docker login --username $login.Username --password-stdin $registry 2>&1 | Out-String).Trim()
+            $loginOutput = ($login.Password | & $docker.Source login --username $login.Username --password-stdin $registry 2>&1 | Out-String).Trim()
             if ($LASTEXITCODE -ne 0) {
                 # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the
                 # error with its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would
@@ -144,11 +178,17 @@ function Initialize-LambdaPSEcrRepository {
             # rather than leave it in the Verbose output. Docker's wording is not a contract: unmatched,
             # it stays Verbose.
             if ("$loginOutput" -match 'stored unencrypted') {
-                $tokenFile = if ("$loginOutput" -match 'stored unencrypted in (?<path>\S.*?)\.?\s*(?:\r?\n|$)') { $Matches['path'] } else { $dockerConfigPath }
+                $tokenFile = if ("$loginOutput" -match 'stored unencrypted in (?<path>\S.*?)\.?\s*(?:\r?\n|$)') {
+                    # One pair of quotes around the path is docker's wording, not part of the path.
+                    $Matches['path'] -replace '^"(.*)"$', '$1' -replace "^'(.*)'$", '$1'
+                }
+                else { $dockerConfigPath }
                 Write-Warning ("docker stored the ECR login token for '$registry' unencrypted in '$tokenFile'. The " +
                     'token is valid for about 12 hours. To keep it out of that file, configure a docker ' +
                     'credential store (osxkeychain, wincred, pass or secretservice), or the ' +
-                    'amazon-ecr-credential-helper, which gets ECR tokens itself so no login is stored.')
+                    'amazon-ecr-credential-helper, which gets ECR tokens itself so no login is stored. That ' +
+                    'helper uses its own AWS credential chain (AWS_PROFILE, the AWS environment variables, ' +
+                    'the default profile), not -ProfileName or -Credential.')
             }
             if ($loginOutput) { Write-Verbose "docker login: $loginOutput" }
         }
