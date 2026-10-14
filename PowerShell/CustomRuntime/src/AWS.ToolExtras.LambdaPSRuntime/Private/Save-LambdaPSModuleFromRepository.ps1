@@ -28,7 +28,8 @@ function Save-LambdaPSModuleFromRepository {
         of which must match a registered repository, or the download stops with
         ModuleRepositoryNotFound (Assert-LambdaPSModuleRepository).
     .PARAMETER Path
-        The folder to save into. Created when missing (Save-PSResource requires it to exist).
+        The folder to save into. Created when missing (Save-PSResource requires it to exist), and
+        removed again when this call created it and the download fails.
     .PARAMETER InstallerDefault
         -ModuleRepository is the AWS.Tools.Installer default (PSGallery), not names the user passed;
         a ModuleRepositoryNotFound message then says so.
@@ -85,6 +86,14 @@ function Save-LambdaPSModuleFromRepository {
         Assert-LambdaPSModuleRepository -Name $ModuleRepository -InstallerDefault:$InstallerDefault
     }
 
+    # A -Path folder this call creates is removed again when the download fails.
+    $createdPath = -not (Test-Path -LiteralPath $Path)
+    $removeCreatedPath = {
+        if ($createdPath) { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false }
+    }
+    $from = if (-not $ModuleRepository) { 'the registered repositories' }
+    elseif (@($ModuleRepository).Count -eq 1) { "repository '$($ModuleRepository)'" }
+    else { "repositories $(@($ModuleRepository | ForEach-Object { "'$_'" }) -join ', ')" }
     $null = [System.IO.Directory]::CreateDirectory($Path)
     # A ModuleDownloadFailed error targets 'Name Version', the key the rest of the module uses; an exact
     # '[1.2.3]' range is reported as its version.
@@ -108,7 +117,8 @@ function Save-LambdaPSModuleFromRepository {
         $saved = @(Save-PSResource @saveParams) | Where-Object { $_.Name -eq $Name } | Select-Object -First 1
     }
     catch {
-        $message = "Could not download module '$Name' $VersionRange with PSResourceGet: $($_.Exception.Message) " +
+        & $removeCreatedPath
+        $message = "Could not download module '$Name' $VersionRange from $from with PSResourceGet: $($_.Exception.Message) " +
             'If the repository is untrusted and this session is non-interactive, trust it with ' +
             'Set-PSResourceRepository -Name <repository> -Trusted, or install the module locally so it does ' +
             'not have to be downloaded.'
@@ -118,8 +128,9 @@ function Save-LambdaPSModuleFromRepository {
     }
 
     if ($null -eq $saved) {
+        & $removeCreatedPath
         throw [System.Management.Automation.ErrorRecord]::new(
-            [System.InvalidOperationException]::new("PSResourceGet reported no module '$Name' $VersionRange after saving it."),
+            [System.InvalidOperationException]::new("PSResourceGet reported no module '$Name' $VersionRange from $from after saving it."),
             'ModuleDownloadFailed', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, $target)
     }
 

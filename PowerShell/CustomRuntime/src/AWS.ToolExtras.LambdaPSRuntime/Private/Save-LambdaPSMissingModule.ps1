@@ -22,7 +22,8 @@ function Save-LambdaPSMissingModule {
         -MissingModuleAction Save leaves the local PowerShell environment untouched.
         -MissingModuleAction Install additionally copies each downloaded module (and a bootstrapped
         AWS.Tools.Installer) into the CurrentUser module folder when that version is not already
-        there; an existing version folder is never overwritten.
+        there; an existing version folder is never overwritten. When one copy fails, a warning names
+        the versions already installed by this run, which stay there.
 
         When anything is downloaded, two warnings are written, once each: that the modules should be
         tested before production use, and -- for modules that came from PSGallery -- that PSGallery is
@@ -38,7 +39,9 @@ function Save-LambdaPSMissingModule {
         stages the set must not treat them as previewed.
 
         Returns one object: Downloaded (AWS.ToolExtras.LambdaPSRuntime.DownloadedModule objects for the
-        modules this run downloaded that are part of the set), Pending ('Name Version' keys, under
+        modules this run downloaded that are part of the set), Written (the same for a module the
+        installer also wrote into -Path, in a folder this run created, though the set uses a copy
+        installed elsewhere, such as AWS.Tools.Common; never installed), Pending ('Name Version' keys, under
         -WhatIf only), Declined ('Name Version' keys of the modules a declined download left missing)
         and Resolved (the final walk's resolved modules, as Get-LambdaPSModuleClosure returns them, so
         a caller need not walk the set again).
@@ -48,7 +51,7 @@ function Save-LambdaPSMissingModule {
         The folder to download into, laid out as <Name>/<Version>/. Created on the first download.
     .PARAMETER ModuleRepository
         The PSResourceGet repositories to download non-AWS.Tools modules (and AWS.Tools.Installer)
-        from. When omitted, every registered repository is searched in priority order for modules, and
+        from. Each is checked (Assert-LambdaPSModuleRepository) before anything is downloaded. When omitted, every registered repository is searched in priority order for modules, and
         AWS.Tools.Installer comes from PSGallery only.
     .PARAMETER MissingModuleAction
         Save (download into -Path only) or Install (also install into the CurrentUser module folder).
@@ -100,6 +103,11 @@ function Save-LambdaPSMissingModule {
     $closure = $null
 
     try {
+        # Named repositories are checked before anything is downloaded: an AWS.Tools download (the whole
+        # AWS.Tools.zip) may come first, and a set with nothing to download would otherwise never check.
+        if ($ModuleRepository) {
+            Assert-LambdaPSModuleRepository -Name $ModuleRepository
+        }
         while ($true) {
             # The walk's warnings (a built-in named in -Module) are the same on every pass: show them once.
             $walkWarnings = if ($null -eq $closure) { @{} } else { @{ WarningAction = 'SilentlyContinue' } }
@@ -125,6 +133,15 @@ function Save-LambdaPSMissingModule {
                 Write-Verbose "Waiting to download '$($item.Name)' $($item.Version): only minimum versions ask for it, and a module downloaded first may need it higher."
             }
 
+            # A version folder without its manifest in -Path would be kept by the download, which would
+            # then report the module missing: stop before anything is downloaded. AWS.Tools downloads
+            # also write AWS.Tools.Common.
+            foreach ($item in $fetch) {
+                $null = Test-LambdaPSModuleFolder -Path ([System.IO.Path]::Combine($root, $item.Name, $item.Version)) -Name $item.Name
+                if ($item.Name -like 'AWS.Tools.*' -and $item.Name -ne 'AWS.Tools.Installer') {
+                    $null = Test-LambdaPSModuleFolder -Path ([System.IO.Path]::Combine($root, 'AWS.Tools.Common', $item.Version)) -Name 'AWS.Tools.Common'
+                }
+            }
             foreach ($item in $fetch) {
                 if ($attempted.Contains($item.Key)) {
                     $message = "Module '$($item.Name)' $($item.Version) was downloaded, but " +
@@ -155,7 +172,14 @@ function Save-LambdaPSMissingModule {
             foreach ($group in @($awsTools | Group-Object -Property Version)) {
                 $names = @($group.Group | ForEach-Object { $_.Name })
                 $version = $group.Name
-                $go = if ($WhatIfPreference) { $PSCmdlet.ShouldProcess("$($names -join ', ') $version", "Download with AWS.Tools.Installer to '$root'") } else { $downloadConfirmed }
+                # Under -WhatIf each module is listed at the folder it would be written to.
+                $go = if ($WhatIfPreference) {
+                    foreach ($name in $names) {
+                        $null = $PSCmdlet.ShouldProcess([System.IO.Path]::Combine($root, $name, $version), "Download module '$name' $version with AWS.Tools.Installer")
+                    }
+                    $false
+                }
+                else { $downloadConfirmed }
                 if ($go) {
                     Write-Verbose "Downloading $($names -join ', ') $version (and AWS.Tools.Common) with AWS.Tools.Installer to '$root'."
                     # The installer always brings AWS.Tools.Common at the same version. A version folder
@@ -175,7 +199,10 @@ function Save-LambdaPSMissingModule {
             }
 
             foreach ($item in $others) {
-                $go = if ($WhatIfPreference) { $PSCmdlet.ShouldProcess($item.Key, "Download with PSResourceGet to '$root'") } else { $downloadConfirmed }
+                $go = if ($WhatIfPreference) {
+                    $PSCmdlet.ShouldProcess([System.IO.Path]::Combine($root, $item.Name, $item.Version), "Download module '$($item.Name)' $($item.Version) with PSResourceGet")
+                }
+                else { $downloadConfirmed }
                 if ($go) {
                     Write-Verbose "Downloading '$($item.Name)' $($item.Version) with PSResourceGet to '$root'."
                     $from = @{ ModuleRepository = $ModuleRepository }
@@ -208,6 +235,20 @@ function Save-LambdaPSMissingModule {
                     -Repository $origin[$found.Key].Repository -Path $found.ModuleBase -Action Saved
             }
         )
+        # A module the installer brought along whose -Path folder this run created, though the set uses
+        # the copy installed elsewhere (AWS.Tools.Common): it is in -Path all the same, so it is reported
+        # too, but not installed.
+        $written = @(
+            foreach ($found in @($closure.Resolved | Where-Object {
+                        $downloadedKeys.Contains($_.Key) -and
+                        -not [System.IO.Path]::GetFullPath($_.ModuleBase).StartsWith($rootPrefix, $comparison) })) {
+                $folder = [System.IO.Path]::Combine($root, $found.Name, $found.Version)
+                if (Test-Path -LiteralPath $folder -PathType Container) {
+                    New-LambdaPSDownloadedModule -Name $found.Name -Version $found.Version -Source $origin[$found.Key].Source `
+                        -Repository $origin[$found.Key].Repository -Path $folder -Action Saved
+                }
+            }
+        )
 
         $installRoot = $null
         if ($MissingModuleAction -eq 'Install' -and $downloaded.Count -gt 0) {
@@ -218,7 +259,7 @@ function Save-LambdaPSMissingModule {
             $toInstall = [System.Collections.Generic.List[object]]::new()
             foreach ($entry in $downloaded) {
                 $destination = [System.IO.Path]::Combine($installRoot, $entry.Name, $entry.Version)
-                if (-not (Test-Path -LiteralPath $destination)) {
+                if (-not (Test-LambdaPSModuleFolder -Path $destination -Name $entry.Name)) {
                     $toInstall.Add([PSCustomObject]@{ Label = "$($entry.Name) $($entry.Version)"; Source = $entry.Path; Destination = $destination; Entry = $entry })
                 }
             }
@@ -226,7 +267,7 @@ function Save-LambdaPSMissingModule {
             if (Test-Path -LiteralPath $savedInstaller -PathType Container) {
                 foreach ($versionDir in @(Get-ChildItem -LiteralPath $savedInstaller -Directory)) {
                     $destination = [System.IO.Path]::Combine($installRoot, 'AWS.Tools.Installer', $versionDir.Name)
-                    if (-not (Test-Path -LiteralPath $destination)) {
+                    if (-not (Test-LambdaPSModuleFolder -Path $destination -Name 'AWS.Tools.Installer')) {
                         $toInstall.Add([PSCustomObject]@{ Label = "AWS.Tools.Installer $($versionDir.Name)"; Source = $versionDir.FullName; Destination = $destination; Entry = $null })
                     }
                 }
@@ -236,21 +277,34 @@ function Save-LambdaPSMissingModule {
             # declined -Confirm leaves the modules saved only.
             if ($toInstall.Count -gt 0 -and
                 $PSCmdlet.ShouldProcess("'$installRoot': $(@($toInstall | ForEach-Object { $_.Label }) -join ', ')", 'Install modules for the current user')) {
-                foreach ($install in $toInstall) {
-                    Copy-LambdaPSModuleFolder -Path $install.Source -Destination $install.Destination
-                    if ($install.Entry) {
-                        $install.Entry.Path = $install.Destination
-                        $install.Entry.Action = 'Installed'
+                $installedSoFar = [System.Collections.Generic.List[string]]::new()
+                try {
+                    foreach ($install in $toInstall) {
+                        Copy-LambdaPSModuleFolder -Path $install.Source -Destination $install.Destination
+                        $installedSoFar.Add($install.Label)
+                        if ($install.Entry) {
+                            $install.Entry.Path = $install.Destination
+                            $install.Entry.Action = 'Installed'
+                        }
+                        else {
+                            $installedInstaller.Add($install.Label)
+                        }
                     }
-                    else {
-                        $installedInstaller.Add($install.Label)
+                }
+                catch {
+                    # A failed copy leaves no partial version folder, but the versions installed before it
+                    # stay in the user's module folder: name them, then stop with the copy's own error.
+                    if ($installedSoFar.Count -gt 0) {
+                        Write-Warning ("Installing for the current user stopped partway: $($installedSoFar -join ', ') " +
+                            "were installed in '$installRoot' before the failure and are still there. Remove them if you do not want them.")
                     }
+                    throw
                 }
             }
         }
 
         if ($downloaded.Count -gt 0 -or $pending.Count -gt 0) {
-            $listed = @($downloaded | ForEach-Object { "$($_.Name) $($_.Version)" }) + @($pending)
+            $listed = @(@($downloaded) + @($written) | ForEach-Object { "$($_.Name) $($_.Version)" }) + @($pending)
             $verb = if ($downloaded.Count -gt 0) { 'Downloaded' } else { 'Would download' }
             $testWarning = "$verb modules that were not available locally: $($listed -join ', '). " +
                 'Test your function with these exact module versions before production use.'
@@ -283,6 +337,7 @@ function Save-LambdaPSMissingModule {
 
     [PSCustomObject]@{
         Downloaded = $downloaded
+        Written    = $written
         Pending    = $pending.ToArray()
         Declined   = $declined.ToArray()
         Resolved   = @($closure.Resolved)

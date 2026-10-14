@@ -9,17 +9,24 @@ function Save-LambdaPSModule {
         with and test against them first:
 
             Save-LambdaPSModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Path ./mods
+            pwsh -NoProfile
             $env:PSModulePath = (Resolve-Path ./mods).Path + [IO.Path]::PathSeparator + $env:PSModulePath
+            Import-Module AWS.Tools.S3 -RequiredVersion 5.0.274
+
+        Test in a new session, as above (pwsh -NoProfile, then PSModulePath, then Import-Module): the
+        session that ran Save-LambdaPSModule has AWS.Tools.Common loaded, and another copy of the same
+        assembly cannot be loaded beside it ("Assembly with same name is already loaded").
 
         Each module, and every transitive RequiredModules dependency, is first looked up in the
         PSModulePath and in -Path. A dependency declared with RequiredVersion is taken at that
         version; one declared with ModuleVersion (a minimum) is taken at the version the set already
         pins for that module, or else at the minimum. Only what is found in neither place is
         downloaded into -Path, laid out as <Name>/<Version>/:
-          AWS.Tools.*    with AWS.Tools.Installer 2.x, which downloads the SHA512-checked AWS.Tools.zip
-                         from CloudFront. When Installer 2.x is not installed it is itself saved (not
-                         installed) with PSResourceGet, from -ModuleRepository or else PSGallery and,
-                         on Windows, only when its Authenticode signature is valid, then used from there.
+          AWS.Tools.*    with AWS.Tools.Installer 2.0.5 or a later 2.x, which downloads the
+                         SHA512-checked AWS.Tools.zip from CloudFront. When no such Installer is
+                         installed it is itself saved (not installed) with PSResourceGet, from
+                         -ModuleRepository or else PSGallery and, on Windows, only when its
+                         Authenticode signature is valid, then used from there.
           anything else  with PSResourceGet (Save-PSResource) from -ModuleRepository, or else from
                          your registered repositories in priority order. Repository trust is not
                          bypassed: an untrusted repository prompts, and fails in a non-interactive
@@ -62,6 +69,9 @@ function Save-LambdaPSModule {
           ModuleInstallerNotFound, AWSToolsInstallerImportFailed, ModuleDownloadFailed
                                       PSResourceGet is missing, AWS.Tools.Installer cannot be
                                       imported, or a download fails
+          ModuleFolderIncomplete      a <Name>/<Version> folder in -Path that holds no <Name>.psd1
+                                      (remove it and run again)
+          TargetIsFile                -Path is an existing file, not a folder
           PathNotFileSystem, DriveNotFound
                                       -Path is not on the file system, or names a drive that does not
                                       exist
@@ -119,6 +129,13 @@ function Save-LambdaPSModule {
     )
 
     try {
+        # A -Path that is a file would fail deep in the download or copy with a raw I/O error.
+        $resolvedPath = Resolve-LambdaPSPath -Path $Path
+        if (Test-Path -LiteralPath $resolvedPath -PathType Leaf) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.IO.IOException]::new("-Path '$Path' is a file; pass a folder."),
+                'TargetIsFile', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path)
+        }
         # Downloads are gated by Save-LambdaPSMissingModule's own ShouldProcess; -WhatIf and -Confirm
         # reach it because $WhatIfPreference / $ConfirmPreference are inherited.
         # Named repositories are checked first, and then used for every module that can come from one:
@@ -128,6 +145,7 @@ function Save-LambdaPSModule {
         }
         $result = Save-LambdaPSMissingModule -Module $Module -Path $Path -MissingModuleAction Save -ModuleRepository $ModuleRepository -SkipInstalled:([bool]$ModuleRepository)
         $result.Downloaded
+        @($result.Written) | Where-Object { $null -ne $_ }
         if ($result.Declined.Count -gt 0) {
             Write-Warning "Did not download $($result.Declined -join ', '), because the download was declined, so '$Path' does not hold the complete set."
         }
@@ -138,7 +156,7 @@ function Save-LambdaPSModule {
         $root = Resolve-LambdaPSPath -Path $Path
         $toCopy = @(foreach ($found in @($result.Resolved | Where-Object { $_.Source -eq 'Local' })) {
                 $destination = [System.IO.Path]::Combine($root, $found.Name, $found.Version)
-                if (-not (Test-Path -LiteralPath $destination)) {
+                if (-not (Test-LambdaPSModuleFolder -Path $destination -Name $found.Name)) {
                     [PSCustomObject]@{ Found = $found; Destination = $destination }
                 }
             })

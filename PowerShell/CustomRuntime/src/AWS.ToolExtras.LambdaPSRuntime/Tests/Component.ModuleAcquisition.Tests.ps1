@@ -10,6 +10,26 @@ AfterAll {
 
 # Save-LambdaPSModule end to end: the real walk, lookup and copy, with only the download seam mocked.
 Describe 'Module acquisition edge cases' -Tag 'Component' {
+    It 'Save-LambdaPSModule returns AWS.Tools.Common as Saved when the installer writes it into -Path, though it is installed' {
+        $installed = Join-Path $TestDrive 'installed-common'
+        $null = New-FakeModule -Root $installed -Name 'AWS.Tools.Common' -Version '9.9.4'
+        $mods = Join-Path $TestDrive 'save-common'
+        Mock 'Save-LambdaPSAWSToolsModule' -ModuleName $script:moduleName -MockWith {
+            $null = New-FakeModule -Root $Path -Name 'AWS.Tools.FakeSvc' -Version $Version -Requires "@(@{ ModuleName = 'AWS.Tools.Common'; RequiredVersion = '$Version' })"
+            $null = New-FakeModule -Root $Path -Name 'AWS.Tools.Common' -Version $Version
+        }
+        $saved = $env:PSModulePath
+        try {
+            $env:PSModulePath = $installed + [System.IO.Path]::PathSeparator + $env:PSModulePath
+            $out = @(Save-LambdaPSModule -Module @{ ModuleName = 'AWS.Tools.FakeSvc'; RequiredVersion = '9.9.4' } -Path $mods -WarningAction SilentlyContinue)
+        }
+        finally {
+            $env:PSModulePath = $saved
+        }
+
+        @($out | ForEach-Object { "$($_.Name) $($_.Action)" } | Sort-Object) | Should -Be @('AWS.Tools.Common Saved', 'AWS.Tools.FakeSvc Saved')
+    }
+
     It 'downloads an installed module from -ModuleRepository instead of copying the installed one' {
         $installed = Join-Path $TestDrive 'mirror-installed'
         $null = New-FakeModule -Root $installed -Name 'LambdaPSFake.Mirrored' -Version '1.0.0'

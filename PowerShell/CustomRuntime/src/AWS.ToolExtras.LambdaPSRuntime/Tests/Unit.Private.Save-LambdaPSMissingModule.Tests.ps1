@@ -14,6 +14,40 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
         $script:userModules = Join-Path $TestDrive "user-$([guid]::NewGuid().ToString('N'))"
     }
 
+    It 'checks -ModuleRepository before anything is downloaded (<Case>)' -ForEach @(
+        @{ Case = 'an AWS.Tools module first'; Name = 'AWS.Tools.FakeSvc' }
+        @{ Case = 'nothing to download'; Name = 'LambdaPSFake.Installed' }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl; Name = $Name } {
+            param($dl, $Name)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'PSGallery' } }
+            Mock 'Get-Module' -ParameterFilter { $FullyQualifiedName.Name -eq 'LambdaPSFake.Installed' } -MockWith {
+                [PSCustomObject]@{ Name = 'LambdaPSFake.Installed'; ModuleBase = '/local/LambdaPSFake.Installed/1.0.0'; RequiredModules = @() }
+            }
+            Mock 'Save-LambdaPSAWSToolsModule' -MockWith { throw 'must not download before the repository check' }
+
+            { Save-LambdaPSMissingModule -Module @{ ModuleName = $Name; RequiredVersion = '1.0.0' } -Path $dl -ModuleRepository 'Typo' } |
+                Should -Throw -ErrorId 'ModuleRepositoryNotFound'
+            Should -Invoke 'Save-LambdaPSAWSToolsModule' -Times 0 -Exactly
+        }
+    }
+
+    It 'downloads with a registered -ModuleRepository' {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
+            param($dl)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'Internal' } }
+            Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                $d = [System.IO.Path]::Combine($Path, $Name, '1.0.0')
+                $null = New-Item -ItemType Directory -Path $d -Force
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$Name.psd1")) -Value "@{ ModuleVersion = '1.0.0' }"
+                [PSCustomObject]@{ Name = $Name; Version = '1.0.0'; Repository = 'Internal' }
+            }
+
+            $result = Save-LambdaPSMissingModule -Module @{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' } -Path $dl -ModuleRepository 'Internal' -WarningAction SilentlyContinue
+            @($result.Downloaded.Name) | Should -Be @('LambdaPSFake.A')
+        }
+    }
+
     It 'downloads nothing and warns nothing when every module is available' {
         InModuleScope $script:moduleName {
             Mock 'Get-Module' -ParameterFilter { $FullyQualifiedName.Name -eq 'LambdaPSFake.A' } -MockWith {
@@ -79,7 +113,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
         }
     }
 
-    It 'does not report an AWS.Tools.Common the installer brought along when it is already installed' {
+    It 'reports an AWS.Tools.Common the installer brought along as Written, not Downloaded, when it is already installed' {
         InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
             param($dl)
             Mock 'Get-Module' -ParameterFilter { $FullyQualifiedName.Name -eq 'AWS.Tools.Common' } -MockWith {
@@ -94,8 +128,30 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
                 }
             }
 
-            $result = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.1' } -Path $dl -WarningAction SilentlyContinue
+            $result = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.1' } -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
             @($result.Downloaded.Name) | Should -Be @('AWS.Tools.S3')
+            # The installer also wrote AWS.Tools.Common into -Path: it is reported, at its -Path folder.
+            @($result.Written | ForEach-Object { "$($_.Name) $($_.Version) $($_.Action) $($_.Path)" }) |
+                Should -Be @("AWS.Tools.Common 9.9.1 Saved $([System.IO.Path]::Combine($dl, 'AWS.Tools.Common', '9.9.1'))")
+            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.1, AWS.Tools.Common 9.9.1. *'
+        }
+    }
+
+    It 'stops with ModuleFolderIncomplete, before downloading, when a version folder in -Path holds no manifest (<Case>)' -ForEach @(
+        @{ Case = 'the module itself'; Folder = 'LambdaPSFake.A'; Name = 'LambdaPSFake.A'; Version = '1.0.0' }
+        @{ Case = 'AWS.Tools.Common for an AWS.Tools module'; Folder = 'AWS.Tools.Common'; Name = 'AWS.Tools.FakeSvc'; Version = '9.9.3' }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl; Folder = $Folder; Name = $Name; Version = $Version } {
+            param($dl, $Folder, $Name, $Version)
+            Mock 'Save-LambdaPSModuleFromRepository' -MockWith { throw 'must not download' }
+            Mock 'Save-LambdaPSAWSToolsModule' -MockWith { throw 'must not download' }
+            $leftover = [System.IO.Path]::Combine($dl, $Folder, $Version)
+            $null = New-Item -ItemType Directory -Path $leftover -Force
+
+            $err = { Save-LambdaPSMissingModule -Module @{ ModuleName = $Name; RequiredVersion = $Version } -Path $dl -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'ModuleFolderIncomplete' -PassThru
+            $err.TargetObject | Should -Be $leftover
+            $err.Exception.Message | Should -Be "'$leftover' exists but holds no '$Folder.psd1', so it is not a complete module. Remove the folder and run again."
         }
     }
 
@@ -349,7 +405,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
                 # A version already in the user folder must be left exactly as it is.
                 $existing = [System.IO.Path]::Combine($user, 'AWS.Tools.EC2', '9.9.1')
                 $null = New-Item -ItemType Directory -Path $existing -Force
-                Set-Content -LiteralPath ([System.IO.Path]::Combine($existing, 'marker.txt')) -Value 'original'
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($existing, 'AWS.Tools.EC2.psd1')) -Value '# original'
                 $specs = @(
                     @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.1' }
                     @{ ModuleName = 'AWS.Tools.EC2'; RequiredVersion = '9.9.1' }
@@ -359,7 +415,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
 
                 Test-Path -LiteralPath ([System.IO.Path]::Combine($user, 'AWS.Tools.S3', '9.9.1', 'AWS.Tools.S3.psd1')) | Should -BeTrue
                 Test-Path -LiteralPath ([System.IO.Path]::Combine($user, 'AWS.Tools.Installer', '2.0.5', 'AWS.Tools.Installer.psd1')) | Should -BeTrue
-                Test-Path -LiteralPath ([System.IO.Path]::Combine($existing, 'AWS.Tools.EC2.psd1')) | Should -BeFalse
+                Get-Content -LiteralPath ([System.IO.Path]::Combine($existing, 'AWS.Tools.EC2.psd1')) | Should -Be '# original'
                 @($result.Downloaded | Where-Object { $_.Name -eq 'AWS.Tools.S3' }).Action | Should -Be 'Installed'
                 $warnings[0].Message | Should -BeLike "*Installed for the current user in '$user': AWS.Tools.S3 9.9.1, AWS.Tools.Installer 2.0.5." -Because 'EC2 was not copied, so it is not listed; the bootstrapped Installer was, so it is'
                 # The skipped copy (existing folder here; a declined -Confirm takes the same branch)
@@ -367,6 +423,36 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
                 $ec2 = @($result.Downloaded | Where-Object { $_.Name -eq 'AWS.Tools.EC2' })[0]
                 $ec2.Action | Should -Be 'Saved'
                 $ec2.Path | Should -Be ([System.IO.Path]::Combine($dl, 'AWS.Tools.EC2', '9.9.1'))
+            }
+        }
+
+        It 'names the versions already installed when a later install copy fails' {
+            InModuleScope $script:moduleName -Parameters @{ dl = $script:dl; user = $script:userModules } {
+                param($dl, $user)
+                Mock 'Get-LambdaPSCurrentUserModulePath' -MockWith { $user }
+                Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                    $d = [System.IO.Path]::Combine($Path, $Name, '1.0.0')
+                    $null = New-Item -ItemType Directory -Path $d -Force
+                    Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$Name.psd1")) -Value "@{ ModuleVersion = '1.0.0' }"
+                    [PSCustomObject]@{ Name = $Name; Version = '1.0.0'; Repository = 'Internal' }
+                }
+                Mock 'Copy-LambdaPSModuleFolder' -ParameterFilter { $Destination -like '*LambdaPSFake.Second*' } -MockWith {
+                    throw [System.UnauthorizedAccessException]::new('access denied')
+                }
+                Mock 'Copy-LambdaPSModuleFolder' -ParameterFilter { $Destination -like '*LambdaPSFake.First*' } -MockWith {
+                    $null = New-Item -ItemType Directory -Path $Destination -Force
+                }
+                $specs = @(
+                    @{ ModuleName = 'LambdaPSFake.First'; RequiredVersion = '1.0.0' }
+                    @{ ModuleName = 'LambdaPSFake.Second'; RequiredVersion = '1.0.0' }
+                )
+
+                $err = $null
+                try { $null = Save-LambdaPSMissingModule -Module $specs -Path $dl -MissingModuleAction Install -WarningVariable warnings -WarningAction SilentlyContinue }
+                catch { $err = $_ }
+                $err.Exception.Message | Should -BeLike '*access denied*'
+                @($warnings | ForEach-Object { "$_" }) | Should -Contain ("Installing for the current user stopped partway: LambdaPSFake.First 1.0.0 were " +
+                    "installed in '$user' before the failure and are still there. Remove them if you do not want them.")
             }
         }
 
@@ -382,9 +468,38 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
                 }
                 Mock 'Copy-Item' -MockWith { throw [System.IO.IOException]::new('disk full') }
 
-                { Save-LambdaPSMissingModule -Module @{ ModuleName = 'LambdaPSFake.Partial'; RequiredVersion = '1.0.0' } -Path $dl -MissingModuleAction Install -WarningAction SilentlyContinue } |
-                    Should -Throw '*disk full*'
+                $err = $null
+                try { $null = Save-LambdaPSMissingModule -Module @{ ModuleName = 'LambdaPSFake.Partial'; RequiredVersion = '1.0.0' } -Path $dl -MissingModuleAction Install -WarningVariable warnings -WarningAction SilentlyContinue }
+                catch { $err = $_ }
+                $err.Exception.Message | Should -BeLike '*disk full*'
+                # Nothing was installed before the failure, so there is nothing to name.
+                @($warnings | Where-Object { "$_" -like 'Installing for the current user stopped partway*' }) | Should -BeNullOrEmpty
                 Test-Path -LiteralPath ([System.IO.Path]::Combine($user, 'LambdaPSFake.Partial', '1.0.0')) | Should -BeFalse
+            }
+        }
+
+        It 'stops with ModuleFolderIncomplete, installing nothing, when a user-folder version holds no manifest' {
+            InModuleScope $script:moduleName -Parameters @{ dl = $script:dl; user = $script:userModules } {
+                param($dl, $user)
+                Mock 'Get-LambdaPSCurrentUserModulePath' -MockWith { $user }
+                Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                    $d = [System.IO.Path]::Combine($Path, $Name, '1.0.0')
+                    $null = New-Item -ItemType Directory -Path $d -Force
+                    Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$Name.psd1")) -Value "@{ ModuleVersion = '1.0.0' }"
+                    [PSCustomObject]@{ Name = $Name; Version = '1.0.0'; Repository = 'Internal' }
+                }
+                Mock 'Copy-LambdaPSModuleFolder'
+                $leftover = [System.IO.Path]::Combine($user, 'LambdaPSFake.B', '1.0.0')
+                $null = New-Item -ItemType Directory -Path $leftover -Force
+                $specs = @(
+                    @{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' }
+                    @{ ModuleName = 'LambdaPSFake.B'; RequiredVersion = '1.0.0' }
+                )
+
+                $err = { Save-LambdaPSMissingModule -Module $specs -Path $dl -MissingModuleAction Install -WarningAction SilentlyContinue } |
+                    Should -Throw -ErrorId 'ModuleFolderIncomplete' -PassThru
+                $err.TargetObject | Should -Be $leftover
+                Should -Invoke 'Copy-LambdaPSModuleFolder' -Times 0 -Exactly
             }
         }
 
@@ -411,6 +526,7 @@ Describe 'Save-LambdaPSMissingModule -ModuleRepository' -Tag 'Unit' {
     It 'downloads a missing module from the named repository' {
         InModuleScope $script:moduleName -Parameters @{ dl = (Join-Path $TestDrive 'resolve-repo') } {
             param($dl)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'Internal' } }
             Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
                 $d = [System.IO.Path]::Combine($Path, $Name, '1.0.0')
                 $null = New-Item -ItemType Directory -Path $d -Force
@@ -451,6 +567,7 @@ Describe 'Save-LambdaPSMissingModule -ModuleRepository' -Tag 'Unit' {
     It 'passes the repositories to the AWS.Tools download, which saves the Installer from them' {
         InModuleScope $script:moduleName -Parameters @{ dl = (Join-Path $TestDrive 'resolve-repo-aws') } {
             param($dl)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'Internal' } }
             Mock 'Save-LambdaPSAWSToolsModule' -MockWith {
                 foreach ($n in @($Name + 'AWS.Tools.Common')) {
                     $d = [System.IO.Path]::Combine($Path, $n, $Version)

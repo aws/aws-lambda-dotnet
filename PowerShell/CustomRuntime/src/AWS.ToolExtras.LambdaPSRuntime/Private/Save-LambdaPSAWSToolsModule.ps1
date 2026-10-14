@@ -93,8 +93,19 @@ function Save-LambdaPSAWSToolsModule {
     if ($null -eq $installer) {
         $repository = if ($ModuleRepository) { $ModuleRepository } else { @('PSGallery') }
         $isDefault = -not $ModuleRepository
-        $saved = Save-LambdaPSModuleFromRepository -Name 'AWS.Tools.Installer' -VersionRange '[2.0.5,3.0)' -Path $InstallerPath `
-            -ModuleRepository $repository -AuthenticodeCheck:$IsWindows -InstallerDefault:$isDefault
+        try {
+            $saved = Save-LambdaPSModuleFromRepository -Name 'AWS.Tools.Installer' -VersionRange '[2.0.5,3.0)' -Path $InstallerPath `
+                -ModuleRepository $repository -AuthenticodeCheck:$IsWindows -InstallerDefault:$isDefault
+        }
+        catch {
+            # Say what the Installer was needed for; the error names the repository it came from.
+            if ($_.FullyQualifiedErrorId -notlike 'ModuleDownloadFailed*') { throw }
+            $message = "AWS.Tools.Installer 2.0.5 or a later 2.x is needed to download $($Name -join ', ') $Version, and it is not " +
+                "installed. Saving it failed: $($_.Exception.Message)"
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.InvalidOperationException]::new($message, $_.Exception),
+                'ModuleDownloadFailed', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, $_.TargetObject)
+        }
         $manifest = [System.IO.Path]::Combine($InstallerPath, 'AWS.Tools.Installer', $saved.Version, 'AWS.Tools.Installer.psd1')
         $installer = @(Get-Module -ListAvailable -Name $manifest) | Select-Object -First 1
         Write-Verbose "AWS.Tools.Installer $($saved.Version) was not available locally; saved it to '$InstallerPath'."
@@ -151,7 +162,7 @@ function Save-LambdaPSAWSToolsModule {
         foreach ($nameDir in @(Get-ChildItem -LiteralPath $staging -Directory -Force)) {
             foreach ($versionDir in @(Get-ChildItem -LiteralPath $nameDir.FullName -Directory -Force)) {
                 $destination = [System.IO.Path]::Combine($Path, $nameDir.Name, $versionDir.Name)
-                if (-not (Test-Path -LiteralPath $destination)) {
+                if (-not (Test-LambdaPSModuleFolder -Path $destination -Name $nameDir.Name)) {
                     $null = [System.IO.Directory]::CreateDirectory([System.IO.Path]::Combine($Path, $nameDir.Name))
                     Copy-LambdaPSModuleFolder -Path $versionDir.FullName -Destination $destination
                 }
@@ -160,5 +171,9 @@ function Save-LambdaPSAWSToolsModule {
     }
     finally {
         Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
+        if (Test-Path -LiteralPath $staging) {
+            # On Windows a scanner can still hold a file in it for a moment.
+            Write-Verbose "Could not remove the temporary AWS.Tools download folder '$staging'; delete it after this session ends."
+        }
     }
 }

@@ -66,6 +66,24 @@ function Install-AWSToolsModule {
         }
     }
 
+    It 'says what AWS.Tools.Installer was needed for when saving it fails' {
+        InModuleScope $script:moduleName -Parameters @{ installerDir = (Join-Path $TestDrive 'bootstrap-fails') } {
+            param($installerDir)
+            Mock 'Get-Module' -ParameterFilter { $ListAvailable -and $Name -eq 'AWS.Tools.Installer' } -MockWith { }
+            Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("Could not download module 'AWS.Tools.Installer' [2.0.5,3.0) from repository 'PSGallery' with PSResourceGet: offline"),
+                    'ModuleDownloadFailed', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, 'AWS.Tools.Installer [2.0.5,3.0)')
+            }
+
+            $err = { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir } |
+                Should -Throw -ErrorId 'ModuleDownloadFailed' -PassThru
+            $err.Exception.Message | Should -BeLike ("AWS.Tools.Installer 2.0.5 or a later 2.x is needed to download AWS.Tools.S3 9.9.1, and it is not installed. " +
+                "Saving it failed: Could not download module 'AWS.Tools.Installer' ``[2.0.5,3.0``) from repository 'PSGallery' with PSResourceGet: offline")
+            $err.TargetObject | Should -Be 'AWS.Tools.Installer [2.0.5,3.0)'
+        }
+    }
+
     It 'does not use an installed AWS.Tools.Installer older than 2.0.5' {
         InModuleScope $script:moduleName -Parameters @{ installerDir = (Join-Path $TestDrive 'bootstrap-old') } {
             param($installerDir)

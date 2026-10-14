@@ -85,6 +85,35 @@ Describe 'Save-LambdaPSModuleFromRepository' -Tag 'Unit' {
         }
     }
 
+    It 'names the repositories it used, and removes the -Path folder it created, when the download fails (<Case>)' -ForEach @(
+        @{ Case = 'no -ModuleRepository'; Repository = @(); From = 'the registered repositories' }
+        @{ Case = 'one repository'; Repository = @('Internal'); From = "repository 'Internal'" }
+        @{ Case = 'two repositories'; Repository = @('Internal', 'Mirror'); From = "repositories 'Internal', 'Mirror'" }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Repository = $Repository; From = $From } {
+            param($Repository, $From)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'Internal' }, [PSCustomObject]@{ Name = 'Mirror' } }
+            Mock 'Save-PSResource' -MockWith { throw 'not found' }
+            $target = Join-Path $TestDrive "created-$([guid]::NewGuid().ToString('N'))"
+            $repositoryParam = if ($Repository.Count -gt 0) { @{ ModuleRepository = $Repository } } else { @{} }
+
+            $err = { Save-LambdaPSModuleFromRepository -Name 'LambdaPSFake.A' -VersionRange '[1.0.0]' -Path $target @repositoryParam } |
+                Should -Throw -ErrorId 'ModuleDownloadFailed' -PassThru
+            $err.Exception.Message | Should -BeLike "Could not download module 'LambdaPSFake.A' ``[1.0.0``] from $From with PSResourceGet: not found*"
+            Test-Path -LiteralPath $target | Should -BeFalse
+        }
+    }
+
+    It 'leaves a -Path folder that was already there when the download fails' {
+        InModuleScope $script:moduleName {
+            Mock 'Save-PSResource' -MockWith { }
+            $target = New-Item -ItemType Directory -Path (Join-Path $TestDrive 'existing-target') -Force
+            { Save-LambdaPSModuleFromRepository -Name 'LambdaPSFake.A' -VersionRange '[1.0.0]' -Path $target.FullName } |
+                Should -Throw -ErrorId 'ModuleDownloadFailed'
+            Test-Path -LiteralPath $target.FullName | Should -BeTrue
+        }
+    }
+
     It 'wraps a PSResourceGet failure as ModuleDownloadFailed with the trust hint' {
         InModuleScope $script:moduleName {
             Mock 'Save-PSResource' -MockWith { throw 'PowerShell is in NonInteractive mode.' }

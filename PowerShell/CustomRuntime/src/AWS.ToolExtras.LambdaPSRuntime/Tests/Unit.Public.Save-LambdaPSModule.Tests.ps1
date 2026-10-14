@@ -52,6 +52,23 @@ Describe 'Save-LambdaPSModule' -Tag 'Unit' {
         Test-Path -LiteralPath $target | Should -BeFalse -Because 'the repository is checked before anything is written'
     }
 
+    It 'says in its help to test the saved modules in a new session' {
+        $description = (Get-Help Save-LambdaPSModule -Full).Description.Text -join "`n"
+        $description | Should -BeLike '*pwsh -NoProfile*$env:PSModulePath = (Resolve-Path ./mods).Path*Import-Module AWS.Tools.S3 -RequiredVersion 5.0.274*'
+        $description | Should -BeLike '*Test in a new session*'
+    }
+
+    It 'stops with TargetIsFile, before downloading, for a -Path that is a file' {
+        Mock 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -MockWith { throw 'must not download' }
+        $file = Join-Path $TestDrive 'mods-file'
+        Set-Content -LiteralPath $file -Value 'x'
+
+        $err = { Save-LambdaPSModule -Module @{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' } -Path $file } |
+            Should -Throw -ErrorId 'TargetIsFile,Save-LambdaPSModule' -PassThru
+        $err.Exception.Message | Should -Be "-Path '$file' is a file; pass a folder."
+        Should -Invoke 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -Times 0 -Exactly
+    }
+
     It 'stops with ModuleVersionRequired for an unpinned -Module' {
         { Save-LambdaPSModule -Module 'LambdaPSFake.A' -Path (Join-Path $TestDrive 'unpinned') } |
             Should -Throw -ErrorId 'ModuleVersionRequired,Save-LambdaPSModule'
@@ -92,11 +109,22 @@ Describe 'Save-LambdaPSModule' -Tag 'Unit' {
 
         It 'leaves a module that is already in -Path alone and does not return it' {
             $mods = Join-Path $TestDrive 'already-there'
-            $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($mods, 'LambdaPSFake.Local', '1.0.0')) -Force
+            $existing = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($mods, 'LambdaPSFake.Local', '1.0.0')) -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($existing.FullName, 'LambdaPSFake.Local.psd1')) -Value '@{}'
 
             $out = @(Save-LambdaPSModule -Module @{ ModuleName = 'LambdaPSFake.Local'; RequiredVersion = '1.0.0' } -Path $mods)
 
             $out.Count | Should -Be 0
+            Should -Invoke 'Copy-LambdaPSModuleFolder' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'stops with ModuleFolderIncomplete, copying nothing, when the version folder in -Path holds no manifest' {
+            $mods = Join-Path $TestDrive 'incomplete-there'
+            $leftover = [System.IO.Path]::Combine($mods, 'LambdaPSFake.Local', '1.0.0')
+            $null = New-Item -ItemType Directory -Path $leftover -Force
+
+            { Save-LambdaPSModule -Module @{ ModuleName = 'LambdaPSFake.Local'; RequiredVersion = '1.0.0' } -Path $mods } |
+                Should -Throw -ErrorId 'ModuleFolderIncomplete,Save-LambdaPSModule'
             Should -Invoke 'Copy-LambdaPSModuleFolder' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
