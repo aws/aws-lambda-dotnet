@@ -34,10 +34,13 @@ with its own lint rules:
 
 | Approach | Scaffold with | `pwsh` | Container | One-command deploy |
 | --- | --- | --- | --- | --- |
-| **CMR** (default) | `New-LambdaPSRuntimeProject -Target CMR` | installed in image | Yes | Yes |
-| Layer | `New-LambdaPSRuntimeProject -Target Layer` | bundled on `provided.al2023` | No | No |
-| Self-contained `.zip` | `New-LambdaPSFunctionProject -Target SelfContainedZip` | bundled on `provided.al2023` | No | No |
-| Container-per-function | `New-LambdaPSFunctionProject -Target Container` | installed in image | Yes | No |
+| **CMR** (default) | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4` (`-Target CMR` is the default) | installed in image | Yes | Yes |
+| Layer | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4 -Target Layer` | bundled on `provided.al2023` | No | No |
+| Self-contained `.zip` | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4` | bundled on `provided.al2023` | No | No |
+| Container-per-function | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target Container -PowerShellVersion 7.4` | installed in image | Yes | No |
+
+A function bound to a customer-managed runtime needs only its handler code: `New-LambdaPSFunctionProject
+-Path ./fn -Handler handler` scaffolds one (`-Target RuntimeBound`, the default).
 
 CMR (customer-managed runtime) is the default: publish the runtime once as a container image,
 reference it by alias, and roll the whole fleet forward by moving the alias — no per-function
@@ -66,12 +69,16 @@ New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVers
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
     ) -Region us-east-1
 
-# 2. Deploy a function bound to the runtime alias (resolves the runtime ARN for you).
-New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./handler.ps1 `
+# 2. Scaffold a function: ./hello/handler.ps1 is a starter handler to edit.
+New-LambdaPSFunctionProject -Path ./hello -Handler handler
+
+# 3. Deploy it bound to the runtime alias (resolves the runtime ARN for you). The role must exist
+#    and trust lambda.amazonaws.com.
+New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./hello `
     -RuntimeName my-powershell-runtime -RuntimeAlias production `
     -Role arn:aws:iam::111122223333:role/hello-powershell-role -Region us-east-1
 
-# 3. Invoke it.
+# 4. Invoke it.
 Invoke-LambdaPSFunction -FunctionName hello-powershell -Payload @{ name = 'world' } -Region us-east-1 `
     -IncludeLog -InformationAction Continue
 ```
@@ -124,6 +131,10 @@ approach, stock image, one ECR repository per runtime, single version behind one
 - Validate: `Test-LambdaPSRuntimeProject`, `Test-LambdaPSContainerRuntime`
 - Build / package: `Build-LambdaPSRuntimeImage`, `Build-LambdaPSRuntimePackage`, `Compress-LambdaPSFunctionPackage`
 - Modules: `Save-LambdaPSModule`
+- Publish and alias, with AWS.Tools directly: `New-LMCRuntime`, `New-LMCRuntimeVersion`, and
+  `New-LMCRuntimeAlias` or `Update-LMCRuntimeAlias`. Lambda pulls the image from ECR, so the
+  repository policy must let `lambda.amazonaws.com` pull it, with the conditions `aws:SourceAccount`
+  (your account) and `aws:SourceArn` (the runtime's ARN).
 
 `Test-LambdaPSRuntimeProject` is a gate, not just a report: a failing rule goes to the error stream as
 well as the pipeline, so `-ErrorAction Stop` halts a script, `$?` is `$false` afterwards, and `-Quiet`
@@ -183,7 +194,7 @@ picked up). PowerShellGet is never called, but AWS.Tools.Installer requires it t
 is not installed it is itself saved with PSResourceGet, from `-ModuleRepository` or else PSGallery and, on
 Windows, only when its Authenticode signature is valid. It is then used from the temporary folder. Repository
 trust is not bypassed: an untrusted repository (PSGallery by default) prompts, and fails in a
-non-interactive session — trust it with `Set-PSResourceRepository -Trusted`, or pre-stage modules and
+non-interactive session — trust it with `Set-PSResourceRepository -Name PSGallery -Trusted`, or pre-stage modules and
 use `Stop`.
 
 Whenever something is downloaded, a warning names the modules and says to test those exact versions
@@ -192,12 +203,20 @@ recommended as a direct production dependency.
 
 `Save-LambdaPSModule -Module <specs> -Path ./mods` runs the same download on its own, and also copies
 any module in the set that is already installed, so `./mods` holds the complete set at the exact
-versions a function will ship with. Test against it by adding `./mods` to `$env:PSModulePath`.
+versions a function will ship with. Test against it in a new PowerShell session, with `./mods` added
+to `$env:PSModulePath` before anything is imported: a session that has already loaded AWS.Tools cannot
+load another build of its assemblies.
 
 ## Migrating from AWSLambdaPSCore
 
 Handlers written for AWSLambdaPSCore (`New-AWSPowerShellLambda`, `Publish-AWSPowerShellLambda`) run
 on this runtime with these differences:
+
+| AWSLambdaPSCore | This module |
+| --- | --- |
+| `New-AWSPowerShellLambda` | `New-LambdaPSFunctionProject` |
+| `Publish-AWSPowerShellLambda` | `New-LambdaPSFunctionDeployment -ProjectPath` |
+| `-PowerShellFunctionHandler <function>` | `-Handler <script>.ps1::<function>` |
 
 - **The handler declares its input.** Add `param($LambdaInput, $LambdaContext)` at the top of the
   script: the runtime passes the event and the context positionally, so a script without that
@@ -294,7 +313,7 @@ file.
   role, and `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable` only when
   you give them. Anything you don't give keeps the function's current value, so a redeploy doesn't
   reset a tuned timeout, memory size or alias to the defaults. The live handler is kept unless you give
-  `-Handler` or its script is not in the package, and the live alias is kept unless you give
+  `-Handler`, its script is not in the package, or it is not a PowerShell handler, and the live alias is kept unless you give
   `-RuntimeAlias` or `-RuntimeName` names another runtime. The handler and alias a scaffolded project's
   `manifest.json` records apply to a new function (the alias also to one moving to another runtime);
   where the live ones are kept, a warning says when the manifest's differ. When the alias is kept, a
