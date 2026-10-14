@@ -22,20 +22,52 @@ Describe 'Get-LambdaPSTarCommand' -Tag 'Unit' {
         }
     }
 
-    It 'returns tar on Windows when System32 has no tar.exe' {
+    It 'falls back to the tar on PATH on Windows when System32 has no tar.exe' {
         $empty = [System.IO.Path]::Combine($TestDrive, 'NoTarWindows')
         $null = New-Item -ItemType Directory -Path $empty
         InModuleScope $script:moduleName -Parameters @{ SystemRoot = $empty } {
             param($SystemRoot)
-            Get-LambdaPSTarCommand -OnWindows $true -SystemRoot $SystemRoot | Should -Be 'tar'
-            Get-LambdaPSTarCommand -OnWindows $true -SystemRoot '' | Should -Be 'tar'
+            $expected = (Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot)
+            Get-LambdaPSTarCommand -OnWindows $true -SystemRoot $SystemRoot | Should -Be $expected
+            Get-LambdaPSTarCommand -OnWindows $true -SystemRoot '' | Should -Be $expected
         }
     }
 
-    It 'returns tar off Windows' {
+    It 'returns the path of the tar program off Windows' -Skip:(-not (Get-Command -Name tar -CommandType Application -ErrorAction SilentlyContinue)) {
         InModuleScope $script:moduleName -Parameters @{ SystemRoot = $script:systemRoot } {
             param($SystemRoot)
-            Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot | Should -Be 'tar'
+            Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot |
+                Should -Be (Get-Command -Name tar -CommandType Application | Select-Object -First 1).Source
+        }
+    }
+
+    It 'returns the tar program''s path, not a session function or alias named tar' -Skip:(-not (Get-Command -Name tar -CommandType Application -ErrorAction SilentlyContinue)) {
+        InModuleScope $script:moduleName -Parameters @{ SystemRoot = $script:systemRoot } {
+            param($SystemRoot)
+            function script:tar { 'FUNCTION RAN' }
+            Set-Alias -Name 'tar' -Value 'Write-Output' -Scope Script
+            try {
+                $tar = Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot
+            }
+            finally {
+                Remove-Item -LiteralPath 'function:script:tar', 'alias:tar'
+            }
+            [System.IO.Path]::IsPathRooted($tar) | Should -BeTrue
+            (Get-Command -Name $tar).CommandType | Should -Be 'Application'
+        }
+    }
+
+    It 'returns tar, which callers find is not a program, when no tar program is on PATH' {
+        InModuleScope $script:moduleName -Parameters @{ SystemRoot = $script:systemRoot } {
+            param($SystemRoot)
+            $savedPath = $env:PATH
+            $env:PATH = [System.IO.Path]::Combine($SystemRoot, 'no-such-folder')
+            try {
+                Get-LambdaPSTarCommand -OnWindows $false -SystemRoot $SystemRoot | Should -Be 'tar'
+            }
+            finally {
+                $env:PATH = $savedPath
+            }
         }
     }
 
