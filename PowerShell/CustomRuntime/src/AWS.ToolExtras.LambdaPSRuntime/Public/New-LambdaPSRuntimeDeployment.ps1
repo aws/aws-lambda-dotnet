@@ -281,20 +281,20 @@ function New-LambdaPSRuntimeDeployment {
         $resolvedPwshVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
         # build can only fail, after Stage 2 has replaced -ProjectPath, so refuse here, under -WhatIf too.
-        if ($Architecture -eq 'arm64') {
-            $pinnedHashes = $script:Config.pwsh.ArchiveSha256[$resolvedPwshVersion]
-            if ($null -eq $pinnedHashes -or [string]::IsNullOrWhiteSpace([string]$pinnedHashes.arm64)) {
-                $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
-                        -not [string]::IsNullOrWhiteSpace([string]$script:Config.pwsh.ArchiveSha256[$_].arm64) } |
-                    Sort-Object { [version]$_ }) -join ', '
-                $PSCmdlet.ThrowTerminatingError(
-                    [System.Management.Automation.ErrorRecord]::new(
-                        [System.InvalidOperationException]::new(
-                            ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
-                             "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
-                             "arm64 hash ($pinnedArm64). Nothing was created.")),
-                        'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
-            }
+        if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
+            # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
+            $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
+                    $_.StartsWith("$PowerShellVersion.") -and
+                    -not [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $_ -Architecture arm64)) } |
+                Sort-Object { [version]$_ })
+            $pinnedList = if ($pinnedArm64.Count -gt 0) { " ($($pinnedArm64 -join ', '))" } else { '' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
+                         "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
+                         "arm64 hash$pinnedList. Nothing was created.")),
+                    'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
         }
         if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
             $ProjectPath = [System.IO.Path]::Combine((Get-Location).Path, "$RuntimeName-runtime")
