@@ -11,8 +11,7 @@ function Invoke-LambdaPSFunction {
             value that is already a JSON string is sent verbatim.
           - Output out: the response Payload (a MemoryStream from the SDK) is read and, when it is
             JSON, deserialized, so the cmdlet returns the parsed function output directly instead of
-            a raw stream. JSON whose keys differ only in case is returned as ordered hashtables,
-            which keep both keys.
+            a raw stream. JSON whose keys differ only in case is returned as text.
 
         With -IncludeLog it requests the tail of the execution log, decodes it from base64, and
         writes it to the Information stream (view it with -InformationAction Continue). The parsed
@@ -217,8 +216,8 @@ function Invoke-LambdaPSFunction {
 
             # Parses JSON with no error record: ConvertFrom-Json refuses keys that differ only in case (as
             # in {"a":1,"A":2}) with an error that reaches the caller's -ErrorVariable even when caught.
-            # Hashtables accept such keys, so the text is parsed into them first, and returned as
-            # objects unless such keys are present.
+            # Hashtables accept such keys, so the text is parsed into them first to look for any, and is
+            # returned as objects without them, or as the text itself with them.
             $parseJson = {
                 param([string]$Text)
                 $table = ConvertFrom-Json -InputObject $Text -NoEnumerate -AsHashtable
@@ -236,7 +235,7 @@ function Invoke-LambdaPSFunction {
                         foreach ($value in $item) { $pending.Push($value) }
                     }
                 }
-                if ($caseClash) { , $table } else { , (ConvertFrom-Json -InputObject $Text -NoEnumerate) }
+                if ($caseClash) { $Text } else { , (ConvertFrom-Json -InputObject $Text -NoEnumerate) }
             }
 
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
@@ -269,7 +268,7 @@ function Invoke-LambdaPSFunction {
             # Return parsed output when the payload is JSON; fall back to the raw string otherwise.
             # -NoEnumerate and the comma keep a JSON array an array: '[1]' stays a one-element array
             # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON with keys
-            # that differ only in case is returned as hashtables, which keep both keys.
+            # that differ only in case, which ConvertFrom-Json refuses, is returned as text.
             if (-not $isJson) { return $responseText }
             return , (& $parseJson $responseText)
         }

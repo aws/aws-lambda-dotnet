@@ -181,8 +181,8 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $(if ($result -is [string]) { $result } else { $result.ok }) | Should -Be $Expected
         }
 
-        # ConvertFrom-Json refuses keys that differ only in case; a hashtable keeps both, and no error is recorded.
-        It 'returns JSON whose keys differ only in case as a hashtable that keeps both, and leaves -ErrorVariable empty' {
+        # ConvertFrom-Json refuses keys that differ only in case, so such JSON is returned as text, and no error is recorded.
+        It 'returns JSON whose keys differ only in case as text, and leaves -ErrorVariable empty' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream '{"a":1,"A":2}'); LogResult = $null; FunctionError = $null }
             }
@@ -190,9 +190,8 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $result = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors
 
             @($errors).Count | Should -Be 0
-            $result | Should -BeOfType ([System.Collections.IDictionary])
-            $result['a'] | Should -Be 1
-            $result['A'] | Should -Be 2
+            $result | Should -BeOfType ([string])
+            $result | Should -BeExactly '{"a":1,"A":2}'
         }
 
         It 'returns nothing for an empty payload' {
@@ -261,7 +260,7 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             @($errors).Count | Should -Be 1
         }
 
-        It 'reports a function error whose JSON keys differ only in case as the one record, with both keys in its target' {
+        It 'reports a function error whose JSON keys differ only in case as the one record, with the text as its target' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream '{"errorType":"E","ErrorType":"F"}'); LogResult = $null; FunctionError = 'Unhandled' }
             }
@@ -270,8 +269,7 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
 
             @($errors).Count | Should -Be 1
             $errors[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
-            $errors[0].TargetObject['errorType'] | Should -Be 'E'
-            $errors[0].TargetObject['ErrorType'] | Should -Be 'F'
+            $errors[0].TargetObject | Should -BeExactly '{"errorType":"E","ErrorType":"F"}'
         }
 
         It 'reports a function error whose payload is <Case>' -ForEach @(
