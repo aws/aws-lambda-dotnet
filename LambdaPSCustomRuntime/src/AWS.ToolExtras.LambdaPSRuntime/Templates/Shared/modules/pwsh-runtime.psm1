@@ -15,4 +15,8 @@ Get-ChildItem -Path $privateFunctionsPath -Filter '*.ps1' | ForEach-Object {
 
 # The response and error senders call the request helper through this binding, not by name: a name is
 # looked up in the scope the handler shares, where a handler's alias or function of the same name wins.
-$script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}
+$script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}
+
+# A <script>.ps1 handler runs in a child of this module's scope, so a variable left here would be one it
+# can read; the loader's own variable goes once the files are loaded.
+Remove-Variable -Name privateFunctionsPath -Scope Script

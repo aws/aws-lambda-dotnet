@@ -125,7 +125,16 @@ try {
                 # The same for a break or continue in the module's top-level code, which would stop the import.
                 $private:__LambdaPSRuntimeImportCompleted = $false
                 do {
-                    Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop
+                    try {
+                        Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop
+                    }
+                    catch {
+                        # A module that is not found is named with where the runtime looked; any other import
+                        # error (such as one the module's own code raises) is reported as it is.
+                        if ($_.FullyQualifiedErrorId -notlike 'Modules_ModuleNotFound*') { throw }
+                        throw [System.IO.FileNotFoundException]::new(
+                            "Handler module not found: $($private:__LambdaPSRuntimeHandler.moduleName) (_HANDLER $env:_HANDLER). The runtime looked in: $($env:PSModulePath -split [System.IO.Path]::PathSeparator -join ', ')")
+                    }
                     $private:__LambdaPSRuntimeImportCompleted = $true
                 } while ($false)
                 if (-not $private:__LambdaPSRuntimeImportCompleted) {

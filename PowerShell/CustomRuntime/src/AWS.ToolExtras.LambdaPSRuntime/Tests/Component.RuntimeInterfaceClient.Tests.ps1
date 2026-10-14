@@ -141,7 +141,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'accepts a 202 without error' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
-            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
+            $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(202, '{"status":"OK"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -155,7 +155,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'throws, naming the status, when the response is rejected' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
-            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
+            $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerResponse.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(413, '{"errorType":"RequestEntityTooLarge"}')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -170,7 +170,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'logs, rather than dies, when the error report itself is rejected' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
-            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
+            $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $fake = [LambdaPSTests.Fakes.FixedStatusHandler]::new(500, 'boom')
             $client = [System.Net.Http.HttpClient]::new($fake)
@@ -184,7 +184,7 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
 
         It 'logs where the handler failed, not just the message' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
-            $script:SendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
+            $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
             $client = [System.Net.Http.HttpClient]::new([LambdaPSTests.Fakes.FixedStatusHandler]::new(202, ''))
             $handler = Join-Path $TestDrive "throws.ps1"
@@ -360,6 +360,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
             'function Handle { param($LambdaInput, $LambdaContext) @{ From = ''alias shadow''; Id = $LambdaContext.AwsRequestId } }'
         )
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'samename.ps1')) -Value 'function Send-RuntimeApiRequest { param($LambdaInput, $LambdaContext) @{ From = ''handler named Send-RuntimeApiRequest''; Id = $LambdaContext.AwsRequestId } }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'peek.ps1')) -Value '"loader:[$privateFunctionsPath]"'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -486,7 +487,7 @@ public class InvokeBin : PSCmdlet {
         @{ Case = 'syntax error in a Script handler'; Handler = 'syntax.ps1'; Message = '*Missing closing*'; Type = 'ParseException'; Stack = $null }
         @{ Case = 'script throws'; Handler = 'initthrows.ps1::Handle'; Message = 'init failed'; Type = 'RuntimeException'; Stack = '*initthrows.ps1*' }
         @{ Case = 'invalid _HANDLER'; Handler = 'nonsense'; Message = "Invalid Lambda Handler: _HANDLER is 'nonsense'. Use one of <script>.ps1, <script>.ps1::<function> or Module::<module>::<function>."; Type = 'RuntimeException'; Stack = $null }
-        @{ Case = 'missing module'; Handler = 'Module::NoSuchMod::Handle'; Message = '*NoSuchMod*'; Type = 'FileNotFoundException'; Stack = $null }
+        @{ Case = 'missing module'; Handler = 'Module::NoSuchMod::Handle'; Message = 'Handler module not found: NoSuchMod (_HANDLER Module::NoSuchMod::Handle). The runtime looked in: *task*modules*'; Type = 'FileNotFoundException'; Stack = $null }
         @{ Case = 'misspelled function'; Handler = 'fn.ps1::Invok'; Message = 'Handler function not found: Invok*'; Type = 'CommandNotFoundException'; Stack = $null }
         @{ Case = 'misspelled function in a strict-mode script'; Handler = 'strict.ps1::Handel'; Message = 'Handler function not found: Handel (_HANDLER strict.ps1::Handel)'; Type = 'CommandNotFoundException'; Stack = $null }
         @{ Case = 'misspelled module function'; Handler = 'Module::MyMod::Invoke-Typo'; Message = 'Handler function not found: Invoke-Typo*'; Type = 'CommandNotFoundException'; Stack = $null }
@@ -797,6 +798,12 @@ public class InvokeBin : PSCmdlet {
         $second.Identity | Should -BeExactly ''
         $second.ClientType | Should -Be 'String'
         $second.IdentityType | Should -Be 'String'
+    }
+
+    It 'leaves no runtime module loader variable for a Script handler to read' {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'peek.ps1' -EventBody '{}')
+
+        $posts[0].Body | Should -BeExactly 'loader:[]'
     }
 
     It 'sets _X_AMZN_TRACE_ID for its own invocation only' {
