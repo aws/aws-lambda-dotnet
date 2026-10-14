@@ -104,7 +104,7 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
         It 'refuses a -Region that differs from the region in a function ARN, before invoking' {
             $err = { Invoke-LambdaPSFunction -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -Region us-west-2 } |
                 Should -Throw -ErrorId 'FunctionRegionMismatch,Invoke-LambdaPSFunction' -PassThru
-            $err.Exception.Message | Should -BeLike "*region 'eu-west-1', but -Region is 'us-west-2'*"
+            $err.Exception.Message | Should -BeLike "*region 'eu-west-1', but -Region is 'us-west-2'. Omit -Region, or pass -Region eu-west-1."
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
@@ -181,6 +181,20 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $(if ($result -is [string]) { $result } else { $result.ok }) | Should -Be $Expected
         }
 
+        # ConvertFrom-Json refuses keys that differ only in case; a hashtable keeps both, and no error is recorded.
+        It 'returns JSON whose keys differ only in case as a hashtable that keeps both, and leaves -ErrorVariable empty' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"a":1,"A":2}'); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors
+
+            @($errors).Count | Should -Be 0
+            $result | Should -BeOfType ([System.Collections.IDictionary])
+            $result['a'] | Should -Be 1
+            $result['A'] | Should -Be 2
+        }
+
         It 'returns nothing for an empty payload' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream ''); LogResult = $null; FunctionError = $null }
@@ -247,6 +261,19 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             @($errors).Count | Should -Be 1
         }
 
+        It 'reports a function error whose JSON keys differ only in case as the one record, with both keys in its target' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"errorType":"E","ErrorType":"F"}'); LogResult = $null; FunctionError = 'Unhandled' }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors -ErrorAction SilentlyContinue
+
+            @($errors).Count | Should -Be 1
+            $errors[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
+            $errors[0].TargetObject['errorType'] | Should -Be 'E'
+            $errors[0].TargetObject['ErrorType'] | Should -Be 'F'
+        }
+
         It 'reports a function error whose payload is <Case>' -ForEach @(
             @{ Case = 'not JSON'; Body = 'Task timed out'; Target = 'Task timed out'; Message = "*returned a function error (Unhandled): Task timed out" }
             @{ Case = 'empty'; Body = ''; Target = ''; Message = '*returned a function error (Unhandled).' }
@@ -264,6 +291,36 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $record[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
             $record[0].TargetObject | Should -Be $Target
             $record[0].Exception.Message | Should -BeLike $Message
+        }
+    }
+
+    Context 'payload depth' {
+        BeforeEach {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $null; FunctionError = $null }
+            }
+        }
+
+        # ConvertTo-Json only warns when it cuts an object short, so a deep payload would arrive truncated.
+        It 'refuses a payload nested deeper than 32 levels, before invoking' {
+            $payload = @{ leaf = 'value' }
+            foreach ($level in 1..40) { $payload = @{ inner = $payload } }
+
+            $err = { Invoke-LambdaPSFunction -FunctionName hello -Payload $payload } |
+                Should -Throw -ErrorId 'PayloadTooDeep,Invoke-LambdaPSFunction' -PassThru
+
+            $err.Exception.Message | Should -BeLike '*nested deeper than 32 levels*'
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'sends a payload nested 30 levels deep in full' {
+            $payload = @{ leaf = 'value' }
+            foreach ($level in 1..30) { $payload = @{ inner = $payload } }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Payload $payload -WarningVariable warnings
+
+            @($warnings).Count | Should -Be 0
+            Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Payload -like '*"leaf":"value"*' }
         }
     }
 

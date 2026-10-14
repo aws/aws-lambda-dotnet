@@ -11,7 +11,8 @@ function Invoke-LambdaPSFunction {
             value that is already a JSON string is sent verbatim.
           - Output out: the response Payload (a MemoryStream from the SDK) is read and, when it is
             JSON, deserialized, so the cmdlet returns the parsed function output directly instead of
-            a raw stream.
+            a raw stream. JSON whose keys differ only in case is returned as ordered hashtables,
+            which keep both keys.
 
         With -IncludeLog it requests the tail of the execution log, decodes it from base64, and
         writes it to the Information stream (view it with -InformationAction Continue). The parsed
@@ -40,7 +41,8 @@ function Invoke-LambdaPSFunction {
     .PARAMETER Payload
         The event payload. An object is serialized to JSON, to a depth of 32, and an array stays an
         array (@() is sent as [] and @(1) as [1]); a string is sent verbatim (assumed to be JSON
-        already). Omit for an empty invoke.
+        already). An object nested deeper than 32 levels fails with PayloadTooDeep before anything is
+        sent, rather than reach the function cut short. Omit for an empty invoke.
     .PARAMETER IncludeLog
         Request the tail of the execution log and write the decoded log to the Information stream.
     .PARAMETER Qualifier
@@ -138,7 +140,18 @@ function Invoke-LambdaPSFunction {
                 }
                 else {
                     # -InputObject, not the pipeline, so an array is sent as an array: @(1) as [1], @() as [].
-                    ConvertTo-Json -InputObject $Payload -Depth 32 -Compress
+                    # ConvertTo-Json only warns when it cuts a deeper object short, so that warning stops
+                    # the invoke here.
+                    $depthWarnings = $null
+                    ConvertTo-Json -InputObject $Payload -Depth 32 -Compress -WarningAction SilentlyContinue -WarningVariable depthWarnings
+                    if ($depthWarnings) {
+                        $PSCmdlet.ThrowTerminatingError(
+                            [System.Management.Automation.ErrorRecord]::new(
+                                [System.ArgumentException]::new(
+                                    ('-Payload is nested deeper than 32 levels, so its JSON would be cut short and the ' +
+                                     'function would receive a different event. Flatten the payload, or pass it as a JSON string.')),
+                                'PayloadTooDeep', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
+                    }
                 }
             }
 
@@ -160,7 +173,7 @@ function Invoke-LambdaPSFunction {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.ArgumentException]::new(
                             ("-FunctionName '$FunctionName' is a function in region '$arnRegion', but -Region is '$Region'. " +
-                             "Omit -Region, or pass -Region $arnRegion."), 'Region'),
+                             "Omit -Region, or pass -Region $arnRegion.")),
                         'FunctionRegionMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
             }
             $effectiveRegion = $Region
@@ -202,6 +215,30 @@ function Invoke-LambdaPSFunction {
             $isJson = -not [string]::IsNullOrEmpty($responseText) -and
                 (Test-Json -Json $responseText -Options IgnoreComments, AllowTrailingCommas -ErrorAction Ignore)
 
+            # Parses JSON with no error record: ConvertFrom-Json refuses keys that differ only in case (as
+            # in {"a":1,"A":2}) with an error that reaches the caller's -ErrorVariable even when caught.
+            # Hashtables accept such keys, so the text is parsed into them first, and returned as
+            # objects unless such keys are present.
+            $parseJson = {
+                param([string]$Text)
+                $table = ConvertFrom-Json -InputObject $Text -NoEnumerate -AsHashtable
+                $pending = [System.Collections.Generic.Stack[object]]::new()
+                $pending.Push($table)
+                $caseClash = $false
+                while (-not $caseClash -and $pending.Count -gt 0) {
+                    $item = $pending.Pop()
+                    if ($item -is [System.Collections.IDictionary]) {
+                        $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                        foreach ($key in $item.Keys) { if (-not $seen.Add([string]$key)) { $caseClash = $true } }
+                        foreach ($value in $item.Values) { $pending.Push($value) }
+                    }
+                    elseif ($item -is [System.Collections.IList]) {
+                        foreach ($value in $item) { $pending.Push($value) }
+                    }
+                }
+                if ($caseClash) { , $table } else { , (ConvertFrom-Json -InputObject $Text -NoEnumerate) }
+            }
+
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
             if ($IncludeLog -and -not [string]::IsNullOrEmpty($response.LogResult)) {
                 $log = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response.LogResult))
@@ -216,9 +253,7 @@ function Invoke-LambdaPSFunction {
             if (-not [string]::IsNullOrEmpty($response.FunctionError)) {
                 $detail = if (-not [string]::IsNullOrEmpty($responseText)) { ": $responseText" } else { '.' }
                 $errorPayload = $responseText
-                if ($isJson) {
-                    try { $errorPayload = ConvertFrom-Json -InputObject $responseText -ErrorAction Stop } catch { $errorPayload = $responseText }
-                }
+                if ($isJson) { $errorPayload = & $parseJson $responseText }
                 $PSCmdlet.WriteError(
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new(
@@ -233,16 +268,10 @@ function Invoke-LambdaPSFunction {
 
             # Return parsed output when the payload is JSON; fall back to the raw string otherwise.
             # -NoEnumerate and the comma keep a JSON array an array: '[1]' stays a one-element array
-            # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON that
-            # ConvertFrom-Json still refuses (keys that differ only in case) is returned as text.
+            # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON with keys
+            # that differ only in case is returned as hashtables, which keep both keys.
             if (-not $isJson) { return $responseText }
-            try {
-                $parsed = ConvertFrom-Json -InputObject $responseText -NoEnumerate -ErrorAction Stop
-                return , $parsed
-            }
-            catch {
-                return $responseText
-            }
+            return , (& $parseJson $responseText)
         }
         catch {
             # Rethrow from this cmdlet: a helper's terminating error otherwise ends only the
