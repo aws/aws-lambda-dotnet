@@ -14,7 +14,7 @@ Describe 'New-LambdaPSModuleNotFoundError' -Tag 'Unit' {
             $err.CategoryInfo.Category | Should -Be 'ObjectNotFound'
             $err.TargetObject | Should -Be 'LambdaPSFake.A 1.0.0'
             $err.Exception | Should -BeOfType [System.IO.FileNotFoundException]
-            $err.Exception.Message | Should -BeLike "Module 'LambdaPSFake.A' 1.0.0 is not available on this machine. Rerun with -MissingModuleAction Save *"
+            $err.Exception.Message | Should -BeLike "Module 'LambdaPSFake.A' 1.0.0 is not available on this machine. Rerun with -MissingModuleAction Save (the default) or Install to download it, or save it with *"
         }
     }
 
@@ -26,7 +26,7 @@ Describe 'New-LambdaPSModuleNotFoundError' -Tag 'Unit' {
             )
             $err = New-LambdaPSModuleNotFoundError -Missing $missing
             $err.TargetObject | Should -Be @('LambdaPSFake.A 1.0.0', 'LambdaPSFake.B 2.0')
-            $err.Exception.Message | Should -BeLike "Modules 'LambdaPSFake.A' 1.0.0, 'LambdaPSFake.B' 2.0 are not available on this machine. *"
+            $err.Exception.Message | Should -BeLike "Modules 'LambdaPSFake.A' 1.0.0, 'LambdaPSFake.B' 2.0 are not available on this machine. *download them, or save them with *"
         }
     }
 }

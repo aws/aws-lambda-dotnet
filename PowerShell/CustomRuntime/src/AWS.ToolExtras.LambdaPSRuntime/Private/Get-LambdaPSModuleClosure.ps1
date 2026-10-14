@@ -20,7 +20,7 @@ function Get-LambdaPSModuleClosure {
           Pending   the -Pending keys the walk reached; treated as present but not walked (used under
                     -WhatIf, where a download is only previewed)
           Error     a ready-to-throw ModuleNameInvalid, AWSPowerShellModuleNotSupported,
-                    ModuleVersionRequired, DependencyNameIsPath, DependencyNameMissing,
+                    ModuleVersionRequired, ModuleGuidMismatch, DependencyNameIsPath, DependencyNameMissing,
                     DependencyVersionUnpinned, ModuleVersionConflict, ModuleVersionSpelling,
                     ModuleClosureNotSettled or (with -RequireAll) ModuleNotFoundLocally ErrorRecord, or
                     $null. It is returned rather than thrown so the error is attributed to the calling
@@ -68,6 +68,11 @@ function Get-LambdaPSModuleClosure {
         A RequiredModules entry that names a path (rooted, containing a / or \, or made only of dots)
         rather than a module is a DependencyNameIsPath error: it would resolve from wherever the path
         points, or from the current directory, and would not load on Lambda.
+
+        A -Module specification or RequiredModules entry that names a GUID is met only by the module
+        with that GUID, as Get-Module -FullyQualifiedName matches it. When the name and version are
+        present only with another GUID, the walk stops with ModuleGuidMismatch. Requirements without a
+        GUID match by name and version alone.
 
         A HashSet keyed on "Name Version" dedupes modules and guards against dependency cycles. Makes
         no network call and writes nothing.
@@ -227,6 +232,18 @@ function Get-LambdaPSModuleClosure {
         $ceiling = $null
         [version]::TryParse(($Item.MaximumVersion -replace '\*', [string][int]::MaxValue), [ref]$ceiling) -and [version]$Other.Version -le $ceiling
     }
+    # A requirement that names a GUID is met only by the module with that GUID, as
+    # Get-Module -FullyQualifiedName matches it; another module of the same name and version would be
+    # staged and then fail to load for the module that requires it.
+    $guidError = {
+        param($Item, [string]$Version, $Other)
+        $message = "Module '$($Item.Name)' $Version is required with GUID $($Item.Guid) ($($Item.RequiredBy)), but the " +
+            "module '$($Item.Name)' $Version found has GUID $Other, so it is a different module. Install or download " +
+            'the module with that GUID, or correct the GUID in the requirement.'
+        [System.Management.Automation.ErrorRecord]::new(
+            [System.ArgumentException]::new($message, 'Module'),
+            'ModuleGuidMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, "$($Item.Name) $Version")
+    }
     $passLimit = 10
     # Per module: a choice that went down ($wentDown) and later came back up is swinging ($swinging),
     # and from then on it is never lowered, whatever the other modules are doing.
@@ -245,6 +262,8 @@ function Get-LambdaPSModuleClosure {
         # version the walk reached for it.
         $requirementsByName = [ordered]@{}
         $versionsByName = [ordered]@{}
+        # The GUID of the module each key resolved to, for a requirement that names a GUID.
+        $guidByKey = @{}
 
         # Breadth-first over the requested modules and their transitive dependencies. A requested
         # module is an exact pin.
@@ -252,13 +271,13 @@ function Get-LambdaPSModuleClosure {
         foreach ($spec in $Module) {
             if (Test-LambdaPSBuiltInModule -Name $spec.Name) {
                 if ($pass -eq 1) {
-                    Write-Warning "Not staging '$($spec.Name)': it is one of PowerShell's own modules, which every PowerShell already has."
+                    Write-Warning "Skipping '$($spec.Name)': it is one of PowerShell's own modules, which every PowerShell already has."
                 }
                 continue
             }
             $queue.Enqueue([PSCustomObject]@{
                     Name = $spec.Name; Version = [string]$spec.RequiredVersion; Kind = 'Exact'; MaximumVersion = $null
-                    RequiredBy = 'requested'
+                    RequiredBy = 'requested'; Guid = $spec.Guid
                 })
         }
 
@@ -273,6 +292,11 @@ function Get-LambdaPSModuleClosure {
             $requirementsByName[$item.Name].Add($item)
             $null = $versionsByName[$item.Name].Add($version)
             if (-not $visited.Add($key)) {
+                # The module this key resolved to must also be the one a later requirement names by GUID.
+                if ($item.Guid -and $guidByKey.ContainsKey($key) -and $guidByKey[$key] -ne $item.Guid) {
+                    $walkError = & $guidError $item $version $guidByKey[$key]
+                    break
+                }
                 if ($item.Kind -eq 'Exact' -and $metByOtherSpelling.ContainsKey($key)) {
                     $walkError = & $spellingError $item $version $metByOtherSpelling[$key] $key
                     break
@@ -292,7 +316,18 @@ function Get-LambdaPSModuleClosure {
             }
 
             $skipInstalled = $SkipInstalled -and -not ($item.Name -like 'AWS.Tools.*' -and $item.Name -ne 'AWS.Tools.Installer')
-            $found = Find-LambdaPSModule -Name $item.Name -Version $version -SearchPath $SearchPath -SkipInstalled:$skipInstalled
+            $found = Find-LambdaPSModule -Name $item.Name -Version $version -Guid $item.Guid -SearchPath $SearchPath -SkipInstalled:$skipInstalled
+            if ($null -eq $found -and $item.Guid) {
+                # The name and version are there, but as another module (another GUID).
+                $other = Find-LambdaPSModule -Name $item.Name -Version $version -SearchPath $SearchPath -SkipInstalled:$skipInstalled
+                if ($null -ne $other) {
+                    $walkError = & $guidError $item $version $other.Guid
+                    break
+                }
+            }
+            if ($null -ne $found) {
+                $guidByKey[$key] = $found.Guid
+            }
             if ($null -eq $found) {
                 # Present only under another spelling of the version (1.0 for 1.0.0, or the reverse)?
                 $other = $null
@@ -338,7 +373,7 @@ function Get-LambdaPSModuleClosure {
                     break
                 }
                 if (Test-LambdaPSBuiltInModule -Name $dependency.Name) {
-                    Write-Verbose "Not staging '$($dependency.Name)', required by $key`: it is one of PowerShell's own modules."
+                    Write-Verbose "Skipping '$($dependency.Name)', required by $key`: it is one of PowerShell's own modules."
                     continue
                 }
                 if ([System.IO.Path]::IsPathRooted($dependency.Name) -or $dependency.Name.IndexOfAny([char[]]@('/', '\')) -ge 0 -or
@@ -373,7 +408,7 @@ function Get-LambdaPSModuleClosure {
                 }
                 $queue.Enqueue([PSCustomObject]@{
                         Name = $dependency.Name; Version = $dependency.Version; Kind = $dependency.Kind
-                        MaximumVersion = $dependency.MaximumVersion; RequiredBy = "required by $key"
+                        MaximumVersion = $dependency.MaximumVersion; RequiredBy = "required by $key"; Guid = $dependency.Guid
                     })
             }
         }

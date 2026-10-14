@@ -13,19 +13,19 @@ Describe 'Get-LambdaPSModulePinError' -Tag 'Unit' {
         }
     }
 
-    It 'returns ModuleVersionRequired for <Case>' -ForEach @(
-        @{ Case = 'a bare name'; Spec = 'AWS.Tools.S3' }
-        @{ Case = 'a minimum version'; Spec = @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.274' } }
-        @{ Case = 'a version range'; Spec = @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.0'; MaximumVersion = '5.9.0' } }
-        @{ Case = 'a maximum only'; Spec = @{ ModuleName = 'AWS.Tools.S3'; MaximumVersion = '5.9.0' } }
+    It 'returns ModuleVersionRequired for <Case>, with an example that pins <Example>' -ForEach @(
+        @{ Case = 'a bare name'; Spec = 'AWS.Tools.S3'; Example = '<version>' }
+        @{ Case = 'a minimum version'; Spec = @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.274' }; Example = '5.0.274' }
+        @{ Case = 'a version range'; Spec = @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.0'; MaximumVersion = '5.9.0' }; Example = '5.0.0' }
+        @{ Case = 'a maximum only'; Spec = @{ ModuleName = 'AWS.Tools.S3'; MaximumVersion = '5.9.0' }; Example = '5.9.0' }
     ) {
-        InModuleScope $script:moduleName -Parameters @{ Spec = $Spec } {
-            param($Spec)
+        InModuleScope $script:moduleName -Parameters @{ Spec = $Spec; Example = $Example } {
+            param($Spec, $Example)
             $err = Get-LambdaPSModulePinError -Specification $Spec
             $err.FullyQualifiedErrorId | Should -Be 'ModuleVersionRequired'
             $err.CategoryInfo.Category | Should -Be 'InvalidArgument'
             $err.TargetObject.Name | Should -Be 'AWS.Tools.S3'
-            $err.Exception.Message | Should -BeLike "Module 'AWS.Tools.S3' must pin an exact RequiredVersion (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '1.0.0' }). *"
+            $err.Exception.Message | Should -BeLike "Module 'AWS.Tools.S3' must pin an exact RequiredVersion (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '$([WildcardPattern]::Escape($Example))' }). *"
         }
     }
 

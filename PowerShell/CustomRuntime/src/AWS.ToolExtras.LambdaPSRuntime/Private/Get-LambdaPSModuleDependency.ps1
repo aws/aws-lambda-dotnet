@@ -9,8 +9,8 @@ function Get-LambdaPSModuleDependency {
         which, so a pinned 1.2.0 can satisfy a dependency's ModuleVersion = '1.1.0'. This reads the
         RequiredModules entries from the module's .psd1 manifest.
 
-        Each entry is returned as Name, Version, Kind ('Exact' or 'Minimum') and MaximumVersion (or
-        $null). An entry with no version (a bare name, a hashtable with only ModuleName, or one with
+        Each entry is returned as Name, Version, Kind ('Exact' or 'Minimum'), MaximumVersion (or
+        $null) and Guid (the entry's GUID, or $null when it names none). An entry with no version (a bare name, a hashtable with only ModuleName, or one with
         only a MaximumVersion) has an empty Version and Kind 'Minimum'; the walk rejects it. When the manifest cannot be read, the
         PSModuleInfo entries are returned as 'Exact', which is the strictest reading.
     .PARAMETER Module
@@ -46,7 +46,8 @@ function Get-LambdaPSModuleDependency {
     if ($null -eq $entries) {
         foreach ($required in @($Module.RequiredModules)) {
             if ($null -eq $required) { continue }
-            [PSCustomObject]@{ Name = $required.Name; Version = [string]$required.Version; Kind = 'Exact'; MaximumVersion = $null }
+            $guid = if ($required.Guid -and $required.Guid -ne [guid]::Empty) { $required.Guid } else { $null }
+            [PSCustomObject]@{ Name = $required.Name; Version = [string]$required.Version; Kind = 'Exact'; MaximumVersion = $null; Guid = $guid }
         }
         return
     }
@@ -54,12 +55,14 @@ function Get-LambdaPSModuleDependency {
     foreach ($entry in $entries) {
         if ($null -eq $entry) { continue }
         if ($entry -is [string]) {
-            [PSCustomObject]@{ Name = $entry; Version = ''; Kind = 'Minimum'; MaximumVersion = $null }
+            [PSCustomObject]@{ Name = $entry; Version = ''; Kind = 'Minimum'; MaximumVersion = $null; Guid = $null }
             continue
         }
+        $parsedGuid = [guid]::Empty
+        $guid = if ([guid]::TryParse([string]$entry['GUID'], [ref]$parsedGuid)) { $parsedGuid } else { $null }
         $requiredVersion = [string]$entry['RequiredVersion']
         if (-not [string]::IsNullOrWhiteSpace($requiredVersion)) {
-            [PSCustomObject]@{ Name = [string]$entry['ModuleName']; Version = $requiredVersion; Kind = 'Exact'; MaximumVersion = $null }
+            [PSCustomObject]@{ Name = [string]$entry['ModuleName']; Version = $requiredVersion; Kind = 'Exact'; MaximumVersion = $null; Guid = $guid }
             continue
         }
         $maximumVersion = [string]$entry['MaximumVersion']
@@ -68,6 +71,7 @@ function Get-LambdaPSModuleDependency {
             Version        = [string]$entry['ModuleVersion']
             Kind           = 'Minimum'
             MaximumVersion = if ([string]::IsNullOrWhiteSpace($maximumVersion)) { $null } else { $maximumVersion }
+            Guid           = $guid
         }
     }
 }

@@ -34,7 +34,7 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $output = @(Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.UsesUtility'; RequiredVersion = '1.0.0' } -SearchPath $root -Verbose 4>&1)
             $closure = $output | Where-Object { $_ -isnot [System.Management.Automation.VerboseRecord] }
             @($output | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] } | ForEach-Object { $_.Message }) |
-                Should -Contain "Not staging 'Microsoft.PowerShell.Utility', required by LambdaPSFake.UsesUtility 1.0.0: it is one of PowerShell's own modules."
+                Should -Contain "Skipping 'Microsoft.PowerShell.Utility', required by LambdaPSFake.UsesUtility 1.0.0: it is one of PowerShell's own modules."
             $closure.Error | Should -BeNullOrEmpty
             @($closure.Resolved.Key) | Should -Be @('LambdaPSFake.UsesUtility 1.0.0')
             $closure.Missing.Count | Should -Be 0
@@ -103,7 +103,7 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure.Resolved.Count | Should -Be 0
             $closure.Missing.Count | Should -Be 0
             @($warnings).Count | Should -Be 1
-            "$($warnings[0])" | Should -BeLike "Not staging 'Microsoft.PowerShell.Utility'*PowerShell's own modules*"
+            "$($warnings[0])" | Should -BeLike "Skipping 'Microsoft.PowerShell.Utility'*PowerShell's own modules*"
         }
     }
 
@@ -540,6 +540,77 @@ Describe 'Get-LambdaPSModuleClosure' -Tag 'Unit' {
             $closure.Error.FullyQualifiedErrorId | Should -Be 'DependencyVersionUnpinned'
             $closure.Error.Exception.Message | Should -BeLike ("Dependency 'LambdaPSFake.Dep' of module 'LambdaPSFake.Top' 1.0.0 has only a " +
                 "MaximumVersion ('1.9.0'), which is not a pin. *")
+        }
+    }
+
+    Context 'a requirement that names a GUID' {
+        BeforeAll {
+            $script:guidRoot = Join-Path $TestDrive 'closure-guid'
+            $null = New-FakeModule -Root $script:guidRoot -Name 'LambdaPSFake.Guid' -Version '1.0.0'
+            $script:realGuid = [guid](Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($script:guidRoot, 'LambdaPSFake.Guid', '1.0.0', 'LambdaPSFake.Guid.psd1'))).GUID
+            $script:madeUpGuid = [guid]'0badc0de-0000-4000-8000-000000000001'
+        }
+
+        It 'resolves the module when -Module names its own GUID' {
+            InModuleScope $script:moduleName -Parameters @{ root = $script:guidRoot; guid = $script:realGuid } {
+                param($root, $guid)
+                $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Guid'; RequiredVersion = '1.0.0'; Guid = $guid } -SearchPath $root
+                $closure.Error | Should -BeNullOrEmpty
+                @($closure.Resolved.Key) | Should -Be @('LambdaPSFake.Guid 1.0.0')
+            }
+        }
+
+        It 'returns ModuleGuidMismatch when -Module names another GUID' {
+            InModuleScope $script:moduleName -Parameters @{ root = $script:guidRoot; guid = $script:madeUpGuid; real = $script:realGuid } {
+                param($root, $guid, $real)
+                $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.Guid'; RequiredVersion = '1.0.0'; Guid = $guid } -SearchPath $root
+                $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleGuidMismatch'
+                $closure.Error.TargetObject | Should -Be 'LambdaPSFake.Guid 1.0.0'
+                $closure.Error.Exception.Message | Should -BeLike "Module 'LambdaPSFake.Guid' 1.0.0 is required with GUID $guid (requested), but the module 'LambdaPSFake.Guid' 1.0.0 found has GUID $real, so it is a different module.*"
+                @($closure.Resolved).Count | Should -Be 0
+            }
+        }
+
+        It 'returns ModuleGuidMismatch for a RequiredModules entry that names <Case>, and resolves one that names its own' -ForEach @(
+            @{ Case = 'another GUID'; Wrong = $true }
+            @{ Case = 'the right GUID'; Wrong = $false }
+        ) {
+            $root = Join-Path $TestDrive "closure-guid-dep-$Wrong"
+            $null = New-FakeModule -Root $root -Name 'LambdaPSFake.GuidDep' -Version '2.0.0'
+            $real = [guid](Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($root, 'LambdaPSFake.GuidDep', '2.0.0', 'LambdaPSFake.GuidDep.psd1'))).GUID
+            $named = if ($Wrong) { $script:madeUpGuid } else { $real }
+            $null = New-FakeModule -Root $root -Name 'LambdaPSFake.GuidTop' -Version '1.0.0' `
+                -Requires "@(@{ ModuleName = 'LambdaPSFake.GuidDep'; RequiredVersion = '2.0.0'; GUID = '$named' })"
+
+            InModuleScope $script:moduleName -Parameters @{ root = $root; wrong = $Wrong } {
+                param($root, $wrong)
+                $closure = Get-LambdaPSModuleClosure -Module @{ ModuleName = 'LambdaPSFake.GuidTop'; RequiredVersion = '1.0.0' } -SearchPath $root
+                if ($wrong) {
+                    $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleGuidMismatch'
+                    $closure.Error.Exception.Message | Should -BeLike "*(required by LambdaPSFake.GuidTop 1.0.0)*"
+                }
+                else {
+                    $closure.Error | Should -BeNullOrEmpty
+                    @($closure.Resolved.Key) | Should -Be @('LambdaPSFake.GuidTop 1.0.0', 'LambdaPSFake.GuidDep 2.0.0')
+                }
+            }
+        }
+
+        It 'returns ModuleGuidMismatch when a later requirement names another GUID for a module already resolved' {
+            $root = Join-Path $TestDrive 'closure-guid-revisit'
+            $null = New-FakeModule -Root $root -Name 'LambdaPSFake.Shared' -Version '1.0.0'
+            $null = New-FakeModule -Root $root -Name 'LambdaPSFake.Wants' -Version '1.0.0' `
+                -Requires "@(@{ ModuleName = 'LambdaPSFake.Shared'; RequiredVersion = '1.0.0'; GUID = '$($script:madeUpGuid)' })"
+
+            InModuleScope $script:moduleName -Parameters @{ root = $root } {
+                param($root)
+                $specs = @(
+                    @{ ModuleName = 'LambdaPSFake.Shared'; RequiredVersion = '1.0.0' }
+                    @{ ModuleName = 'LambdaPSFake.Wants'; RequiredVersion = '1.0.0' }
+                )
+                $closure = Get-LambdaPSModuleClosure -Module $specs -SearchPath $root
+                $closure.Error.FullyQualifiedErrorId | Should -Be 'ModuleGuidMismatch'
+            }
         }
     }
 

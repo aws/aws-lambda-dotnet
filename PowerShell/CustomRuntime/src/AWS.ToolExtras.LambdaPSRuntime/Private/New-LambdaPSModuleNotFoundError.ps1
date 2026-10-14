@@ -29,11 +29,11 @@ function New-LambdaPSModuleNotFoundError {
     )
 
     $names = ($Missing | ForEach-Object { "'$($_.Name)' $($_.Version)" }) -join ', '
-    $subject = if ($Missing.Count -eq 1) { "Module $names is" } else { "Modules $names are" }
+    $subject, $them = if ($Missing.Count -eq 1) { "Module $names is", 'it' } else { "Modules $names are", 'them' }
     # Not "add them to the project's modules folder": New-LambdaPSRuntimeDeployment replaces its
     # project on every run, so modules added there would not last.
     $message = "$subject not available on this machine. Rerun with -MissingModuleAction Save " +
-        '(the default) or Install to download them, or save them with Save-LambdaPSModule into a ' +
+        "(the default) or Install to download $them, or save $them with Save-LambdaPSModule into a " +
         'folder you add to PSModulePath.'
     # TargetObject: the 'Name Version' key, or every key when several are missing.
     $keys = [string[]]@($Missing | ForEach-Object { $_.Key })

@@ -16,8 +16,12 @@ function Find-LambdaPSModule {
         minimum that needs the other. Under a search folder, both the <Version> folder name and the
         manifest's ModuleVersion must be the version asked for.
 
+        With -Guid, only a module whose manifest has that GUID is found, as
+        Get-Module -FullyQualifiedName matches a GUID: a module of the same name and version with
+        another GUID is a different module.
+
         Returns an object with Name (the module's real casing, whatever the caller typed), Version (its
-        own version, as its manifest states it), ModuleBase, Dependencies and Source ('Local' or
+        own version, as its manifest states it), Guid, ModuleBase, Dependencies and Source ('Local' or
         'SearchPath'), or nothing when the module is in neither place. Makes no network call.
 
         Dependencies lists each RequiredModules entry as Name, Version, Kind and MaximumVersion. Kind
@@ -28,6 +32,8 @@ function Find-LambdaPSModule {
         The module name.
     .PARAMETER Version
         The exact module version.
+    .PARAMETER Guid
+        The module's GUID, when the requirement names one.
     .PARAMETER SearchPath
         Extra folders to search after the PSModulePath, laid out as <Name>/<Version>/.
     .PARAMETER SkipInstalled
@@ -51,6 +57,10 @@ function Find-LambdaPSModule {
         [string]$Version,
 
         [Parameter()]
+        [AllowNull()]
+        [Nullable[guid]]$Guid,
+
+        [Parameter()]
         [AllowEmptyCollection()]
         [string[]]$SearchPath = @(),
 
@@ -71,7 +81,9 @@ function Find-LambdaPSModule {
     $found = $null
     $foundVersion = $null
     if (-not $SkipInstalled) {
-        $found = @(Get-Module -ListAvailable -FullyQualifiedName @{ ModuleName = $Name; RequiredVersion = $Version }) | Select-Object -First 1
+        $specification = @{ ModuleName = $Name; RequiredVersion = $Version }
+        if ($Guid) { $specification.Guid = $Guid }
+        $found = @(Get-Module -ListAvailable -FullyQualifiedName $specification) | Select-Object -First 1
     }
     $source = 'Local'
 
@@ -94,6 +106,7 @@ function Find-LambdaPSModule {
                 # RequiredModules entry, say), so the manifest's own ModuleVersion is read then.
                 $candidate = @(Get-Module -ListAvailable -Name $manifest.FullName) | Select-Object -First 1
                 if ($null -eq $candidate) { continue }
+                if ($Guid -and $candidate.Guid -ne $Guid) { continue }
                 $stated = $candidate.Version
                 if ($stated -eq [version]'0.0') {
                     try { $stated = (Import-PowerShellDataFile -LiteralPath $manifest.FullName -ErrorAction Stop).ModuleVersion } catch { $stated = $null }
@@ -116,6 +129,7 @@ function Find-LambdaPSModule {
     [PSCustomObject]@{
         Name         = $found.Name
         Version      = if ($foundVersion) { $foundVersion } elseif ($found.Version) { $found.Version.ToString() } else { $Version }
+        Guid         = $found.Guid
         ModuleBase   = $found.ModuleBase
         Dependencies = @(Get-LambdaPSModuleDependency -Module $found)
         Source       = $source

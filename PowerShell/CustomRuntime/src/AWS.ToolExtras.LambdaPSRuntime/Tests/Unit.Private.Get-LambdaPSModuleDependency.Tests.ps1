@@ -45,6 +45,19 @@ Describe 'Get-LambdaPSModuleDependency' -Tag 'Unit' {
         }
     }
 
+    It 'reads the GUID a RequiredModules entry names, and $null for an entry without one' {
+        $manifest = Join-Path $TestDrive 'dependency-guid.psd1'
+        Set-Content -LiteralPath $manifest -Value ("@{ ModuleVersion = '1.0.0'; RequiredModules = @(" +
+            "@{ ModuleName = 'LambdaPSFake.WithGuid'; RequiredVersion = '1.0'; GUID = '0badc0de-0000-4000-8000-000000000002' }, " +
+            "@{ ModuleName = 'LambdaPSFake.NoGuid'; RequiredVersion = '1.0' }) }")
+        InModuleScope $script:moduleName -Parameters @{ Manifest = $manifest } {
+            param($Manifest)
+            $entries = @(Get-LambdaPSModuleDependency -Module ([PSCustomObject]@{ Path = $Manifest; RequiredModules = @() }))
+            $entries[0].Guid | Should -Be ([guid]'0badc0de-0000-4000-8000-000000000002')
+            $entries[1].Guid | Should -BeNullOrEmpty
+        }
+    }
+
     It 'returns nothing for a manifest with no RequiredModules' {
         $manifest = Join-Path $TestDrive 'no-dependencies.psd1'
         Set-Content -LiteralPath $manifest -Value "@{ ModuleVersion = '1.0.0' }"

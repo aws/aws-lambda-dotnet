@@ -52,7 +52,11 @@ function Get-LambdaPSModulePinError {
         return $null
     }
 
-    $example = "@{ ModuleName = '$($Specification.Name)'; RequiredVersion = '1.0.0' }"
+    # The example pins the version the spec gave (its minimum, or its maximum), or a placeholder.
+    $typed = @($Specification.RequiredVersion, $Specification.Version, $Specification.MaximumVersion |
+            Where-Object { $_ }) | Select-Object -First 1
+    $exampleVersion = if ($typed) { [string]$typed } else { '<version>' }
+    $example = "@{ ModuleName = '$($Specification.Name)'; RequiredVersion = '$exampleVersion' }"
     $message = if ($DeclaredIn) {
         "Module '$($Specification.Name)', declared with #Requires -Modules in '$DeclaredIn', must pin an exact " +
         "RequiredVersion (for example #Requires -Modules $example). This tooling never resolves 'latest'; " +
