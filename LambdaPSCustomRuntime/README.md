@@ -81,8 +81,8 @@ relative `-ProfileLocation` is resolved against the current PowerShell location.
 AWS.Tools uses its default credentials (`Set-AWSCredential`, environment variables, the default
 profile, or an instance or container role). `-Region` is optional
 the same way: without it, the region comes from `Set-DefaultAWSRegion`, the `-ProfileName` profile, the
-default profile, `AWS_REGION`, the `AWS_PROFILE` profile, or the instance or container, in that order,
-and a deploy that finds none fails with `RegionNotResolved`. For `New-LambdaPSFunctionDeployment` and
+default profile, `AWS_REGION`, the `AWS_PROFILE` profile, or the instance or container, in that order
+(`AWS_DEFAULT_REGION` is not read), and a deploy that finds none fails with `RegionNotResolved`. For `New-LambdaPSFunctionDeployment` and
 `Invoke-LambdaPSFunction`, a full function ARN in `-FunctionName` supplies the region when `-Region` is
 omitted, and a `-Region` that differs from the ARN's fails with `FunctionRegionMismatch`.
 
@@ -225,7 +225,9 @@ calls carry a stable `app/AWS.ToolExtras.LambdaPSRuntime#<version>` token for ad
 Run the offline test suite (all AWS and container seams are mocked) with coverage. The suite also
 checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
 exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
-directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`:
+directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
+needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
+PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage

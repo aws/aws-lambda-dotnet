@@ -83,6 +83,6 @@ function Resolve-LambdaPSRegion {
     throw [System.Management.Automation.ErrorRecord]::new(
         [System.InvalidOperationException]::new(
             ('No AWS region was given or configured. Pass -Region, set a default with ' +
-             'Set-DefaultAWSRegion, set AWS_REGION, or give the profile a region.')),
+             'Set-DefaultAWSRegion, set AWS_REGION, or give the profile a region. AWS_DEFAULT_REGION is not read.')),
         'RegionNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $null)
 }

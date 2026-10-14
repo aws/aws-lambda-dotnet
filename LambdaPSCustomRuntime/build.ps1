@@ -214,7 +214,7 @@ function Invoke-Test {
     $pester = Get-Module -ListAvailable Pester |
         Where-Object Version -ge $minPester | Sort-Object Version -Descending | Select-Object -First 1
     if (-not $pester) {
-        throw "Pester >= $minPester is required. Install with: Install-Module Pester -Scope CurrentUser"
+        throw "Pester >= $minPester is required. Install with: Install-PSResource Pester -Scope CurrentUser"
     }
     Import-Module $pester.Path -Force
 

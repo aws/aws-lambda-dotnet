@@ -121,6 +121,7 @@ Describe 'Resolve-LambdaPSRegion' -Tag 'Unit' {
             Mock 'Get-LambdaPSSdkFallbackRegion' -MockWith { }
 
             { Resolve-LambdaPSRegion } | Should -Throw -ErrorId 'RegionNotResolved'
+            { Resolve-LambdaPSRegion } | Should -Throw '*Pass -Region*AWS_REGION*AWS_DEFAULT_REGION is not read.'
         }
     }
 }

@@ -25,8 +25,8 @@ function Invoke-InFreshRunspace {
     $resultPath = [System.IO.Path]::Combine($TestDrive, "fresh-$id.xml")
     # The test fakes (LambdaPSTests.Fakes.*) that stubs throw are defined in the child as well.
     Set-Content -LiteralPath $scriptPath -Value @"
-. '$([System.IO.Path]::Combine($PSScriptRoot, 'FakeTypes.ps1'))'
-Import-Module '$($script:modulePath)' -Force
+. '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent([System.IO.Path]::Combine($PSScriptRoot, 'FakeTypes.ps1')))'
+Import-Module '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($script:modulePath))' -Force
 & (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
     `$script:LambdaPSCalls = [System.Collections.Generic.List[string]]::new()
     $Stub
@@ -77,7 +77,7 @@ function Invoke-InChildPwsh {
     )
     $scriptPath = [System.IO.Path]::Combine($TestDrive, "child-$([guid]::NewGuid().ToString('n')).ps1")
     Set-Content -LiteralPath $scriptPath -Value @"
-Import-Module '$($script:modulePath)' -Force
+Import-Module '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($script:modulePath))' -Force
 & (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
     `$script:LambdaPSCalls = [System.Collections.Generic.List[string]]::new()
     $Stub

@@ -8,8 +8,7 @@
     # error) is retried up to RetryCount times, RetryDelaySeconds apart. ConnectTimeoutSeconds limits
     # only connecting to the host; OperationTimeoutSeconds limits a whole download, so a transfer that
     # stalls part-way fails instead of waiting indefinitely. The Layer and self-contained .zip builds
-    # use all four for the tarball download; the scaffolded Dockerfiles use the retry and connect
-    # settings for every curl they run.
+    # use all four for the tarball download, and the scaffolded Dockerfiles for every curl they run.
     Download      = @{
         RetryCount              = 3
         RetryDelaySeconds       = 2
