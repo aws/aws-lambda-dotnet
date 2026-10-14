@@ -64,6 +64,7 @@ function Test-LambdaPSBootstrapEnvironment {
     # An empty value finds nothing, so it counts as not set.
     $setsPath = $pwsh.Environment.ContainsKey('PATH') -and $pwsh.Environment['PATH'].Length -gt 0
     $setsLdLibraryPath = $pwsh.Environment.ContainsKey('LD_LIBRARY_PATH') -and $pwsh.Environment['LD_LIBRARY_PATH'].Length -gt 0
+    $scaffoldedPwsh = '/var/runtime/powershell/pwsh for CMR and Container, /opt/powershell/pwsh for Layer, /var/task/powershell/pwsh for SelfContainedZip'
     $noInheritedEnvironment = 'A bootstrap cannot rely on inherited environment variables (a customer-managed runtime ignores the image''s ENV, and a layer or .zip has none)'
 
     # Assigned but not exported: it reaches pwsh only if the variable was already exported, which
@@ -75,13 +76,13 @@ function Test-LambdaPSBootstrapEnvironment {
     else {
         $message = if ($setsPath) { 'Bootstrap exports PATH.' }
         elseif ($absolute) { 'Bootstrap invokes pwsh by absolute path, so PATH need not be exported.' }
-        else { "Bootstrap neither exports PATH nor invokes pwsh by absolute path. $noInheritedEnvironment, so the interpreter would not be found." }
+        else { "Bootstrap neither exports PATH nor invokes pwsh by absolute path. $noInheritedEnvironment, so the interpreter would not be found. Run pwsh by its absolute path, as the scaffolded bootstraps do ($scaffoldedPwsh), or export PATH." }
         New-LambdaPSFinding -RuleId 'R-Env-Path' -Passed ($setsPath -or $absolute) -Message $message
     }
 
     if ($unexportedLdLibraryPath) { return New-LambdaPSUnverifiedFinding -RuleId 'R-Env-LdLibraryPath' -Construct 'an LD_LIBRARY_PATH assignment that is not exported' -Check 'LD_LIBRARY_PATH is exported before pwsh runs.' }
     $message = if ($setsLdLibraryPath) { 'Bootstrap exports LD_LIBRARY_PATH.' }
-    elseif ($absolute) { 'Bootstrap invokes a self-contained pwsh by absolute path, so LD_LIBRARY_PATH need not be exported.' }
-    else { "Bootstrap neither exports LD_LIBRARY_PATH nor invokes a self-contained pwsh by absolute path. $noInheritedEnvironment, so native libraries would not resolve." }
+    elseif ($absolute) { 'Bootstrap invokes pwsh by absolute path, and pwsh finds its native libraries in its own folder, so LD_LIBRARY_PATH need not be exported.' }
+    else { "Bootstrap neither exports LD_LIBRARY_PATH nor invokes pwsh by absolute path. $noInheritedEnvironment, so native libraries would not resolve. Run pwsh by its absolute path, as the scaffolded bootstraps do ($scaffoldedPwsh), or export LD_LIBRARY_PATH." }
     New-LambdaPSFinding -RuleId 'R-Env-LdLibraryPath' -Passed ($setsLdLibraryPath -or $absolute) -Message $message
 }

@@ -377,9 +377,16 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4'
 
             { Test-LambdaPSRuntimeProject -Path $dir -ErrorAction Stop } |
-                Should -Throw -ErrorId 'InvalidProjectMarker,Test-LambdaPSRuntimeProject'
+                Should -Throw -ErrorId 'InvalidProjectMarker,Test-LambdaPSRuntimeProject' -ExpectedMessage '*Fix it, or pass -Target to choose the rules.'
             Test-LambdaPSRuntimeProject -Path $dir -Quiet -ErrorAction Stop | Should -BeFalse
             @($dir, $good | Test-LambdaPSRuntimeProject -Quiet) | Should -Be @($false)
+        }
+
+        It 'says a RuntimeBound function project has no bootstrap to validate' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'runtimebound-function')
+            $null = New-LambdaPSFunctionProject -Path $dir -Handler handler
+            { Test-LambdaPSRuntimeProject -Path $dir -ErrorAction Stop } |
+                Should -Throw -ErrorId 'BootstrapNotFound,Test-LambdaPSRuntimeProject' -ExpectedMessage '*RuntimeBound function project*no bootstrap to validate*'
         }
 
         It 'reports a project with no bootstrap file as an error for that item' {
@@ -669,7 +676,6 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Case = 'escaped quotes inside double quotes'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'echo "say \"hi\"" >/tmp/x', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'plain commands writing to /tmp'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'mkdir -p /tmp/run; cd /tmp/run', 'printf ok | tee -a /tmp/start.log', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'a single-quoted $ in a write target'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', "echo x > '/tmp/`$name'", 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
-            @{ Case = 'PATH exported without an expansion'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 PATH=/opt/powershell:/usr/bin LD_LIBRARY_PATH=/opt/powershell', 'exec pwsh -File /opt/runtime.ps1') }
             @{ Case = 'the flag set through /usr/bin/env'; Lines = @('exec /usr/bin/env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'the flag set through /bin/env'; Lines = @('exec /bin/env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'exec --'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec -- /opt/powershell/pwsh -File /opt/runtime.ps1') }
@@ -709,7 +715,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Case = 'a /usr/bin/bash shebang'; Shebang = '#!/usr/bin/bash'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'tab-separated words'; Shebang = '#!/bin/sh'; Lines = @("export`tDOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1", "exec`t/opt/powershell/pwsh`t-File /opt/runtime.ps1") }
             @{ Case = 'printf without -v'; Shebang = '#!/bin/sh'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', "printf '%s\n' started >/tmp/log", 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
-            @{ Case = 'exec env with literal values'; Shebang = '#!/bin/sh'; Lines = @('exec env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 PATH=/opt/powershell:/usr/bin LD_LIBRARY_PATH=/opt/powershell pwsh -File /opt/runtime.ps1') }
+            @{ Case = 'exec env with literal values'; Shebang = '#!/bin/sh'; Lines = @('exec env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 PATH=/opt/powershell:/usr/bin LD_LIBRARY_PATH=/opt/powershell /opt/powershell/pwsh -File /opt/runtime.ps1') }
             @{ Case = 'absolute redirects to /tmp'; Shebang = '#!/bin/sh'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1', 'exec >/tmp/boot.log 2>&1', 'echo x | tee -a /tmp/start.log', 'exec /opt/powershell/pwsh -File /opt/runtime.ps1') }
         ) {
             $dir = [System.IO.Path]::Combine($TestDrive, "narrow-ok-$($Case -replace '\W', '-')")
@@ -815,7 +821,52 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         }
     }
 
+    Context 'rule messages' {
+        It 'names the target''s runtime path when R-RuntimePath is unverified' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'message-root')
+            $null = New-Item -ItemType Directory -Path $dir -Force
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($dir, 'bootstrap'), "#!/bin/sh`neval true`nexec /var/runtime/powershell/pwsh -File /var/runtime/runtime.ps1`n")
+            (Test-LambdaPSRuntimeProject -Path $dir -WarningAction SilentlyContinue | Where-Object RuleId -eq 'R-RuntimePath').Message |
+                Should -BeLike '*runtime path, /var/runtime (for example /var/runtime/powershell/pwsh)*'
+        }
+
+        It 'names the scaffolded pwsh paths when R-Env-Path and R-Env-LdLibraryPath fail' {
+            $findings = @(Test-LambdaPSRuntimeProject -Path $script:fixturePath['missingEnv'] -ErrorAction SilentlyContinue)
+            foreach ($rule in 'R-Env-Path', 'R-Env-LdLibraryPath') {
+                ($findings | Where-Object RuleId -eq $rule).Message | Should -BeLike '*as the scaffolded bootstraps do (/var/runtime/powershell/pwsh for CMR*' -Because $rule
+            }
+        }
+
+        It 'says which builds convert <Case>, and that other packaging fails' -ForEach @(
+            @{ Case = 'CRLF'; Rule = 'R-LineEndings'; Bytes = [System.Text.Encoding]::ASCII.GetBytes("#!/bin/sh`r`nexec /var/runtime/powershell/pwsh -File /var/runtime/runtime.ps1`r`n") }
+            @{ Case = 'a byte order mark'; Rule = 'R-Encoding'; Bytes = [byte[]](0xEF, 0xBB, 0xBF) + [System.Text.Encoding]::ASCII.GetBytes("#!/bin/sh`nexec /var/runtime/powershell/pwsh -File /var/runtime/runtime.ps1`n") }
+        ) {
+            $dir = [System.IO.Path]::Combine($TestDrive, "message-$Rule")
+            $null = New-Item -ItemType Directory -Path $dir -Force
+            [System.IO.File]::WriteAllBytes([System.IO.Path]::Combine($dir, 'bootstrap'), $Bytes)
+            (Test-LambdaPSRuntimeProject -Path $dir -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Where-Object RuleId -eq $Rule).Message |
+                Should -BeLike '*Build-LambdaPSRuntimePackage*Dockerfile*packaged another way fails to start.'
+        }
+    }
+
     Context 'where pwsh runs from' {
+        # Where a bare or relative name, or a '.' or '..' segment, leads depends on the image.
+        It 'reports R-RuntimePath alone as unverified, and fails it under -UnverifiedAsFailure, for <Case>' -ForEach @(
+            @{ Case = 'a bare pwsh with PATH exported'; Target = 'CMR'; Lines = @('export PATH=/usr/bin:/bin LD_LIBRARY_PATH=/usr/lib64', 'exec pwsh -NoProfile -NonInteractive -File /var/runtime/runtime.ps1'); Construct = "a bare or relative name ('pwsh')" }
+            @{ Case = 'a bare pwsh with PATH exported (Layer)'; Target = 'Layer'; Lines = @('export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 PATH=/opt/powershell:/usr/bin LD_LIBRARY_PATH=/opt/powershell', 'exec pwsh -File /opt/runtime.ps1'); Construct = "a bare or relative name ('pwsh')" }
+            @{ Case = 'a relative pwsh'; Target = 'CMR'; Lines = @('export PATH=/usr/bin LD_LIBRARY_PATH=/var/runtime/powershell', 'cd /var/runtime', 'exec ./powershell/pwsh -File /var/runtime/runtime.ps1'); Construct = "a bare or relative name ('./powershell/pwsh')" }
+            @{ Case = 'a pwsh path with .. segments'; Target = 'CMR'; Lines = @('exec /var/runtime/../../usr/bin/pwsh -NoProfile -NonInteractive -File /var/runtime/runtime.ps1'); Construct = "'.' or '..' segments" }
+        ) {
+            $dir = [System.IO.Path]::Combine($TestDrive, "unverified-program-$($Case -replace '\W', '-')")
+            $null = New-Item -ItemType Directory -Path $dir -Force
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($dir, 'bootstrap'), "#!/bin/sh`n" + ($Lines -join "`n") + "`n")
+            $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target $Target -WarningAction SilentlyContinue)
+            @($findings | Where-Object Unverified | ForEach-Object RuleId) | Should -Be @('R-RuntimePath')
+            ($findings | Where-Object RuleId -eq 'R-RuntimePath').Message | Should -BeLike "*$([System.Management.Automation.WildcardPattern]::Escape($Construct))*"
+            @($findings | Where-Object { -not $_.Passed }) | Should -BeNullOrEmpty
+            Test-LambdaPSRuntimeProject -Path $dir -Target $Target -Quiet -UnverifiedAsFailure -WarningAction SilentlyContinue | Should -BeFalse
+        }
+
         # The scaffolded image removes the pwsh the package installs, so only the target's own copy runs.
         It 'fails R-RuntimePath for a <Target> bootstrap that runs <Program>' -ForEach @(
             @{ Target = 'CMR'; Program = '/usr/bin/pwsh'; Script = '/var/runtime/runtime.ps1' }
@@ -834,7 +885,6 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Target = 'CMR'; Program = '/var/runtime/powershell/pwsh'; Script = '/var/runtime/runtime.ps1' }
             @{ Target = 'Layer'; Program = '/opt/powershell/pwsh'; Script = '/opt/runtime.ps1' }
             @{ Target = 'SelfContainedZip'; Program = '/var/task/powershell/pwsh'; Script = '/var/task/runtime.ps1' }
-            @{ Target = 'CMR'; Program = 'pwsh'; Script = '/var/runtime/runtime.ps1' }
         ) {
             $dir = [System.IO.Path]::Combine($TestDrive, "inside-root-$Target-$($Program -replace '\W', '-')")
             $null = New-Item -ItemType Directory -Path $dir -Force

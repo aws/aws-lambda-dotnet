@@ -31,7 +31,7 @@ function Test-LambdaPSBootstrapLineEnding {
     )
 
     if ($Bootstrap.Text.Contains("`r")) {
-        return New-LambdaPSFinding -RuleId 'R-LineEndings' -Passed $false -Message 'Bootstrap has CRLF (Windows) line endings. Lambda executes it directly on Linux, so the shebang gains a trailing carriage return and the runtime fails to start ("bad interpreter"). Convert it to LF.'
+        return New-LambdaPSFinding -RuleId 'R-LineEndings' -Passed $false -Message 'Bootstrap has CRLF (Windows) line endings. Lambda executes it directly on Linux, so the shebang gains a trailing carriage return and the runtime fails to start ("bad interpreter"). Convert it to LF. Build-LambdaPSRuntimePackage and the scaffolded Dockerfile convert it when they build, but a bootstrap packaged another way fails to start.'
     }
     New-LambdaPSFinding -RuleId 'R-LineEndings' -Passed $true -Message 'Bootstrap uses LF line endings.'
 }

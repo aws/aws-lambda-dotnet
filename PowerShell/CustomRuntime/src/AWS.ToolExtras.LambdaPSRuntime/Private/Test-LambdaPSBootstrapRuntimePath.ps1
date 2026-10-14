@@ -28,7 +28,9 @@ function Test-LambdaPSBootstrapRuntimePath {
         A pwsh run by an absolute path must also be under the target's root: /var/runtime/ for CMR
         and Container, /opt/ for Layer, and /var/task/ for SelfContainedZip. The scaffolded image
         removes the pwsh the package installs (/usr/bin/pwsh, /opt/microsoft/powershell), so a
-        bootstrap that runs one of those fails to start.
+        bootstrap that runs one of those fails to start. A pwsh run by a bare or relative name (found
+        through PATH or the current folder), or by a path with '.' or '..' segments, is reported
+        unverified: where it resolves depends on the image, which this rule does not see.
 
         Returns one finding; performs no disk access.
     .PARAMETER Bootstrap
@@ -63,8 +65,10 @@ function Test-LambdaPSBootstrapRuntimePath {
         [string]$Target = 'CMR'
     )
 
+    $root = @{ CMR = '/var/runtime'; Layer = '/opt'; SelfContainedZip = '/var/task'; Container = '/var/runtime' }[$Target]
+    $check = "pwsh and runtime.ps1 are run from the $Target target's runtime path, $root (for example $root/powershell/pwsh)."
     if ($Bootstrap.Unrecognised.Count -gt 0) {
-        return New-LambdaPSUnverifiedFinding -RuleId 'R-RuntimePath' -Construct $Bootstrap.Unrecognised -Check "pwsh and runtime.ps1 are run from the $Target target's runtime path."
+        return New-LambdaPSUnverifiedFinding -RuleId 'R-RuntimePath' -Construct $Bootstrap.Unrecognised -Check $check
     }
     # Code only: the shebang and the code lines with comments removed, so a comment that names the
     # other target's path is not a reference. Paths match case-sensitively and whole ('/opt' is not
@@ -111,7 +115,13 @@ function Test-LambdaPSBootstrapRuntimePath {
     $failure = if ($rule.Forbid -and (& $references $rule.Forbid)) { $rule.Forbidden }
     elseif (-not (& $references $rule.Require)) { $rule.Missing }
     $program = if ($Bootstrap.Pwsh) { $Bootstrap.Pwsh.Program } else { $null }
-    if (-not $failure -and $program -and $program.StartsWith('/') -and -not $program.StartsWith($rule.Root, [System.StringComparison]::Ordinal)) {
+    if (-not $failure -and $program) {
+        # Where a bare or relative name, or a '.' or '..' segment, leads depends on the image.
+        $construct = if (-not $program.StartsWith('/')) { "pwsh run by a bare or relative name ('$program')" }
+        elseif (@($program.Split('/') | Where-Object { $_ -eq '.' -or $_ -eq '..' }).Count -gt 0) { "a pwsh path with '.' or '..' segments ('$program')" }
+        if ($construct) { return New-LambdaPSUnverifiedFinding -RuleId 'R-RuntimePath' -Construct $construct -Check $check }
+    }
+    if (-not $failure -and $program -and -not $program.StartsWith($rule.Root, [System.StringComparison]::Ordinal)) {
         $failure = "Bootstrap runs pwsh from '$program', which is outside $($rule.Root). The $Target target's interpreter is under $($rule.Root), so run pwsh from there (for example $($rule.Root)powershell/pwsh)."
     }
     if ($failure) {

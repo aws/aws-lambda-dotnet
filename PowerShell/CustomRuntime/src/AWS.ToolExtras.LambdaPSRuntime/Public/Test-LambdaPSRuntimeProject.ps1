@@ -39,18 +39,22 @@ function Test-LambdaPSRuntimeProject {
         'exec env NAME=1 .../pwsh ...' or 'NAME=1 .../pwsh ...' without exec. Names and paths match
         case-sensitively, as Linux reads them, and nothing after an exec of pwsh counts. A bootstrap
         that also uses anything else (any other command word, such as eval, sh -c, trap, env,
-        unset, set, timeout or a wrapper around pwsh; export with an option; a '$' expansion in a
-        write target or in PATH, LD_LIBRARY_PATH or DOTNET_SYSTEM_GLOBALIZATION_INVARIANT; a
-        relative write target; printf -v; a shebang interpreter other than /bin/sh, /usr/bin/sh, /bin/bash or /usr/bin/bash;
-        whitespace other than a space or a tab; pwsh as
-        the shebang's interpreter, for the R-Env rules; a PATH or LD_LIBRARY_PATH assignment that is
-        not exported; a function, an if/case/loop block, a here-doc, a command
-        substitution, a variable as the program, a '\' line continuation, an '&&' or '||' list, a
-        background '&', a subshell, a sourced file, an exec of another program, or more than one
-        pwsh invocation) makes each shell rule UNVERIFIED: a finding with Unverified $true and
-        Severity 'Warning', which names the construct and says what to check by hand. It passes,
-        and is written as a warning, unless -UnverifiedAsFailure makes it fail. R-Encoding and
-        R-LineEndings read the bytes, and are always checked.
+        unset, set, timeout or a wrapper around pwsh; export with an option, or a quoted export
+        assignment; an export or assignment in a pipeline; a '$' expansion in a write target or in
+        PATH, LD_LIBRARY_PATH or DOTNET_SYSTEM_GLOBALIZATION_INVARIANT; a relative write target;
+        printf -v; a shebang interpreter other than /bin/sh, /usr/bin/sh, /bin/bash or
+        /usr/bin/bash; whitespace other than a space or a tab; pwsh as the shebang's interpreter,
+        for the R-Env rules; a PATH or LD_LIBRARY_PATH assignment that is not exported; a function,
+        an if/case/loop block, a here-doc, a command substitution, a variable as the program, a '\'
+        line continuation, an '&&' or '||' list, a pipeline continued on the next line, a
+        background '&', a subshell, a sourced file, a syntax error sh would stop at (a redirect with
+        no target, an empty statement or pipeline element), an exec of another program, or more
+        than one pwsh invocation) makes each shell rule UNVERIFIED: a finding with Unverified $true
+        and Severity 'Warning', which names the construct and says what to check by hand. It
+        passes, and is written as a warning, unless -UnverifiedAsFailure makes it fail. A pwsh run
+        by a bare or relative name (found through PATH), or by a path with '.' or '..' segments,
+        makes R-RuntimePath alone unverified, since where it resolves depends on the image.
+        R-Encoding and R-LineEndings read the bytes, and are always checked.
 
         A pass means the bootstrap has the shape the scaffolder writes. It does not prove that a
         hand-written bootstrap starts: shell options in the shebang, or a write the rules do not
@@ -211,7 +215,12 @@ function Test-LambdaPSRuntimeProject {
                 # One read and parse of the bootstrap, which every rule below checks.
                 $bootstrap = Read-LambdaPSBootstrap -Path ([System.IO.Path]::Combine($projectPath, 'bootstrap'))
                 if ($bootstrap.ErrorId) {
-                    $exception = if ($bootstrap.ErrorId -eq 'BootstrapNotFound') { [System.IO.FileNotFoundException]::new($bootstrap.Message) } else { [System.IO.IOException]::new($bootstrap.Message) }
+                    $message = $bootstrap.Message
+                    # A RuntimeBound function project runs on a runtime that holds the bootstrap.
+                    if ($bootstrap.ErrorId -eq 'BootstrapNotFound' -and (Test-Path -LiteralPath ([System.IO.Path]::Combine($projectPath, 'manifest.json')) -PathType Leaf)) {
+                        $message += ' The folder has a manifest.json, so it looks like a RuntimeBound function project: that has no bootstrap to validate, since the runtime it binds to holds one.'
+                    }
+                    $exception = if ($bootstrap.ErrorId -eq 'BootstrapNotFound') { [System.IO.FileNotFoundException]::new($message) } else { [System.IO.IOException]::new($message) }
                     $problem = @{ ErrorId = $bootstrap.ErrorId; Category = $bootstrap.Category; Exception = $exception }
                 }
             }
@@ -223,7 +232,7 @@ function Test-LambdaPSRuntimeProject {
                 try { $marker = Get-LambdaPSProjectMarker -Path $Path }
                 catch {
                     if ($_.FullyQualifiedErrorId -notlike 'InvalidProjectMarker*') { throw }
-                    $problem = @{ ErrorId = 'InvalidProjectMarker'; Category = 'InvalidData'; Exception = $_.Exception }
+                    $problem = @{ ErrorId = 'InvalidProjectMarker'; Category = 'InvalidData'; Exception = [System.IO.InvalidDataException]::new("$($_.Exception.Message) Fix it, or pass -Target to choose the rules.", $_.Exception) }
                 }
                 $effectiveTarget = if ($marker -and $marker.Target) { $marker.Target }
                 else { Write-Verbose "'$projectPath' has no lambdaps-runtime.json naming a target, so it is checked as a CMR project."; 'CMR' }

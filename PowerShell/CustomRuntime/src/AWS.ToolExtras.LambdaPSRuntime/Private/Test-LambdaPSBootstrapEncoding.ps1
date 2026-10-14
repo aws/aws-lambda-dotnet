@@ -37,7 +37,7 @@ function Test-LambdaPSBootstrapEncoding {
     )
 
     if ($Bootstrap.ByteOrderMark) {
-        return New-LambdaPSFinding -RuleId 'R-Encoding' -Passed $false -Message "Bootstrap starts with a $($Bootstrap.ByteOrderMark) byte order mark. Lambda executes it directly on Linux, where a script must start with ""#!"", so the runtime fails to start. Save it as UTF-8 without a byte order mark."
+        return New-LambdaPSFinding -RuleId 'R-Encoding' -Passed $false -Message "Bootstrap starts with a $($Bootstrap.ByteOrderMark) byte order mark. Lambda executes it directly on Linux, where a script must start with ""#!"", so the runtime fails to start. Save it as UTF-8 without a byte order mark. Build-LambdaPSRuntimePackage writes it without one and the scaffolded Dockerfile strips a UTF-8 mark, but a bootstrap packaged another way fails to start."
     }
     if (-not $Bootstrap.StartsWithShebang) {
         return New-LambdaPSFinding -RuleId 'R-Encoding' -Passed $false -Message 'Bootstrap does not start with "#!". Lambda executes it directly on Linux, where a script must start with those two bytes, so the runtime fails to start. Put the shebang (#!/bin/sh) on the first line, with nothing before it.'
