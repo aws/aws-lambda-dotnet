@@ -96,7 +96,8 @@ function Compress-LambdaPSFunctionPackage {
     .PARAMETER HandlerScript
         The handler script whose '#Requires -Modules' to read (for example 'handler.ps1'). When
         omitted, it is resolved from a manifest.json ScriptFile if present, otherwise from the sole
-        root .ps1 file; if none can be identified, no requirements are read. It is resolved against the
+        root .ps1 file; if none can be identified, no requirements are read, with a warning when a root
+        script declares '#Requires -Modules'. It is resolved against the
         source folder, and a handler script that is not in -Path (or, for a single-file -Path, is not that
         file) fails with HandlerScriptNotFound, as does one whose real path, with every link followed, is
         outside -Path. The file name is matched case-sensitively, as on Lambda. Off Windows, a '\' in it
@@ -245,6 +246,18 @@ function Compress-LambdaPSFunctionPackage {
                     [System.IO.FileNotFoundException]::new(
                         "The handler script '$handlerMissing' is not in the function source '$Path', or its real path (with every link followed) is outside it, so its '#Requires -Modules' cannot be read. Fix -HandlerScript (or the manifest.json ScriptFile), or add the script."),
                     'HandlerScriptNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $handlerMissing))
+        }
+        # Several root scripts, and no manifest.json ScriptFile or -HandlerScript to say which is the handler: no
+        # script's '#Requires -Modules' is read. A Module:: handler names no script, so this is a warning, not an error.
+        if (-not $isFile -and [string]::IsNullOrWhiteSpace($handlerName)) {
+            $declaring = @(Get-ChildItem -LiteralPath $source.FullName -Filter '*.ps1' -File | Where-Object {
+                    try { @(Get-LambdaPSRequiredModule -Path $_.FullName).Count -gt 0 } catch { $false }
+                } | ForEach-Object Name | Sort-Object)
+            if ($declaring.Count -gt 0) {
+                Write-Warning ("The handler script in '$Path' could not be identified (more than one root .ps1 and no manifest.json " +
+                    "ScriptFile), so the '#Requires -Modules' in $($declaring -join ', ') are not read and those modules are not " +
+                    'packaged. Name the handler script: -HandlerScript, or the script in -Handler when deploying.')
+            }
         }
         $required = @()
         if ($handlerPath) {

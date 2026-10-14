@@ -723,7 +723,8 @@ param($LambdaInput, $LambdaContext)
     }
 
     # No handler can be told apart, so no script's #Requires is read: none of them names the entry point.
-    It 'harvests no #Requires when two root scripts leave the handler ambiguous' {
+    # A Module:: handler names no script, so this packages, with a warning naming -HandlerScript.
+    It 'harvests no #Requires, and warns, when two root scripts leave the handler ambiguous' {
         $dir = Join-Path $TestDrive 'req-ambiguous'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         foreach ($name in 'a.ps1', 'b.ps1') {
@@ -731,11 +732,23 @@ param($LambdaInput, $LambdaContext)
         }
         $out = Join-Path $TestDrive 'req-ambiguous.zip'
 
-        $result = Compress-LambdaPSFunctionPackage -Path $dir -OutFile $out -MissingModuleAction Stop
+        $result = Compress-LambdaPSFunctionPackage -Path $dir -OutFile $out -MissingModuleAction Stop -WarningVariable warnings -WarningAction SilentlyContinue
 
         $entries = Get-ZipEntryNames -ZipPath $out
         $entries | Sort-Object | Should -Be @('a.ps1', 'b.ps1')
         @($result.ModulesStaged).Count | Should -Be 0
+        @($warnings).Count | Should -Be 1
+        "$($warnings[0])" | Should -BeLike '*a.ps1, b.ps1*-HandlerScript*'
+    }
+
+    It 'gives no such warning when no root script declares #Requires -Modules' {
+        $dir = Join-Path $TestDrive 'plain-ambiguous'
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        foreach ($name in 'a.ps1', 'b.ps1') { Set-Content -LiteralPath (Join-Path $dir $name) -Value 'param($LambdaInput, $LambdaContext)' }
+
+        $null = Compress-LambdaPSFunctionPackage -Path $dir -OutFile (Join-Path $TestDrive 'plain-ambiguous.zip') -WarningVariable warnings -WarningAction SilentlyContinue
+
+        $warnings | Should -BeNullOrEmpty
     }
 }
 
