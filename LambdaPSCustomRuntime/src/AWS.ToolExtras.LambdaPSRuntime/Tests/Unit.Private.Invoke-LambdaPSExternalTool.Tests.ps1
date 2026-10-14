@@ -103,6 +103,18 @@ Describe 'Invoke-LambdaPSExternalTool' -Tag 'Unit' {
         }
     }
 
+    It 'passes an argument with quotes and spaces as one argument, under a caller''s Legacy argument passing' {
+        $echo = [System.IO.Path]::Combine($TestDrive, 'echo-first-argument.ps1')
+        Set-Content -LiteralPath $echo -Value 'param([string]$First) "ARG:[$First] COUNT:$($args.Count)"'
+        InModuleScope $script:moduleName -Parameters @{ pwshPath = $script:pwshPath; echo = $echo } {
+            param($pwshPath, $echo)
+            Mock Out-Host -MockWith { }
+            $PSNativeCommandArgumentPassing = 'Legacy'
+            Invoke-LambdaPSExternalTool -Executable $pwshPath -ArgumentList '-NoProfile', '-File', $echo, 'say "hi" now'
+            Should -Invoke Out-Host -Times 1 -Exactly -ParameterFilter { $InputObject -eq 'ARG:[say "hi" now] COUNT:0' }
+        }
+    }
+
     Context 'when a function or alias has the executable''s name' {
         BeforeAll {
             # A stand-in executable first on PATH that records that it ran.
