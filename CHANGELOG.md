@@ -1,3 +1,8 @@
+## Release 2026-10-16
+
+### Amazon.Lambda.PowerShellHost (4.1.1)
+* Update System.Security.Cryptography.Xml to 8.0.5 (net8.0) and 10.0.13 (net10.0) to address a security vulnerability in the transitive dependency.
+
 ## Release 2026-10-09
 
 ### Amazon.Lambda.Annotations (2.4.2)
