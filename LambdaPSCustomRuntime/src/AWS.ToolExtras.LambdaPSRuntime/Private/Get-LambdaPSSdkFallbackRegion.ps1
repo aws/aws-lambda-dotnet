@@ -7,6 +7,10 @@ function Get-LambdaPSSdkFallbackRegion {
         and the instance or container metadata. AWS_DEFAULT_REGION is not read. The type is looked up
         by name, so no SDK type is bound when the module is parsed. It is step 4, the last, of
         Resolve-LambdaPSRegion.
+
+        Off EC2, with no region set any other way, the metadata lookup waits for the instance metadata
+        endpoint to time out, so RegionNotResolved can take a few seconds to arrive. Set -Region or
+        AWS_REGION to skip it.
     .OUTPUTS
         System.String
     .EXAMPLE
