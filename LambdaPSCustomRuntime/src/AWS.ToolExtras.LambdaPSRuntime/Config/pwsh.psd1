@@ -19,15 +19,17 @@
     # The pwsh release each supported PowerShell line installs by default, when -PwshVersion is not
     # given. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
     DefaultPatch  = @{
-        '7.4' = '7.4.20'
-        '7.5' = '7.5.11'
-        '7.6' = '7.6.6'
+        '7.4' = '7.4.21'
+        '7.5' = '7.5.12'
+        '7.6' = '7.6.7'
     }
 
     # SHA256 of the official PowerShell Linux release tarballs
     # (powershell-<version>-linux-<x64|arm64>.tar.gz on the PowerShell GitHub releases page). The
     # Layer and self-contained .zip packages verify their download against these, and the CMR and
     # Container images verify the arm64 tarball against them (Microsoft publishes no aarch64 RPM).
+    # A release's hashes stay when DefaultPatch moves past it, so a project that pins an older
+    # -PwshVersion still builds.
     ArchiveSha256 = @{
         '7.4.20' = @{
             x64   = 'ed8008345c7f5337f5e293145f5e243ce132e5ee4dfc24ac551c45a4b3092181'
@@ -40,6 +42,18 @@
         '7.6.6'  = @{
             x64   = 'ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc'
             arm64 = '924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729'
+        }
+        '7.4.21' = @{
+            x64   = '3fc5e1567c450bd7bd5ae69ebb0a9a4a4e0418bbc36b0232cf6dd547f0bfc0eb'
+            arm64 = 'd0c216cec4c6c866fc15a105f039740228b53206f8576d2ed0bcd656a35ed6f6'
+        }
+        '7.5.12' = @{
+            x64   = 'db85ae1f45005ffd20e456890585167257151fa99406ccd7ab344f7cf3a766fd'
+            arm64 = '29eb382cd510e4bd246902650ff6cf9f3b56f959d1bd0be75e0a1e425177c831'
+        }
+        '7.6.7'  = @{
+            x64   = '6896f9e3a6b0a354bf470835a96da76d2f801cd50dcf047ad7c4563bf93bf431'
+            arm64 = 'ba465efdfb0984c1c5dc5ed9eb0b79a7e91a1b52c45f99377058c0659b84d3f1'
         }
     }
 }
