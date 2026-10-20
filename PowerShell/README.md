@@ -1,5 +1,12 @@
 # The AWS Lambda Tools for Powershell
 
+This folder holds two PowerShell modules for Lambda:
+
+| Folder | Module |
+| --- | --- |
+| `Module/`, `Tests/` | **AWSLambdaPSCore**, the AWS Lambda Tools for PowerShell, which run PowerShell on the managed .NET runtime. The rest of this README covers it. |
+| `CustomRuntime/` | **AWS.ToolExtras.LambdaPSRuntime**, which runs PowerShell on Lambda as a customer-managed or custom runtime. See [CustomRuntime/README.md](CustomRuntime/README.md). |
+
 The AWS Lambda Tools for Powershell allows PowerShell developers to publish PowerShell scripts 
 with their dependent modules and have the scripts be invoked by Lambda.
 
