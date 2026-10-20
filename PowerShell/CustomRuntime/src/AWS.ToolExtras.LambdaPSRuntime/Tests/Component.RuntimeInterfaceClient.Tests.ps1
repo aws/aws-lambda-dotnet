@@ -361,6 +361,8 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         )
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'samename.ps1')) -Value 'function Send-RuntimeApiRequest { param($LambdaInput, $LambdaContext) @{ From = ''handler named Send-RuntimeApiRequest''; Id = $LambdaContext.AwsRequestId } }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'peek.ps1')) -Value '"loader:[$privateFunctionsPath]"'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'noparam.ps1')) -Value '@{ Name = $LambdaInput.name; RequestId = $LambdaContext.AwsRequestId; Peek = "[$inputObject][$handlerCommand]" }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'noparamfn.ps1')) -Value 'function Handle { "fn:[$LambdaInput][$LambdaContext]" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -798,6 +800,33 @@ public class InvokeBin : PSCmdlet {
         $second.Identity | Should -BeExactly ''
         $second.ClientType | Should -Be 'String'
         $second.IdentityType | Should -Be 'String'
+    }
+
+    It 'gives a Script handler $LambdaInput and $LambdaContext <Case>' -ForEach @(
+        @{ Case = 'without a param block'; Handler = 'noparam.ps1' }
+        @{ Case = 'through its param block, as before'; Handler = 'script.ps1' }
+    ) {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{"name":"a"}', '{"name":"b"}')
+
+        $posts.Path | Should -Be @(
+            '/2018-06-01/runtime/invocation/req-1/response'
+            '/2018-06-01/runtime/invocation/req-2/response'
+        )
+        $second = $posts[1].Body | ConvertFrom-Json
+        $second.Name | Should -Be 'b'
+        $second.RequestId | Should -Be 'req-2'
+    }
+
+    It 'gives a Script handler without a param block none of the runtime''s private variables' {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'noparam.ps1' -EventBody '{}')
+
+        ($posts[0].Body | ConvertFrom-Json).Peek | Should -BeExactly '[][]'
+    }
+
+    It 'leaves a handler function without a param block to its parameters, as before' {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'noparamfn.ps1::Handle' -EventBody '{"name":"a"}')
+
+        $posts[0].Body | Should -BeExactly 'fn:[][]'
     }
 
     It 'leaves no runtime module loader variable for a Script handler to read' {

@@ -17,7 +17,7 @@ function private:Invoke-FunctionHandler {
     param (
         [Parameter(Mandatory)] $private:runtimeNextInvocationResponse,
         [Parameter(Mandatory)] $private:HandlerArray,
-        [Parameter(Mandatory)] $private:LambdaContext
+        [Parameter(Mandatory)] $private:context
     )
 
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Invoke-FunctionHandler]Start: Invoke-FunctionHandler' }
@@ -27,7 +27,7 @@ function private:Invoke-FunctionHandler {
     # ConvertFrom-Json's own message for an event it cannot convert (for example two keys that differ only
     # in case) suggests a switch the customer cannot pass, so the runtime words the error itself.
     try {
-        $private:LambdaInput = Microsoft.PowerShell.Utility\ConvertFrom-Json -InputObject $private:runtimeNextInvocationResponse.incomingEvent -NoEnumerate -ErrorAction Stop
+        $private:inputObject = Microsoft.PowerShell.Utility\ConvertFrom-Json -InputObject $private:runtimeNextInvocationResponse.incomingEvent -NoEnumerate -ErrorAction Stop
     }
     catch {
         $private:jsonError = $_.Exception.Message -replace '\s*Please use the -AsHashTable switch instead\.', ''
@@ -40,6 +40,13 @@ function private:Invoke-FunctionHandler {
     elseif ($private:HandlerArray.PSObject.Properties['command']) { $private:HandlerArray.command }
     else { $private:HandlerArray.functionName }
 
+    # The event and context are $LambdaInput and $LambdaContext in this scope, not private ones: a
+    # <script>.ps1 handler runs in a child of this scope, so it reads them whether or not it declares
+    # param($LambdaInput, $LambdaContext), as AWSLambdaPSCore scripts expect. A handler function runs in
+    # the scope where it was defined, does not see them, and takes both as its parameters.
+    $LambdaInput = $private:inputObject
+    $LambdaContext = $private:context
+
     # A break or continue in the handler that is not inside a loop of its own goes up the call stack to
     # the nearest enclosing loop. For an unlabelled one this is that loop, so the call is cut short here
     # and reported as an error, rather than ending some loop of the runtime's and losing the handler's
@@ -48,7 +55,7 @@ function private:Invoke-FunctionHandler {
     # /error and exits 1. (exit in a <script>.ps1 handler ends only that script.)
     $private:handlerCompleted = $false
     do {
-        $private:functionInvocationResponse = & $private:handlerCommand $private:LambdaInput $private:LambdaContext
+        $private:functionInvocationResponse = & $private:handlerCommand $LambdaInput $LambdaContext
         $private:handlerCompleted = $true
     } while ($false)
     if (-not $private:handlerCompleted) {

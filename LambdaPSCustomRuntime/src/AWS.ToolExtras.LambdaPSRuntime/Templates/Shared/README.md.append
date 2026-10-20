@@ -26,9 +26,10 @@ reports the error. `$LambdaContext` has `AwsRequestId`, `ClientContext`, `Functi
 `FunctionVersion`, `Identity`, `InvokedFunctionArn`, `LogGroupName`, `LogStreamName`,
 `MemoryLimitInMB`, `RemainingTime` and `GetRemainingTimeInMillis()`.
 
-A handler receives the event and the context as its first two arguments, so start it with
-`param($LambdaInput, $LambdaContext)`: without that block, `$LambdaInput` and `$LambdaContext` are
-`$null`. The handler setting (`_HANDLER`) takes one of three forms: `<script>.ps1`,
+A handler receives the event and the context as its first two arguments, so start a handler function
+with `param($LambdaInput, $LambdaContext)`. A `<script>.ps1` handler can declare the same block, or
+leave it out: `$LambdaInput` and `$LambdaContext` are in scope either way, as in AWSLambdaPSCore. The
+handler setting (`_HANDLER`) takes one of three forms: `<script>.ps1`,
 `<script>.ps1::<function>` or `Module::<module>::<function>`. If the handler cannot be loaded, the
 function fails at start-up and the invoke reports why: a handler setting that is not one of those
 forms, a missing or unparsable script, a handler function that does not exist, a module that does not
