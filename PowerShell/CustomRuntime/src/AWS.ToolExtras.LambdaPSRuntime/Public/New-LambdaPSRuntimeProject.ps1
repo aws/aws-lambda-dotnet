@@ -132,20 +132,20 @@ function New-LambdaPSRuntimeProject {
         The full paths written, emitted as one array. Empty under -WhatIf, and when the download, the
         delete or the file write is declined under -Confirm.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./powershell-runtime -PowerShellVersion 7.4
+        New-LambdaPSRuntimeProject -Path ./powershell-runtime -PowerShellVersion 7.6
 
-        Scaffolds a CMR runtime-image project targeting PowerShell 7.4 (the default 7.4 pwsh release).
+        Scaffolds a CMR runtime-image project targeting PowerShell 7.6 (the default 7.6 pwsh release).
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./layer -PowerShellVersion 7.4 -Target Layer
+        New-LambdaPSRuntimeProject -Path ./layer -PowerShellVersion 7.6 -Target Layer
 
-        Scaffolds a Lambda layer project targeting PowerShell 7.4.
+        Scaffolds a Lambda layer project targeting PowerShell 7.6.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4 -PwshVersion 7.4.2 -Force
+        New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.6 -PwshVersion 7.6.0 -Force
 
-        Replaces the contents of an existing directory and pins pwsh 7.4.2. That version has no pinned
+        Replaces the contents of an existing directory and pins pwsh 7.6.0. That version has no pinned
         arm64 hash, so the project builds linux/amd64 only and a warning says so.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./rt-s3 -PowerShellVersion 7.4 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
+        New-LambdaPSRuntimeProject -Path ./rt-s3 -PowerShellVersion 7.6 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
         Scaffolds the project and stages AWS.Tools.S3 5.0.274 (and its dependencies) into
         ./rt/modules, downloading any that are not installed locally.

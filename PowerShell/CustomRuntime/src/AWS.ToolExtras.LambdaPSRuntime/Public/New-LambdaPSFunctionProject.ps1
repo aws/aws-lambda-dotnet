@@ -161,13 +161,13 @@ function New-LambdaPSFunctionProject {
 
         Scaffolds an arm64 RuntimeBound function project bound to the 'prod' runtime alias.
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello-zip -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4
+        New-LambdaPSFunctionProject -Path ./hello-zip -Handler handler -Target SelfContainedZip -PowerShellVersion 7.6
 
-        Scaffolds a self-contained function .zip project bundling PowerShell 7.4 (the default 7.4 pwsh release, added at build time).
+        Scaffolds a self-contained function .zip project bundling PowerShell 7.6 (the default 7.6 pwsh release, added at build time).
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello-image -Handler handler -Target Container -PowerShellVersion 7.4
+        New-LambdaPSFunctionProject -Path ./hello-image -Handler handler -Target Container -PowerShellVersion 7.6
 
-        Scaffolds a container-per-function image project bundling PowerShell 7.4 (the default 7.4 pwsh release).
+        Scaffolds a container-per-function image project bundling PowerShell 7.6 (the default 7.6 pwsh release).
     .EXAMPLE
         New-LambdaPSFunctionProject -Path ./hello-s3 -Handler handler -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
