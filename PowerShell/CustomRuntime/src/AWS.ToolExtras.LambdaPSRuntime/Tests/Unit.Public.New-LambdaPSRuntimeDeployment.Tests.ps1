@@ -407,9 +407,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR"}'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) -Value 'mine'
 
-            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.21 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf } |
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf } |
                 Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment' -PassThru
-            $err.Exception.Message | Should -BeLike '*7.4.21*-Architecture x86_64*-PwshVersion*Nothing was created.'
+            $err.Exception.Message | Should -BeLike '*7.4.13*-Architecture x86_64*-PwshVersion*Nothing was created.'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
             Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
             Get-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) | Should -Be 'mine'
@@ -417,9 +417,15 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         # The advice names only versions -PowerShellVersion accepts; another line's would fail with PwshVersionMismatch.
         It 'names only pinned arm64 versions of the same PowerShell line in the advice' {
+            # Read from Config/pwsh.psd1, so a pin bump does not break the test.
+            $pinned74 = InModuleScope $script:moduleName {
+                @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object { $_.StartsWith('7.4.') } | Sort-Object { [version]$_ }) -join ', '
+            }
             $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -WhatIf } |
                 Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment' -PassThru
-            $err.Exception.Message | Should -BeLike '*a -PwshVersion with a pinned arm64 hash (7.4.20). Nothing was created.'
+            $pinned74 | Should -Not -BeNullOrEmpty
+            $err.Exception.Message | Should -BeLike "*a -PwshVersion with a pinned arm64 hash ($pinned74). Nothing was created."
+            $err.Exception.Message | Should -Not -Match '7\.[56]\.'
             $err.CategoryInfo.Category | Should -Be ([System.Management.Automation.ErrorCategory]::InvalidArgument)
         }
 
@@ -432,7 +438,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         It 'deploys <Case>' -ForEach @(
             @{ Case = 'arm64 for a pwsh version with a pinned arm64 hash'; PwshVersion = '7.4.20'; Architecture = 'arm64' }
-            @{ Case = 'x86_64 for a pwsh version with no pinned arm64 hash'; PwshVersion = '7.4.21'; Architecture = 'x86_64' }
+            @{ Case = 'x86_64 for a pwsh version with no pinned arm64 hash'; PwshVersion = '7.4.13'; Architecture = 'x86_64' }
         ) {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion $PwshVersion -Architecture $Architecture -Region us-east-1 -RepositoryName rt -WarningAction SilentlyContinue
             $result.PwshVersion | Should -Be $PwshVersion
