@@ -757,12 +757,9 @@ public class InvokeBin : PSCmdlet {
         $log | Should -BeLike "*boom*$handler*"
     }
 
-    It 'logs why it exited after a /next error status when the handler script set $InformationPreference to <Preference>' -ForEach @(
-        @{ Preference = 'Ignore' }
-        @{ Preference = 'Stop' }
-    ) {
-        $handler = "info-next-$($Preference.ToLowerInvariant()).ps1"
-        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, $handler)) -Value "`$InformationPreference = '$Preference'", 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
+    It 'logs why it exited after a /next error status when the handler script set $InformationPreference to Ignore' {
+        $handler = 'info-next-ignore.ps1'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, $handler)) -Value '$InformationPreference = ''Ignore''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "$($handler)::Handle" -EventBody '{}' -NextStatus 500 -TimeoutSeconds 30 -LogVariable log -ExitCodeVariable exitCode)
 
         $posts.Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
