@@ -12,13 +12,22 @@ Describe 'Invoke-LambdaPSExternalTool' -Tag 'Unit' {
         $script:pwshPath = [System.IO.Path]::Combine($PSHOME, $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' }))
     }
 
-    It 'throws ExternalToolFailed naming the exit code when the tool fails' {
+    It 'throws ExternalToolFailed naming the exit code and the arguments when the tool fails' {
         InModuleScope $script:moduleName -Parameters @{ pwshPath = $script:pwshPath } {
             param($pwshPath)
             $err = $null
             try { Invoke-LambdaPSExternalTool -Executable $pwshPath -ArgumentList '-NoProfile', '-Command', 'exit 3' } catch { $err = $_ }
             $err.FullyQualifiedErrorId | Should -Be 'ExternalToolFailed'
-            $err.Exception.Message | Should -BeLike '*exited with code 3.'
+            $err.Exception.Message | Should -BeLike "*exited with code 3. Arguments: -NoProfile -Command 'exit 3'"
+        }
+    }
+
+    It 'quotes an argument that holds a space or a quote, so each reads as one argument' {
+        InModuleScope $script:moduleName -Parameters @{ pwshPath = $script:pwshPath } {
+            param($pwshPath)
+            $err = $null
+            try { Invoke-LambdaPSExternalTool -Executable $pwshPath -ArgumentList '-NoProfile', '-Command', "exit 5 # it's" } catch { $err = $_ }
+            $err.Exception.Message | Should -BeLike "*exited with code 5. Arguments: -NoProfile -Command 'exit 5 # it''s'"
         }
     }
 

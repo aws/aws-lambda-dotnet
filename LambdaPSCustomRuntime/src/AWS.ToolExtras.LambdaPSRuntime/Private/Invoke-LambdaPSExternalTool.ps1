@@ -6,8 +6,10 @@ function Invoke-LambdaPSExternalTool {
         Thin wrapper that invokes an external executable through the call operator with an argument
         array, then inspects $LASTEXITCODE. Every line the tool writes, to stdout or stderr, goes to
         the host as it arrives, so the function returns nothing. On a non-zero exit it raises a
-        terminating error ('ExternalToolFailed', OperationStopped) whose exception carries the last 50
-        lines in .Data['Output'] (string[]), for a caller that explains the failure.
+        terminating error ('ExternalToolFailed', OperationStopped) whose message gives the exit code and
+        the arguments, and whose exception carries the last 50 lines in .Data['Output'] (string[]), for
+        a caller that explains the failure. Because the message repeats the arguments, never pass a
+        secret as one.
 
         The name is resolved to an executable file only (Get-Command -CommandType Application), and
         that file is run: a function or alias of the same name in the session does not run instead.
@@ -60,7 +62,12 @@ function Invoke-LambdaPSExternalTool {
         # $PSCmdlet inside this nested function terminates only this function, so the CALLER
         # (Build-LambdaPSRuntimeImage) would keep running and emit a false success. `throw`
         # propagates up the whole call stack and halts the caller.
-        $exception = [System.InvalidOperationException]::new("External tool '$Executable' exited with code $exitCode.")
+        # Quoted as PowerShell would read them, so an argument with a space reads as one argument.
+        $argumentText = @($ArgumentList | ForEach-Object {
+                if ($_ -match '[\s''"]') { "'" + ($_ -replace "'", "''") + "'" } else { $_ }
+            }) -join ' '
+        $exception = [System.InvalidOperationException]::new(
+            "External tool '$Executable' exited with code $exitCode. Arguments: $argumentText")
         $exception.Data['Output'] = [string[]]$tail.ToArray()
         $errorRecord = [System.Management.Automation.ErrorRecord]::new(
             $exception,
