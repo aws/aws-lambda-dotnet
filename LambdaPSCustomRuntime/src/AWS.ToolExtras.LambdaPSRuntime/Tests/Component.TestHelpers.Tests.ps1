@@ -93,20 +93,20 @@ function Send-LambdaPSResponse { param($Id) $null = Invoke-WebRequest -Method Po
             Should -Throw '*still had 1 of 1 event(s) open after 2 seconds*'
     }
 
-    It 'sends -ClientContext and -CognitoIdentity as the Lambda-Runtime-Client-Context and Lambda-Runtime-Cognito-Identity headers' {
+    It 'sends -ClientContext, -CognitoIdentity and -TenantId as the Lambda-Runtime-Client-Context, Lambda-Runtime-Cognito-Identity and Lambda-Runtime-Aws-Tenant-Id headers' {
         $runtime = [System.IO.Path]::Combine($TestDrive, 'echo-headers.ps1')
         Set-Content -LiteralPath $runtime -Value ($script:runtimePrelude + @'
 
 while ($true) {
     $next = Invoke-WebRequest -Uri "$api/invocation/next" -NoProxy -TimeoutSec 600
-    $body = "$($next.Headers['Lambda-Runtime-Client-Context'])|$($next.Headers['Lambda-Runtime-Cognito-Identity'])"
+    $body = "$($next.Headers['Lambda-Runtime-Client-Context'])|$($next.Headers['Lambda-Runtime-Cognito-Identity'])|$($next.Headers['Lambda-Runtime-Aws-Tenant-Id'])"
     $null = Invoke-WebRequest -Method Post -Uri "$api/invocation/$($next.Headers['Lambda-Runtime-Aws-Request-Id'])/response" -Body $body -NoProxy
 }
 '@)
 
-        $posts = @(Invoke-LambdaPSRuntimeLoop -RuntimePath $runtime -TaskRoot $script:taskRoot -Handler 'x.ps1' -EventBody '{}', '{}' -ClientContext '{"client":{"app_title":"a"}}' -CognitoIdentity '', '{"cognitoIdentityId":"id-1"}' -TimeoutSeconds 30)
+        $posts = @(Invoke-LambdaPSRuntimeLoop -RuntimePath $runtime -TaskRoot $script:taskRoot -Handler 'x.ps1' -EventBody '{}', '{}' -ClientContext '{"client":{"app_title":"a"}}' -CognitoIdentity '', '{"cognitoIdentityId":"id-1"}' -TenantId 'tenant-a' -TimeoutSeconds 30)
 
-        $posts.Body | Should -Be @('{"client":{"app_title":"a"}}|', '|{"cognitoIdentityId":"id-1"}')
+        $posts.Body | Should -Be @('{"client":{"app_title":"a"}}||tenant-a', '|{"cognitoIdentityId":"id-1"}|')
     }
 
     It 'fails when the runtime neither asks for an event nor exits within -StartupTimeoutSeconds' {

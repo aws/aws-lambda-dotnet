@@ -47,6 +47,9 @@ function Invoke-LambdaPSRuntimeLoop {
     .PARAMETER CognitoIdentity
         The Lambda-Runtime-Cognito-Identity header (JSON text) to send with each event, in order. An
         empty or missing entry sends no header.
+    .PARAMETER TenantId
+        The Lambda-Runtime-Aws-Tenant-Id header to send with each event, in order, as for a function
+        with tenant isolation. An empty or missing entry sends no header.
     .OUTPUTS
         One object per post, in order: Path (the path posted to: an invocation's /response or /error,
         or /init/error), Body and Status (the status it was answered with).
@@ -67,6 +70,7 @@ function Invoke-LambdaPSRuntimeLoop {
         [string[]]$TraceId = @(),
         [string[]]$ClientContext = @(),
         [string[]]$CognitoIdentity = @(),
+        [string[]]$TenantId = @(),
         [switch]$ExpectExit,
         [int]$StartupTimeoutSeconds = 120,
         [string]$ExitCodeVariable,
@@ -74,11 +78,19 @@ function Invoke-LambdaPSRuntimeLoop {
     )
     $expectExit = $ExpectExit.IsPresent -or $PSBoundParameters.ContainsKey('NextStatus')
 
-    $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
-    $probe.Start(); $port = $probe.LocalEndpoint.Port; $probe.Stop()
-    $listener = [System.Net.HttpListener]::new()
-    $listener.Prefixes.Add("http://127.0.0.1:$port/")
-    $listener.Start()
+    # HttpListener cannot bind port 0, so a free port is found first. Another process can take it
+    # before the listener binds (tests running in parallel), so a failed bind tries a new port.
+    for ($attempt = 1; ; $attempt++) {
+        $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+        $probe.Start(); $port = $probe.LocalEndpoint.Port; $probe.Stop()
+        $listener = [System.Net.HttpListener]::new()
+        $listener.Prefixes.Add("http://127.0.0.1:$port/")
+        try { $listener.Start(); break }
+        catch [System.Net.HttpListenerException] {
+            $listener.Close()
+            if ($attempt -ge 5) { throw }
+        }
+    }
 
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new((Get-Process -Id $PID).Path)
     foreach ($argument in '-NoProfile', '-NonInteractive', '-File', $RuntimePath) { $startInfo.ArgumentList.Add($argument) }
@@ -129,6 +141,9 @@ function Invoke-LambdaPSRuntimeLoop {
                 }
                 if ($served -le $CognitoIdentity.Count -and $CognitoIdentity[$served - 1]) {
                     $context.Response.Headers['Lambda-Runtime-Cognito-Identity'] = $CognitoIdentity[$served - 1]
+                }
+                if ($served -le $TenantId.Count -and $TenantId[$served - 1]) {
+                    $context.Response.Headers['Lambda-Runtime-Aws-Tenant-Id'] = $TenantId[$served - 1]
                 }
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($pending.Dequeue())
                 $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
