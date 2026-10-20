@@ -15,9 +15,10 @@ image. This module automates building and deploying it. It lives deliberately ou
 
 - PowerShell 7.4+
 - For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
-  `PATH`. Docker is the only supported container CLI — the image build depends on
-  `--provenance=false` and `oci-mediatypes=false` to emit the Docker v2 Schema 2 manifest a
-  customer-managed runtime requires, and those have no equivalent in Podman, Finch, or nerdctl.
+  `PATH`. Docker is the only container CLI this module supports. A customer-managed runtime needs a
+  Docker v2 Schema 2 manifest, which the image build emits with buildx's `--provenance=false` and
+  `oci-mediatypes=false`. Other CLIs can produce one too (for example `podman push --format v2s2`),
+  but the module builds and tests with Docker only.
   `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
 - The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —
   that is the path for Docker-averse environments.
@@ -34,10 +35,10 @@ with its own lint rules:
 
 | Approach | Scaffold with | `pwsh` | Container | One-command deploy |
 | --- | --- | --- | --- | --- |
-| **CMR** (default) | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4` (`-Target CMR` is the default) | installed in image | Yes | Yes |
-| Layer | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.4 -Target Layer` | bundled on `provided.al2023` | No | No |
-| Self-contained `.zip` | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4` | bundled on `provided.al2023` | No | No |
-| Container-per-function | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target Container -PowerShellVersion 7.4` | installed in image | Yes | No |
+| **CMR** (default) | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.6` (`-Target CMR` is the default) | installed in image | Yes | Yes |
+| Layer | `New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.6 -Target Layer` | bundled on `provided.al2023` | No | No |
+| Self-contained `.zip` | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target SelfContainedZip -PowerShellVersion 7.6` | bundled on `provided.al2023` | No | No |
+| Container-per-function | `New-LambdaPSFunctionProject -Path ./fn -Handler handler -Target Container -PowerShellVersion 7.6` | installed in image | Yes | No |
 
 A function bound to a customer-managed runtime needs only its handler code: `New-LambdaPSFunctionProject
 -Path ./fn -Handler handler` scaffolds one (`-Target RuntimeBound`, the default).
@@ -46,8 +47,14 @@ CMR (customer-managed runtime) is the default: publish the runtime once as a con
 reference it by alias, and roll the whole fleet forward by moving the alias — no per-function
 redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by default; the
 releases and their tarball SHA256s are listed in `Config/pwsh.psd1`, and `-PwshVersion` picks
-another. The container-free targets run in invariant-globalization mode
-(`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`) so no ICU libraries are needed.
+another release listed there. A module release moves each line to its newest servicing release and
+keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
+PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
+([lifecycle](https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle)):
+the first module release after that date stops installing them by default, so
+`-PowerShellVersion 7.4` or `7.5` then also needs `-PwshVersion`. Use 7.6 for new projects. The
+container-free targets run in invariant-globalization mode (`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`)
+so no ICU libraries are needed.
 
 The Layer and self-contained `.zip` packages bundle pwsh, so they are large: about 72 MB zipped and
 174 MB unzipped for PowerShell 7.4 on x86_64, before any modules. That is over Lambda's direct-upload
@@ -63,7 +70,7 @@ Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntim
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
 #    publish version -> point the 'production' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 `
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -93,8 +100,9 @@ default profile, `AWS_REGION`, the `AWS_PROFILE` profile, or the instance or con
 `Invoke-LambdaPSFunction`, a full function ARN in `-FunctionName` supplies the region when `-Region` is
 omitted, and a `-Region` that differs from the ARN's fails with `FunctionRegionMismatch`.
 
-A handler declares `param($LambdaInput, $LambdaContext)` — the runtime passes the parsed event and the
-runtime details **positionally**, so a script without that param block silently sees `$null` for both.
+A handler reads the parsed event as `$LambdaInput` and the runtime details as `$LambdaContext`. A script
+handler has both in scope, with or without `param($LambdaInput, $LambdaContext)`; a function handler
+receives them positionally, so it declares that param block.
 Whatever the handler leaves on the pipeline is returned as the response. `-Handler` takes one of three
 forms: `<script>.ps1` runs the whole file per invoke; `<script>.ps1::<function>` dot-sources the file
 once and calls the function per invoke; `Module::<module>::<function>` calls a function of a module.
@@ -218,9 +226,9 @@ on this runtime with these differences:
 | `Publish-AWSPowerShellLambda` | `New-LambdaPSFunctionDeployment -ProjectPath` |
 | `-PowerShellFunctionHandler <function>` | `-Handler <script>.ps1::<function>` |
 
-- **The handler declares its input.** Add `param($LambdaInput, $LambdaContext)` at the top of the
-  script: the runtime passes the event and the context positionally, so a script without that
-  param block gets `$null` for both.
+- **A function handler declares its input.** A script handler reads `$LambdaInput` and
+  `$LambdaContext` as before. A `<script>.ps1::<function>` or `Module::` handler receives them
+  positionally, so the function needs `param($LambdaInput, $LambdaContext)`.
 - **`#Requires -Modules` pins an exact version.** Change `ModuleVersion` to `RequiredVersion`, for
   example `#Requires -Modules @{ModuleName='AWS.Tools.S3';RequiredVersion='5.0.274'}`: packaging
   refuses a minimum version with `ModuleVersionRequired`.
