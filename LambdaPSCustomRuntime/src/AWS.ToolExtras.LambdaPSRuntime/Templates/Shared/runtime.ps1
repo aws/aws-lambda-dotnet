@@ -13,19 +13,25 @@
 #
 # The handler script is dot-sourced into this same scope, so the runtime's own variables carry a
 # $__LambdaPSRuntime prefix that a handler will not use: a handler's $httpClient is its own.
+#
+# Every Write-Host here and in the runtime module passes -InformationAction Continue. A handler's
+# $InformationPreference is the runtime's too (its script shares this scope, and the runtime module
+# reads the global one): Ignore would drop the runtime's log lines, including why it exited after a
+# /next failure and the line that logs a handler error, and Stop or Inquire would make each one throw,
+# so an error would go unreported.
 
 # Function logs are plain text: without this, pwsh colours error and warning records with ANSI
 # escape codes even when stderr is not a terminal.
 $PSStyle.OutputRendering = 'PlainText'
-if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Start: runtime.ps1'}
+if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Start: runtime.ps1'}
 ## Initiating custom runtime
 
 # Set PowerShell version environment
 $env:POWERSHELL_VERSION = ($PSVersionTable).PSVersion.ToString()
-if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Running PowerShell: $($env:POWERSHELL_VERSION)"}
+if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Running PowerShell: $($env:POWERSHELL_VERSION)"}
 
 # Importing runtime module helpers
-if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Importing runtime module helpers'}
+if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Importing runtime module helpers'}
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot, 'modules', 'pwsh-runtime.psd1'))
 
 # The Runtime API is on the sandbox's loopback. A function's HTTP_PROXY is for its own outbound calls:
@@ -62,13 +68,13 @@ try {
         # precompiles when the build host can run the bundled pwsh, so that cold start does not compile it.
         # If the DLL is absent (built on another OS or architecture) or does not load (built for another
         # .NET), compile the shipped PowerShellLambdaContext.cs instead: a slower cold start, but it works.
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Loading precompiled LambdaContext assembly' }
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Loading precompiled LambdaContext assembly' }
         try {
             Add-Type -Path ([System.IO.Path]::Combine($PSScriptRoot, 'PowerShellLambdaContext.dll')) -ErrorAction Stop
         }
         catch {
             $private:__LambdaPSRuntimeDllError = $_.Exception.Message
-            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Precompiled LambdaContext unavailable ($private:__LambdaPSRuntimeDllError); compiling PowerShellLambdaContext.cs" }
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Precompiled LambdaContext unavailable ($private:__LambdaPSRuntimeDllError); compiling PowerShellLambdaContext.cs" }
             try {
                 Add-Type -TypeDefinition ([System.IO.File]::ReadAllText([System.IO.Path]::Combine($PSScriptRoot, 'PowerShellLambdaContext.cs'))) -ErrorAction Stop
             }
@@ -80,11 +86,11 @@ try {
         }
 
         # Modify $env:PSModulePath to support Lambda paths
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Modify PSModulePath to support Lambda paths'}
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Modify PSModulePath to support Lambda paths'}
         pwsh-runtime\Set-PSModulePath
 
         # Parse _HANDLER environment variable
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Parse _HANDLER environment variable'}
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Parse _HANDLER environment variable'}
         $private:__LambdaPSRuntimeHandler = pwsh-runtime\Get-Handler -Handler $env:_HANDLER
 
         # A Script handler is not run until the first event, so check here that its script exists and
@@ -103,10 +109,10 @@ try {
 
         ## Initiating function
         # Run function/module pre-handler initialization in global scope
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Run function/module pre-handler initialization in global scope'}
+        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Run function/module pre-handler initialization in global scope'}
         switch ($private:__LambdaPSRuntimeHandler.handlerType) {
             'Function' {
-                if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Dot sourcing PowerShell script: $($private:__LambdaPSRuntimeHandler.scriptFilePath)"}
+                if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Dot sourcing PowerShell script: $($private:__LambdaPSRuntimeHandler.scriptFilePath)"}
                 # A break or continue in the script's top-level code that is outside a loop of its own would
                 # stop the dot-source silently, perhaps before the handler function is defined. This loop is
                 # the nearest one, so the stop is seen here and reported.
@@ -121,7 +127,7 @@ try {
                 }
             }
             'Module' {
-                if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Importing module: $($private:__LambdaPSRuntimeHandler.moduleName)"}
+                if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Importing module: $($private:__LambdaPSRuntimeHandler.moduleName)"}
                 # The same for a break or continue in the module's top-level code, which would stop the import.
                 $private:__LambdaPSRuntimeImportCompleted = $false
                 do {
@@ -221,44 +227,44 @@ $private:__LambdaPSRuntimeStartupSessionIds = @(foreach ($private:__LambdaPSRunt
 # runtime (exit in a handler function, or a break or continue whose label matches no loop of its own),
 # so the finally below reports it on /error and exits 1, and Lambda is told why. Invoke-FunctionHandler
 # turns an unlabelled break or continue that leaves the handler into an invocation error.
-if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Start event loop'}
+if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Start event loop'}
 do {
     # Get /NEXT invocation from AWS Lambda Runtime API. A handler script dot-sourced into this scope may
     # have set $ErrorActionPreference; inside try, the throw for an error status is honoured whatever it is.
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Get /NEXT invocation from AWS Lambda Runtime API'}
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Get /NEXT invocation from AWS Lambda Runtime API'}
     try {
         $private:__LambdaPSRuntimeNextInvocation = pwsh-runtime\Get-LambdaNextInvocation $private:__LambdaPSRuntimeHttpClient
     }
     catch {
-        Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]$($_.Exception.Message)"
+        Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]$($_.Exception.Message)"
         exit 1
     }
     # $null means the Runtime API could not be reached; ask again.
     if ($null -eq $private:__LambdaPSRuntimeNextInvocation) { continue }
 
     # Set default and AWS Lambda specific environment variables for each invocation
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Set default and AWS Lambda specific environment variables for each invocation'}
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Set default and AWS Lambda specific environment variables for each invocation'}
     pwsh-runtime\Set-HandlerEnvironmentVariables $private:__LambdaPSRuntimeNextInvocation.headers
 
     $private:__LambdaPSRuntimeTurnCompleted = $false
     try {
         try {
             # Create the $LambdaContext object
-            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Create the $LambdaContext object'}
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Create the $LambdaContext object'}
             $private:__LambdaPSRuntimeContext = pwsh-runtime\Set-LambdaContext
 
             # Run function handler from script/module
-            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Run function handler from script/module'}
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Run function handler from script/module'}
             $private:__LambdaPSRuntimeResponse = pwsh-runtime\Invoke-FunctionHandler $private:__LambdaPSRuntimeNextInvocation $private:__LambdaPSRuntimeHandler $private:__LambdaPSRuntimeContext
 
             # POST function handler response back to Runtime API
-            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]POST function handler response back to Runtime API'}
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]POST function handler response back to Runtime API'}
 
             pwsh-runtime\Send-FunctionHandlerResponse $private:__LambdaPSRuntimeHttpClient $private:__LambdaPSRuntimeResponse
         }
         catch {
             # POST function invocation error back to Runtime API
-            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]POST function invocation error back to Runtime API'}
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]POST function invocation error back to Runtime API'}
             pwsh-runtime\Send-FunctionHandlerError $private:__LambdaPSRuntimeHttpClient $_ -NoStackTrace:(& $private:__LambdaPSRuntimeIsOwnError $_ $private:__LambdaPSRuntimeFiles)
         }
         $private:__LambdaPSRuntimeTurnCompleted = $true
@@ -275,7 +281,7 @@ do {
     }
 
     # Cleanup
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Cleanup'}
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Cleanup'}
     # Release this invocation's event, context and response before waiting for the next one.
     $private:__LambdaPSRuntimeContext = $null
     $private:__LambdaPSRuntimeNextInvocation = $null
@@ -293,7 +299,7 @@ do {
             }
         }
     }
-    catch { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Could not remove the handler's jobs: $($_.Exception.Message)" }
+    catch { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Could not remove the handler's jobs: $($_.Exception.Message)" }
     try {
         foreach ($private:__LambdaPSRuntimeSession in @(Microsoft.PowerShell.Core\Get-PSSession)) {
             if ($private:__LambdaPSRuntimeSession.Id -notin $private:__LambdaPSRuntimeStartupSessionIds) {
@@ -301,10 +307,10 @@ do {
             }
         }
     }
-    catch { Microsoft.PowerShell.Utility\Write-Host "[RUNTIME]Could not remove the handler's remoting sessions: $($_.Exception.Message)" }
+    catch { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Could not remove the handler's remoting sessions: $($_.Exception.Message)" }
     if ($null -eq $private:__LambdaPSRuntimeExitCode) { Microsoft.PowerShell.Utility\Remove-Variable -Name LASTEXITCODE -Scope Global -ErrorAction Ignore }
     else { $global:LASTEXITCODE = $private:__LambdaPSRuntimeExitCode }
     $env:PSModulePath = $private:__LambdaPSRuntimeModulePath
 }
 while ($true)
-if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host '[RUNTIME]Complete event loop, spindown runtime environment'}
+if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Complete event loop, spindown runtime environment'}

@@ -741,6 +741,35 @@ public class InvokeBin : PSCmdlet {
         $exitCode | Should -Be 1
     }
 
+    # The handler's start-up code shares the runtime's scope, so its $InformationPreference is the
+    # runtime's too: Ignore would drop the runtime's log lines, and Stop or Inquire make each one throw.
+    It 'logs and reports a handler error when the handler script set $InformationPreference to <Preference>' -ForEach @(
+        @{ Preference = 'Ignore' }
+        @{ Preference = 'Stop' }
+        @{ Preference = 'Inquire' }
+    ) {
+        $handler = "info-$($Preference.ToLowerInvariant()).ps1"
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, $handler)) -Value "`$InformationPreference = '$Preference'", 'function Fail { param($LambdaInput, $LambdaContext) throw ''boom'' }'
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "$($handler)::Fail" -EventBody '{}' -LogVariable log)
+
+        $posts.Path | Should -Be '/2018-06-01/runtime/invocation/req-1/error'
+        ($posts[0].Body | ConvertFrom-Json).errorMessage | Should -Be 'boom'
+        $log | Should -BeLike "*boom*$handler*"
+    }
+
+    It 'logs why it exited after a /next error status when the handler script set $InformationPreference to <Preference>' -ForEach @(
+        @{ Preference = 'Ignore' }
+        @{ Preference = 'Stop' }
+    ) {
+        $handler = "info-next-$($Preference.ToLowerInvariant()).ps1"
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, $handler)) -Value "`$InformationPreference = '$Preference'", 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "$($handler)::Handle" -EventBody '{}' -NextStatus 500 -TimeoutSeconds 30 -LogVariable log -ExitCodeVariable exitCode)
+
+        $posts.Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
+        $log | Should -BeLike '*answered GET /runtime/invocation/next with HTTP 500*'
+        $exitCode | Should -Be 1
+    }
+
     # An invalid setting falls back to 100 and says so once in the function log, not on every invocation.
     It 'with POWERSHELL_RUNTIME_JSON_DEPTH <Case>, serializes at depth <Depth> and warns <Warnings> time(s)' -ForEach @(
         @{ Case = '''abc'''; Value = 'abc'; Depth = 100; Warnings = 1 }

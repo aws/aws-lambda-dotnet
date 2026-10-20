@@ -20,7 +20,7 @@ function private:Invoke-FunctionHandler {
         [Parameter(Mandatory)] $private:context
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Invoke-FunctionHandler]Start: Invoke-FunctionHandler' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Invoke-FunctionHandler]Start: Invoke-FunctionHandler' }
 
     # -NoEnumerate keeps a JSON array an array: [] is an empty array and [x] a one-element array,
     # rather than $null and x.
@@ -77,7 +77,7 @@ function private:Invoke-FunctionHandler {
         }
         elseif ($script:LambdaPSRuntimeDepthWarnedFor -cne $private:depthValue) {
             $script:LambdaPSRuntimeDepthWarnedFor = $private:depthValue
-            Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
+            Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
         }
     }
 

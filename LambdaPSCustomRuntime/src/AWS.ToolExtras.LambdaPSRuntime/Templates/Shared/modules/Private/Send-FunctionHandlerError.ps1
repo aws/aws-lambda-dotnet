@@ -31,7 +31,7 @@ function private:Send-FunctionHandlerError {
         [switch]$NoStackTrace
     )
 
-    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
+    if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
     # The message alone does not say where the handler failed, so log the script position and stack.
     # Lambda makes each stdout line its own log event, so the error is written as one line with its
     # newlines turned into carriage returns, as the Node.js and Python runtimes do: one failure is one
@@ -41,7 +41,7 @@ function private:Send-FunctionHandlerError {
         if ($private:Exception.InvocationInfo) { $private:Exception.InvocationInfo.PositionMessage }
         if ($private:Exception.ScriptStackTrace) { $private:Exception.ScriptStackTrace }
     ) -join "`n"
-    Microsoft.PowerShell.Utility\Write-Host ($private:logText -replace '\r?\n', "`r")
+    Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue ($private:logText -replace '\r?\n', "`r")
 
     $private:body = Microsoft.PowerShell.Utility\ConvertTo-Json -Compress -InputObject @{
         errorMessage = $private:Exception.Exception.Message
@@ -59,6 +59,6 @@ function private:Send-FunctionHandlerError {
         & $script:__LambdaPSRuntimeSendRuntimeApiRequest $private:HttpClient $Uri $private:body $private:headers
     }
     catch {
-        Microsoft.PowerShell.Utility\Write-Host "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
+        Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
     }
 }

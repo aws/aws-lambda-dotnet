@@ -6,6 +6,10 @@
 # PowerShell, and normal in AWSLambdaPSCore scripts -- would fail inside Lambda with "The variable
 # cannot be retrieved because it has not been set", while working locally.
 
+# The private functions' Write-Host calls pass -InformationAction Continue, so that the handler's
+# $InformationPreference, which these functions inherit from the global scope, does not drop or fail
+# the runtime's log lines (see runtime.ps1).
+
 # Dot-source the private functions. They are kept as separate files so each can be read and tested
 # on its own; loading them is a directory listing and nine small files at import.
 $privateFunctionsPath = Join-Path $PSScriptRoot 'Private'
