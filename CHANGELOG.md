@@ -3,6 +3,11 @@
 ### Amazon.Lambda.PowerShellHost (4.1.1)
 * Update System.Security.Cryptography.Xml to 8.0.5 (net8.0) and 10.0.13 (net10.0) to address a security vulnerability in the transitive dependency.
 
+### AWSLambdaPSCore PowerShell Module (5.0.3)
+* For PowerShell Lambda function deployment bundle update to version 4.1.1 of Amazon.Lambda.PowerShellHost
+* For PowerShell Lambda function deployment bundle update to version 3.4.0 of Amazon.Lambda.Core
+* Update default version of Microsoft.PowerShell.SDK used in deployment bundle to 7.6.7
+
 ## Release 2026-10-09
 
 ### Amazon.Lambda.Annotations (2.4.2)
