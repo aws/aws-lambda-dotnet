@@ -187,12 +187,12 @@ function New-LambdaPSRuntimeDeployment {
         -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
         when its stage ran, and declining that stage alone is warned about with the command that points it.
     .EXAMPLE
-        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.4 -Region us-east-1 -InformationAction Continue
+        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1 -InformationAction Continue
 
         Runs the full flow with the ECR repository defaulted to the runtime name, alias 'production',
         version 'v1', and x86_64 architecture, showing a progress line as each stage completes.
     .EXAMPLE
-        New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
+        New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.6 -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
 
         Previews an arm64 deployment to the 'rt' repository that would bake AWS.Tools.S3 5.0.274 in,
         without changing anything.
