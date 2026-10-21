@@ -1,3 +1,9 @@
+# Pester evaluates -Skip at discovery, even inside a Context it then skips, so the root check runs
+# here once: Windows has no 'id', and $IsWindows keeps it from being called there.
+BeforeDiscovery {
+    $script:runAsRoot = -not $IsWindows -and (id -u) -eq '0'
+}
+
 BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
 
@@ -36,7 +42,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
 
     # The owner is simulated by mocking the 'id -u' answer against a directory the test user owns.
     Context 'who may own it' -Skip:$IsWindows {
-        It 'refuses a directory you own that every user can write to, naming its mode and the fix' -Skip:((id -u) -eq '0') {
+        It 'refuses a directory you own that every user can write to, naming its mode and the fix' -Skip:$script:runAsRoot {
             $dir = [System.IO.Path]::Combine($TestDrive, 'mine-shared-777')
             $null = New-Item -ItemType Directory -Path $dir
             [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherWrite, OtherExecute')
@@ -47,7 +53,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
         }
 
         # Other users cannot replace your files in a sticky folder.
-        It 'accepts a directory you own that every user can write to with the sticky bit (1777)' -Skip:((id -u) -eq '0') {
+        It 'accepts a directory you own that every user can write to with the sticky bit (1777)' -Skip:$script:runAsRoot {
             $dir = [System.IO.Path]::Combine($TestDrive, 'mine-shared-1777')
             $null = New-Item -ItemType Directory -Path $dir
             [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'StickyBit, UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherWrite, OtherExecute')
@@ -58,7 +64,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
         }
 
         # A user-private group (umask 002) makes group-writable the default for your own folders.
-        It 'accepts a directory you own that only your group can also write to' -Skip:((id -u) -eq '0') {
+        It 'accepts a directory you own that only your group can also write to' -Skip:$script:runAsRoot {
             $dir = [System.IO.Path]::Combine($TestDrive, 'mine-group')
             $null = New-Item -ItemType Directory -Path $dir
             [System.IO.File]::SetUnixFileMode($dir, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupWrite, GroupExecute, OtherRead, OtherExecute')
@@ -68,7 +74,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
             }
         }
 
-        It 'checks the owner with the real id, not a session function named id' -Skip:((id -u) -eq '0') {
+        It 'checks the owner with the real id, not a session function named id' -Skip:$script:runAsRoot {
             InModuleScope $script:moduleName {
                 Mock Get-Item { [PSCustomObject]@{ LinkTarget = $null; UnixStat = [PSCustomObject]@{ UserId = 4294967294 }; UnixFileMode = [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute'; User = 'other' } } -ParameterFilter { $LiteralPath -like '*foreign-shadow*' }
                 $dir = [System.IO.Path]::Combine($TestDrive, 'foreign-shadow')
@@ -123,7 +129,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
 
     # Without the listing, a folder you can enter but not read would look empty, and the scaffold would
     # write over what is in it.
-    It 'refuses a folder it cannot list with TargetNotReadable, <Case>' -Skip:($IsWindows -or ((id -u) -eq '0')) -ForEach @(
+    It 'refuses a folder it cannot list with TargetNotReadable, <Case>' -Skip:($IsWindows -or $script:runAsRoot) -ForEach @(
         @{ Case = 'without -Force'; Force = $false }, @{ Case = 'even with -Force'; Force = $true }
     ) {
         $dir = [System.IO.Path]::Combine($TestDrive, "unlistable-$Force")
@@ -173,7 +179,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
 
         # The owner checked is the link's target's: a link you own does not make another user's
         # directory yours.
-        It 'refuses a link the current user owns to a directory another user owns' -Skip:((id -u) -eq '0') {
+        It 'refuses a link the current user owns to a directory another user owns' -Skip:$script:runAsRoot {
             $dir = [System.IO.Path]::Combine($TestDrive, 'foreign-target')
             $link = "$dir-own-link"
             $null = New-Item -ItemType Directory -Path $dir
