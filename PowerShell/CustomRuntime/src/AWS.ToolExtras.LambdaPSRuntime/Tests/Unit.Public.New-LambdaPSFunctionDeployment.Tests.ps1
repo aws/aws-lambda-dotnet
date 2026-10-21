@@ -473,8 +473,9 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
         }
     }
 
-    # Lambda does not validate a customer-managed runtime's architecture against the function bound to
-    # it: a mismatch deploys cleanly and fails at invoke. The deployer reads the architecture Lambda
+    # Lambda now rejects a function whose architecture its customer-managed runtime does not support
+    # when the function is created. The deployer checks first, so the error names the runtime alias:
+    # it reads the architecture Lambda
     # reports for the alias and either adopts it (-Architecture omitted) or refuses a mismatch (stated).
     Context 'architecture' {
         BeforeEach {

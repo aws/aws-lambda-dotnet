@@ -155,9 +155,8 @@ function New-LambdaPSFunctionDeployment {
         x86_64 is used with a warning that the match could not be verified.
 
         When given, it must be one the runtime reports, or the deploy stops before anything is
-        created (ArchitectureMismatch). Lambda does not validate this: an x86_64 function on an
-        arm64 runtime deploys cleanly and then fails at invoke, sometimes as a misleading capacity
-        error.
+        created (ArchitectureMismatch). Lambda now rejects a mismatch when the function is created;
+        the module checks first, so the error names the runtime alias.
     .PARAMETER Timeout
         The function timeout in seconds. Defaults to 30, NOT Lambda's 3-second default, which a
         PowerShell function cannot reliably meet: a warm invoke can take about 2 seconds at 128 MB,
@@ -535,9 +534,9 @@ function New-LambdaPSFunctionDeployment {
         if ($null -ne $keptBinding -and $keptBinding.RuntimeAlias) { $RuntimeAlias = $keptBinding.RuntimeAlias }
         Write-Information "Binding to runtime '$RuntimeName' (arn '$runtimeArn'), alias '$RuntimeAlias'." -Tags 'LambdaPSDeploy'
 
-        # Architecture check (read-only; runs under -WhatIf too). Lambda does not validate a CMR's
-        # architecture against the function's, so a mismatch deploys cleanly and fails at invoke. Resolve
-        # or verify it here, before anything is packaged or created.
+        # Architecture check (read-only; runs under -WhatIf too). Lambda now rejects a mismatch when the
+        # function is created; checking first means the error names the runtime alias. Resolve or verify
+        # it here, before anything is packaged or created.
         $architectureStated = $PSBoundParameters.ContainsKey('Architecture') -or $architectureFromManifest
         # A function bound to the runtime with no alias has nothing to check against; it keeps its
         # architecture, and a stated one is not applied (said in a warning).
@@ -567,7 +566,7 @@ function New-LambdaPSFunctionDeployment {
             }
             Write-Warning ("Lambda reports no architecture for runtime '$RuntimeName' alias '$RuntimeAlias', so " +
                 "the function's architecture ($Architecture) cannot be verified against it. If they differ, " +
-                'the function deploys and then fails at invoke. Check the image the alias points at ' +
+                'Lambda rejects a new function when it is created. Check the image the alias points at ' +
                 "(docker buildx imagetools inspect), and pass the matching -Architecture.")
         }
         elseif ($architectureStated) {

@@ -8,10 +8,9 @@ function Get-LambdaPSRuntimeAliasArchitecture {
         function deploy orchestrator has one mockable point for reading which architecture the
         runtime behind an alias was published for. It binds no AWS SDK assembly directly.
 
-        Lambda does NOT validate the architecture of a customer-managed runtime against the function
-        bound to it: an x86_64 function on an arm64 runtime deploys cleanly and then fails at invoke,
-        sometimes as a misleading capacity error. This read is what lets the deployer catch that
-        before creating anything.
+        Lambda now rejects a function whose architecture the customer-managed runtime does not
+        support when the function is created. This read lets the deployer check first, before
+        creating anything, so the error names the runtime alias.
 
         Returns the alias's Compatibility.Architectures as a string array ('x86_64' and/or 'arm64').
         Lambda fills these in from the runtime version's image manifest, not from what was declared
