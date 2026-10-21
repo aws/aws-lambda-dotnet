@@ -88,6 +88,22 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
         }
     }
 
+    Context 'an image that keeps the base image''s entrypoint (R-Entrypoint)' {
+        It 'fails a <Target> project whose Dockerfile no longer sets the ENTRYPOINT' -ForEach @(@{ Target = 'CMR' }, @{ Target = 'Container' }) {
+            $target = [System.IO.Path]::Combine($TestDrive, "no-entrypoint-$Target")
+            if ($Target -eq 'CMR') { $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' }
+            else { $null = New-LambdaPSFunctionProject -Path $target -Handler handler -Target Container -PowerShellVersion '7.4' }
+            $dockerfile = [System.IO.Path]::Combine($target, 'Dockerfile')
+            [System.IO.File]::WriteAllText($dockerfile, ([System.IO.File]::ReadAllText($dockerfile) -replace '(?m)^ENTRYPOINT .*\n', ''))
+
+            $errors = @()
+            $findings = Test-LambdaPSRuntimeProject -Path $target -ErrorAction SilentlyContinue -ErrorVariable errors
+            @($findings | Where-Object { -not $_.Passed }).RuleId | Should -Be @('R-Entrypoint')
+            @($errors.FullyQualifiedErrorId) | Should -Be @('R-Entrypoint,Test-LambdaPSRuntimeProject')
+            Test-LambdaPSRuntimeProject -Path $target -Quiet | Should -BeFalse
+        }
+    }
+
     Context 'a container-free bootstrap missing invariant globalization' {
         It 'flags a Layer bootstrap that does not export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT (R-Globalization)' {
             $findings = Test-LambdaPSRuntimeProject -Path $script:fixturePath['noinvariant'] -Target Layer -ErrorAction SilentlyContinue
@@ -243,8 +259,8 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         It 'still returns every finding alongside the errors' {
             $findings = Test-LambdaPSRuntimeProject -Path $script:fixturePath['missingEnv'] -ErrorAction SilentlyContinue
 
-            # All seven rules are reported, not just the failures.
-            $findings.Count | Should -Be 7
+            # All eight rules are reported, not just the failures.
+            $findings.Count | Should -Be 8
         }
 
         It 'halts a script under -ErrorAction Stop' {
@@ -312,7 +328,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $finding.Passed | Should -BeFalse
             $finding.Severity | Should -Be 'Error'
             $errors[0].Exception.Message | Should -BeLike '`[R-LineEndings`] *'
-            $findings.Count | Should -Be 7
+            $findings.Count | Should -Be 8
         }
 
         It 'passes the scaffolded bootstrap' {
@@ -402,7 +418,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $errors = @()
             $findings = @($dir, $good | Test-LambdaPSRuntimeProject -ErrorVariable errors -ErrorAction SilentlyContinue)
             @($errors.FullyQualifiedErrorId) | Should -Be @('BootstrapNotFound,Test-LambdaPSRuntimeProject')
-            $findings.Count | Should -Be 7
+            $findings.Count | Should -Be 8
             $findings | ForEach-Object { $_.Path | Should -Be $good }
         }
     }
@@ -762,7 +778,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             if ($Target -in 'CMR', 'Layer') { $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4' -Target $Target }
             else { $null = New-LambdaPSFunctionProject -Path $dir -Handler 'handler' -PowerShellVersion '7.4' -Target $Target }
             $findings = @(Test-LambdaPSRuntimeProject -Path $dir -WarningVariable warnings)
-            @($findings.RuleId) | Should -Be @('R-RuntimePath', 'R-Env-Path', 'R-Env-LdLibraryPath', 'R-ReservedWrite', 'R-Globalization', 'R-LineEndings', 'R-Encoding')
+            @($findings.RuleId) | Should -Be @('R-RuntimePath', 'R-Env-Path', 'R-Env-LdLibraryPath', 'R-ReservedWrite', 'R-Globalization', 'R-LineEndings', 'R-Encoding', 'R-Entrypoint')
             @($findings | Where-Object { -not $_.Passed -or $_.Unverified }) | Should -BeNullOrEmpty
             @($warnings) | Should -BeNullOrEmpty
         }
@@ -945,7 +961,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         }
 
         It 'binds objects with a Path property' {
-            @([pscustomobject]@{ Path = $script:pipeA }, [pscustomobject]@{ Path = $script:pipeB } | Test-LambdaPSRuntimeProject).Count | Should -Be 14
+            @([pscustomobject]@{ Path = $script:pipeA }, [pscustomobject]@{ Path = $script:pipeB } | Test-LambdaPSRuntimeProject).Count | Should -Be 16
         }
 
         It 'returns ONE boolean under -Quiet for several piped projects, $true only if all passed' {
@@ -1022,10 +1038,10 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $errors = @()
             $findings = @(Get-ChildItem -LiteralPath $root -Directory | Sort-Object Name |
                     Test-LambdaPSRuntimeProject -ErrorVariable errors -ErrorAction SilentlyContinue)
-            $findings.Count | Should -Be 21
+            $findings.Count | Should -Be 24
             $byPath = @($findings | Group-Object Path)
             @($byPath.Name) | Should -Be @($layer, $selfContained, $container)
-            $byPath | ForEach-Object { $_.Count | Should -Be 7 -Because $_.Name }
+            $byPath | ForEach-Object { $_.Count | Should -Be 8 -Because $_.Name }
             $failed = @($findings | Where-Object { -not $_.Passed })
             @($failed | ForEach-Object { "$($_.RuleId) $($_.Path)" }) | Should -Be @("R-Globalization $selfContained")
             @($errors | ForEach-Object { "$($_.FullyQualifiedErrorId) $($_.TargetObject)" }) |
@@ -1038,7 +1054,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @($errors.FullyQualifiedErrorId) | Should -Be @('ProjectNotFound,Test-LambdaPSRuntimeProject')
             $errors[0].TargetObject | Should -Be 'Env:'
             $errors[0].Exception.Message | Should -BeLike '*provider*'
-            $findings.Count | Should -Be 7
+            $findings.Count | Should -Be 8
             $findings | ForEach-Object { $_.Path | Should -Be $script:pipeA }
             @('Env:', $script:pipeA | Test-LambdaPSRuntimeProject -Quiet) | Should -Be @($false)
         }

@@ -371,6 +371,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
         foreach ($rel in @(
                 'Dockerfile',
                 'bootstrap',
+                'lambda-entrypoint.sh',
                 'handler.ps1',
                 'PowerShellLambdaContext.cs',
                 'lambdaps-runtime.json',
@@ -398,6 +399,16 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'CMD \[ "handler\.ps1" \]'
         $dockerfile | Should -Match '(?m)^COPY \. /var/task$'
+    }
+
+    # Lambda runs the ENTRYPOINT with CMD as its argument; the entrypoint makes that the handler.
+    It 'keeps the runtime image''s ENTRYPOINT, which takes CMD as the handler, and removes the runtime files from /var/task' {
+        $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-entrypoint')
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
+        @([regex]::Matches($dockerfile, '(?m)^ENTRYPOINT .*$').Value) | Should -Be @('ENTRYPOINT [ "/var/runtime/lambda-entrypoint.sh" ]')
+        $dockerfile.IndexOf('ENTRYPOINT [') | Should -BeLessThan $dockerfile.IndexOf('CMD [ "handler.ps1" ]')
+        $dockerfile | Should -Match '(?m)^RUN rm -rf .*/var/task/lambda-entrypoint\.sh .*/var/task/bootstrap '
     }
 
     # The whole project goes into /var/task, so a handler can use a script or data file beside it.

@@ -4,7 +4,8 @@ This is a buildable PowerShell function packaged as a container image, and it is
 holds a provided:al2023 `Dockerfile` that installs pwsh (on linux/amd64 from the Microsoft
 GPG-signed RPM; on linux/arm64 from the official release tarball, verified against a pinned SHA256),
 the handler `handler.ps1`, the `bootstrap` that starts the Runtime API event loop in
-`runtime.ps1`, `PowerShellLambdaContext.cs`,
+`runtime.ps1`, the image's entrypoint `lambda-entrypoint.sh` (it sets the handler from the image's
+`CMD` and runs the `bootstrap`), `PowerShellLambdaContext.cs`,
 and the `pwsh-runtime` helper modules under `modules/`.
 
 ## Customize

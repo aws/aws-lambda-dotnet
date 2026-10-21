@@ -4,12 +4,15 @@ This is a complete, buildable PowerShell runtime image project, and it is yours 
 provided:al2023 `Dockerfile` that installs pwsh (on linux/amd64 from the Microsoft GPG-signed RPM;
 on linux/arm64 from the official release tarball, verified against a pinned SHA256) and relocates the
 interpreter into `/var/runtime/powershell`, the `bootstrap` that starts the Runtime API event
-loop in `runtime.ps1`, `PowerShellLambdaContext.cs` (precompiled to a DLL during the image build), and the
+loop in `runtime.ps1`, the image's entrypoint `lambda-entrypoint.sh` (it sets the handler and runs the
+`bootstrap`), `PowerShellLambdaContext.cs` (precompiled to a DLL during the image build), and the
 `pwsh-runtime` helper modules under `modules/`.
 
 ## Customize
 
-- Edit the `Dockerfile` to add native OS dependencies (extra `dnf install` lines, etc.).
+- Edit the `Dockerfile` to add native OS dependencies (extra `dnf install` lines, etc.). Keep its
+  `ENTRYPOINT`: Lambda runs it, and the base image's own `/lambda-entrypoint.sh` exits (status 142)
+  when it is started without a handler argument, as a customer-managed runtime is.
 - Drop default modules your functions should always see into `modules/`.
 - The interpreter version is baked into the `Dockerfile` (`ARG PWSH_VERSION=__PWSH_VERSION__`).
 - To make rebuilds reproducible, pin the base image by digest: `FROM public.ecr.aws/lambda/provided:al2023@sha256:<digest>`

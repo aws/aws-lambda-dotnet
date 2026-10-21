@@ -71,17 +71,23 @@ RUN /var/runtime/powershell/pwsh -noprofile -c \
  && test -f /var/runtime/PowerShellLambdaContext.dll \
  && echo 'LambdaContext.dll built OK'
 
-# 3. Lay down the runtime: bootstrap, runtime.ps1 (the Runtime API event loop) and the helper
-#    modules, under /var/runtime. Copying modules/ wholesale (incl. Private/) lets
+# 3. Lay down the runtime: the entrypoint, bootstrap, runtime.ps1 (the Runtime API event loop)
+#    and the helper modules, under /var/runtime. Copying modules/ wholesale (incl. Private/) lets
 #    pwsh-runtime.psm1 dot-source the private functions at load, so no build-time
 #    merge is needed. Modules you add go in ./modules too, so they land in
 #    /var/runtime/modules (on PSModulePath). The bootstrap is an sh wrapper that execs
-#    pwsh on runtime.ps1; it is executed directly, so a leading UTF-8 byte order mark
-#    and CRLF line endings (an edit on Windows) are stripped.
+#    pwsh on runtime.ps1, and lambda-entrypoint.sh one that sets the handler and execs the
+#    bootstrap; both are executed directly, so a leading UTF-8 byte order mark and CRLF line
+#    endings (an edit on Windows) are stripped.
+COPY --chmod=755 lambda-entrypoint.sh /var/runtime/lambda-entrypoint.sh
 COPY --chmod=755 bootstrap     /var/runtime/bootstrap
 COPY runtime.ps1               /var/runtime/runtime.ps1
 COPY modules                   /var/runtime/modules
-RUN sed -i -e '1s/^\xEF\xBB\xBF//' -e 's/\r$//' /var/runtime/bootstrap
+RUN sed -i -e '1s/^\xEF\xBB\xBF//' -e 's/\r$//' /var/runtime/lambda-entrypoint.sh /var/runtime/bootstrap
 
-# Published as a customer-managed runtime, the image's ENTRYPOINT, CMD and environment
-# variables are ignored: /var/runtime/bootstrap is the contract.
+# 4. Lambda runs the image's ENTRYPOINT, for a customer-managed runtime as for a function image.
+#    The base image's /lambda-entrypoint.sh exits (status 142) unless it is given the handler as
+#    its first argument, which a customer-managed runtime is not, so the image uses its own: it
+#    takes the handler from its first argument when there is one, else from the _HANDLER Lambda
+#    sets, and execs /var/runtime/bootstrap.
+ENTRYPOINT [ "/var/runtime/lambda-entrypoint.sh" ]

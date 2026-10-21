@@ -3,8 +3,9 @@ function Test-LambdaPSRuntimeProject {
     .SYNOPSIS
         Lints a PowerShell Lambda runtime project against its deployment-target constraints.
     .DESCRIPTION
-        Reads the bootstrap of a scaffolded project and evaluates it against the custom-runtime
-        constraints. The runtime-path rule (R-RuntimePath) is target-specific:
+        Reads the bootstrap of a scaffolded project, and for an image target its Dockerfile, and
+        evaluates them against the custom-runtime constraints. The runtime-path rule (R-RuntimePath)
+        is target-specific:
 
           - CMR (runtime image): the bootstrap must reference /var/runtime (the runtime image path).
           - Layer: the bootstrap must reference /opt (the layer mount) and must not reference
@@ -19,6 +20,15 @@ function Test-LambdaPSRuntimeProject {
         DOTNET_SYSTEM_GLOBALIZATION_INVARIANT for pwsh (export it, or set it on the pwsh command) or
         pwsh aborts at startup. CMR and Container install libicu into the image, so the rule is not
         applicable there.
+
+        The image targets add R-Entrypoint: Lambda runs the image's ENTRYPOINT, and provided.al2023's
+        /lambda-entrypoint.sh, which an image that sets none keeps, exits with status 142 when it is
+        started without a handler argument, as a customer-managed runtime is. The rule reads the
+        Dockerfile's final stage: it passes for the scaffold's ENTRYPOINT [
+        "/var/runtime/lambda-entrypoint.sh" ], fails for no ENTRYPOINT on a public.ecr.aws/lambda/provided
+        base or one that runs /lambda-entrypoint.sh, and is unverified for any other ENTRYPOINT or base
+        image. A project without a Dockerfile passes it, since there is no image to check; the rule is
+        not applicable to Layer and SelfContainedZip.
 
         The remaining rules are target-agnostic: the bootstrap must resolve pwsh and its libraries
         without image ENV (R-Env-Path, R-Env-LdLibraryPath: export PATH and LD_LIBRARY_PATH or invoke
@@ -245,7 +255,7 @@ function Test-LambdaPSRuntimeProject {
                 return
             }
 
-            # The rules check the parsed bootstrap only; each finding is rebuilt here with the
+            # The rules check the parsed bootstrap, and R-Entrypoint the Dockerfile; each finding is rebuilt here with the
             # project's full path, so findings from several piped projects can be told apart.
             $ruleFindings = @(
                 Test-LambdaPSBootstrapRuntimePath -Bootstrap $bootstrap -Target $effectiveTarget
@@ -254,6 +264,7 @@ function Test-LambdaPSRuntimeProject {
                 Test-LambdaPSBootstrapGlobalization -Bootstrap $bootstrap -Target $effectiveTarget
                 Test-LambdaPSBootstrapLineEnding -Bootstrap $bootstrap
                 Test-LambdaPSBootstrapEncoding -Bootstrap $bootstrap
+                Test-LambdaPSImageEntrypoint -Path ([System.IO.Path]::Combine($projectPath, 'Dockerfile')) -Target $effectiveTarget
             )
             # Unverified: a rule the bootstrap's shape kept from being checked. It passes, as a
             # warning, unless -UnverifiedAsFailure makes it an error.

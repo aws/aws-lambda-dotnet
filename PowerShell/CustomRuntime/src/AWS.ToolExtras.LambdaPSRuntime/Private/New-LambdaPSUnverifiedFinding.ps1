@@ -16,6 +16,9 @@ function New-LambdaPSUnverifiedFinding {
         names them.
     .PARAMETER Check
         What to check by hand, completing "Check by hand that ...".
+    .PARAMETER Subject
+        What uses the constructs, completing "Not verified: <subject> uses ...". Defaults to 'the
+        bootstrap'; R-Entrypoint passes 'the Dockerfile'.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.Finding
     .EXAMPLE
@@ -38,10 +41,14 @@ function New-LambdaPSUnverifiedFinding {
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
-        [string]$Check
+        [string]$Check,
+
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$Subject = 'the bootstrap'
     )
 
-    $finding = New-LambdaPSFinding -RuleId $RuleId -Passed $true -Message "Not verified: the bootstrap uses $($Construct -join '; '). This check does not evaluate that; check by hand that $Check"
+    $finding = New-LambdaPSFinding -RuleId $RuleId -Passed $true -Message "Not verified: $Subject uses $($Construct -join '; '). This check does not evaluate that; check by hand that $Check"
     $finding.Severity = 'Warning'
     Add-Member -InputObject $finding -NotePropertyName Unverified -NotePropertyValue $true
     $finding

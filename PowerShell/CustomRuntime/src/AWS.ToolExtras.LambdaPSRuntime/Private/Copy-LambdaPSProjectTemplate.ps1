@@ -15,8 +15,9 @@ function Copy-LambdaPSProjectTemplate {
         __PWSH_ARM64_SHA256__ token (the CMR and Container Dockerfiles) is replaced with the module's pinned SHA256 of that
         version's linux-arm64 release tarball; if none is pinned, the token is left in place (so an
         arm64 build fails closed while amd64 still builds) and a warning is written. All other
-        content is copied as text unchanged, except that the bootstrap is written with LF line endings
-        and each -Token is replaced with its value. Every placeholder is replaced in one pass, so a
+        content is copied as text unchanged, except that the bootstrap and lambda-entrypoint.sh (the
+        image's entrypoint) are written with LF line endings and as executable, and each -Token is
+        replaced with its value. Every placeholder is replaced in one pass, so a
         value written in is never read as a placeholder. Every file is rendered first and then written
         under ONE ShouldProcess for the whole project, so -WhatIf reports a single line (the file count
         and the destination) without touching disk, and -Confirm asks once. Returns the absolute paths
@@ -117,6 +118,8 @@ function Copy-LambdaPSProjectTemplate {
     $encoding = [System.Text.UTF8Encoding]::new($false)
     $rendered = [ordered]@{}
     $warnedArm64Hash = $false
+    # The files the kernel executes directly: written with LF line endings and as executable.
+    $executableFile = @('bootstrap', 'lambda-entrypoint.sh')
 
     # Merge the roots by relative path first, so a path carried by two roots is written once, from
     # the later root. A '<name>.append' file is not written itself: its text is added to the end of
@@ -209,10 +212,11 @@ function Copy-LambdaPSProjectTemplate {
         $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) $values[$match.Value] })
         # Everything else is copied unchanged.
 
-        # The bootstrap is executed directly by the kernel on Linux, so it must be LF. .gitattributes
-        # forces that on checkout, but a module installed from a CRLF source (or a hand-copied template)
-        # would otherwise scaffold a bootstrap that fails with "bad interpreter".
-        if ($file.Name -eq 'bootstrap') {
+        # The bootstrap and the image's lambda-entrypoint.sh are executed directly by the kernel on
+        # Linux, so they must be LF. .gitattributes forces that on checkout, but a module installed
+        # from a CRLF source (or a hand-copied template) would otherwise scaffold one that fails with
+        # "bad interpreter".
+        if ($executableFile -ccontains $file.Name) {
             $text = $text.Replace("`r`n", "`n")
         }
 
@@ -240,9 +244,10 @@ function Copy-LambdaPSProjectTemplate {
                 $null = New-Item -ItemType Directory -Path $directory -Force -WhatIf:$false -Confirm:$false
             }
             [System.IO.File]::WriteAllText($entry.Key, $entry.Value, $encoding)
-            # The kernel runs the bootstrap directly, so it is executable (755) like the template. It is
-            # set rather than copied: a module installed from a .nupkg keeps no Unix modes.
-            if (-not $IsWindows -and [System.IO.Path]::GetFileName($entry.Key) -ceq 'bootstrap') {
+            # The kernel runs the bootstrap and lambda-entrypoint.sh directly, so they are executable
+            # (755) like the templates. It is set rather than copied: a module installed from a .nupkg
+            # keeps no Unix modes.
+            if (-not $IsWindows -and $executableFile -ccontains [System.IO.Path]::GetFileName($entry.Key)) {
                 [System.IO.File]::SetUnixFileMode($entry.Key, [System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute')
             }
             $written.Add($entry.Key)

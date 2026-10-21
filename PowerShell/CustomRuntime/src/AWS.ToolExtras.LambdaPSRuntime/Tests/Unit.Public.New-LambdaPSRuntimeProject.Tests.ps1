@@ -24,6 +24,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         $expected = @(
             'Dockerfile'
             'bootstrap'
+            'lambda-entrypoint.sh'
             'PowerShellLambdaContext.cs'
             'lambdaps-runtime.json'
             [System.IO.Path]::Combine('modules', 'pwsh-runtime.psd1')
@@ -144,16 +145,18 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         $install[0] | Should -Match 'rm -rf /opt/microsoft'
     }
 
-    # Runs the Dockerfile's own sed line (GNU sed, as in the image) on a copy of the bootstrap.
-    It 'strips a leading UTF-8 byte order mark and CRLF from the bootstrap in the image' -Skip:(-not $IsLinux) {
-        $target = [System.IO.Path]::Combine($TestDrive, 'rt-crlf')
+    # Runs the Dockerfile's own sed line (GNU sed, as in the image) on a copy of each file it repairs.
+    It 'strips a leading UTF-8 byte order mark and CRLF from <File> in the image' -Skip:(-not $IsLinux) -ForEach @(
+        @{ File = 'lambda-entrypoint.sh' }, @{ File = 'bootstrap' }
+    ) {
+        $target = [System.IO.Path]::Combine($TestDrive, "rt-crlf-$File")
         $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
-        $run = [regex]::Match($dockerfile, '(?m)^RUN (sed -i .*) /var/runtime/bootstrap$')
-        $run.Success | Should -BeTrue -Because 'the Dockerfile repairs the bootstrap with sed'
+        $run = [regex]::Match($dockerfile, '(?m)^RUN (sed -i (?:-e ''[^'']*'' )+)/var/runtime/lambda-entrypoint\.sh /var/runtime/bootstrap$')
+        $run.Success | Should -BeTrue -Because 'the Dockerfile repairs the entrypoint and the bootstrap with sed'
 
-        $original = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($target, 'bootstrap'))
-        $copy = [System.IO.Path]::Combine($TestDrive, 'rt-crlf-bootstrap')
+        $original = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($target, $File))
+        $copy = [System.IO.Path]::Combine($TestDrive, "rt-crlf-copy-$File")
         [System.IO.File]::WriteAllText($copy, $original.Replace("`n", "`r`n"), [System.Text.UTF8Encoding]::new($true))
         & /bin/sh -c "$($run.Groups[1].Value) '$copy'"
         $LASTEXITCODE | Should -Be 0
@@ -161,6 +164,19 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         $bytes = [System.IO.File]::ReadAllBytes($copy)
         [System.Text.Encoding]::ASCII.GetString($bytes, 0, 2) | Should -Be '#!'
         [System.Text.Encoding]::UTF8.GetString($bytes) | Should -BeExactly $original
+    }
+
+    # Lambda runs the image's ENTRYPOINT; the base image's /lambda-entrypoint.sh exits without a
+    # handler argument, which a customer-managed runtime is not given.
+    It 'sets the image ENTRYPOINT to its own executable lambda-entrypoint.sh' {
+        $target = [System.IO.Path]::Combine($TestDrive, 'rt-entrypoint')
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
+        $dockerfile | Should -Match '(?m)^ENTRYPOINT \[ "/var/runtime/lambda-entrypoint\.sh" \]$'
+        $dockerfile | Should -Match '(?m)^COPY --chmod=755 lambda-entrypoint\.sh /var/runtime/lambda-entrypoint\.sh$'
+        $entrypoint = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($target, 'lambda-entrypoint.sh'))
+        $entrypoint | Should -Match '(?m)^exec /var/runtime/bootstrap$'
+        $entrypoint | Should -Not -Match "`r"
     }
 
     # Every target ships the one runtime interface client under Templates/Shared; its behavior is

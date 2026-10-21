@@ -28,18 +28,18 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         @($written | Where-Object { [System.IO.Path]::GetFileName($_) -eq 'both.txt' }).Count | Should -Be 1
     }
 
-    It 'normalizes a CRLF bootstrap to LF' {
-        $source = Join-Path $TestDrive 'crlf-src'
+    It 'normalizes a CRLF <File> to LF' -ForEach @(@{ File = 'bootstrap' }, @{ File = 'lambda-entrypoint.sh' }) {
+        $source = Join-Path $TestDrive "crlf-src-$File"
         $null = New-Item -ItemType Directory -Path $source -Force
-        [System.IO.File]::WriteAllText((Join-Path $source 'bootstrap'), "#!/bin/sh`r`nexec /opt/powershell/pwsh`r`n")
-        $destination = Join-Path $TestDrive 'crlf-out'
+        [System.IO.File]::WriteAllText((Join-Path $source $File), "#!/bin/sh`r`nexec /opt/powershell/pwsh`r`n")
+        $destination = Join-Path $TestDrive "crlf-out-$File"
 
         InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination } {
             param($Source, $Destination)
             $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
         }
 
-        [System.IO.File]::ReadAllText((Join-Path $destination 'bootstrap')) | Should -Be "#!/bin/sh`nexec /opt/powershell/pwsh`n"
+        [System.IO.File]::ReadAllText((Join-Path $destination $File)) | Should -Be "#!/bin/sh`nexec /opt/powershell/pwsh`n"
     }
 
     It 'adds a later root''s <name>.append to the end of <name> instead of writing it' {
@@ -122,20 +122,21 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         }
     }
 
-    # The kernel runs the bootstrap directly, so a project zipped or built by hand needs it executable.
-    It 'writes the <Target> bootstrap executable, even from a template that is not' -Skip:$IsWindows -ForEach @(
-        @{ Target = 'CMR' }, @{ Target = 'Layer' }
+    # The kernel runs the bootstrap and the image entrypoint directly, so a project zipped or built by
+    # hand needs them executable.
+    It 'writes the <Target> <File> executable, even from a template that is not' -Skip:$IsWindows -ForEach @(
+        @{ Target = 'CMR'; File = 'bootstrap' }, @{ Target = 'Layer'; File = 'bootstrap' }, @{ Target = 'CMR'; File = 'lambda-entrypoint.sh' }
     ) {
-        $source = Join-Path $TestDrive "mode-src-$Target"
+        $source = Join-Path $TestDrive "mode-src-$Target-$File"
         $null = New-Item -ItemType Directory -Path $source -Force
-        Set-Content -LiteralPath (Join-Path $source 'bootstrap') -Value '#!/bin/sh'
-        [System.IO.File]::SetUnixFileMode((Join-Path $source 'bootstrap'), [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
-        $destination = Join-Path $TestDrive "mode-out-$Target"
+        Set-Content -LiteralPath (Join-Path $source $File) -Value '#!/bin/sh'
+        [System.IO.File]::SetUnixFileMode((Join-Path $source $File), [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
+        $destination = Join-Path $TestDrive "mode-out-$Target-$File"
         InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination; Target = $Target } {
             param($Source, $Destination, $Target)
             $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -Target $Target -PowerShellVersion '7.4' -PwshVersion '7.4.20'
         }
-        (Get-Item -LiteralPath (Join-Path $destination 'bootstrap')).UnixFileMode |
+        (Get-Item -LiteralPath (Join-Path $destination $File)).UnixFileMode |
             Should -Be ([System.IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute')
     }
 }
