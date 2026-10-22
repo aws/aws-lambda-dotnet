@@ -85,7 +85,7 @@ function Publish-LambdaPSFunction {
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.PublishedFunction
     .EXAMPLE
-        Publish-LambdaPSFunction -FunctionName hello -Handler handler.ps1 -Role arn:...:role/r -RuntimeArn arn:...:runtime/my-ps -RuntimeAlias production -Architecture x86_64 -Timeout 30 -MemorySize 512 -ZipPath ./hello.zip -Region us-east-1
+        Publish-LambdaPSFunction -FunctionName hello -Handler handler.ps1 -Role arn:...:role/r -RuntimeArn arn:...:runtime/my-ps -RuntimeAlias default -Architecture x86_64 -Timeout 30 -MemorySize 512 -ZipPath ./hello.zip -Region us-east-1
 
         Creates the function bound to the runtime alias, or updates its code and configuration if it
         already exists.

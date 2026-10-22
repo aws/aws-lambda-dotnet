@@ -24,7 +24,7 @@ function Get-LambdaPSRuntimeAliasArchitecture {
     .PARAMETER RuntimeName
         The customer-managed runtime name the alias belongs to.
     .PARAMETER RuntimeAlias
-        The runtime alias name (for example 'production').
+        The runtime alias name (for example 'default').
     .PARAMETER Region
         The AWS region the runtime lives in.
     .PARAMETER CredentialParameter
@@ -33,9 +33,9 @@ function Get-LambdaPSRuntimeAliasArchitecture {
     .OUTPUTS
         System.String[]
     .EXAMPLE
-        Get-LambdaPSRuntimeAliasArchitecture -RuntimeName my-ps -RuntimeAlias production -Region us-east-1
+        Get-LambdaPSRuntimeAliasArchitecture -RuntimeName my-ps -RuntimeAlias default -Region us-east-1
 
-        Returns 'arm64' for a runtime whose production alias points at an arm64 version.
+        Returns 'arm64' for a runtime whose default alias points at an arm64 version.
     #>
     [CmdletBinding()]
     [OutputType([string[]])]

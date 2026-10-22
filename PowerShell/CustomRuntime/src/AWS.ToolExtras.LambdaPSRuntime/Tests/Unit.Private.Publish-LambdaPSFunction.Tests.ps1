@@ -42,7 +42,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -53,7 +53,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Publish-LMFunction' -Times 1 -Exactly -ParameterFilter {
                 $Runtime -eq 'custom' -and
                 $RuntimeConfig_RuntimeArn -eq 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps' -and
-                $RuntimeConfig_RuntimeAlias -eq 'production' -and
+                $RuntimeConfig_RuntimeAlias -eq 'default' -and
                 $Handler -eq 'handler.ps1' -and
                 $Timeout -eq 30 -and $MemorySize -eq 512
             }
@@ -70,7 +70,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             # The existing function is bound to the requested runtime and alias unless a test says otherwise.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists')
             }
@@ -83,7 +83,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'other.ps1::Handle'; Role = 'arn:new-role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -95,7 +95,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 $FunctionName -eq 'hello' -and $Handler -eq 'other.ps1::Handle' -and $Role -eq 'arn:new-role' -and
                 $Timeout -eq 60 -and $MemorySize -eq 1024 -and
                 $RuntimeConfig_RuntimeArn -eq 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps' -and
-                $RuntimeConfig_RuntimeAlias -eq 'production' -and $Region -eq 'us-east-1' -and
+                $RuntimeConfig_RuntimeAlias -eq 'default' -and $Region -eq 'us-east-1' -and
                 -not $PSBoundParameters.ContainsKey('Environment_Variable') -and -not $PSBoundParameters.ContainsKey('Environment_IsVariablesSet')
             }
         }
@@ -118,7 +118,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:new-role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'arm64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -150,7 +150,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'; UpdateSetting = @('Timeout')
             }
@@ -176,14 +176,14 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
                 [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'Failed' } else { 'Successful' })
                     LastUpdateStatusReason = 'code update failed'
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { $script:codeUpdated = $true; [PSCustomObject]@{ FunctionArn = 'arn:f' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { }
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -206,14 +206,14 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
                 [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = 'old.ps1'; Architectures = @('x86_64')
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { throw [System.InvalidOperationException]::new('Rate exceeded') }
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'new.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'; UpdateSetting = @('Handler')
             }
@@ -236,7 +236,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             $script:codeUpdated = $false
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
                 [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'InProgress' } else { 'Successful' })
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { $script:codeUpdated = $true; [PSCustomObject]@{ FunctionArn = 'arn:f' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { }
@@ -244,7 +244,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -267,7 +267,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             # The existing function is bound to the requested runtime and alias unless a test says otherwise.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             # The code update answers with the configuration from before the configuration update.
             Mock 'Update-LMFunctionCode' -MockWith {
@@ -281,7 +281,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 60; MemorySize = 1024
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -307,20 +307,20 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Get-LMFunctionConfiguration' -MockWith {
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
             }
             Mock 'Update-LMFunctionCode' -MockWith {
                 [PSCustomObject]@{ FunctionArn = 'arn:f'; Architectures = @('arm64')
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
             }
             Mock 'Update-LMFunctionConfiguration' -MockWith {
                 [PSCustomObject]@{ FunctionArn = 'arn:f'; Architectures = @('arm64')
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
             }
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'arm64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -350,12 +350,12 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             }
             Mock 'Update-LMFunctionConfiguration' -MockWith {
                 [PSCustomObject]@{ FunctionArn = 'arn:f'; Architectures = @('arm64')
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'production' } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'default' } }
             }
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'default'
                 Architecture = 'arm64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -363,11 +363,11 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             Should -Invoke 'Update-LMFunctionCode' -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'arm64' }
             Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter {
-                $RuntimeConfig_RuntimeArn -eq 'arn:runtime/new-rt' -and $RuntimeConfig_RuntimeAlias -eq 'production'
+                $RuntimeConfig_RuntimeArn -eq 'arn:runtime/new-rt' -and $RuntimeConfig_RuntimeAlias -eq 'default'
             }
             $result.Architecture | Should -Be 'arm64'
             $result.RuntimeArn | Should -Be 'arn:runtime/new-rt'
-            $result.RuntimeAlias | Should -Be 'production'
+            $result.RuntimeAlias | Should -Be 'default'
         }
     }
 
@@ -397,7 +397,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:runtime/new-rt'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'; UpdateSetting = @('RuntimeAlias')
             }
@@ -418,7 +418,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             # The existing function is bound to the requested runtime and alias unless a test says otherwise.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             Mock 'Publish-LMFunction' -MockWith {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists')
             }
@@ -426,7 +426,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'renamed.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -449,7 +449,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -465,7 +465,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         BeforeEach {
             $script:splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -504,7 +504,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
                 function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
                 function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
                 Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
                 Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
                 Mock 'Update-LMFunctionConfiguration' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
@@ -532,7 +532,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
             # The existing function is bound to the requested runtime and alias unless a test says otherwise.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
             # The message deliberately contains the word 'exists': a permission failure must surface
             # even when its wording looks like an already-exists condition.
             Mock 'Publish-LMFunction' -MockWith {
@@ -544,7 +544,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -560,7 +560,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         BeforeEach {
             $script:splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -611,7 +611,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                     # progress, read 3 settled, and read 4 follows the configuration update.
                     $status = if ($script:reads -eq 2) { 'InProgress' } else { 'Successful' }
                     [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $status
-                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
                 }
                 Mock 'Start-Sleep' -MockWith { }
 
@@ -690,7 +690,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                     # Read 1, before the update, still shows an EARLIER failed update: that must not block.
                     [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Failed'
                         LastUpdateStatusReason = 'Code package is invalid.'; LastUpdateStatusReasonCode = 'InvalidZipFileException'
-                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
                 }
 
                 $err = $null
@@ -725,7 +725,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                     $status = if ($script:reads -le 2) { 'InProgress' } else { 'Successful' }
                     $script:events.Add("read:$status")
                     [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $status
-                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
                 }
                 Mock 'Start-Sleep' -MockWith { }
 
@@ -756,7 +756,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                     $state = if (-not $script:codeUpdated) { 'Inactive' } elseif (++$script:afterUpdate -eq 1) { 'Pending' } else { 'Active' }
                     $script:events.Add("read:$state")
                     [PSCustomObject]@{ State = $state; LastUpdateStatus = 'Successful'
-                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } }
                 }
                 Mock 'Start-Sleep' -MockWith { }
 
@@ -823,7 +823,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'orders'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -853,7 +853,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'orders'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -873,7 +873,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = './missing.zip'; Region = 'us-east-1'
             }
@@ -886,7 +886,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             $splat = @{
                 FunctionName = '   '; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
@@ -905,7 +905,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         @{ ErrorId = 'FunctionStateTimeout'; Exists = $false; Status = @{ State = 'Pending'; LastUpdateStatus = 'InProgress' }; MissingZip = $false }
         @{ ErrorId = 'FunctionNotRuntimeBound'; Exists = $true; Status = @{ State = 'Active'; LastUpdateStatus = 'Successful'; Runtime = 'python3.12' }; MissingZip = $false }
         @{ ErrorId = 'FunctionConfigurationNotApplied'; Exists = $true; MissingZip = $false
-            Status = @{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production' } } }
+            Status = @{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
     ) {
         InModuleScope $script:moduleName -Parameters @{ ErrorId = $ErrorId; Exists = $Exists; Status = $Status; MissingZip = $MissingZip } {
             param($ErrorId, $Exists, $Status, $MissingZip)
@@ -928,7 +928,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             Mock 'Start-Sleep' -MockWith { }
             $splat = @{
                 FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
-                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'production'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
                 Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
                 ZipPath = if ($MissingZip) { [System.IO.Path]::Combine($TestDrive, 'missing.zip') } else { $env:LAMBDAPS_SEAM_TEST_ZIP }
                 Region = 'us-east-1'

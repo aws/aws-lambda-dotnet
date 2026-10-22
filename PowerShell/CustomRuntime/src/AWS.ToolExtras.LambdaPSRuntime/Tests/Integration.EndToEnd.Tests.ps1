@@ -21,7 +21,7 @@
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
 #   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with version v1
-#     and alias production (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
+#     and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
 #     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, and fails listing anything it could not remove. Nothing whose name does
@@ -268,8 +268,8 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         Add-IntegrationResource -Kind 'runtime version v1 of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name 'v1' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        Add-IntegrationResource -Kind 'runtime alias production of' -Name $runtimeName -Remove {
-            Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'production' -Region $region -Force -ErrorAction Stop
+        Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
+            Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -Region $script:Region.ToUpperInvariant() `
             -ProjectPath ([System.IO.Path]::Combine($script:Work, 'cmr')) -Confirm:$false
@@ -297,7 +297,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $before = Get-LMFunctionConfiguration -FunctionName $functionName -Region $script:Region -ErrorAction Stop
         $before.Handler | Should -BeExactly 'handler.ps1'
         $before.RuntimeConfig.RuntimeArn | Should -BeExactly $runtime.RuntimeArn
-        $before.RuntimeConfig.RuntimeAlias | Should -BeExactly 'production'
+        $before.RuntimeConfig.RuntimeAlias | Should -BeExactly 'default'
         $handlerPath = [System.IO.Path]::Combine($project, 'handler.ps1')
         $code = [System.IO.File]::ReadAllText($handlerPath)
         $newCode = $code.Replace('"Hello, $name"', '"Hello again, $name"')
@@ -319,7 +319,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $redeployment.FunctionArn | Should -MatchExactly $inRegion
         $messages = @($warnings | ForEach-Object { [string]$_ })
         @($messages | Where-Object { $_ -clike "manifest.json records ScriptFile 'other.ps1', but function '$functionName' runs handler 'handler.ps1'*" }).Count | Should -Be 1
-        @($messages | Where-Object { $_ -clike "manifest.json records RuntimeAlias 'staging', but function '$functionName' is bound to alias 'production'*" }).Count | Should -Be 1
+        @($messages | Where-Object { $_ -clike "manifest.json records RuntimeAlias 'staging', but function '$functionName' is bound to alias 'default'*" }).Count | Should -Be 1
         $after = Get-LMFunctionConfiguration -FunctionName $functionName -Region $script:Region -ErrorAction Stop
         $after.Handler | Should -BeExactly $before.Handler
         $after.RuntimeConfig.RuntimeArn | Should -BeExactly $before.RuntimeConfig.RuntimeArn

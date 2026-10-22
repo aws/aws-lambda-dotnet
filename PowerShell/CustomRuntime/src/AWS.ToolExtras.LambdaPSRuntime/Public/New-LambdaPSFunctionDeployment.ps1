@@ -93,7 +93,7 @@ function New-LambdaPSFunctionDeployment {
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
         manifest.json records another). Otherwise it defaults to the alias recorded in a scaffolded
-        project's manifest.json, or else 'production', matching New-LambdaPSRuntimeDeployment's default
+        project's manifest.json, or else 'default', matching New-LambdaPSRuntimeDeployment's default
         alias. An alias name is up to 128 ASCII letters, digits, '_', '.' and '-', not starting or
         ending with '.' or '-', as Lambda requires, and is case-sensitive ('Staging' is not 'staging').
         An alias read from manifest.json is checked the same way, and one that does not match is an
@@ -196,7 +196,7 @@ function New-LambdaPSFunctionDeployment {
         New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./handler.ps1 -RuntimeName my-ps -Role arn:aws:iam::111122223333:role/hello-role -Region us-east-1
 
         Packages handler.ps1 (handler defaults to 'handler.ps1') and creates the function bound to the
-        'production' alias of runtime 'my-ps'.
+        'default' alias of runtime 'my-ps'.
     .EXAMPLE
         New-LambdaPSFunctionDeployment -FunctionName hello -ScriptPath ./fn -Handler script.ps1::Invoke -RuntimeName my-ps -RuntimeAlias staging -Role arn:aws:iam::111122223333:role/hello-role -Region us-east-1 -WhatIf
 
@@ -233,7 +233,7 @@ function New-LambdaPSFunctionDeployment {
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
         [ValidatePattern('^[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,126}[A-Za-z0-9_])?\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime alias name (letters, digits, '_', '.' and '-', up to 128 characters, not starting or ending with '.' or '-').")]
-        [string]$RuntimeAlias = 'production',
+        [string]$RuntimeAlias = 'default',
 
         [Parameter(Mandatory)]
         # Options = 'None': ValidatePattern ignores case by default, and an ARN's fixed parts are lowercase.
@@ -528,7 +528,7 @@ function New-LambdaPSFunctionDeployment {
                         "$boundTo. Pass -RuntimeAlias to change it.")
                 }
                 $manifestAliasUsed = $false
-                if (-not $existing.RuntimeAlias) { $RuntimeAlias = 'production' }
+                if (-not $existing.RuntimeAlias) { $RuntimeAlias = 'default' }
             }
         }
         if ($null -ne $keptBinding -and $keptBinding.RuntimeAlias) { $RuntimeAlias = $keptBinding.RuntimeAlias }

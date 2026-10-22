@@ -18,14 +18,14 @@ Describe 'Get-LambdaPSRuntimeAliasArchitecture' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntimeAlias' -MockWith {
-                [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+                [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
             }
 
-            [string[]]$result = Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'production' -Region 'us-east-1'
+            [string[]]$result = Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'default' -Region 'us-east-1'
 
             $result | Should -Be @('arm64')
             Should -Invoke 'Get-LMCRuntimeAlias' -Times 1 -Exactly -ParameterFilter {
-                $RuntimeName -eq 'my-ps' -and $Name -eq 'production' -and $Region -eq 'us-east-1' -and
+                $RuntimeName -eq 'my-ps' -and $Name -eq 'default' -and $Region -eq 'us-east-1' -and
                 $ClientConfig.ClientAppId -eq 'AWS.ToolExtras.LambdaPSRuntime#test'
             }
         }
@@ -34,9 +34,9 @@ Describe 'Get-LambdaPSRuntimeAliasArchitecture' -Tag 'Unit' {
     It 'returns an empty array (not $null) when the service reports no architecture' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
-            Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; Compatibility = $null } }
+            Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; Compatibility = $null } }
 
-            $result = Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'production' -Region 'us-east-1'
+            $result = Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'default' -Region 'us-east-1'
 
             , $result | Should -BeOfType ([string[]])
             $result.Count | Should -Be 0
@@ -67,9 +67,9 @@ Describe 'Get-LambdaPSRuntimeAliasArchitecture' -Tag 'Unit' {
             $script:aliasErrorText = $Text
             Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new($script:aliasErrorText) }
 
-            $err = { Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'production' -Region 'us-east-1' } |
+            $err = { Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'default' -Region 'us-east-1' } |
                 Should -Throw -ErrorId 'RuntimeAliasCheckFailed' -PassThru
-            $err.Exception.Message | Should -BeExactly ("Could not read alias 'production' of runtime 'my-ps' in region 'us-east-1' to check " +
+            $err.Exception.Message | Should -BeExactly ("Could not read alias 'default' of runtime 'my-ps' in region 'us-east-1' to check " +
                 "its architecture$Detail Nothing was packaged or created.")
             $err.Exception.InnerException | Should -BeOfType ([LambdaPSTests.Fakes.AccessDeniedException])
         }
@@ -94,7 +94,7 @@ Describe 'Get-LambdaPSRuntimeAliasArchitecture' -Tag 'Unit' {
             }
             $collected = $null
             $err = $null
-            try { Invoke-LambdaPSTestCaller -Call { Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'production' -Region 'us-east-1' } -ErrorVariable collected } catch { $err = $_ }
+            try { Invoke-LambdaPSTestCaller -Call { Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'default' -Region 'us-east-1' } -ErrorVariable collected } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be "$ErrorId,Invoke-LambdaPSTestCaller"
             $ids = @($collected | ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.FullyQualifiedErrorId } else { $_.ErrorRecord.FullyQualifiedErrorId } })

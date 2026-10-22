@@ -96,7 +96,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
 
         $result.Calls | Should -Be @('Scaffold')
         $result.Output | Should -BeLike '*Skipped publishing the runtime version, because the build and push stage was declined*'
-        $result.Output | Should -BeLike '*Skipped pointing alias ''production'' at ''v1''*'
+        $result.Output | Should -BeLike '*Skipped pointing alias ''default'' at ''v1''*'
     }
 
     It 'skips the alias when the runtime version publish is declined' {
@@ -119,7 +119,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
 
         $result.Calls | Should -Not -Contain 'Publish'
         $result.Calls | Should -Not -Contain 'Alias'
-        $result.Output | Should -BeLike '*Skipped pointing alias ''production'' at ''v1'', because the publish stage was declined*'
+        $result.Output | Should -BeLike '*Skipped pointing alias ''default'' at ''v1'', because the publish stage was declined*'
     }
 }
 

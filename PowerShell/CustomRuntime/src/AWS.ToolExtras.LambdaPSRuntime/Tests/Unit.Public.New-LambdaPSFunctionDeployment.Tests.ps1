@@ -70,7 +70,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $result.PSTypeNames | Should -Contain 'AWS.ToolExtras.LambdaPSRuntime.FunctionDeployment'
             $result.Handler | Should -Be 'handler.ps1'
             $result.RuntimeArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
-            $result.RuntimeAlias | Should -Be 'production'
+            $result.RuntimeAlias | Should -Be 'default'
             $result.FunctionArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function:hello-powershell'
             $result.Updated | Should -BeFalse
             Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -168,8 +168,8 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $result.RuntimeAlias | Should -Be 'staging'
             $result.Architecture | Should -Be 'arm64'
 
-            $override = New-LambdaPSFunctionDeployment @splat -RuntimeAlias production -Architecture x86_64
-            $override.RuntimeAlias | Should -Be 'production'
+            $override = New-LambdaPSFunctionDeployment @splat -RuntimeAlias default -Architecture x86_64
+            $override.RuntimeAlias | Should -Be 'default'
             $override.Architecture | Should -Be 'x86_64'
         }
 
@@ -644,7 +644,7 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith {
                 $PSCmdlet.ThrowTerminatingError([System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new('Could not read alias'), 'RuntimeAliasCheckFailed',
-                        [System.Management.Automation.ErrorCategory]::ReadError, 'my-ps/production'))
+                        [System.Management.Automation.ErrorCategory]::ReadError, 'my-ps/default'))
             }
             $splat = @{
                 FunctionName = 'hello'; ProjectPath = $script:handlerFile
@@ -1100,7 +1100,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.Timeout | Should -Be 300
     }
 
-    It 'checks the architecture against the alias the function keeps, which need not be production' {
+    It 'checks the architecture against the alias the function keeps, which need not be the default' {
         Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith {
             if ($RuntimeAlias -ne 'staging') { throw 'only the staging alias exists' }
             , [string[]]@('x86_64')
@@ -1264,7 +1264,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $null = New-Item -ItemType Directory -Path $project -Force
         Set-Content -LiteralPath (Join-Path $project 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
         Set-Content -LiteralPath (Join-Path $project 'tuned.ps1') -Value 'param($LambdaInput, $LambdaContext)'
-        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"handler.ps1","ScriptFile":"handler.ps1","RuntimeAlias":"production"}'
+        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"handler.ps1","ScriptFile":"handler.ps1","RuntimeAlias":"default"}'
         $script:tuned.Handler = 'tuned.ps1'
         $script:tuned.RuntimeAlias = 'second'
         $splat = $script:redeploy.Clone()
@@ -1275,14 +1275,14 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.Handler | Should -Be 'tuned.ps1'
         $result.RuntimeAlias | Should -Be 'second'
         ($warnings -join ' ') | Should -BeLike "*ScriptFile 'handler.ps1'*keeps its handler*"
-        ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'production'*keeps that alias*"
+        ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'default'*keeps that alias*"
     }
 
     It 'says the function is bound with no alias when manifest.json names one' {
         $project = Join-Path $TestDrive 'tuned-no-alias'
         $null = New-Item -ItemType Directory -Path $project -Force
         Set-Content -LiteralPath (Join-Path $project 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
-        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"handler.ps1","ScriptFile":"handler.ps1","RuntimeAlias":"production"}'
+        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"handler.ps1","ScriptFile":"handler.ps1","RuntimeAlias":"default"}'
         $script:tuned.Handler = 'handler.ps1'
         $script:tuned.RuntimeAlias = ''
         $splat = $script:redeploy.Clone()
@@ -1290,7 +1290,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
 
         $null = New-LambdaPSFunctionDeployment @splat -WarningVariable warnings -WarningAction SilentlyContinue
 
-        ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'production', but function 'hello' is bound to the runtime with no alias, so it stays that way. Pass -RuntimeAlias to change it.*"
+        ($warnings -join ' ') | Should -BeLike "*RuntimeAlias 'default', but function 'hello' is bound to the runtime with no alias, so it stays that way. Pass -RuntimeAlias to change it.*"
     }
 
     It 'keeps the live handler when the folder has several root scripts and no manifest' {
