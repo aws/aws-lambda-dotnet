@@ -646,7 +646,7 @@ Describe 'New-LambdaPSFunctionProject binding parameters on the template targets
 
         $manifest = Get-Content -LiteralPath ([System.IO.Path]::Combine($projectDir, 'manifest.json')) -Raw | ConvertFrom-Json
         $manifest.Architecture | Should -BeNullOrEmpty
-        $manifest.RuntimeAlias | Should -Be 'production'
+        $manifest.RuntimeAlias | Should -Be 'default'
     }
 
     It 'does not warn when neither is given' {

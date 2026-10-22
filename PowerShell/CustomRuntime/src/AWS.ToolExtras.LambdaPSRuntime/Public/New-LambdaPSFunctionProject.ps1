@@ -60,7 +60,7 @@ function New-LambdaPSFunctionProject {
         handler forms are not scaffolded: set them when you deploy (the function's handler setting).
     .PARAMETER RuntimeAlias
         The runtime alias the function binds to at deploy time (RuntimeBound target). Defaults to
-        'production', the same alias New-LambdaPSRuntimeDeployment creates and
+        'default', the same alias New-LambdaPSRuntimeDeployment creates and
         New-LambdaPSFunctionDeployment binds to. Ignored, with a warning, for the other targets. An
         alias name is up to 128 letters, digits, '_', '.' and '-', not starting or ending with '.' or
         '-', as Lambda requires.
@@ -201,9 +201,9 @@ function New-LambdaPSFunctionProject {
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
         [ValidatePattern('\A[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,126}[A-Za-z0-9_])?\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime alias name (letters, digits, '_', '.' and '-', up to 128 characters, not starting or ending with '.' or '-').")]
-        # 'production' to match New-LambdaPSRuntimeDeployment and New-LambdaPSFunctionDeployment, so the
+        # 'default' to match New-LambdaPSRuntimeDeployment and New-LambdaPSFunctionDeployment, so the
         # alias the scaffolded manifest.json and README name is the one the one-command path creates.
-        [string]$RuntimeAlias = 'production',
+        [string]$RuntimeAlias = 'default',
 
         [Parameter()]
         [ValidateSet('x86_64', 'arm64')]
