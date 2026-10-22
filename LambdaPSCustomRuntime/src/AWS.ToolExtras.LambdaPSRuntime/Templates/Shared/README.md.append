@@ -39,7 +39,10 @@ one of these or to a script file.
 
 The event is converted from JSON before the handler runs. An event with two keys that differ only in
 case (for example `id` and `ID`, as in a query string `?id=1&ID=2` passed on by an HTTP front end)
-cannot be converted, so the invocation fails before the handler is called.
+cannot be converted, so the invocation fails before the handler is called. A string in the event that
+looks like an ISO 8601 date and time becomes a `[datetime]` in the function's time zone (UTC in
+Lambda), so its offset is lost: a handler that returns `2026-10-22T10:00:00+05:00` unchanged sends
+`2026-10-22T05:00:00+00:00`, the same instant written in UTC.
 
 Leave a handler early with `return`. A `break` or `continue` outside a loop of the handler's own fails
 the invocation, or, in the top-level code of a `<script>.ps1::<function>` script or a handler module,
