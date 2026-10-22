@@ -25,7 +25,7 @@ BeforeAll {
     $script:savedEnvironment = @{}
     # The runtime settings are cleared too, so a runner that sets them cannot change what is tested;
     # the child runtimes inherit this process's environment.
-    foreach ($name in 'AWS_LAMBDA_RUNTIME_API', 'AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID', 'POWERSHELL_VERSION',
+    foreach ($name in 'AWS_LAMBDA_RUNTIME_API', 'AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID', 'AWS_LAMBDA_RUNTIME_DEADLINE_MS', 'POWERSHELL_VERSION',
         'POWERSHELL_RUNTIME_JSON_DEPTH', 'POWERSHELL_RUNTIME_VERBOSE') {
         $script:savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
     }
@@ -262,6 +262,23 @@ namespace LambdaPSTests.Fakes {
             $caught = $null
             try { $null = Get-LambdaNextInvocation $client 6>$null } catch { $caught = $_ }
             $caught.Exception.Message | Should -BeExactly 'Lambda Runtime API at 127.0.0.1:9001 could not be reached after 10 attempts; the runtime is exiting. Connection refused'
+        }
+    }
+
+    Context 'Set-LambdaContext' {
+        # Checked before the context is built, so this needs no LambdaContext type in this process.
+        It 'fails, naming the header, when the deadline is <Case>' -ForEach @(
+            @{ Case = 'missing'; Value = $null }
+            @{ Case = 'not a number'; Value = 'soon' }
+            @{ Case = 'zero'; Value = '0' }
+        ) {
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Set-LambdaContext.ps1'))
+            $env:AWS_LAMBDA_RUNTIME_DEADLINE_MS = $Value
+
+            $caught = $null
+            try { $null = Set-LambdaContext } catch { $caught = $_ }
+            $caught.Exception | Should -BeOfType [System.InvalidOperationException]
+            $caught.Exception.Message | Should -BeExactly "The Lambda Runtime API sent no usable Lambda-Runtime-Deadline-Ms header ('$Value'), so the handler was not called: its `$LambdaContext.RemainingTime would be wrong."
         }
     }
 
