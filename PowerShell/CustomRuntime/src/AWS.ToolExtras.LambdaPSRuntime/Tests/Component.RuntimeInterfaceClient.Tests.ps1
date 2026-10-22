@@ -221,12 +221,47 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
             $caught.Exception.Message | Should -BeLike '*HTTP 500*Runtime.ExitError*'
         }
 
-        It 'returns nothing when the Runtime API cannot be reached, so the loop asks again' {
+        It 'asks again when the Runtime API cannot be reached, and returns the event once it answers' {
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Get-LambdaNextInvocation.ps1'))
+            if (-not ('LambdaPSTests.Fakes.UnreachableThenOkHandler' -as [type])) {
+                Add-Type -TypeDefinition @'
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+namespace LambdaPSTests.Fakes {
+    // Fails the first Failures requests as a refused connection does, then answers 200.
+    public class UnreachableThenOkHandler : HttpMessageHandler {
+        public int Failures;
+        public int Calls;
+        public UnreachableThenOkHandler(int failures) { Failures = failures; }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) {
+            Calls++;
+            if (Calls <= Failures) { throw new HttpRequestException("Connection refused"); }
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"key\":\"value\"}") });
+        }
+    }
+}
+'@
+            }
+            $handler = [LambdaPSTests.Fakes.UnreachableThenOkHandler]::new(3)
+            $client = [System.Net.Http.HttpClient]::new($handler)
+
+            $output = @(Get-LambdaNextInvocation $client 6>&1)
+            $handler.Calls | Should -Be 4
+            @($output | Where-Object { $_ -is [System.Management.Automation.InformationRecord] }).Count | Should -Be 3
+            ($output | Where-Object { $_ -isnot [System.Management.Automation.InformationRecord] }).incomingEvent | Should -Be '{"key":"value"}'
+        }
+
+        It 'throws, naming the address and the attempts, when the Runtime API stays unreachable' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Get-LambdaNextInvocation.ps1'))
             $client = [System.Net.Http.HttpClient]::new([LambdaPSTests.Fakes.UnreachableHandler]::new())
 
-            $next = Get-LambdaNextInvocation $client 6>$null
-            $next | Should -BeNullOrEmpty
+            # The event loop exits 1 on this throw, so a runtime with no Runtime API stops rather than
+            # retrying forever.
+            $caught = $null
+            try { $null = Get-LambdaNextInvocation $client 6>$null } catch { $caught = $_ }
+            $caught.Exception.Message | Should -BeExactly 'Lambda Runtime API at 127.0.0.1:9001 could not be reached after 10 attempts; the runtime is exiting. Connection refused'
         }
     }
 

@@ -230,7 +230,8 @@ $private:__LambdaPSRuntimeStartupSessionIds = @(foreach ($private:__LambdaPSRunt
 if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Start event loop'}
 do {
     # Get /NEXT invocation from AWS Lambda Runtime API. A handler script dot-sourced into this scope may
-    # have set $ErrorActionPreference; inside try, the throw for an error status is honoured whatever it is.
+    # have set $ErrorActionPreference; inside try, the throw for an error status or an unreachable Runtime
+    # API is honoured whatever it is.
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Get /NEXT invocation from AWS Lambda Runtime API'}
     try {
         $private:__LambdaPSRuntimeNextInvocation = pwsh-runtime\Get-LambdaNextInvocation $private:__LambdaPSRuntimeHttpClient
@@ -239,8 +240,6 @@ do {
         Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]$($_.Exception.Message)"
         exit 1
     }
-    # $null means the Runtime API could not be reached; ask again.
-    if ($null -eq $private:__LambdaPSRuntimeNextInvocation) { continue }
 
     # Set default and AWS Lambda specific environment variables for each invocation
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Set default and AWS Lambda specific environment variables for each invocation'}

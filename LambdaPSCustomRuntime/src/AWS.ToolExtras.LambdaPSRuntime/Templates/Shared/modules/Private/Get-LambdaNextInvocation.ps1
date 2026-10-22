@@ -10,9 +10,10 @@ function private:Get-LambdaNextInvocation {
             Asks the Runtime API for the next event and returns its body and headers.
 
         .Notes
-            Returns $null, after a short pause, when the Runtime API cannot be reached; the event loop then
-            asks again. Throws when the Runtime API answers with an error status: Lambda documents that the
-            runtime should then exit, and the event loop exits 1 on this throw so Lambda can restart it.
+            Asks again, after a short pause, when the Runtime API cannot be reached, up to 10 attempts (about
+            a second), then throws. Throws when the Runtime API answers with an error status: Lambda documents
+            that the runtime should then exit. The event loop logs either throw and exits 1, so Lambda can
+            restart the runtime, and a runtime started outside Lambda stops instead of retrying forever.
     #>
     param (
         [Parameter(Position=0)]
@@ -23,24 +24,32 @@ function private:Get-LambdaNextInvocation {
 
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Get-LambdaNextInvocation]Create GET request to Runtime API' }
 
-    $private:request = [System.Net.Http.HttpRequestMessage]::new()
-    $private:request.Headers.Add('User-Agent', "aws-lambda-powershell/$env:POWERSHELL_VERSION")
-    $private:request.Method = 'GET'
-    $private:request.RequestUri = "http://$env:AWS_LAMBDA_RUNTIME_API/2018-06-01/runtime/invocation/next"
+    # A request message can be sent only once, so each attempt builds its own.
+    $private:maxAttempts = 10
+    for ($private:attempt = 1; ; $private:attempt++) {
+        $private:request = [System.Net.Http.HttpRequestMessage]::new()
+        $private:request.Headers.Add('User-Agent', "aws-lambda-powershell/$env:POWERSHELL_VERSION")
+        $private:request.Method = 'GET'
+        $private:request.RequestUri = "http://$env:AWS_LAMBDA_RUNTIME_API/2018-06-01/runtime/invocation/next"
 
-    try {
-        # Get the next invocation
-        if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Get-LambdaNextInvocation]Get the next invocation' }
-        $private:response = $private:HttpClient.SendAsync($private:request).GetAwaiter().GetResult()
-    }
-    catch {
-        # The Runtime API could not be reached: let the event loop ask again after a short pause.
-        Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable, retrying: $($_.Exception.Message)"
-        Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 100
-        return $null
-    }
-    finally {
-        $private:request.Dispose()
+        try {
+            # Get the next invocation
+            if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Get-LambdaNextInvocation]Get the next invocation' }
+            $private:response = $private:HttpClient.SendAsync($private:request).GetAwaiter().GetResult()
+            break
+        }
+        catch {
+            if ($private:attempt -ge $private:maxAttempts) {
+                throw [System.InvalidOperationException]::new(
+                    ('Lambda Runtime API at {0} could not be reached after {1} attempts; the runtime is exiting. {2}' -f
+                        $env:AWS_LAMBDA_RUNTIME_API, $private:maxAttempts, $_.Exception.GetBaseException().Message))
+            }
+            Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable (attempt $private:attempt of $private:maxAttempts), retrying: $($_.Exception.GetBaseException().Message)"
+            Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 100
+        }
+        finally {
+            $private:request.Dispose()
+        }
     }
 
     if (-not $private:response.IsSuccessStatusCode) {
