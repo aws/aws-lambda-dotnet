@@ -10,7 +10,7 @@ function Set-LambdaPSRuntimeAlias {
     .PARAMETER RuntimeName
         The customer-managed runtime name the alias belongs to.
     .PARAMETER RuntimeAlias
-        The alias name to create or repoint (for example 'production').
+        The alias name to create or repoint (for example 'default').
     .PARAMETER RuntimeVersion
         The published runtime version the alias should point at.
     .PARAMETER Region
@@ -21,9 +21,9 @@ function Set-LambdaPSRuntimeAlias {
     .OUTPUTS
         None.
     .EXAMPLE
-        Set-LambdaPSRuntimeAlias -RuntimeName my-ps -RuntimeAlias production -RuntimeVersion v1 -Region us-east-1
+        Set-LambdaPSRuntimeAlias -RuntimeName my-ps -RuntimeAlias default -RuntimeVersion v1 -Region us-east-1
 
-        Creates or repoints the 'production' alias to runtime version v1.
+        Creates or repoints the 'default' alias to runtime version v1.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

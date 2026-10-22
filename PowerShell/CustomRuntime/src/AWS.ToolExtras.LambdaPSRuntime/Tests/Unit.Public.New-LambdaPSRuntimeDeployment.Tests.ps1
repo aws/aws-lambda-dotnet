@@ -66,7 +66,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.Region | Should -Be 'us-east-1'
             $result.RepositoryName | Should -Be 'powershell-runtime'
             $result.RuntimeVersion | Should -Be 'v1'
-            $result.RuntimeAlias | Should -Be 'production'
+            $result.RuntimeAlias | Should -Be 'default'
             $result.Architecture | Should -Be 'x86_64'
             $result.PSObject.Properties.Name | Should -Not -Contain 'ContainerRuntime'
             $result.ModulesStaged | Should -BeNullOrEmpty
@@ -250,7 +250,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
 
         It 'accepts a -RuntimeAlias such as <Value>' -ForEach @(
-            @{ Value = 'production' }, @{ Value = 'p' }, @{ Value = 'Prod_2.1-a' }, @{ Value = '_live' }, @{ Value = ('p' * 128) }
+            @{ Value = 'default' }, @{ Value = 'p' }, @{ Value = 'Prod_2.1-a' }, @{ Value = '_live' }, @{ Value = ('p' * 128) }
         ) {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeAlias $Value -WhatIf
             $result.RuntimeAlias | Should -Be $Value
@@ -286,9 +286,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { -not $Tag -and $ImageUri -like '*/rt:v1' }
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Architecture -eq 'x86_64' -and $RuntimeAlias -eq 'production' }
+                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Architecture -eq 'x86_64' -and $RuntimeAlias -eq 'default' }
             Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $RuntimeAlias -eq 'production' }
+                -ParameterFilter { $RuntimeAlias -eq 'default' }
         }
     }
 
@@ -674,7 +674,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             # The stage text names every change: the pull grant in the repository policy, and a runtime it creates.
             $whatIf | Should -Contain 'What if: Performing the operation "Build image, ensure ECR repository ''rt'' and its Lambda pull grant, and push image" on target "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7".'
             $whatIf | Should -Contain 'What if: Performing the operation "Create runtime ''my-ps'' and publish Lambda runtime version ''v7'' from image ''111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7''" on target "my-ps".'
-            $whatIf | Should -Contain 'What if: Performing the operation "Point alias at v7" on target "my-ps/production".'
+            $whatIf | Should -Contain 'What if: Performing the operation "Point alias at v7" on target "my-ps/default".'
         }
 
         # The scaffold says "existing contents are deleted" only when there are contents; a runtime that
@@ -707,9 +707,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         # Declining a middle stage skips the stages after it, with a warning for each, and leaves their
         # fields empty; declining the alias stage alone says how to point the alias later.
         It 'runs <Ran> and warns about the rest when -Confirm is answered <Answers>' -ForEach @(
-            @{ Answers = @('Y', 'N'); Ran = 'Scaffold'; Warnings = @('Skipped publishing the runtime version, because the build and push stage was declined', "Skipped pointing alias 'production' at 'v7', because the build and push stage was declined") }
-            @{ Answers = @('Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push'; Warnings = @("Skipped pointing alias 'production' at 'v7', because the publish stage was declined") }
-            @{ Answers = @('Y', 'Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push,Publish'; Warnings = @("Alias 'production' was not pointed at 'v7', because that stage was declined. Point it later with New-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1.") }
+            @{ Answers = @('Y', 'N'); Ran = 'Scaffold'; Warnings = @('Skipped publishing the runtime version, because the build and push stage was declined', "Skipped pointing alias 'default' at 'v7', because the build and push stage was declined") }
+            @{ Answers = @('Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push'; Warnings = @("Skipped pointing alias 'default' at 'v7', because the publish stage was declined") }
+            @{ Answers = @('Y', 'Y', 'Y', 'N'); Ran = 'Scaffold,Build,Repository,Push,Publish'; Warnings = @("Alias 'default' was not pointed at 'v7', because that stage was declined. Point it later with New-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v7 -Region us-east-1.") }
         ) {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
@@ -738,7 +738,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         # The preflight read says whether the alias exists, so the warning names the one command that applies.
         It 'names only <AliasCommand> when the alias stage is declined and the alias <Case>' -ForEach @(
-            @{ Case = 'exists'; AliasCommand = 'Update-LMCRuntimeAlias'; Other = 'New-LMCRuntimeAlias'; Alias = '[PSCustomObject]@{ Name = ''production''; RuntimeVersion = ''v6'' }' }
+            @{ Case = 'exists'; AliasCommand = 'Update-LMCRuntimeAlias'; Other = 'New-LMCRuntimeAlias'; Alias = '[PSCustomObject]@{ Name = ''default''; RuntimeVersion = ''v6'' }' }
             @{ Case = 'does not exist'; AliasCommand = 'New-LMCRuntimeAlias'; Other = 'Update-LMCRuntimeAlias'; Alias = 'throw [System.InvalidOperationException]::new(''not found'', [LambdaPSTests.Fakes.ResourceNotFoundException]::new(''Runtime alias does not exist''))' }
         ) {
             $stub = {
@@ -762,7 +762,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             ($result.Calls -join ',') | Should -Be 'Scaffold,Publish'
             $output = $result.Output -replace '\s+', ' '
-            $output | Should -BeLike "*Point it later with $AliasCommand -RuntimeName my-ps -Name production -RuntimeVersion v7 -Region us-east-1.*"
+            $output | Should -BeLike "*Point it later with $AliasCommand -RuntimeName my-ps -Name default -RuntimeVersion v7 -Region us-east-1.*"
             $output | Should -Not -BeLike "*$Other*"
         }
 
@@ -846,7 +846,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
             $err.Exception.Message | Should -Match "version 'v1' \(ACTIVE\)"
             # A run that published v1 but failed at the alias stage is finished with the alias command.
-            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1*'
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1 -Region us-east-1*'
             Should -Invoke 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Name -eq 'v1' -and $Region -eq 'us-east-1' }
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
@@ -880,7 +880,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 -Architecture arm64 } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
-            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1*'
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1*'
         }
 
         It 'names no alias command for an existing version that is FAILED' {
@@ -907,13 +907,13 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
             $err.Exception.Message | Should -BeLike "*version 'v1' (CREATING)*"
-            $err.Exception.Message | Should -BeLike "*untouched. It is still being created; check with Get-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile'. Once it is ACTIVE and its Compatibility.Architectures is 'arm64', point the alias at it with Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile' (New-LMCRuntimeAlias if the alias does not exist yet)."
+            $err.Exception.Message | Should -BeLike "*untouched. It is still being created; check with Get-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile'. Once it is ACTIVE and its Compatibility.Architectures is 'arm64', point the alias at it with Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1 -Region us-east-1 -ProfileName 'dev' -ProfileLocation '$credentialFile' (New-LMCRuntimeAlias if the alias does not exist yet)."
         }
 
         # An alias already on the existing version needs no command; one on another version still gets it.
         It 'names no alias command when the alias already points at the existing ACTIVE version' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v1'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
@@ -922,7 +922,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
-            $err.Exception.Message | Should -BeLike "*untouched. Alias 'production' already points at it."
+            $err.Exception.Message | Should -BeLike "*untouched. Alias 'default' already points at it."
             $err.Exception.Message | Should -Not -BeLike '*LMCRuntimeAlias*'
         }
 
@@ -931,7 +931,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Case = 'a version whose name differs only in case'; AliasVersion = 'V1' }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = $AliasVersion; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = $AliasVersion; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v1'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
@@ -939,7 +939,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err = $null
             try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
 
-            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1*'
+            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1 -Region us-east-1*'
             $err.Exception.Message | Should -Not -BeLike '*already points at it*'
         }
 
@@ -1062,7 +1062,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             $labels | Should -Be @('Preflight', 'Stage 1', 'Stage 2', 'Stage 3', 'Stage 4')
             $verbose | Should -Contain "Stage 1: Scaffold runtime project at '$((Get-Location).Path)$([System.IO.Path]::DirectorySeparatorChar)my-ps-runtime'."
-            $verbose | Should -Contain "Stage 4: Point alias 'production' at 'v1'."
+            $verbose | Should -Contain "Stage 4: Point alias 'default' at 'v1'."
         }
 
         It 'creates no ECR repository when the local build fails' {
@@ -1089,7 +1089,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Current = 'arm64'; New = 'x86_64'; WhatIf = $false; Verb = 'moves' }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @($Current) } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @($Current) } }
             }
             $null = New-LambdaPSRuntimeDeployment @script:splat -Architecture $New -WhatIf:$WhatIf -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -1099,14 +1099,14 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             "$($moved[0])" | Should -BeLike "*points at a ``[$Current``] version; this deploy $Verb it to 'v2', which is '$New'*"
             "$($moved[0])" | Should -BeLike "*built for ``[$Current``] fail to invoke from their next cold start*"
             Should -Invoke 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
-                $RuntimeName -eq 'my-ps' -and $Name -eq 'production' -and $Region -eq 'us-east-1'
+                $RuntimeName -eq 'my-ps' -and $Name -eq 'default' -and $Region -eq 'us-east-1'
             }
         }
 
         # A version can support both; moving the alias to a single-architecture one drops the other.
         It 'warns, naming the dropped architecture, when the alias moves from a multi-architecture version' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64', 'arm64') } }
+                [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64', 'arm64') } }
             }
             $null = New-LambdaPSRuntimeDeployment @script:splat -Architecture x86_64 -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -1121,7 +1121,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ State = 'FAILED'; VersionArchitecture = 'x86_64'; Architecture = 'x86_64' }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+                [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v1'; State = $State; Compatibility = [PSCustomObject]@{ Architectures = @($VersionArchitecture) } }
@@ -1135,7 +1135,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         It 'names the existing version''s own architecture, and does not warn, when that version is another architecture' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v1'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
@@ -1150,7 +1150,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         # The advice names Update-LMCRuntimeAlias; running it is a real move, so the advice says what it drops.
         It 'notes the architecture move inside the Update-LMCRuntimeAlias advice, without a warning' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v2'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
@@ -1159,7 +1159,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             try { New-LambdaPSRuntimeDeployment @script:splat -Architecture arm64 -WarningVariable warnings -WarningAction SilentlyContinue } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
-            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v2*'
+            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v2*'
             $err.Exception.Message | Should -BeLike "*Running Update-LMCRuntimeAlias moves the alias off a [[]x86_64] version: functions bound to it that were built for [[]x86_64] fail to invoke from their next cold start until they are redeployed with -Architecture arm64.*"
             @($warnings).Count | Should -Be 0
         }
@@ -1171,7 +1171,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Case = 'the existing version reports no architecture'; Version = @(); AliasVersion = 'v1'; Alias = @('arm64'); Architecture = 'x86_64' }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = $AliasVersion; Compatibility = [PSCustomObject]@{ Architectures = $Alias } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = $AliasVersion; Compatibility = [PSCustomObject]@{ Architectures = $Alias } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v2'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = $Version } }
@@ -1180,7 +1180,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             try { New-LambdaPSRuntimeDeployment @script:splat -Architecture $Architecture -WarningVariable warnings -WarningAction SilentlyContinue } catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
-            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v2*'
+            $err.Exception.Message | Should -BeLike '*run Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v2*'
             $err.Exception.Message | Should -Not -BeLike '*Running Update-LMCRuntimeAlias moves the alias*'
             @($warnings).Count | Should -Be 0
         }
@@ -1188,7 +1188,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         # Version names are case-sensitive, so an alias on 'V2' is on another version than 'v2'.
         It 'notes the move when the alias is on a version whose name differs only in case' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'V2'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'V2'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v2'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
@@ -1202,7 +1202,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         It 'names only the architecture the existing version lacks when the alias is on a multi-architecture version' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64', 'arm64') } }
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64', 'arm64') } }
             }
             Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'v2'; State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
@@ -1219,7 +1219,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Case = 'the alias cannot be read'; Alias = 'denied' }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                if ($Alias -eq 'same') { [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } } }
+                if ($Alias -eq 'same') { [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } } }
                 elseif ($Alias -eq 'missing') { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
                 else { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeAlias') }
             }
@@ -1241,7 +1241,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Case = 'the alias reports no architecture'; Architectures = @() }
         ) {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
-                [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = $Architectures } }
+                [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = $Architectures } }
             }
             $null = New-LambdaPSRuntimeDeployment @script:splat -WhatIf -WarningVariable warnings
             @($warnings).Count | Should -Be 0
@@ -1274,7 +1274,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $err = { New-LambdaPSRuntimeDeployment @script:splat -WhatIf:$WhatIf } |
                 Should -Throw -ErrorId 'RuntimeAliasCheckFailed,New-LambdaPSRuntimeDeployment' -PassThru
-            $err.Exception.Message | Should -BeLike "Could not read alias 'production' of runtime 'my-ps' in region 'us-east-1' to check its architecture: not authorized to perform lambda:GetRuntimeAlias. Nothing was built or pushed."
+            $err.Exception.Message | Should -BeLike "Could not read alias 'default' of runtime 'my-ps' in region 'us-east-1' to check its architecture: not authorized to perform lambda:GetRuntimeAlias. Nothing was built or pushed."
             $err.Exception.InnerException.GetType().Name | Should -Be 'AccessDeniedException'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
         }
@@ -1288,7 +1288,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
                 function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
-                function script:Get-LMCRuntimeAlias { [PSCustomObject]@{ Name = 'production'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } } }
+                function script:Get-LMCRuntimeAlias { [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } } }
                 function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
                 function script:Build-LambdaPSRuntimeImage { $script:LambdaPSCalls.Add('Build') }
                 function script:Initialize-LambdaPSEcrRepository { $script:LambdaPSCalls.Add('Repository') }

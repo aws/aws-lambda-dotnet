@@ -148,7 +148,7 @@ function New-LambdaPSRuntimeDeployment {
         the runtime name is not a valid ECR repository name, the deploy fails asking for an explicit
         -RepositoryName rather than altering the name.
     .PARAMETER RuntimeAlias
-        The runtime alias to create or repoint. Defaults to 'production', matching the alias
+        The runtime alias to create or repoint. Defaults to 'default', matching the alias
         New-LambdaPSFunctionDeployment binds to. ASCII letters, digits, '_', '.' and '-', up to 128
         characters, not starting or ending with '.' or '-'. Alias names are case-sensitive.
     .PARAMETER RuntimeVersion
@@ -189,7 +189,7 @@ function New-LambdaPSRuntimeDeployment {
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1 -InformationAction Continue
 
-        Runs the full flow with the ECR repository defaulted to the runtime name, alias 'production',
+        Runs the full flow with the ECR repository defaulted to the runtime name, alias 'default',
         version 'v1', and x86_64 architecture, showing a progress line as each stage completes.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.6 -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
@@ -256,7 +256,7 @@ function New-LambdaPSRuntimeDeployment {
         [ValidateNotNullOrWhiteSpace()]
         # Options = 'None': ignoring case, U+212A KELVIN SIGN would match 'k', which the service refuses.
         [ValidatePattern('^[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,126}[A-Za-z0-9_])?\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime alias name (letters, digits, '_', '.' and '-', up to 128 characters, not starting or ending with '.' or '-').")]
-        [string]$RuntimeAlias = 'production',
+        [string]$RuntimeAlias = 'default',
 
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]

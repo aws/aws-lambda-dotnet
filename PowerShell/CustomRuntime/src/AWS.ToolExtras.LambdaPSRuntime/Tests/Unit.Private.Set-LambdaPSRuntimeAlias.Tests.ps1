@@ -23,12 +23,12 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'New-LMCRuntimeAlias' -MockWith { }
 
             $splat = @{
-                RuntimeName = 'my-ps'; RuntimeAlias = 'production'
+                RuntimeName = 'my-ps'; RuntimeAlias = 'default'
                 RuntimeVersion = 'v1'; Region = 'us-east-1'
             }
             Set-LambdaPSRuntimeAlias @splat | Should -BeNullOrEmpty
             Should -Invoke 'New-LMCRuntimeAlias' -Times 1 -Exactly `
-                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Name -eq 'production' -and $RuntimeVersion -eq 'v1' }
+                -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Name -eq 'default' -and $RuntimeVersion -eq 'v1' }
         }
     }
 
@@ -45,7 +45,7 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'Update-LMCRuntimeAlias' -MockWith { }
 
             $splat = @{
-                RuntimeName = 'my-ps'; RuntimeAlias = 'production'
+                RuntimeName = 'my-ps'; RuntimeAlias = 'default'
                 RuntimeVersion = 'v2'; Region = 'us-east-1'
             }
             Set-LambdaPSRuntimeAlias @splat | Should -BeNullOrEmpty
@@ -59,11 +59,11 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             function New-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Update-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig) }
-            Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1' } }
+            Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1' } }
             Mock 'New-LMCRuntimeAlias' -MockWith { throw [System.InvalidOperationException]::new('must not be called') }
             Mock 'Update-LMCRuntimeAlias' -MockWith { }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v2'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v2'; Region = 'us-east-1' }
             Set-LambdaPSRuntimeAlias @splat | Should -BeNullOrEmpty
             Should -Invoke 'New-LMCRuntimeAlias' -Times 0 -Exactly
             Should -Invoke 'Update-LMCRuntimeAlias' -Times 1 -Exactly -ParameterFilter { $RuntimeVersion -eq 'v2' }
@@ -77,7 +77,7 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeAlias') }
             Mock 'New-LMCRuntimeAlias' -MockWith { }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
             { Set-LambdaPSRuntimeAlias @splat } | Should -Throw -ExceptionType ([LambdaPSTests.Fakes.AccessDeniedException])
             Should -Invoke 'New-LMCRuntimeAlias' -Times 0 -Exactly
         }
@@ -92,7 +92,7 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'New-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:CreateRuntimeAlias') }
             Mock 'Update-LMCRuntimeAlias' -MockWith { }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
             { Set-LambdaPSRuntimeAlias @splat } | Should -Throw -ExceptionType ([LambdaPSTests.Fakes.AccessDeniedException])
             Should -Invoke 'Update-LMCRuntimeAlias' -Times 0 -Exactly
         }
@@ -107,7 +107,7 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'New-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Alias already exists') }
             Mock 'Update-LMCRuntimeAlias' -MockWith { }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
             Set-LambdaPSRuntimeAlias @splat -CredentialParameter @{ ProfileName = 'p' }
             Should -Invoke 'Get-LMCRuntimeAlias' -Times 1 -Exactly -ParameterFilter { $ProfileName -eq 'p' }
             Should -Invoke 'New-LMCRuntimeAlias' -Times 1 -Exactly -ParameterFilter { $ProfileName -eq 'p' }
@@ -124,15 +124,15 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             function New-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Update-LMCRuntimeAlias { param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig, $ErrorAction) }
-            if ($Exists) { Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v1' } } }
+            if ($Exists) { Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1' } } }
             else { Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Alias does not exist') } }
             # State is an SDK ConstantClass, which converts to its Value string.
-            Mock 'New-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
-            Mock 'Update-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'production'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
+            Mock 'New-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
+            Mock 'Update-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v2'; State = 'ACTIVE' } }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v2'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v2'; Region = 'us-east-1' }
             $verbose = @(Set-LambdaPSRuntimeAlias @splat -Verbose 4>&1 | ForEach-Object { "$_" })
-            $verbose | Should -Contain "Alias 'production' points at 'v2' (state: ACTIVE)."
+            $verbose | Should -Contain "Alias 'default' points at 'v2' (state: ACTIVE)."
         }
     }
 
@@ -145,7 +145,7 @@ Describe 'Set-LambdaPSRuntimeAlias' -Tag 'Unit' {
             Mock 'New-LMCRuntimeAlias' -MockWith { }
             Mock 'Update-LMCRuntimeAlias' -MockWith { }
 
-            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'production'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
+            $splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; RuntimeVersion = 'v1'; Region = 'us-east-1' }
             Set-LambdaPSRuntimeAlias @splat -WhatIf
             Should -Invoke 'Get-LMCRuntimeAlias' -Times 0 -Exactly
             Should -Invoke 'New-LMCRuntimeAlias' -Times 0 -Exactly

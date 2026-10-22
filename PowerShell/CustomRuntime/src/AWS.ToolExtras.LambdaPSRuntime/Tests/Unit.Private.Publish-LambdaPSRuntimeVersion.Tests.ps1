@@ -236,14 +236,14 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             Mock 'Get-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeVersion') }
 
             $err = $null
-            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'production' }
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'default' }
             catch { $err = $_ }
 
             $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionWaitFailed'
             $err.Exception.InnerException.GetType().Name | Should -Be 'AccessDeniedException'
             $err.Exception.Message | Should -BeLike "Runtime 'my-ps' version 'v1' was created, but its state could not be read: not authorized to perform lambda:GetRuntimeVersion.*"
             $err.Exception.Message | Should -BeLike '*Get-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1*'
-            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1 -Region us-east-1*'
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1 -Region us-east-1*'
         }
     }
 
@@ -258,10 +258,10 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             Mock 'Start-Sleep' -MockWith { }
 
             $err = $null
-            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'production' }
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' -RuntimeAlias 'default' }
             catch { $err = $_ }
 
-            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name production -RuntimeVersion v1*'
+            $err.Exception.Message | Should -BeLike '*Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v1*'
             $err.Exception.Message | Should -Not -BeLike '*<alias>*'
         }
     }
