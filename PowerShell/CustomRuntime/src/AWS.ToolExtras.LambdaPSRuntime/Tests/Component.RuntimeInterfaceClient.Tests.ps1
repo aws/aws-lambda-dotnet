@@ -182,6 +182,41 @@ Describe 'Runtime interface client (Templates/Shared/modules)' -Tag 'Component' 
             $fake.LastUri | Should -Match '/runtime/invocation/req-1/error$'
         }
 
+        It 'sends the same error type in the Lambda-Runtime-Function-Error-Type header as in the body' {
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
+            $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it
+            . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-FunctionHandlerError.ps1'))
+            if (-not ('LambdaPSTests.Fakes.RecordingHandler' -as [type])) {
+                Add-Type -TypeDefinition @'
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+namespace LambdaPSTests.Fakes {
+    // Answers 202 and keeps the last request's error-type header and body.
+    public class RecordingHandler : HttpMessageHandler {
+        public string ErrorTypeHeader;
+        public string Body;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) {
+            System.Collections.Generic.IEnumerable<string> values;
+            ErrorTypeHeader = request.Headers.TryGetValues("Lambda-Runtime-Function-Error-Type", out values) ? string.Join(",", values) : null;
+            Body = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return Task.FromResult(new HttpResponseMessage((HttpStatusCode)202) { Content = new StringContent("") });
+        }
+    }
+}
+'@
+            }
+            $fake = [LambdaPSTests.Fakes.RecordingHandler]::new()
+            $client = [System.Net.Http.HttpClient]::new($fake)
+            try { throw [System.IO.FileNotFoundException]::new('gone') } catch { $record = $_ }
+
+            Send-FunctionHandlerError $client $record 6>$null
+            ($fake.Body | ConvertFrom-Json).errorType | Should -BeExactly 'FileNotFoundException'
+            $fake.ErrorTypeHeader | Should -BeExactly 'FileNotFoundException'
+        }
+
         It 'logs where the handler failed, not just the message' {
             . ([System.IO.Path]::Combine($script:Modules, 'Private', 'Send-RuntimeApiRequest.ps1'))
             $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiRequest}    # bound as pwsh-runtime.psm1 binds it

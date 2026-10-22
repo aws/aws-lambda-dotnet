@@ -43,15 +43,19 @@ function private:Send-FunctionHandlerError {
     ) -join "`n"
     Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue ($private:logText -replace '\r?\n', "`r")
 
+    # The error type is the exception's type name (RuntimeException, FileNotFoundException, ...), sent as
+    # the body's errorType and as the Lambda-Runtime-Function-Error-Type header alike, as the .NET
+    # runtime client does.
+    $private:errorType = $private:Exception.CategoryInfo.Reason
     $private:body = Microsoft.PowerShell.Utility\ConvertTo-Json -Compress -InputObject @{
         errorMessage = $private:Exception.Exception.Message
-        errorType    = $private:Exception.CategoryInfo.Reason
+        errorType    = $private:errorType
         # One frame per entry, as the other Lambda runtimes send it; the invoke result shows it.
         stackTrace   = @(if (-not $NoStackTrace) { [string]$private:Exception.ScriptStackTrace -split '\r?\n' | Microsoft.PowerShell.Core\Where-Object { $_ } })
     }
     $private:headers = @(@{
         Key = 'Lambda-Runtime-Function-Error-Type'
-        Value = '{0}.{1}' -f $private:Exception.CategoryInfo.Category, $private:Exception.CategoryInfo.Reason
+        Value = $private:errorType
     })
     # If the error report itself is rejected there is nothing further to tell Lambda; log why (so the
     # resulting timeout has a cause in the function log) rather than let the event loop die.
