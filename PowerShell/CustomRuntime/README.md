@@ -69,7 +69,7 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'production' alias at it).
+#    publish version -> point the 'default' alias at it).
 New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
@@ -82,7 +82,7 @@ New-LambdaPSFunctionProject -Path ./hello -Handler handler
 # 3. Deploy it bound to the runtime alias (resolves the runtime ARN for you). The role must exist
 #    and trust lambda.amazonaws.com.
 New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./hello `
-    -RuntimeName my-powershell-runtime -RuntimeAlias production `
+    -RuntimeName my-powershell-runtime -RuntimeAlias default `
     -Role arn:aws:iam::111122223333:role/hello-powershell-role -Region us-east-1
 
 # 4. Invoke it.
