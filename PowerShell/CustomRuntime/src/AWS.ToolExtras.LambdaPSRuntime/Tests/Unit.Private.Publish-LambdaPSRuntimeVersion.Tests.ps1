@@ -408,7 +408,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
 }
 
 # The runtime version must DECLARE its architecture, or the function deploy has nothing to check a
-# mismatch against -- and Lambda does not validate the match itself.
+# mismatch against before Lambda rejects the function at creation.
 Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
     BeforeEach {
         Mock 'Get-LambdaPSClientConfig' -ModuleName $script:moduleName -MockWith {

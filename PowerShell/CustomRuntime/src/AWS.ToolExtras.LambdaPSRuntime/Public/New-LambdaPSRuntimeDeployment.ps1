@@ -162,7 +162,8 @@ function New-LambdaPSRuntimeDeployment {
         from the image is checked against it: a mismatch (for example a builder that cannot emit
         linux/arm64) stops the deploy before the alias is moved. New-LambdaPSFunctionDeployment reads
         the same architecture from the alias, adopts it when -Architecture is not given, and refuses a
-        mismatch -- Lambda does not validate this itself, and a mismatched function fails at invoke.
+        mismatch -- Lambda also rejects a mismatched function when it is created, but checking first
+        means the error names the runtime alias.
         When -RuntimeAlias already points at a version that supports an architecture the new version
         does not, the alias is still moved, with a warning given before anything is created or
         confirmed, and under -WhatIf: functions bound to it that were built for that architecture fail
