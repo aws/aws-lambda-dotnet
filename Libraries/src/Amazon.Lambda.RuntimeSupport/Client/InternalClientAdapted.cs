@@ -98,6 +98,9 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly System.Net.Http.HttpClient _httpClient;
         private InternalLogger _logger;
 
+        // The URI most recently used to get the next invocation, which is cached as it is used for every invocation
+        private NextUri _nextUri;
+
         public InternalRuntimeApiClient(System.Net.Http.HttpClient httpClient)
         {
             _httpClient = httpClient;
@@ -255,8 +258,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     
                     request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
-                    var url_ = BaseUrl.TrimEnd('/') + endpointUrl;
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.Absolute);
+                    request_.RequestUri = GetNextUri(endpointUrl);
 
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
@@ -308,6 +310,42 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 _logger.LogInformation("Finished InternalClient.NextAsync");
             }
+        }
+
+        private System.Uri GetNextUri(string endpointUrl)
+        {
+            var baseUrl = BaseUrl;
+            var nextUri = _nextUri;
+
+            if (nextUri == null ||
+                !string.Equals(nextUri.BaseUrl, baseUrl, StringComparison.Ordinal) ||
+                !string.Equals(nextUri.EndpointUrl, endpointUrl, StringComparison.Ordinal))
+            {
+                var uri = new System.Uri(baseUrl.TrimEnd('/') + endpointUrl, System.UriKind.Absolute);
+                _nextUri = nextUri = new NextUri(baseUrl, endpointUrl, uri);
+            }
+
+            return nextUri.Uri;
+        }
+
+        /// <summary>
+        /// The URI to get the next invocation for a base URL and endpoint URL. This class is immutable so that
+        /// it can be safely read by multiple concurrent processing tasks.
+        /// </summary>
+        private sealed class NextUri
+        {
+            public NextUri(string baseUrl, string endpointUrl, System.Uri uri)
+            {
+                BaseUrl = baseUrl;
+                EndpointUrl = endpointUrl;
+                Uri = uri;
+            }
+
+            public string BaseUrl { get; }
+
+            public string EndpointUrl { get; }
+
+            public System.Uri Uri { get; }
         }
 
         /// <summary>Runtime makes this request in order to submit a response.</summary>

@@ -345,6 +345,32 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public async Task GetNextInvocationAsync_UsesExpectedUriForEachEndpoint()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(("Lambda-Runtime-Aws-Request-Id", "req-1"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            await client.RestoreNextInvocationAsync(CancellationToken.None);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/restore/next", handler.CapturedRequest.RequestUri.ToString());
+
+            using (await client.GetNextInvocationAsync(CancellationToken.None))
+            {
+                Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            }
+
+            using (await client.GetNextInvocationAsync(CancellationToken.None))
+            {
+                Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            }
+
+            await client.RestoreNextInvocationAsync(CancellationToken.None);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/restore/next", handler.CapturedRequest.RequestUri.ToString());
+        }
+
+        [Fact]
         public async Task GetNextInvocationAsync_ReadsRuntimeApiHeadersIgnoringCase()
         {
             var handler = new NextInvocationMockHttpMessageHandler(
