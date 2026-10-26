@@ -1,0 +1,13 @@
+# PowerShell / .NET build and test artifacts
+bin/
+obj/
+*.zip
+coverage.xml
+testResults*.xml
+pester*.xml
+
+# Editor / OS
+.vs/
+.vscode/
+*.user
+.DS_Store
