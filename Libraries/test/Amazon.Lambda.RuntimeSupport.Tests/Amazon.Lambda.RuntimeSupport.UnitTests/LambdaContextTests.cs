@@ -119,6 +119,32 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public void ContextValuesAreParsedFromHeadersOnce()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["Lambda-Runtime-Aws-Request-Id"] = new[] { "request-generated-id" },
+                ["Lambda-Runtime-Client-Context"] = new[] { "{\"custom\":{\"value\":\"test\"}}" },
+                ["Lambda-Runtime-Cognito-Identity"] = new[] { "{\"cognitoIdentityId\":\"identity-id\",\"cognitoIdentityPoolId\":\"identity-pool-id\"}" }
+            };
+
+            var runtimeApiHeaders = new RuntimeApiHeaders(headers);
+            var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
+
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables()));
+
+            Assert.Equal("test", context.ClientContext.Custom["value"]);
+            Assert.Same(context.ClientContext, context.ClientContext);
+
+            Assert.Equal("identity-id", context.Identity.IdentityId);
+            Assert.Equal("identity-pool-id", context.Identity.IdentityPoolId);
+            Assert.Same(context.Identity, context.Identity);
+
+            Assert.Empty(context.W3C);
+            Assert.Same(context.W3C, context.W3C);
+        }
+
+        [Fact]
         public void RuntimeApiHeadersThrowsWhenRequestIdIsAbsent()
         {
             var headers = new Dictionary<string, IEnumerable<string>>

@@ -16,6 +16,7 @@
 using Amazon.Lambda.Core;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -24,18 +25,27 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         internal static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        private static readonly IDateTimeHelper DefaultDateTimeHelper = new DateTimeHelper();
+
+        // Cached delegates and a placeholder for a null value, used to create the values that are parsed
+        // from the headers only when they are first used without allocating for every invocation.
+        private static readonly Func<string, CognitoIdentity> CreateCognitoIdentity = CognitoIdentity.FromJson;
+        private static readonly Func<string, CognitoClientContext> CreateCognitoClientContext = CognitoClientContext.FromJson;
+        private static readonly Func<string, IReadOnlyDictionary<string, string>> CreateW3C = W3CTraceContext.FromClientContextJson;
+        private static readonly object NullValue = new object();
+
         private readonly LambdaEnvironment _lambdaEnvironment;
         private readonly RuntimeApiHeaders _runtimeApiHeaders;
         private readonly IDateTimeHelper _dateTimeHelper;
         private readonly long _deadlineMs;
         private readonly int _memoryLimitInMB;
-        private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
-        private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
-        private readonly Lazy<IReadOnlyDictionary<string, string>> _w3cLazy;
         private readonly IConsoleLoggerWriter _consoleLogger;
+        private object _cognitoIdentity;
+        private object _cognitoClientContext;
+        private object _w3c;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
-            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger)
+            : this(runtimeApiHeaders, lambdaEnvironment, DefaultDateTimeHelper, consoleLogger)
         {
         }
 
@@ -49,22 +59,19 @@ namespace Amazon.Lambda.RuntimeSupport
 
             int.TryParse(_lambdaEnvironment.FunctionMemorySize, out _memoryLimitInMB);
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
-            _cognitoIdentityLazy = new Lazy<CognitoIdentity>(() => CognitoIdentity.FromJson(runtimeApiHeaders.CognitoIdentityJson));
-            _cognitoClientContextLazy = new Lazy<CognitoClientContext>(() => CognitoClientContext.FromJson(runtimeApiHeaders.ClientContextJson));
-            _w3cLazy = new Lazy<IReadOnlyDictionary<string, string>>(() => W3CTraceContext.FromClientContextJson(runtimeApiHeaders.ClientContextJson));
         }
 
         public string TraceId => _runtimeApiHeaders.TraceId;
 
         public string AwsRequestId => _runtimeApiHeaders.AwsRequestId;
 
-        public IClientContext ClientContext => _cognitoClientContextLazy.Value;
+        public IClientContext ClientContext => GetOrCreate(ref _cognitoClientContext, _runtimeApiHeaders.ClientContextJson, CreateCognitoClientContext);
 
         public string FunctionName => _lambdaEnvironment.FunctionName;
 
         public string FunctionVersion => _lambdaEnvironment.FunctionVersion;
 
-        public ICognitoIdentity Identity => _cognitoIdentityLazy.Value;
+        public ICognitoIdentity Identity => GetOrCreate(ref _cognitoIdentity, _runtimeApiHeaders.CognitoIdentityJson, CreateCognitoIdentity);
 
         public string InvokedFunctionArn => _runtimeApiHeaders.InvokedFunctionArn;
 
@@ -80,7 +87,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string TenantId => _runtimeApiHeaders.TenantId;
 
-        public IReadOnlyDictionary<string, string> W3C => _w3cLazy.Value;
+        public IReadOnlyDictionary<string, string> W3C => GetOrCreate(ref _w3c, _runtimeApiHeaders.ClientContextJson, CreateW3C);
 
         /// <summary>
         /// The serializer the Lambda function registered with the runtime, surfaced via
@@ -97,5 +104,24 @@ namespace Amazon.Lambda.RuntimeSupport
         /// the <c>Lambda-Runtime-Invocation-Id</c> header, in which case nothing is echoed.
         /// </summary>
         internal string InvocationId => _runtimeApiHeaders.InvocationId;
+
+        /// <summary>
+        /// Gets the value stored in the specified location, creating it from the specified JSON if it has not been
+        /// created yet. The value is created from immutable header values, so if it is created concurrently the
+        /// first value to be stored is the one that is returned to all callers.
+        /// </summary>
+        private static T GetOrCreate<T>(ref object location, string json, Func<string, T> factory)
+            where T : class
+        {
+            var value = Volatile.Read(ref location);
+
+            if (value == null)
+            {
+                value = (object)factory(json) ?? NullValue;
+                value = Interlocked.CompareExchange(ref location, value, null) ?? value;
+            }
+
+            return ReferenceEquals(value, NullValue) ? null : (T)value;
+        }
     }
 }
