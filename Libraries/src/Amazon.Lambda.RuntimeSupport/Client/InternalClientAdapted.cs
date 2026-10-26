@@ -98,7 +98,8 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly System.Net.Http.HttpClient _httpClient;
         private InternalLogger _logger;
 
-        // The URI most recently used to get the next invocation, which is cached as it is used for every invocation
+        // The URI most recently used to get the next invocation, which is cached as it is used for every invocation.
+        // Accessed with Volatile.Read/Volatile.Write as it can be read and written by multiple concurrent processing tasks.
         private NextUri _nextUri;
 
         public InternalRuntimeApiClient(System.Net.Http.HttpClient httpClient)
@@ -319,14 +320,19 @@ namespace Amazon.Lambda.RuntimeSupport
         private System.Uri GetNextUri(string endpointUrl)
         {
             var baseUrl = BaseUrl;
-            var nextUri = _nextUri;
+            var nextUri = Volatile.Read(ref _nextUri);
 
             if (nextUri == null ||
                 !string.Equals(nextUri.BaseUrl, baseUrl, StringComparison.Ordinal) ||
                 !string.Equals(nextUri.EndpointUrl, endpointUrl, StringComparison.Ordinal))
             {
                 var uri = new System.Uri(baseUrl.TrimEnd('/') + endpointUrl, System.UriKind.Absolute);
-                _nextUri = nextUri = new NextUri(baseUrl, endpointUrl, uri);
+                nextUri = new NextUri(baseUrl, endpointUrl, uri);
+
+                // If multiple processing tasks create the URI concurrently they will all create equivalent values,
+                // so it does not matter which one is published; the important thing is that the instance is
+                // safely published so that no task observes a partially constructed instance.
+                Volatile.Write(ref _nextUri, nextUri);
             }
 
             return nextUri.Uri;
