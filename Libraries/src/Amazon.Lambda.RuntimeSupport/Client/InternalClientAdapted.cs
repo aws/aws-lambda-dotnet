@@ -263,7 +263,11 @@ namespace Amazon.Lambda.RuntimeSupport
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        // Size the dictionary for all the headers to avoid resizing it for every invocation
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>(
+                            response_.Headers.NonValidated.Count + response_.Content.Headers.NonValidated.Count);
+                        foreach (var item_ in response_.Headers)
+                                headers_.Add(item_.Key, item_.Value);
                         foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
 
