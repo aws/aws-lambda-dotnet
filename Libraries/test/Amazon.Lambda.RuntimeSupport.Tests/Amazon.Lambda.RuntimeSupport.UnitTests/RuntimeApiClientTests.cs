@@ -294,6 +294,101 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal("req-timeout", ex.AwsRequestId);
         }
 
+        // --- Request messages sent to the Runtime API ---
+
+        /// <summary>
+        /// Mock handler that captures the request and returns a next invocation with the specified headers.
+        /// </summary>
+        private class NextInvocationMockHttpMessageHandler : HttpMessageHandler
+        {
+            public HttpRequestMessage CapturedRequest { get; private set; }
+            private readonly (string Name, string Value)[] _headers;
+
+            public NextInvocationMockHttpMessageHandler(params (string Name, string Value)[] headers)
+            {
+                _headers = headers;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                CapturedRequest = request;
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"key\":\"value\"}")
+                };
+
+                foreach (var (name, value) in _headers)
+                {
+                    response.Headers.TryAddWithoutValidation(name, value);
+                }
+
+                return Task.FromResult(response);
+            }
+        }
+
+        [Fact]
+        public async Task GetNextInvocationAsync_SendsExpectedRequest()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(("Lambda-Runtime-Aws-Request-Id", "req-1"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            using var invocation = await client.GetNextInvocationAsync(CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Get, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            var outputStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            await client.SendResponseAsync("req-1", outputStream, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/req-1/response", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_WithoutOutputStream_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            await client.SendResponseAsync("req-1", null, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
+        [Fact]
+        public async Task ReportInvocationErrorAsync_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted, "{}");
+            var client = CreateClientWith(handler);
+
+            await client.ReportInvocationErrorAsync("req-1", new Exception("boom"), CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/req-1/error", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/vnd.aws.lambda.error+json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {

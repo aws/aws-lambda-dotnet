@@ -134,10 +134,10 @@ namespace Amazon.Lambda.RuntimeSupport
                         request_.Headers.TryAddWithoutValidation("Lambda-Runtime-Function-Error-Type", ConvertToString(lambda_Runtime_Function_Error_Type, System.Globalization.CultureInfo.InvariantCulture));
                     using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ErrorContentType);
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         var url_ = urlBuilder_.ToString();
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
@@ -251,9 +251,9 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Method = System.Net.Http.HttpMethod.Get;
                     
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                     var url_ = BaseUrl.TrimEnd('/') + endpointUrl;
                     request_.RequestUri = new System.Uri(url_, System.UriKind.Absolute);
@@ -344,10 +344,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
                     try
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         // Echo the per-invocation id back for cross-wiring protection. Only sent when the
                         // Runtime API provided it on /next; added to this request message (never the shared
@@ -512,10 +512,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
                     using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ErrorContentType);
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         var url_ = urlBuilder_.ToString();
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
