@@ -362,6 +362,12 @@ namespace Amazon.Lambda.RuntimeSupport
                         _logger.LogInformation("Return from SendAsync");
                         try
                         {
+                            if (response_.StatusCode == HttpStatusCode.Accepted)
+                            {
+                                // The headers of a successful response are not used, so do not copy them for every invocation
+                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>(), new StatusResponse());
+                            }
+
                             var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
                             if (response_.Content != null && response_.Content.Headers != null)
                             {
@@ -369,11 +375,6 @@ namespace Amazon.Lambda.RuntimeSupport
                                     headers_[item_.Key] = item_.Value;
                             }
 
-                            if (response_.StatusCode == HttpStatusCode.Accepted)
-                            {
-                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, new StatusResponse());
-                            }
-                            else
                             if (response_.StatusCode == HttpStatusCode.Gone)
                             {
                                 // 410 Gone means the invocation timed out before this response was submitted.
