@@ -90,5 +90,43 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Null(runtimeApiHeaders.InvocationId);
             Assert.Null(context.InvocationId);
         }
+
+        [Fact]
+        public void RuntimeApiHeadersAreReadIgnoringCase()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["lambda-runtime-aws-request-id"] = new[] { "request-generated-id" },
+                ["LAMBDA-RUNTIME-INVOKED-FUNCTION-ARN"] = new[] { "my-function-arn" },
+                ["lambda-runtime-trace-id"] = new[] { "trace-id" },
+                ["Lambda-Runtime-Client-Context"] = new[] { "{}" },
+                ["lambda-runtime-cognito-identity"] = new[] { "{}" },
+                ["lambda-runtime-deadline-ms"] = new[] { "1542409706888" },
+                ["lambda-runtime-aws-tenant-id"] = new[] { "tenant-generated-id" },
+                ["lambda-runtime-invocation-id"] = new[] { "invocation-generated-id" }
+            };
+
+            var runtimeApiHeaders = new RuntimeApiHeaders(headers);
+
+            Assert.Equal("request-generated-id", runtimeApiHeaders.AwsRequestId);
+            Assert.Equal("my-function-arn", runtimeApiHeaders.InvokedFunctionArn);
+            Assert.Equal("trace-id", runtimeApiHeaders.TraceId);
+            Assert.Equal("{}", runtimeApiHeaders.ClientContextJson);
+            Assert.Equal("{}", runtimeApiHeaders.CognitoIdentityJson);
+            Assert.Equal("1542409706888", runtimeApiHeaders.DeadlineMs);
+            Assert.Equal("tenant-generated-id", runtimeApiHeaders.TenantId);
+            Assert.Equal("invocation-generated-id", runtimeApiHeaders.InvocationId);
+        }
+
+        [Fact]
+        public void RuntimeApiHeadersThrowsWhenRequestIdIsAbsent()
+        {
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                ["Lambda-Runtime-Invoked-Function-Arn"] = new[] { "my-function-arn" }
+            };
+
+            Assert.Throws<KeyNotFoundException>(() => new RuntimeApiHeaders(headers));
+        }
     }
 }

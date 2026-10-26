@@ -345,6 +345,34 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public async Task GetNextInvocationAsync_ReadsRuntimeApiHeadersIgnoringCase()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(
+                ("lambda-runtime-aws-request-id", "req-1"),
+                ("LAMBDA-RUNTIME-INVOKED-FUNCTION-ARN", "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime"),
+                ("Lambda-Runtime-Trace-Id", "Root=1-5bef4de7-ad49b0e87f6ef6c87fc2e700;Parent=9a9197af755a6419;Sampled=1"),
+                ("lambda-runtime-deadline-ms", "1542409706888"),
+                ("Lambda-Runtime-Aws-Tenant-Id", "tenant-1"),
+                ("lambda-runtime-invocation-id", "inv-uuid-abc"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            using var invocation = await client.GetNextInvocationAsync(CancellationToken.None);
+
+            var context = Assert.IsType<LambdaContext>(invocation.LambdaContext);
+            Assert.Equal("req-1", context.AwsRequestId);
+            Assert.Equal("arn:aws:lambda:us-east-2:123456789012:function:custom-runtime", context.InvokedFunctionArn);
+            Assert.Equal("Root=1-5bef4de7-ad49b0e87f6ef6c87fc2e700;Parent=9a9197af755a6419;Sampled=1", context.TraceId);
+            Assert.Equal("tenant-1", context.TenantId);
+            Assert.Equal("inv-uuid-abc", context.InvocationId);
+
+            using var reader = new StreamReader(invocation.InputStream);
+            Assert.Equal("{\"key\":\"value\"}", await reader.ReadToEndAsync());
+        }
+
+        [Fact]
         public async Task SendResponseAsync_SendsExpectedRequest()
         {
             var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
