@@ -8,8 +8,8 @@ and pushes the resulting image to **Amazon ECR**.
 ## Status
 
 This library is designed and supported for use by other AWS libraries and tools.
-The version of the library is kept below 1.0.0 to indicate that the API is subject to change base on the needs of AWS libraries and tools.
-If you are using this library in a non AWS context, please be aware that the API may change in future releases.
+The version of the library is kept below 1.0.0 to indicate that the API is subject to change based on the needs of AWS libraries and tools.
+If you are using this library in a non-AWS context, please be aware that the API may change in future releases.
 
 ## Authentication
 

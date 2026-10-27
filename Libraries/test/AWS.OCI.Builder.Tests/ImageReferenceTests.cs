@@ -102,4 +102,19 @@ public class ImageReferenceTests
         Assert.Equal("myapp", parsed.Repository);
         Assert.Equal("dev", parsed.Reference);
     }
+
+    [Theory]
+    [InlineData("localhost/myapp:dev")]
+    [InlineData("LOCALHOST/myapp:dev")]
+    [InlineData("LocalHost/myapp:dev")]
+    public void Detects_localhost_registry_case_insensitively(string input)
+    {
+        // "localhost" with no '.' or ':' is only recognized as a registry host via the explicit name check,
+        // which must be case-insensitive — otherwise "LOCALHOST/myapp" is misread as a Docker Hub repository.
+        ImageReference parsed = ImageReference.Parse(input);
+
+        Assert.Equal(input.Split('/')[0], parsed.Registry);
+        Assert.Equal("myapp", parsed.Repository);
+        Assert.Equal("dev", parsed.Reference);
+    }
 }

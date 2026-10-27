@@ -81,7 +81,7 @@ public sealed partial class ImageReference
         bool firstSegmentIsHost = firstSlash > 0 &&
             (firstSegment.Contains('.', StringComparison.Ordinal) ||
              firstSegment.Contains(':', StringComparison.Ordinal) ||
-             firstSegment.Equals("localhost", StringComparison.Ordinal));
+             firstSegment.Equals("localhost", StringComparison.OrdinalIgnoreCase));
 
         if (firstSegmentIsHost)
         {

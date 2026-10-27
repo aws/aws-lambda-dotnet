@@ -198,7 +198,7 @@ public sealed class RegistryClient : IDisposable
         return response.StatusCode == HttpStatusCode.OK;
     }
 
-    /// <summary>Downloads a blob by digest as a stream. The caller owns and must dispose the returned stream's response.</summary>
+    /// <summary>Downloads a blob by digest as a stream. Disposing the returned stream also disposes the underlying HTTP response.</summary>
     /// <remarks>
     /// Auto-redirect is disabled on the transport (see <see cref="Create"/>), so redirects to object storage are
     /// followed here explicitly, up to <see cref="MaxBlobRedirects"/> hops. Each hop's target is validated against
@@ -211,6 +211,8 @@ public sealed class RegistryClient : IDisposable
 
         for (int hop = 0; ; hop++)
         {
+            // The request is disposed before the next loop iteration, or (on the success path below) transferred
+            // to the returned ResponseOwningStream so it outlives this method with the response.
             var request = new HttpRequestMessage(HttpMethod.Get, uri);
             HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
@@ -219,11 +221,13 @@ public sealed class RegistryClient : IDisposable
                 if (hop >= MaxBlobRedirects)
                 {
                     response.Dispose();
+                    request.Dispose();
                     throw new RegistryRequestException((int)response.StatusCode, $"blob download for {repository} {digest} exceeded {MaxBlobRedirects} redirects.");
                 }
 
                 Uri? next = response.Headers.Location;
                 response.Dispose();
+                request.Dispose();
                 if (next is null)
                 {
                     throw new RegistryRequestException(302, $"blob download for {repository} {digest} returned a redirect with no Location.");
@@ -245,8 +249,20 @@ public sealed class RegistryClient : IDisposable
                 continue;
             }
 
-            await EnsureSuccessAsync(response, $"GET blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
-            return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await EnsureSuccessAsync(response, $"GET blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
+                Stream body = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                // Hand ownership of the response (and its request) to the caller via the returned stream: disposing
+                // the stream disposes the response, so the HttpResponseMessage/HttpRequestMessage are never leaked.
+                return new ResponseOwningStream(body, response, request);
+            }
+            catch
+            {
+                response.Dispose();
+                request.Dispose();
+                throw;
+            }
         }
     }
 
@@ -255,6 +271,62 @@ public sealed class RegistryClient : IDisposable
     private static bool IsRedirect(HttpStatusCode status)
         => status is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther
             or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    /// <summary>
+    /// A read-through stream wrapper that owns the <see cref="HttpResponseMessage"/> (and the
+    /// <see cref="HttpRequestMessage"/>) the content came from. Disposing this stream disposes the inner content
+    /// stream and then the response and request, so callers that <c>using</c>/<c>await using</c> the stream
+    /// returned by <see cref="GetBlobAsync"/> never leak the HTTP message pair.
+    /// </summary>
+    private sealed class ResponseOwningStream : Stream
+    {
+        private readonly Stream _inner;
+        private readonly HttpResponseMessage _response;
+        private readonly HttpRequestMessage _request;
+
+        public ResponseOwningStream(Stream inner, HttpResponseMessage response, HttpRequestMessage request)
+        {
+            _inner = inner;
+            _response = response;
+            _request = request;
+        }
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => false;
+        public override long Length => _inner.Length;
+        public override long Position { get => _inner.Position; set => _inner.Position = value; }
+
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override int Read(Span<byte> buffer) => _inner.Read(buffer);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => _inner.ReadAsync(buffer, offset, count, cancellationToken);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => _inner.ReadAsync(buffer, cancellationToken);
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() => _inner.Flush();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+                _response.Dispose();
+                _request.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await _inner.DisposeAsync().ConfigureAwait(false);
+            _response.Dispose();
+            _request.Dispose();
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 
     /// <summary>
     /// Attempts a cross-repository blob mount so an already-present base-image layer is not re-uploaded.
