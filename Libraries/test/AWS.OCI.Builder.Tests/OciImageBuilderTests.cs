@@ -283,25 +283,19 @@ public class OciImageBuilderTests
         string tempDir = Path.Combine(Path.GetTempPath(), "oci-spill-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Built-layer spill files use a stable "aws-oci-built-layer-*.tmp" name under the system temp dir. Other
-        // tests run in parallel against the same temp dir, so compare the SET of spill files before and after and
-        // reason only about the files that appeared during this test — never absolute counts.
-        string spillDir = Path.GetTempPath();
-        HashSet<string> SpillFiles() => Directory.EnumerateFiles(spillDir, "aws-oci-built-layer-*.tmp").ToHashSet(StringComparer.Ordinal);
-
+        // Assert only on the spill files THIS builder owns (from the builder itself), never by scanning the shared
+        // temp directory: parallel tests spill files with the same name pattern into it concurrently.
         try
         {
             string appFile = Path.Combine(tempDir, "app.txt");
             await File.WriteAllTextAsync(appFile, "hello");
 
-            HashSet<string> before = SpillFiles();
             await builder.AddLayerAsync(new FileManifest { { appFile, "/app/app.txt" } });
 
-            // Exactly the file(s) this AddLayerAsync created — isolated from parallel tests' own spill files.
-            HashSet<string> afterAdd = SpillFiles();
-            afterAdd.ExceptWith(before);
-            Assert.True(afterAdd.Count >= 1, "AddLayerAsync should have spilled the built layer to a temp file.");
-            Assert.All(afterAdd, path => Assert.True(File.Exists(path)));
+            // Captured before Dispose, which clears the builder's pending-layer list.
+            IReadOnlyList<string> afterAdd = builder.SpilledLayerPathsForTest;
+            Assert.Single(afterAdd);
+            Assert.All(afterAdd, path => Assert.True(File.Exists(path), $"AddLayerAsync should have spilled the built layer to {path}."));
 
             // #5: on Unix the spill file must be owner-only (0600), not world-readable (0644). A private layer in
             // the shared temp dir must not be readable by other local users.

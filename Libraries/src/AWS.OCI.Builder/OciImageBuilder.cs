@@ -92,6 +92,12 @@ public sealed class OciImageBuilder : IDisposable
     internal void UseTargetClientFactoryForTest(Func<string, IRegistryCredentialSource, RegistryClient> factory)
         => _targetClientFactory = factory;
 
+    /// <summary>
+    /// Test-only: the temp-file paths this builder spilled its built layers to. Lets tests assert on exactly the
+    /// files this instance owns instead of scanning the shared temp directory, which parallel tests also write to.
+    /// </summary>
+    internal IReadOnlyList<string> SpilledLayerPathsForTest => _pendingLayers.Select(p => p.FilePath).ToArray();
+
     /// <summary>The config of the image being built, exposed for customization (entrypoint, env, labels, ...).</summary>
     public ImageConfig Config => _imageBuilder.Config;
 
