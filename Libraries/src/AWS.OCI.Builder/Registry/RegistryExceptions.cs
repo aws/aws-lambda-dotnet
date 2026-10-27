@@ -70,3 +70,30 @@ public sealed class DigestMismatchException : RegistryException
         ActualDigest = actualDigest;
     }
 }
+
+/// <summary>
+/// Thrown when a downloaded blob's length does not match the size declared for it in a manifest descriptor.
+/// The content may still hash to the expected digest — the descriptor itself is wrong — but pushing it would
+/// fail (the upload's Content-Length could not match) or produce a manifest referencing an incorrect size, so
+/// the mismatch is reported up front with a clear error instead.
+/// </summary>
+public sealed class BlobSizeMismatchException : RegistryException
+{
+    /// <summary>The digest of the blob whose size did not match.</summary>
+    public string Digest { get; }
+
+    /// <summary>The size, in bytes, declared by the manifest descriptor.</summary>
+    public long DeclaredSize { get; }
+
+    /// <summary>The actual size, in bytes, of the downloaded blob.</summary>
+    public long ActualSize { get; }
+
+    /// <summary>Creates the exception.</summary>
+    public BlobSizeMismatchException(string what, string digest, long declaredSize, long actualSize)
+        : base($"Integrity check failed for {what} {digest}: the manifest declares a size of {declaredSize} bytes but the blob is {actualSize} bytes.")
+    {
+        Digest = digest;
+        DeclaredSize = declaredSize;
+        ActualSize = actualSize;
+    }
+}

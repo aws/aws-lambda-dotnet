@@ -180,4 +180,94 @@ public class AuthHandshakeHandlerTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Single(stub.Requests);
     }
+
+    [Fact]
+    public async Task Caller_supplied_authorization_is_not_overwritten_by_cached_auth()
+    {
+        var stub = new StubHandler(request =>
+        {
+            string url = request.RequestUri!.ToString();
+            if (url.StartsWith("https://auth.example.com/token"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"token\":\"abc123\",\"expires_in\":3600}"),
+                };
+            }
+
+            if (request.Headers.Authorization?.Scheme == "Bearer")
+            {
+                // Echo back which token the registry received.
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(request.Headers.Authorization.Parameter!) };
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer", "realm=\"https://auth.example.com/token\",service=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        // 1. Prime the cache with a handshake-derived token for the host.
+        using (HttpResponseMessage primed = await client.GetAsync("https://registry.example.com/v2/"))
+        {
+            Assert.Equal("abc123", await primed.Content.ReadAsStringAsync());
+        }
+
+        // 2. A request carrying the caller's own Authorization must reach the registry unchanged.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://registry.example.com/v2/app/manifests/latest");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "caller-token");
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal("caller-token", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Caller_supplied_authorization_401_is_returned_without_a_handshake()
+    {
+        var stub = new StubHandler(_ =>
+        {
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer", "realm=\"https://auth.example.com/token\",service=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://registry.example.com/v2/");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "caller-token");
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Single(stub.Requests); // no token request, no retry
+    }
+
+    [Fact]
+    public async Task Requests_marked_skip_authentication_are_not_authenticated()
+    {
+        var stub = new StubHandler(_ =>
+        {
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue("Basic", "realm=\"x\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://storage.example.com/blob");
+        request.Options.Set(AuthHandshakeHandler.SkipAuthentication, true);
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Single(stub.Requests);
+        Assert.Null(stub.Requests[0].Headers.Authorization);
+    }
 }

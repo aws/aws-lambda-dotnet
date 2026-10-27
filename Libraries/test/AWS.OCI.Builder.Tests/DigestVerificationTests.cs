@@ -130,4 +130,51 @@ public class DigestVerificationTests
         // Cleanup-on-failure is covered deterministically by the success test's dispose assertion; a global
         // temp-dir file count here would race with other parallel tests sharing the temp directory.
     }
+
+    [Fact]
+    public async Task GetVerifiedBlobToFileAsync_throws_when_declared_size_differs_from_blob_length()
+    {
+        // The bytes hash correctly to the digest, but the manifest descriptor declares the wrong size.
+        byte[] data = Encoding.UTF8.GetBytes("correct content, wrong declared size");
+        string digest = RegistryClient.ComputeDigest(data);
+        var client = new RegistryClient("example.com", new HttpClient(new SingleBlobHandler(digest, data)));
+
+        BlobSizeMismatchException ex = await Assert.ThrowsAsync<BlobSizeMismatchException>(
+            () => client.GetVerifiedBlobToFileAsync("repo", digest, "base layer", expectedSize: data.Length + 7));
+
+        Assert.Equal(digest, ex.Digest);
+        Assert.Equal(data.Length + 7, ex.DeclaredSize);
+        Assert.Equal(data.Length, ex.ActualSize);
+    }
+
+    [Fact]
+    public async Task GetVerifiedBlobToFileAsync_accepts_matching_declared_size()
+    {
+        byte[] data = Encoding.UTF8.GetBytes("size matches");
+        string digest = RegistryClient.ComputeDigest(data);
+        var client = new RegistryClient("example.com", new HttpClient(new SingleBlobHandler(digest, data)));
+
+        await using VerifiedBlobFile handle = await client.GetVerifiedBlobToFileAsync("repo", digest, "base layer", expectedSize: data.Length);
+        Assert.Equal(data.Length, handle.Stream.Length);
+    }
+
+    [Fact]
+    public async Task GetVerifiedBlobBytesAsync_throws_when_declared_size_differs_from_blob_length()
+    {
+        byte[] data = Encoding.UTF8.GetBytes("small blob");
+        string digest = RegistryClient.ComputeDigest(data);
+        var client = new RegistryClient("example.com", new HttpClient(new SingleBlobHandler(digest, data)));
+
+        BlobSizeMismatchException ex = await Assert.ThrowsAsync<BlobSizeMismatchException>(
+            () => client.GetVerifiedBlobBytesAsync("repo", digest, "base image config", expectedSize: data.Length - 1));
+        Assert.Contains("declares a size", ex.Message, StringComparison.Ordinal);
+
+        // A matching size (or no declared size) passes.
+        Assert.Equal(data, await client.GetVerifiedBlobBytesAsync("repo", digest, "base image config", expectedSize: data.Length));
+        Assert.Equal(data, await client.GetVerifiedBlobBytesAsync("repo", digest, "base image config"));
+    }
+
+    [Fact]
+    public void BlobSizeMismatchException_is_a_RegistryException()
+        => Assert.IsAssignableFrom<RegistryException>(new BlobSizeMismatchException("x", "sha256:a", 1, 2));
 }

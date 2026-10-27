@@ -151,7 +151,7 @@ public sealed class OciImageBuilder : IDisposable
             }
 
             byte[] configBytes = await sourceClient
-                .GetVerifiedBlobBytesAsync(baseReference.Repository, manifest.Config.Digest, "base image config", cancellationToken)
+                .GetVerifiedBlobBytesAsync(baseReference.Repository, manifest.Config.Digest, "base image config", manifest.Config.Size, cancellationToken)
                 .ConfigureAwait(false);
             string configJson = System.Text.Encoding.UTF8.GetString(configBytes);
 
@@ -414,7 +414,7 @@ public sealed class OciImageBuilder : IDisposable
             {
                 // Large layer: stream to a temp file (verified twice) and upload from disk, bounding memory.
                 await using VerifiedBlobFile spilled = await _sourceClient
-                    .GetVerifiedBlobToFileAsync(_baseReference.Repository, layer.Digest, "base layer", cancellationToken)
+                    .GetVerifiedBlobToFileAsync(_baseReference.Repository, layer.Digest, "base layer", layer.Size, cancellationToken)
                     .ConfigureAwait(false);
 
                 await targetClient.UploadBlobAsync(
@@ -430,7 +430,7 @@ public sealed class OciImageBuilder : IDisposable
             {
                 // Small layer: download, verify, and re-upload from memory.
                 byte[] blob = await _sourceClient
-                    .GetVerifiedBlobBytesAsync(_baseReference.Repository, layer.Digest, "base layer", cancellationToken)
+                    .GetVerifiedBlobBytesAsync(_baseReference.Repository, layer.Digest, "base layer", layer.Size, cancellationToken)
                     .ConfigureAwait(false);
 
                 using var upload = new MemoryStream(blob, writable: false);

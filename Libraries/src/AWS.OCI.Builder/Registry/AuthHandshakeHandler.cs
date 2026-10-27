@@ -40,6 +40,13 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
     // Cached authorization header per registry host, with the time it stops being valid.
     private readonly ConcurrentDictionary<string, CachedAuth> _cache = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// When set to <see langword="true"/> on a request's <see cref="HttpRequestMessage.Options"/>, this handler
+    /// sends the request without attaching cached credentials and without answering a 401 challenge. Used for
+    /// cross-host blob redirect hops so credentials are never presented to a redirect target.
+    /// </summary>
+    internal static readonly HttpRequestOptionsKey<bool> SkipAuthentication = new("AWS.OCI.Builder.SkipAuthentication");
+
     /// <summary>Creates the handler.</summary>
     /// <param name="credentialSource">Supplies credentials for each registry host.</param>
     /// <param name="innerHandler">The inner handler (typically an <see cref="HttpClientHandler"/>).</param>
@@ -55,6 +62,22 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         if (request.RequestUri is null)
         {
             throw new ArgumentException("The request must have an absolute RequestUri.", nameof(request));
+        }
+
+        // Requests explicitly marked to skip authentication (e.g. blob-download redirect hops to a different host,
+        // such as object storage) are sent as-is: no cached header is attached and a 401 challenge is NOT
+        // answered. Otherwise a malicious registry could redirect a blob GET to a host it controls, reply 401
+        // with a challenge, and harvest the credentials this handler would send in response.
+        if (request.Options.TryGetValue(SkipAuthentication, out bool skip) && skip)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Respect a caller-supplied Authorization header: send the request unchanged and let the caller handle
+        // any 401, rather than overwriting their credentials with cached or handshake-derived ones.
+        if (request.Headers.Authorization is not null)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         string registryHost = request.RequestUri.Host;

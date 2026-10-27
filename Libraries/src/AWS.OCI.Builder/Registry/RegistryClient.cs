@@ -214,6 +214,13 @@ public sealed class RegistryClient : IDisposable
             // The request is disposed before the next loop iteration, or (on the success path below) transferred
             // to the returned ResponseOwningStream so it outlives this method with the response.
             var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (Uri.Compare(uri, Base, UriComponents.HostAndPort, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                // Cross-host redirect hop (e.g. to object storage): never authenticate against the redirect
+                // target, so a malicious registry cannot redirect to a host it controls and harvest credentials
+                // via a 401 challenge. Presigned storage URLs carry their own authorization.
+                request.Options.Set(AuthHandshakeHandler.SkipAuthentication, true);
+            }
             HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
             if (IsRedirect(response.StatusCode))
@@ -569,9 +576,13 @@ public sealed class RegistryClient : IDisposable
     /// <param name="repository">The repository to read from.</param>
     /// <param name="digest">The expected <c>sha256:...</c> digest; the download is verified against it.</param>
     /// <param name="what">A short description used in any integrity error (e.g. "base layer").</param>
+    /// <param name="expectedSize">
+    /// The size declared by the manifest descriptor, if known. When supplied, the downloaded length must match it.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <exception cref="DigestMismatchException">The downloaded bytes do not hash to <paramref name="digest"/>.</exception>
-    public async Task<byte[]> GetVerifiedBlobBytesAsync(string repository, string digest, string what, CancellationToken cancellationToken = default)
+    /// <exception cref="BlobSizeMismatchException">The downloaded length differs from <paramref name="expectedSize"/>.</exception>
+    public async Task<byte[]> GetVerifiedBlobBytesAsync(string repository, string digest, string what, long? expectedSize = null, CancellationToken cancellationToken = default)
     {
         byte[] bytes;
         await using (Stream stream = await GetBlobAsync(repository, digest, cancellationToken).ConfigureAwait(false))
@@ -582,6 +593,7 @@ public sealed class RegistryClient : IDisposable
         }
 
         VerifyDigest(what, digest, bytes);
+        VerifySize(what, digest, expectedSize, bytes.LongLength);
         return bytes;
     }
 
@@ -608,19 +620,24 @@ public sealed class RegistryClient : IDisposable
     /// <param name="repository">The repository to read from.</param>
     /// <param name="digest">The expected <c>sha256:...</c> digest; both verifications check against it.</param>
     /// <param name="what">A short description used in any integrity error (e.g. "base layer").</param>
+    /// <param name="expectedSize">
+    /// The size declared by the manifest descriptor, if known. When supplied, the downloaded length must match it.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <exception cref="DigestMismatchException">
     /// The downloaded bytes, or the bytes as read back from disk, do not hash to <paramref name="digest"/>.
     /// </exception>
-    public async Task<VerifiedBlobFile> GetVerifiedBlobToFileAsync(string repository, string digest, string what, CancellationToken cancellationToken = default)
+    /// <exception cref="BlobSizeMismatchException">The downloaded length differs from <paramref name="expectedSize"/>.</exception>
+    public async Task<VerifiedBlobFile> GetVerifiedBlobToFileAsync(string repository, string digest, string what, long? expectedSize = null, CancellationToken cancellationToken = default)
     {
         // A unique temp path under the system temp dir (honors TMPDIR). Created now so we can always clean it up.
         string tempPath = Path.Combine(Path.GetTempPath(), $"aws-oci-layer-{Guid.NewGuid():N}.tmp");
 
         try
         {
-            // 1. Stream the blob to disk, hashing the exact bytes written as we go (download-side integrity).
+            // 1. Stream the blob to disk, hashing (and counting) the exact bytes written as we go.
             string downloadedDigest;
+            long downloadedLength = 0;
             await using (Stream source = await GetBlobAsync(repository, digest, cancellationToken).ConfigureAwait(false))
             await using (var file = SpillFile.CreateWrite(tempPath))
             using (var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
@@ -632,6 +649,7 @@ public sealed class RegistryClient : IDisposable
                     while ((read = await source.ReadAsync(rented.AsMemory(0, rented.Length), cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         hasher.AppendData(rented, 0, read);
+                        downloadedLength += read;
                         await file.WriteAsync(rented.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -648,6 +666,7 @@ public sealed class RegistryClient : IDisposable
             }
 
             VerifyDigest(what, digest, downloadedDigest);
+            VerifySize(what, digest, expectedSize, downloadedLength);
 
             // 2. Re-read the file from disk and verify again — catches a faulty disk write that corrupted the
             //    spilled bytes after the download-side hash.
@@ -662,6 +681,20 @@ public sealed class RegistryClient : IDisposable
         {
             TryDeleteFile(tempPath);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Verifies that a downloaded blob's length matches the size its manifest descriptor declared, throwing
+    /// <see cref="BlobSizeMismatchException"/> on mismatch. A wrong declared size would otherwise surface much
+    /// later as an opaque Content-Length transport error during the push, or as a manifest referencing an
+    /// incorrect size. No check is made when <paramref name="expectedSize"/> is <see langword="null"/>.
+    /// </summary>
+    internal static void VerifySize(string what, string digest, long? expectedSize, long actualSize)
+    {
+        if (expectedSize is { } declared && declared != actualSize)
+        {
+            throw new BlobSizeMismatchException(what, digest, declared, actualSize);
         }
     }
 
