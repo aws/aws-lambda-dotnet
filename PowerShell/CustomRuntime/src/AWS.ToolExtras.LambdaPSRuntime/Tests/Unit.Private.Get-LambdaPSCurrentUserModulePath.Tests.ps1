@@ -31,8 +31,16 @@ Describe 'Get-LambdaPSCurrentUserModulePath' -Tag 'Unit' -Skip:$IsWindows {
 
 Describe 'Get-LambdaPSCurrentUserModulePath on Windows' -Tag 'Unit' -Skip:(-not $IsWindows) {
     It 'is the CurrentUser folder PowerShell puts first on the PSModulePath' {
-        # Read from a fresh pwsh, whose PSModulePath no test has changed.
-        $first = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command '($env:PSModulePath -split [System.IO.Path]::PathSeparator)[0]'
+        # Read from a fresh pwsh started without this session's PSModulePath, which build.ps1 prepends
+        # LAMBDAPS_AWSTOOLS_MODULE_PATH to: an inherited value would keep that path first.
+        $saved = $env:PSModulePath
+        try {
+            $env:PSModulePath = $null
+            $first = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command '($env:PSModulePath -split [System.IO.Path]::PathSeparator)[0]'
+        }
+        finally {
+            $env:PSModulePath = $saved
+        }
         InModuleScope $script:moduleName -Parameters @{ First = "$first".Trim() } {
             param($First)
             Get-LambdaPSCurrentUserModulePath | Should -Be $First
