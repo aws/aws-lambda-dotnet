@@ -603,7 +603,22 @@ public sealed class OciImageBuilder : IDisposable
                 nameof(authorizationToken));
         }
 
-        return (decoded[..separator], decoded[(separator + 1)..]);
+        string username = decoded[..separator];
+        string password = decoded[(separator + 1)..];
+
+        // Fail fast on a structurally broken token rather than letting it surface later as an opaque registry
+        // authentication error. The username is not pinned to "AWS" (ECR's documented value) to avoid coupling
+        // to that detail; an empty username or password, though, can never be a valid ECR credential.
+        if (username.Length == 0 || password.Length == 0)
+        {
+            throw new ArgumentException(
+                "The ECR authorization token decoded to a 'username:password' pair with an empty " +
+                (username.Length == 0 ? "username" : "password") + ". Pass the AuthorizationData.AuthorizationToken " +
+                "value returned by the ECR GetAuthorizationToken API verbatim.",
+                nameof(authorizationToken));
+        }
+
+        return (username, password);
     }
 
     /// <summary>Disposes the source registry client and deletes any temp files holding spilled built layers.</summary>

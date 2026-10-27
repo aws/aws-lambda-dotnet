@@ -263,7 +263,15 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         var clone = new HttpRequestMessage(original.Method, original.RequestUri)
         {
             Version = original.Version,
+            VersionPolicy = original.VersionPolicy,
         };
+
+        // Carry request options across so the authenticated retry behaves exactly like the original request.
+        IDictionary<string, object?> cloneOptions = clone.Options;
+        foreach (KeyValuePair<string, object?> option in original.Options)
+        {
+            cloneOptions[option.Key] = option.Value;
+        }
 
         foreach (KeyValuePair<string, IEnumerable<string>> header in original.Headers)
         {

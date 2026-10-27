@@ -517,6 +517,13 @@ public sealed class RegistryClient : IDisposable
         => value.Length <= max ? value : value[..max] + "…";
 
     /// <summary>Computes the <c>sha256:...</c> digest of a stream (used by callers constructing blobs).</summary>
+    /// <remarks>
+    /// The digest covers the bytes from the stream's <em>current position</em> to its end, and the stream is left
+    /// positioned at the end — the same semantics as <see cref="SHA256.HashData(Stream)"/>. To digest a seekable
+    /// stream's full content, set <see cref="Stream.Position"/> to <c>0</c> before calling. The position is not
+    /// reset automatically, so callers can digest a suffix intentionally and non-seekable streams are supported.
+    /// </remarks>
+    /// <param name="content">The stream to hash, read from its current position to the end.</param>
     public static string ComputeDigest(Stream content)
     {
         byte[] hash = SHA256.HashData(content);

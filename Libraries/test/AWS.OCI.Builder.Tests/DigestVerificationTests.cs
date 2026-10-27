@@ -24,6 +24,18 @@ public class DigestVerificationTests
     }
 
     [Fact]
+    public void ComputeDigest_stream_hashes_from_current_position()
+    {
+        byte[] data = Encoding.UTF8.GetBytes("prefix|suffix");
+        var stream = new MemoryStream(data) { Position = 7 }; // positioned at "suffix"
+
+        string digest = RegistryClient.ComputeDigest(stream);
+
+        Assert.Equal(RegistryClient.ComputeDigest(Encoding.UTF8.GetBytes("suffix")), digest);
+        Assert.Equal(data.Length, stream.Position); // left at the end, not rewound
+    }
+
+    [Fact]
     public void VerifyDigest_passes_for_matching_content()
     {
         byte[] data = Encoding.UTF8.GetBytes("layer-bytes");

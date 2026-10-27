@@ -181,6 +181,52 @@ public class AuthHandshakeHandlerTests
         Assert.Single(stub.Requests);
     }
 
+    private static readonly HttpRequestOptionsKey<string> MarkerOption = new("test-marker");
+
+    [Fact]
+    public async Task Handshake_retry_preserves_version_policy_and_request_options()
+    {
+        var stub = new StubHandler(request =>
+        {
+            string url = request.RequestUri!.ToString();
+            if (url.StartsWith("https://auth.example.com/token"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"token\":\"abc123\",\"expires_in\":3600}"),
+                };
+            }
+
+            if (request.Headers.Authorization?.Scheme == "Bearer")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer", "realm=\"https://auth.example.com/token\",service=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://registry.example.com/v2/");
+        request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+        request.Options.Set(MarkerOption, "kept");
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // The last request is the authenticated retry produced by CloneAsync.
+        HttpRequestMessage retry = stub.Requests[^1];
+        Assert.NotSame(request, retry);
+        Assert.Equal(HttpVersionPolicy.RequestVersionExact, retry.VersionPolicy);
+        Assert.True(retry.Options.TryGetValue(MarkerOption, out string? marker));
+        Assert.Equal("kept", marker);
+    }
+
     [Fact]
     public async Task Caller_supplied_authorization_is_not_overwritten_by_cached_auth()
     {

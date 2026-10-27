@@ -553,6 +553,25 @@ public class OciImageBuilderTests
             () => builder.PushToEcrAsync($"{EcrHost}/myapp:latest", tokenWithoutColon));
     }
 
+    [Theory]
+    [InlineData(":password", "username")] // empty username
+    [InlineData("AWS:", "password")]      // empty password
+    public async Task PushToEcrAsync_rejects_a_token_with_an_empty_username_or_password(string decodedToken, string emptyPart)
+    {
+        var registry = new FakeRegistry();
+        (ImageBuilder imageBuilder, IReadOnlyList<Descriptor> baseLayers) = BuildBaseImage(registry, "dotnet/aspnet");
+        var sourceClient = new RegistryClient(SourceHost, new HttpClient(registry));
+        var baseRef = ImageReference.Parse($"{SourceHost}/dotnet/aspnet:8.0");
+
+        using OciImageBuilder builder = OciImageBuilder.CreateForTest(baseRef, sourceClient, imageBuilder, baseLayers);
+
+        string token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(decodedToken));
+
+        ArgumentException ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => builder.PushToEcrAsync($"{EcrHost}/myapp:latest", token));
+        Assert.Contains($"empty {emptyPart}", ex.Message, StringComparison.Ordinal);
+    }
+
     // ---- Progress reporting ----------------------------------------------------------------------
 
     /// <summary>Builds a fresh builder over the shared fake registry with one base layer and one app layer.</summary>
