@@ -4,7 +4,10 @@ function Save-LambdaPSAWSToolsModule {
         Downloads AWS.Tools modules of one version into a folder with AWS.Tools.Installer 2.x.
     .DESCRIPTION
         The mockable seam for AWS.Tools downloads. AWS.Tools.Installer 2.x downloads the
-        CloudFront-hosted, SHA512-checked AWS.Tools.zip rather than going to the PowerShell Gallery.
+        CloudFront-hosted AWS.Tools.zip rather than going to the PowerShell Gallery. It checks the zip
+        against the SHA512 published beside it on the same server, which detects a corrupted download,
+        not a tampered one; only on Windows does it also check each module manifest's Authenticode
+        signer.
         Modules land in <Path>/<Name>/<Version>/; the installer always adds AWS.Tools.Common. The
         installer writes into an empty temporary folder, and each <Name>/<Version> folder is copied into
         -Path only once it has succeeded, so a failed or stopped download leaves nothing in -Path. A

@@ -23,11 +23,14 @@ function Save-LambdaPSModule {
         pins for that module, or else at the minimum. Only what is found in neither place is
         downloaded into -Path, laid out as <Name>/<Version>/:
           AWS.Tools.*    with AWS.Tools.Installer 2.0.5 or a later 2.x, which downloads the
-                         SHA512-checked AWS.Tools.zip from CloudFront. When no such Installer is
-                         installed, the version this module pins is itself saved (not installed)
-                         with PSResourceGet, from -ModuleRepository or else PSGallery, and used
-                         from there only when its files match the pinned SHA256 and, on Windows,
-                         its Authenticode signature is valid.
+                         AWS.Tools.zip from CloudFront. The Installer checks the zip against the
+                         SHA512 published beside it, which detects a corrupted download, not a
+                         tampered one; only on Windows does it also check each module manifest's
+                         Authenticode signer. When no such Installer is installed, the version
+                         this module pins is itself saved (not installed) with PSResourceGet, from
+                         -ModuleRepository or else PSGallery, and used from there only when its
+                         files match the pinned SHA256 and, on Windows, its Authenticode
+                         signature is valid.
           anything else  with PSResourceGet (Save-PSResource) from -ModuleRepository, or else from
                          your registered repositories in priority order. Repository trust is not
                          bypassed: an untrusted repository prompts, and fails in a non-interactive

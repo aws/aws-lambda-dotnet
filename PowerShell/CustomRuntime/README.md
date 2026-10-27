@@ -194,8 +194,10 @@ cmdlets:
 | `Install` | Download the same way, and also install into the CurrentUser module folder (never over an existing version). |
 | `Stop` | Fail with `ModuleNotFoundLocally`. |
 
-Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the
-SHA512-checked AWS.Tools.zip from CloudFront, one download per version) and **PSResourceGet** (`Save-PSResource`) for everything
+Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the AWS.Tools.zip from
+CloudFront, one download per version; the Installer checks it against the SHA512 published beside it, which detects a
+corrupted download, not a tampered one, and only on Windows also checks each module manifest's Authenticode signer)
+and **PSResourceGet** (`Save-PSResource`) for everything
 else, from your registered repositories in priority order, or from the ones you name with
 `-ModuleRepository` (for example an internal mirror, so a same-named package in another feed cannot be
 picked up). PowerShellGet is never called, but AWS.Tools.Installer requires it to be installed. If Installer 2.x
