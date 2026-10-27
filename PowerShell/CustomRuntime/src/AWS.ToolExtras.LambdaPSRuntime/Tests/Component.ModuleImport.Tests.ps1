@@ -34,8 +34,8 @@ Describe 'Module import' -Tag 'Component' {
             Remove-Item -LiteralPath $config -Recurse -Force
         }
 
-        $result.Output | Should -BeLike "*FAILED: ConfigNotFound* | $((@('pwsh.psd1', 'wait.psd1', 'function.psd1') | ForEach-Object { [System.IO.Path]::Combine($result.Config, $_) }) -join ';') | *"
-        $result.Output | Should -BeLike "*Config/pwsh.psd1, Config/wait.psd1, Config/function.psd1 was not found*Reinstall the module*"
+        $result.Output | Should -BeLike "*FAILED: ConfigNotFound* | $((@('pwsh.psd1', 'wait.psd1', 'function.psd1', 'installer.psd1') | ForEach-Object { [System.IO.Path]::Combine($result.Config, $_) }) -join ';') | *"
+        $result.Output | Should -BeLike "*Config/pwsh.psd1, Config/wait.psd1, Config/function.psd1, Config/installer.psd1 was not found*Reinstall the module*"
     }
 
     It 'refuses to import, naming only the missing file, when one Config file is absent' {

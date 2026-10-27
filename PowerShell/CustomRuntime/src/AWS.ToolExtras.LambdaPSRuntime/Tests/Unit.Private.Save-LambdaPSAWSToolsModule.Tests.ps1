@@ -46,13 +46,17 @@ function Install-AWSToolsModule {
                     Copy-Item -Path ([System.IO.Path]::Combine($template, '*')) -Destination $d
                     [PSCustomObject]@{ Name = $Name; Version = '2.0.9'; Repository = 'PSGallery' }
                 }
+                Mock 'Get-LambdaPSFolderHash' -MockWith { $script:Config.installer.FilesSha256 }
 
                 Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $dl -InstallerPath $installerDir 6>&1 |
                     Should -BeNullOrEmpty -Because 'the installer host output is suppressed'
 
                 Should -Invoke 'Save-LambdaPSModuleFromRepository' -Times 1 -Exactly -ParameterFilter {
-                    $Name -eq 'AWS.Tools.Installer' -and $VersionRange -eq '[2.0.5,3.0)' -and $Path -eq $installerDir -and
+                    $Name -eq 'AWS.Tools.Installer' -and $VersionRange -eq "[$($script:Config.installer.Version)]" -and $Path -eq $installerDir -and
                     ($ModuleRepository -join ',') -eq 'PSGallery' -and $AuthenticodeCheck -eq $IsWindows -and $InstallerDefault
+                }
+                Should -Invoke 'Get-LambdaPSFolderHash' -Times 1 -Exactly -ParameterFilter {
+                    $Path -eq [System.IO.Path]::Combine($installerDir, 'AWS.Tools.Installer', '2.0.9') -and $Exclude -contains 'PSGetModuleInfo.xml'
                 }
                 # The installer writes into an empty temporary folder, never straight into -Path.
                 $global:LambdaPSFakeInstallerCall.Path | Should -Not -Be $dl
@@ -63,6 +67,37 @@ function Install-AWSToolsModule {
         }
         finally {
             Remove-Variable -Name LambdaPSFakeInstallerCall -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'deletes a saved AWS.Tools.Installer whose files do not match the pinned SHA256, without importing it' {
+        $template = [System.IO.Path]::Combine($TestDrive, 'tampered-template')
+        $null = New-FakeInstaller -Path $template -Version '2.0.6' -Body '$global:LambdaPSFakeInstallerRan = $true'
+        try {
+            InModuleScope $script:moduleName -Parameters @{ installerDir = (Join-Path $TestDrive 'bootstrap-tampered'); template = $template } {
+                param($installerDir, $template)
+                Mock 'Get-Module' -ParameterFilter { $ListAvailable -and $Name -eq 'AWS.Tools.Installer' } -MockWith { }
+                Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                    $d = [System.IO.Path]::Combine($Path, 'AWS.Tools.Installer', '2.0.6')
+                    $null = New-Item -ItemType Directory -Path $d -Force
+                    Copy-Item -Path ([System.IO.Path]::Combine($template, '*')) -Destination $d
+                    [PSCustomObject]@{ Name = $Name; Version = '2.0.6'; Repository = 'Mirror' }
+                }
+                Mock 'Import-Module' -MockWith { throw 'must not import' }
+                $folder = [System.IO.Path]::Combine($installerDir, 'AWS.Tools.Installer', '2.0.6')
+
+                $err = { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir -ModuleRepository Mirror } |
+                    Should -Throw -ErrorId 'AWSToolsInstallerHashMismatch' -PassThru
+                $err.CategoryInfo.Category | Should -Be 'SecurityError'
+                $err.TargetObject | Should -Be $folder
+                $err.Exception.Message | Should -BeLike "AWS.Tools.Installer 2.0.6 from repository 'Mirror' does not match the SHA256 this module pins for it, so it was deleted without being imported.*"
+                Test-Path -LiteralPath $folder | Should -BeFalse
+                Should -Invoke 'Import-Module' -Times 0 -Exactly
+            }
+            $global:LambdaPSFakeInstallerRan | Should -BeNullOrEmpty
+        }
+        finally {
+            Remove-Variable -Name LambdaPSFakeInstallerRan -Scope Global -ErrorAction SilentlyContinue
         }
     }
 
@@ -94,7 +129,7 @@ function Install-AWSToolsModule {
 
             { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir } |
                 Should -Throw '*saved instead*'
-            Should -Invoke 'Save-LambdaPSModuleFromRepository' -Times 1 -Exactly -ParameterFilter { $VersionRange -eq '[2.0.5,3.0)' }
+            Should -Invoke 'Save-LambdaPSModuleFromRepository' -Times 1 -Exactly -ParameterFilter { $VersionRange -eq "[$($script:Config.installer.Version)]" }
 
             { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir -ModuleRepository Internal } |
                 Should -Throw '*saved instead*'
@@ -133,7 +168,7 @@ function Install-AWSToolsModule {
 
             { Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $TestDrive -InstallerPath $installerDir } |
                 Should -Throw '*saved instead*'
-            Should -Invoke 'Save-LambdaPSModuleFromRepository' -Times 1 -Exactly -ParameterFilter { $VersionRange -eq '[2.0.5,3.0)' }
+            Should -Invoke 'Save-LambdaPSModuleFromRepository' -Times 1 -Exactly -ParameterFilter { $VersionRange -eq "[$($script:Config.installer.Version)]" }
         }
     }
 

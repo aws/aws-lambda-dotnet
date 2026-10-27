@@ -24,9 +24,10 @@ function Save-LambdaPSModule {
         downloaded into -Path, laid out as <Name>/<Version>/:
           AWS.Tools.*    with AWS.Tools.Installer 2.0.5 or a later 2.x, which downloads the
                          SHA512-checked AWS.Tools.zip from CloudFront. When no such Installer is
-                         installed it is itself saved (not installed) with PSResourceGet, from
-                         -ModuleRepository or else PSGallery and, on Windows, only when its
-                         Authenticode signature is valid, then used from there.
+                         installed, the version this module pins is itself saved (not installed)
+                         with PSResourceGet, from -ModuleRepository or else PSGallery, and used
+                         from there only when its files match the pinned SHA256 and, on Windows,
+                         its Authenticode signature is valid.
           anything else  with PSResourceGet (Save-PSResource) from -ModuleRepository, or else from
                          your registered repositories in priority order. Repository trust is not
                          bypassed: an untrusted repository prompts, and fails in a non-interactive
@@ -69,6 +70,9 @@ function Save-LambdaPSModule {
           ModuleInstallerNotFound, AWSToolsInstallerImportFailed, ModuleDownloadFailed
                                       PSResourceGet is missing, AWS.Tools.Installer cannot be
                                       imported, or a download fails
+          AWSToolsInstallerHashMismatch
+                                      the AWS.Tools.Installer saved to bootstrap downloads does
+                                      not match the SHA256 this module pins for it
           ModuleFolderIncomplete      a <Name>/<Version> folder in -Path that holds no <Name>.psd1
                                       (remove it and run again)
           TargetIsFile                -Path is an existing file, not a folder
@@ -85,8 +89,9 @@ function Save-LambdaPSModule {
         an internal mirror). When omitted, every registered repository is searched in priority order,
         so a same-named package in a higher-priority feed would be used. AWS.Tools modules always come
         from the AWS.Tools.zip that AWS.Tools.Installer downloads; when the installer itself must be
-        fetched, it comes from these repositories (PSGallery when this is omitted) and, on Windows, only
-        when its Authenticode signature is valid.
+        fetched, it comes from these repositories (PSGallery when this is omitted) at the version this
+        module pins, and is used only when its files match the pinned SHA256 and, on Windows, its
+        Authenticode signature is valid.
 
         Every name, or pattern with `*` wildcards, must match a registered PSResourceGet repository
         (Get-PSResourceRepository), or the cmdlet stops with ModuleRepositoryNotFound before anything

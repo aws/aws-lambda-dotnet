@@ -10,14 +10,16 @@ function Save-LambdaPSAWSToolsModule {
         -Path only once it has succeeded, so a failed or stopped download leaves nothing in -Path. A
         version folder already in -Path is kept as it is, not overwritten.
 
-        Installer 2.0.5 or a later 2.x is used from the local machine when present. Otherwise it is saved with
-        PSResourceGet into -InstallerPath and imported from there, so it is never installed. Because its
-        code runs on this machine, it is saved only from -ModuleRepository, or from PSGallery (where AWS
-        publishes it) when -ModuleRepository is omitted -- never from whichever registered repository
-        has the highest priority -- and, on Windows, only when its Authenticode signature is valid. It has a
-        RequiredModules entry on PowerShellGet, so importing it needs PowerShellGet present even though
-        this module never calls PowerShellGet; a failed import is a terminating
-        AWSToolsInstallerImportFailed error.
+        Installer 2.0.5 or a later 2.x is used from the local machine when present. Otherwise the version
+        pinned in Config/installer.psd1 is saved with PSResourceGet into -InstallerPath and imported from
+        there, so it is never installed. Because its code runs on this machine, it is saved only from
+        -ModuleRepository, or from PSGallery (where AWS publishes it) when -ModuleRepository is omitted --
+        never from whichever registered repository has the highest priority -- and, on Windows, only when
+        its Authenticode signature is valid. On every platform its files must then match the SHA256 that
+        Config/installer.psd1 pins, or the copy is deleted without being imported
+        (AWSToolsInstallerHashMismatch). It has a RequiredModules entry on PowerShellGet, so importing it
+        needs PowerShellGet present even though this module never calls PowerShellGet; a failed import is
+        a terminating AWSToolsInstallerImportFailed error.
 
         Install-AWSToolsModule is always called with -Path (the temporary folder) and -Force:
           -Path   so nothing is written to a module path. Installing in place would overwrite
@@ -93,8 +95,9 @@ function Save-LambdaPSAWSToolsModule {
     if ($null -eq $installer) {
         $repository = if ($ModuleRepository) { $ModuleRepository } else { @('PSGallery') }
         $isDefault = -not $ModuleRepository
+        $pinned = $script:Config.installer.Version
         try {
-            $saved = Save-LambdaPSModuleFromRepository -Name 'AWS.Tools.Installer' -VersionRange '[2.0.5,3.0)' -Path $InstallerPath `
+            $saved = Save-LambdaPSModuleFromRepository -Name 'AWS.Tools.Installer' -VersionRange "[$pinned]" -Path $InstallerPath `
                 -ModuleRepository $repository -AuthenticodeCheck:$IsWindows -InstallerDefault:$isDefault
         }
         catch {
@@ -106,7 +109,20 @@ function Save-LambdaPSAWSToolsModule {
                 [System.InvalidOperationException]::new($message, $_.Exception),
                 'ModuleDownloadFailed', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, $_.TargetObject)
         }
-        $manifest = [System.IO.Path]::Combine($InstallerPath, 'AWS.Tools.Installer', $saved.Version, 'AWS.Tools.Installer.psd1')
+        # Its code runs in this session: check every saved file against the pinned hash before it is
+        # imported, on every platform, and delete a copy that does not match.
+        $savedFolder = [System.IO.Path]::Combine($InstallerPath, 'AWS.Tools.Installer', $saved.Version)
+        $hash = Get-LambdaPSFolderHash -Path $savedFolder -Exclude 'PSGetModuleInfo.xml'
+        if ($hash -ne $script:Config.installer.FilesSha256) {
+            Remove-Item -LiteralPath $savedFolder -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
+            $message = "AWS.Tools.Installer $($saved.Version) from repository '$($saved.Repository)' does not match the SHA256 " +
+                "this module pins for it, so it was deleted without being imported. Install AWS.Tools.Installer 2.0.5 or a " +
+                "later 2.x from a source you trust, then run again."
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.Security.SecurityException]::new($message),
+                'AWSToolsInstallerHashMismatch', [System.Management.Automation.ErrorCategory]::SecurityError, $savedFolder)
+        }
+        $manifest = [System.IO.Path]::Combine($savedFolder, 'AWS.Tools.Installer.psd1')
         $installer = @(Get-Module -ListAvailable -Name $manifest) | Select-Object -First 1
         Write-Verbose "AWS.Tools.Installer $($saved.Version) was not available locally; saved it to '$InstallerPath'."
     }

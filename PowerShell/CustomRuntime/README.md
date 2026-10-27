@@ -199,8 +199,9 @@ SHA512-checked AWS.Tools.zip from CloudFront, one download per version) and **PS
 else, from your registered repositories in priority order, or from the ones you name with
 `-ModuleRepository` (for example an internal mirror, so a same-named package in another feed cannot be
 picked up). PowerShellGet is never called, but AWS.Tools.Installer requires it to be installed. If Installer 2.x
-is not installed it is itself saved with PSResourceGet, from `-ModuleRepository` or else PSGallery and, on
-Windows, only when its Authenticode signature is valid. It is then used from the temporary folder. Repository
+is not installed, the version this module pins is itself saved with PSResourceGet, from `-ModuleRepository` or
+else PSGallery, and used from the temporary folder only when its files match the pinned SHA256 and, on Windows,
+its Authenticode signature is valid. Repository
 trust is not bypassed: an untrusted repository (PSGallery by default) prompts, and fails in a
 non-interactive session — trust it with `Set-PSResourceRepository -Name PSGallery -Trusted`, or pre-stage modules and
 use `Stop`.
