@@ -28,7 +28,7 @@ namespace Amazon.OCI.Builder.Images;
 /// </list>
 /// <para>
 /// Layers are written deterministically so that the same inputs always yield the same digests: entries are
-/// emitted in a stable sorted order, every entry (including synthesized parent directories) is stamped with a
+/// emitted in a stable sorted order, every emitted entry is stamped with a
 /// fixed epoch timestamp, and paths are normalized to forward-slash, non-rooted form. This reproducibility is
 /// what lets callers skip re-pushing an unchanged layer.
 /// </para>

@@ -181,29 +181,39 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
             return false;
         }
 
-        AuthenticationHeaderValue header = challenges.First();
-        if (header.Scheme is null)
+        // A registry may legally return multiple WWW-Authenticate challenges (RFC 7235) in an unspecified order,
+        // so inspect every challenge rather than only the first. Prefer Bearer (token flow) over Basic; a Bearer
+        // challenge is only usable if it carries a realm. Fall back to the first Basic challenge if no usable
+        // Bearer is present.
+        AuthenticationHeaderValue? basicChallenge = null;
+        foreach (AuthenticationHeaderValue challenge in challenges)
         {
-            return false;
-        }
-
-        scheme = header.Scheme;
-
-        if (header.Scheme.Equals(BasicScheme, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        if (header.Scheme.Equals(BearerScheme, StringComparison.OrdinalIgnoreCase))
-        {
-            Dictionary<string, string> parsed = ParseBearerParameters(header.Parameter);
-            if (!parsed.TryGetValue("realm", out string? realm))
+            if (challenge.Scheme is null)
             {
-                return false;
+                continue;
             }
-            parsed.TryGetValue("service", out string? service);
-            parsed.TryGetValue("scope", out string? scopeValue);
-            authInfo = new AuthInfo(realm, service, scopeValue);
+
+            if (challenge.Scheme.Equals(BearerScheme, StringComparison.OrdinalIgnoreCase))
+            {
+                Dictionary<string, string> parsed = ParseBearerParameters(challenge.Parameter);
+                if (parsed.TryGetValue("realm", out string? realm))
+                {
+                    parsed.TryGetValue("service", out string? service);
+                    parsed.TryGetValue("scope", out string? scopeValue);
+                    scheme = challenge.Scheme;
+                    authInfo = new AuthInfo(realm, service, scopeValue);
+                    return true;
+                }
+            }
+            else if (basicChallenge is null && challenge.Scheme.Equals(BasicScheme, StringComparison.OrdinalIgnoreCase))
+            {
+                basicChallenge = challenge;
+            }
+        }
+
+        if (basicChallenge is not null)
+        {
+            scheme = basicChallenge.Scheme;
             return true;
         }
 

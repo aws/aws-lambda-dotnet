@@ -75,6 +75,81 @@ public class AuthHandshakeHandlerTests
     }
 
     [Fact]
+    public async Task Selects_bearer_challenge_when_it_is_not_the_first_challenge()
+    {
+        // A registry may return multiple WWW-Authenticate challenges in any order. The handler must scan all of
+        // them and pick the usable Bearer challenge even when an unsupported scheme is listed first — the previous
+        // implementation inspected only the first challenge and would have failed here.
+        var stub = new StubHandler(request =>
+        {
+            string url = request.RequestUri!.ToString();
+
+            if (url.StartsWith("https://auth.example.com/token"))
+            {
+                Assert.Equal("Basic", request.Headers.Authorization?.Scheme);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"token\":\"abc123\",\"expires_in\":3600}"),
+                };
+            }
+
+            if (request.Headers.Authorization?.Scheme == "Bearer")
+            {
+                Assert.Equal("abc123", request.Headers.Authorization.Parameter);
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") };
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            // Unsupported scheme first, usable Bearer second.
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue("Negotiate"));
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer",
+                "realm=\"https://auth.example.com/token\",service=\"registry.example.com\",scope=\"repository:app:pull\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using HttpResponseMessage response = await client.GetAsync("https://registry.example.com/v2/app/manifests/latest");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ok", await response.Content.ReadAsStringAsync());
+        Assert.Equal(3, stub.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Falls_back_to_basic_when_no_usable_bearer_challenge_is_present()
+    {
+        // When only an unsupported scheme and a Basic challenge are offered, the handler should select Basic and
+        // present Basic credentials directly (no token round-trip).
+        var stub = new StubHandler(request =>
+        {
+            if (request.Headers.Authorization?.Scheme == "Basic")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") };
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue("Negotiate"));
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue("Basic", "realm=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using HttpResponseMessage response = await client.GetAsync("https://registry.example.com/v2/app/manifests/latest");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ok", await response.Content.ReadAsStringAsync());
+        // Initial 401 + authenticated (Basic) retry — no token endpoint call.
+        Assert.Equal(2, stub.Requests.Count);
+    }
+
+    [Fact]
     public async Task Rejects_bearer_realm_pointing_at_loopback()
     {
         var stub = new StubHandler(_ =>

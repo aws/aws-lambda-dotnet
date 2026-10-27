@@ -32,7 +32,8 @@ namespace Amazon.OCI.Builder;
 /// builder.Config.SetWorkingDirectory("/app");
 /// builder.Config.SetEntrypoint("dotnet", "/app/MyApp.dll");
 ///
-/// await builder.PushAsync("123456789012.dkr.ecr.us-west-2.amazonaws.com/myapp:latest");
+/// // Obtain an ECR authorization token (e.g. via AmazonECRClient.GetAuthorizationTokenAsync) and pass it in.
+/// await builder.PushToEcrAsync("123456789012.dkr.ecr.us-west-2.amazonaws.com/myapp:latest", authorizationToken);
 /// </code>
 /// <para>This type is not thread-safe; use one instance per image build.</para>
 /// </remarks>
@@ -176,7 +177,7 @@ public sealed class OciImageBuilder : IDisposable
             // 3. Prepare the in-memory overlay builder, preserving the base image's schema (OCI vs Docker).
             ImageBuilder imageBuilder = ImageBuilder.FromBaseImage(configJson, platformManifest.Json, platformManifest.MediaType);
 
-            // Capture the base image's layer descriptors now; PushAsync copies these to ECR before uploading the
+            // Capture the base image's layer descriptors now; PushToEcrAsync copies these to ECR before uploading the
             // new layer(s). They are a snapshot of the base manifest, distinct from layers added by this build.
             IReadOnlyList<Descriptor> baseLayers = manifest.Layers.ToArray();
 
