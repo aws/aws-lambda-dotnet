@@ -129,32 +129,38 @@ public sealed class Layer
     }
 
     /// <summary>
-    /// Expands a single manifest entry into file additions and the directory paths they imply.
+    /// Expands a single manifest entry into file additions and the directory entries to emit.
     /// </summary>
+    /// <remarks>
+    /// Only EXPLICITLY mapped directories are recorded in <paramref name="directories"/>; the implicit ancestors
+    /// of a file are not. Tar extraction creates missing parent directories implicitly, so emitting ancestor
+    /// entries is unnecessary — and harmful, because a synthesized 0755 ancestor entry would overlay (and reset)
+    /// the base image's own permissions on that directory (for example <c>/tmp</c>'s 1777, or a private 0700
+    /// parent). Leaving ancestors out preserves the base image's directory metadata.
+    /// </remarks>
     private static void CollectEntry(FileManifestEntry entry, SortedDictionary<string, FileSource> files, SortedSet<string> directories)
     {
         string containerPath = NormalizeContainerPath(entry.ContainerPath);
 
+        // Reject a symlink/reparse point at the mapped path itself: following it could pull in content from
+        // outside the mapping (including host secrets).
+        RejectIfSymlink(entry.LocalPath, entry.LocalPath);
+
         if (File.Exists(entry.LocalPath))
         {
-            AddFile(entry.LocalPath, containerPath, entry.Mode, files, directories);
+            AddFile(entry.LocalPath, containerPath, entry.Mode, files);
             return;
         }
 
         if (Directory.Exists(entry.LocalPath))
         {
-            // A directory maps recursively: each descendant file is placed under the container path, preserving
-            // its relative sub-path. The directory itself is also recorded so an empty directory still appears.
+            // A directory maps recursively. Record the mapped directory itself so an empty mapping still appears,
+            // then walk it WITHOUT following symlinks, recording every descendant file AND directory so the full
+            // structure (including empty subdirectories) is preserved.
             directories.Add(containerPath);
-            EnsureParentDirectories(containerPath, directories);
 
             string root = Path.GetFullPath(entry.LocalPath);
-            foreach (string localFile in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
-            {
-                string relative = Path.GetRelativePath(root, localFile).Replace('\\', '/');
-                string target = $"{containerPath}/{relative}";
-                AddFile(localFile, target, entry.Mode, files, directories);
-            }
+            CollectDirectoryTree(root, containerPath, entry.Mode, files, directories);
             return;
         }
 
@@ -164,14 +170,69 @@ public sealed class Layer
             entry.LocalPath);
     }
 
-    private static void AddFile(string localPath, string containerPath, UnixFileMode? explicitMode, SortedDictionary<string, FileSource> files, SortedSet<string> directories)
+    /// <summary>
+    /// Recursively collects the files and subdirectories under <paramref name="localRoot"/> into the layer,
+    /// placing each under <paramref name="containerRoot"/>. Does not follow directory or file symlinks: a reparse
+    /// point is rejected rather than traversed, so a link cannot copy files from outside the mapped tree into the
+    /// image. Empty subdirectories are recorded so the directory structure is preserved.
+    /// </summary>
+    private static void CollectDirectoryTree(
+        string localRoot,
+        string containerRoot,
+        UnixFileMode? explicitMode,
+        SortedDictionary<string, FileSource> files,
+        SortedSet<string> directories)
+    {
+        // Enumerate entries at this level without recursing, so we can inspect each for a reparse point before
+        // descending. TopDirectoryOnly keeps the symlink decision local to each entry.
+        foreach (string localEntry in Directory.EnumerateFileSystemEntries(localRoot, "*", SearchOption.TopDirectoryOnly))
+        {
+            string relative = Path.GetRelativePath(localRoot, localEntry).Replace('\\', '/');
+            // Normalize/validate the expanded target too (not just caller-supplied destinations): a source name
+            // containing '..' or backslashes must not be able to escape the container root.
+            string target = NormalizeContainerPath($"{containerRoot}/{relative}");
+
+            RejectIfSymlink(localEntry, localEntry);
+
+            if (Directory.Exists(localEntry))
+            {
+                directories.Add(target);
+                CollectDirectoryTree(localEntry, target, explicitMode, files, directories);
+            }
+            else if (File.Exists(localEntry))
+            {
+                AddFile(localEntry, target, explicitMode, files);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Throws when <paramref name="path"/> is a symbolic link or other reparse point. The layer builder archives
+    /// entries as regular files/directories; silently following a link would let a link inside a mapped directory
+    /// pull in files from outside it (an exfiltration vector) and cyclic links would loop. Rejecting is explicit
+    /// and safe for this library's scope (overlay a known set of local files).
+    /// </summary>
+    private static void RejectIfSymlink(string path, string reportedPath)
+    {
+        FileSystemInfo? info = Directory.Exists(path) ? new DirectoryInfo(path)
+            : File.Exists(path) ? new FileInfo(path)
+            : null;
+
+        if (info is not null && info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new ArgumentException(
+                $"The manifest source '{reportedPath}' is a symbolic link or reparse point, which is not supported. " +
+                "Map the real target path explicitly instead.");
+        }
+    }
+
+    private static void AddFile(string localPath, string containerPath, UnixFileMode? explicitMode, SortedDictionary<string, FileSource> files)
     {
         if (files.ContainsKey(containerPath))
         {
             throw new ArgumentException($"Two manifest entries map to the same container path '{containerPath}'.");
         }
         files[containerPath] = new FileSource(localPath, ResolveFileMode(localPath, explicitMode));
-        EnsureParentDirectories(containerPath, directories);
     }
 
     /// <summary>
@@ -199,22 +260,6 @@ public sealed class Layer
         }
 
         return DefaultFileMode;
-    }
-
-    /// <summary>Records every ancestor directory of <paramref name="containerPath"/> so the tar contains them.</summary>
-    private static void EnsureParentDirectories(string containerPath, SortedSet<string> directories)
-    {
-        int slash = containerPath.LastIndexOf('/');
-        while (slash > 0)
-        {
-            string parent = containerPath[..slash];
-            if (!directories.Add(parent))
-            {
-                // Already recorded — all its ancestors are too, so we can stop early.
-                break;
-            }
-            slash = parent.LastIndexOf('/');
-        }
     }
 
     /// <summary>

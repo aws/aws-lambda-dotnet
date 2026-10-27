@@ -50,8 +50,18 @@ public sealed class OciImageBuilder : IDisposable
     /// client built from the push options; replaced in tests to inject a stubbed transport. The default ignores
     /// the credential-source argument because <see cref="PushToEcrAsync"/> builds the ECR source itself.
     /// </summary>
-    private Func<string, IRegistryCredentialSource, RegistryClient> _targetClientFactory =
-        static (host, credentialSource) => RegistryClient.Create(host, credentialSource);
+    private Func<string, IRegistryCredentialSource, RegistryClient>? _targetClientFactory;
+
+    /// <summary>The HTTP timeout for the push client, resolved from <see cref="EcrPushOptions.UploadTimeout"/> at
+    /// push time and read by the default target-client factory.</summary>
+    private TimeSpan _uploadTimeout = Timeout.InfiniteTimeSpan;
+
+    /// <summary>Creates the push-target registry client, honoring the resolved upload timeout. A test override
+    /// (<see cref="UseTargetClientFactoryForTest"/>) takes precedence when set.</summary>
+    private RegistryClient CreateTargetClient(string host, IRegistryCredentialSource credentialSource)
+        => _targetClientFactory is { } factory
+            ? factory(host, credentialSource)
+            : RegistryClient.Create(host, credentialSource, _uploadTimeout);
 
     private OciImageBuilder(
         ImageReference baseReference,
@@ -144,6 +154,25 @@ public sealed class OciImageBuilder : IDisposable
                 .ConfigureAwait(false);
             string configJson = System.Text.Encoding.UTF8.GetString(configBytes);
 
+            // Validate the platform against the config we actually fetched. ResolvePlatformManifestAsync selects
+            // the right entry from a manifest LIST, but a single-platform tag/digest is returned without any
+            // platform comparison — so requesting linux/arm64 from an amd64-only image would otherwise succeed
+            // and silently push an amd64 image. The config's os/architecture are authoritative, so check them
+            // here and fail loudly on a mismatch rather than producing a wrong-platform image.
+            ImageConfig parsedConfig = ImageConfig.Parse(configJson);
+            if (parsedConfig.Os is { } configOs && !configOs.Equals(os, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new RegistryException(
+                    $"The base image '{baseImage}' is for OS '{configOs}', but '{os}' was requested. " +
+                    "Pass a matching platform, or a base image/tag that provides the requested platform.");
+            }
+            if (parsedConfig.Architecture is { } configArch && !configArch.Equals(architecture, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new RegistryException(
+                    $"The base image '{baseImage}' is for architecture '{configArch}', but '{architecture}' was " +
+                    "requested. Pass a matching platform, or a base image/tag that provides the requested platform.");
+            }
+
             // 3. Prepare the in-memory overlay builder, preserving the base image's schema (OCI vs Docker).
             ImageBuilder imageBuilder = ImageBuilder.FromBaseImage(configJson, platformManifest.Json, platformManifest.MediaType);
 
@@ -176,16 +205,14 @@ public sealed class OciImageBuilder : IDisposable
 
         // Build the layer with the media type matching the image schema so the manifest stays consistent.
         Layer layer = await Layer.CreateAsync(files, _imageBuilder.LayerMediaType, cancellationToken).ConfigureAwait(false);
-        _imageBuilder.AddLayer(layer, createdBy);
 
-        // Spill the compressed layer to a temp file so it is not retained in memory for the builder's lifetime.
-        // Only the (small) DiffId is needed in memory after this — the config references it; the gzipped blob is
-        // streamed from disk at push time. The builder owns the file and deletes it on Dispose.
+        // Spill the compressed layer to a temp file FIRST, so it is not retained in memory for the builder's
+        // lifetime. The file is created with owner-only permissions (see SpillFile) so other local users cannot
+        // read a private layer from the shared temp directory. The builder owns the file and deletes it on Dispose.
         string layerFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"aws-oci-built-layer-{Guid.NewGuid():N}.tmp");
         try
         {
-            await using (var file = new FileStream(
-                layerFile, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            await using (var file = Registry.SpillFile.CreateWrite(layerFile))
             {
                 await file.WriteAsync(layer.GzippedTarBytes, cancellationToken).ConfigureAwait(false);
             }
@@ -196,6 +223,11 @@ public sealed class OciImageBuilder : IDisposable
             throw;
         }
 
+        // Only now that the blob is safely on disk do we mutate the image builder (adding the layer's descriptor
+        // and diff_id) and record the pending layer. Doing this before the spill could, on a failed/cancelled
+        // write, leave the manifest referencing a layer whose blob never materializes — a later push would then
+        // reference a missing blob, and a retry could duplicate the layer entry.
+        _imageBuilder.AddLayer(layer, createdBy);
         _pendingLayers.Add(new PendingLayer(layer.Digest, layerFile, layer.GzippedTarBytes.LongLength));
     }
 
@@ -262,13 +294,22 @@ public sealed class OciImageBuilder : IDisposable
                 nameof(options));
         }
 
+        TimeSpan uploadTimeout = options?.UploadTimeout ?? Timeout.InfiniteTimeSpan;
+        if (uploadTimeout != Timeout.InfiniteTimeSpan && uploadTimeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentException(
+                $"{nameof(EcrPushOptions.UploadTimeout)} must be positive or Timeout.InfiniteTimeSpan (was {uploadTimeout}).",
+                nameof(options));
+        }
+        _uploadTimeout = uploadTimeout;
+
         // Decode the ECR authorization token into the Basic username/password the registry handshake expects.
         (string username, string password) = DecodeEcrAuthorizationToken(authorizationToken);
         var credentialSource = new StaticRegistryCredentialSource(username, password);
 
         IProgress<LayerPushProgress>? progress = options?.Progress;
 
-        using RegistryClient targetClient = _targetClientFactory(target.Registry, credentialSource);
+        using RegistryClient targetClient = CreateTargetClient(target.Registry, credentialSource);
 
         // 1. Finalize the config + manifest bytes and their digests.
         BuiltImage built = _imageBuilder.Build();

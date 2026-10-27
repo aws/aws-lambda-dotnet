@@ -102,7 +102,7 @@ public class LayerTests : IDisposable
     }
 
     [Fact]
-    public async Task Tar_contains_files_at_relative_container_paths_and_parent_dirs()
+    public async Task Tar_contains_file_but_not_synthesized_ancestor_directories()
     {
         string file = WriteFile("app.dll", "hello");
         var manifest = new FileManifest { { file, "/app/bin/app.dll" } };
@@ -110,10 +110,12 @@ public class LayerTests : IDisposable
         Layer layer = await Layer.CreateAsync(manifest);
         List<(TarEntryType Type, string Name)> entries = ReadTarEntries(layer.GzippedTarBytes);
 
-        // Parent directories are synthesized (no leading slash, trailing slash for dirs), file has no leading slash.
-        Assert.Contains(entries, e => e is { Type: TarEntryType.Directory, Name: "app/" });
-        Assert.Contains(entries, e => e is { Type: TarEntryType.Directory, Name: "app/bin/" });
+        // The file is present (no leading slash). Its ancestor directories are NOT synthesized as tar entries:
+        // emitting a 0755 "app/" / "app/bin/" entry would overlay and reset the base image's permissions on those
+        // directories. Tar extraction creates missing parents implicitly, so the file still lands correctly.
         Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/bin/app.dll" });
+        Assert.DoesNotContain(entries, e => e is { Type: TarEntryType.Directory, Name: "app/" });
+        Assert.DoesNotContain(entries, e => e is { Type: TarEntryType.Directory, Name: "app/bin/" });
     }
 
     [Fact]
@@ -131,6 +133,61 @@ public class LayerTests : IDisposable
         Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/data/root.txt" });
         Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/data/sub/leaf.txt" });
         Assert.Contains(entries, e => e is { Type: TarEntryType.Directory, Name: "app/data/sub/" });
+    }
+
+    [Fact]
+    public async Task Directory_mapping_preserves_empty_descendant_directories()
+    {
+        // A recursive directory mapping must preserve empty subdirectories, not just directories that hold files.
+        WriteFile("content/root.txt", "r");
+        Directory.CreateDirectory(Path.Combine(_tempRoot, "content", "cache"));   // empty
+        string dir = Path.Combine(_tempRoot, "content");
+
+        var manifest = new FileManifest { { dir, "/app/data" } };
+
+        Layer layer = await Layer.CreateAsync(manifest);
+        List<(TarEntryType Type, string Name)> entries = ReadTarEntries(layer.GzippedTarBytes);
+
+        Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/data/root.txt" });
+        Assert.Contains(entries, e => e is { Type: TarEntryType.Directory, Name: "app/data/cache/" });
+    }
+
+    [Fact]
+    public async Task Symlinked_source_file_is_rejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return; // Creating symlinks on Windows requires elevation; the guard is exercised on Unix CI.
+        }
+
+        string real = WriteFile("secret.txt", "host secret");
+        string link = Path.Combine(_tempRoot, "link.txt");
+        File.CreateSymbolicLink(link, real);
+
+        var manifest = new FileManifest { { link, "/app/link.txt" } };
+
+        // A symlinked source must be rejected rather than silently followed (which could pull in files from
+        // outside the mapped set, e.g. host secrets).
+        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+    }
+
+    [Fact]
+    public async Task Symlink_inside_mapped_directory_is_rejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        WriteFile("tree/ok.txt", "ok");
+        string outside = WriteFile("outside.txt", "host secret");
+        // A link INSIDE the mapped directory pointing outside it must not copy the external file into the layer.
+        File.CreateSymbolicLink(Path.Combine(_tempRoot, "tree", "escape.txt"), outside);
+        string dir = Path.Combine(_tempRoot, "tree");
+
+        var manifest = new FileManifest { { dir, "/app" } };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
     }
 
     [Fact]
@@ -217,7 +274,10 @@ public class LayerTests : IDisposable
     public async Task Default_file_mode_is_0644_and_directory_mode_is_0755()
     {
         string file = WriteFile("app.dll", "hello");
-        var manifest = new FileManifest { { file, "/app/app.dll" } };
+        // Map an explicit directory too, so there is a real (non-synthesized) directory entry to check the mode on.
+        // Synthesized ancestors are intentionally not emitted, so the directory assertion uses a mapped directory.
+        string dir = Directory.CreateDirectory(Path.Combine(_tempRoot, "assets")).FullName;
+        var manifest = new FileManifest { { file, "/app/app.dll" }, { dir, "/app/assets" } };
 
         Layer layer = await Layer.CreateAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
@@ -229,7 +289,7 @@ public class LayerTests : IDisposable
         Assert.Equal(Mode0644, fileEntry.Mode);
 
         (TarEntryType Type, string Name, UnixFileMode Mode) dirEntry =
-            Assert.Single(entries, e => e is { Type: TarEntryType.Directory, Name: "app/" });
+            Assert.Single(entries, e => e is { Type: TarEntryType.Directory, Name: "app/assets/" });
         Assert.Equal(Mode0755, dirEntry.Mode);
     }
 

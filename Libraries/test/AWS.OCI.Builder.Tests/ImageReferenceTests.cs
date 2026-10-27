@@ -42,6 +42,28 @@ public class ImageReferenceTests
         Assert.True(parsed.ReferenceIsDigest);
     }
 
+    [Fact]
+    public void Tag_and_digest_together_strips_the_tag_from_the_repository()
+    {
+        // A reference may carry BOTH a tag and a digest; the digest is authoritative and the tag must not leak
+        // into the repository (which would address the wrong path, e.g. "dotnet/runtime:8.0").
+        const string digest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+        ImageReference parsed = ImageReference.Parse($"mcr.microsoft.com/dotnet/runtime:8.0@{digest}");
+
+        Assert.Equal("dotnet/runtime", parsed.Repository);
+        Assert.Equal(digest, parsed.Reference);
+        Assert.True(parsed.ReferenceIsDigest);
+    }
+
+    [Theory]
+    // Empty / doubled path components that could smuggle an alternate authority into request URIs, or uppercase.
+    [InlineData("123456789012.dkr.ecr.us-west-2.amazonaws.com///attacker.example/app:latest")]
+    [InlineData("123456789012.dkr.ecr.us-west-2.amazonaws.com//app:latest")]
+    [InlineData("registry.example.com/app//evil:latest")]
+    [InlineData("registry.example.com/App/Bad:latest")]
+    public void Rejects_malformed_repository(string input)
+        => Assert.Throws<ArgumentException>(() => ImageReference.Parse(input));
+
     [Theory]
     [InlineData("123456789012.dkr.ecr.us-west-2.amazonaws.com/app:latest", "us-west-2")]
     [InlineData("123456789012.dkr.ecr.eu-central-1.amazonaws.com/app:latest", "eu-central-1")]

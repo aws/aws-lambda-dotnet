@@ -43,4 +43,24 @@ public class RealmValidatorTests
     {
         Assert.Throws<InvalidAuthResponseException>(() => RealmValidator.Validate("not a url", "r"));
     }
+
+    [Theory]
+    [InlineData("127.0.0.1", true)]     // loopback
+    [InlineData("10.1.2.3", true)]      // private
+    [InlineData("172.16.5.5", true)]    // private
+    [InlineData("192.168.0.9", true)]   // private
+    [InlineData("169.254.1.1", true)]   // link-local
+    [InlineData("::1", true)]           // IPv6 loopback
+    [InlineData("8.8.8.8", false)]      // public
+    public void IsBlockedAddress_flags_private_and_loopback(string ip, bool expected)
+        => Assert.Equal(expected, RealmValidator.IsBlockedAddress(System.Net.IPAddress.Parse(ip)));
+
+    [Theory]
+    [InlineData("https://localhost/x", true)]
+    [InlineData("https://sub.localhost/x", true)]
+    [InlineData("https://127.0.0.1/x", true)]
+    [InlineData("https://10.0.0.5/x", true)]
+    [InlineData("https://registry.example.com/x", false)] // public DNS name: not blocked by the pre-connect check
+    public void IsBlockedHost_flags_loopback_names_and_blocked_literals(string url, bool expected)
+        => Assert.Equal(expected, RealmValidator.IsBlockedHost(new Uri(url)));
 }

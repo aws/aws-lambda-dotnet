@@ -65,4 +65,19 @@ public sealed class EcrPushOptions
     /// </para>
     /// </remarks>
     public IProgress<LayerPushProgress>? Progress { get; init; }
+
+    /// <summary>
+    /// The HTTP timeout applied to the registry client used for the push. Because a whole layer blob is sent in a
+    /// single <c>PATCH</c>, the default 100-second <see cref="System.Net.Http.HttpClient"/> timeout would cancel a
+    /// large-layer upload on a slow connection even while the caller's cancellation token is still valid. Defaults
+    /// to <see cref="System.Threading.Timeout.InfiniteTimeSpan"/> (no client-imposed timeout), so an upload is
+    /// bounded only by the <see cref="System.Threading.CancellationToken"/> passed to
+    /// <see cref="OciImageBuilder.PushToEcrAsync"/> — pass a token with your own deadline to bound it. Set a finite
+    /// value to impose a per-request timeout instead.
+    /// </summary>
+    /// <remarks>
+    /// A finite value must be positive, or <see cref="System.Threading.Timeout.InfiniteTimeSpan"/>; any other value
+    /// (zero or negative) is rejected at push time.
+    /// </remarks>
+    public TimeSpan UploadTimeout { get; init; } = System.Threading.Timeout.InfiniteTimeSpan;
 }

@@ -52,17 +52,89 @@ public sealed class RegistryClient : IDisposable
     /// Builds a <see cref="RegistryClient"/> whose HTTP pipeline performs the authentication handshake using
     /// <paramref name="credentialSource"/>.
     /// </summary>
-    public static RegistryClient Create(string registryHost, IRegistryCredentialSource credentialSource)
+    /// <param name="registryHost">The registry host this client targets.</param>
+    /// <param name="credentialSource">Supplies credentials for the authentication handshake.</param>
+    /// <param name="timeout">
+    /// The <see cref="HttpClient.Timeout"/>. Defaults to <see cref="Timeout.InfiniteTimeSpan"/> so a large single-
+    /// PATCH layer upload is bounded by the caller's cancellation token rather than cancelled by the 100-second
+    /// client default. Must be positive or <see cref="Timeout.InfiniteTimeSpan"/>.
+    /// </param>
+    public static RegistryClient Create(string registryHost, IRegistryCredentialSource credentialSource, TimeSpan? timeout = null)
     {
+        // Automatic redirects are DISABLED: the same transport also carries the token requests issued by
+        // AuthHandshakeHandler, and an auto-followed redirect from a validated public realm to a private/loopback
+        // endpoint would bypass RealmValidator (an SSRF vector). Blob downloads — which legitimately redirect to
+        // object storage — follow redirects explicitly in GetBlobAsync, validating each hop.
         var inner = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.None,
-            // Registry endpoints can redirect blob downloads to object storage; allow it.
-            AllowAutoRedirect = true,
+            AllowAutoRedirect = false,
+            // SSRF defense at the socket layer: resolve the target, reject any blocked (loopback/private/link-local)
+            // address, and connect to the SAME address we validated — so a DNS name that resolves to a private
+            // address is refused, and DNS rebinding cannot swap in a different address between check and connect.
+            ConnectCallback = GuardedConnectAsync,
         };
         var authHandler = new AuthHandshakeHandler(credentialSource, inner);
-        var http = new HttpClient(authHandler);
+        var http = new HttpClient(authHandler)
+        {
+            // No client-imposed timeout by default: a whole layer is sent in one PATCH, so the 100s default would
+            // cancel large uploads on slow links. The caller's cancellation token is the intended deadline.
+            Timeout = timeout ?? Timeout.InfiniteTimeSpan,
+        };
         return new RegistryClient(registryHost, http, ownsHttpClient: true);
+    }
+
+    /// <summary>
+    /// A <see cref="SocketsHttpHandler.ConnectCallback"/> that resolves the target host, refuses to connect to any
+    /// blocked (loopback/private/link-local) address, and connects to the exact address it validated. Because the
+    /// check and the connect use the same resolved address, this is robust against DNS rebinding — unlike a
+    /// separate pre-resolution that the socket could override with a second lookup.
+    /// </summary>
+    private static async ValueTask<Stream> GuardedConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        string host = context.DnsEndPoint.Host;
+        int port = context.DnsEndPoint.Port;
+
+        IPAddress[] addresses = IPAddress.TryParse(host, out IPAddress? literal)
+            ? [literal]
+            : await System.Net.Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+
+        // Try each resolved address in order, skipping blocked ones, connecting to the first that is allowed AND
+        // reachable. A blocked address is never dialed.
+        System.Net.Sockets.Socket? socket = null;
+        Exception? lastError = null;
+        foreach (IPAddress address in addresses)
+        {
+            if (RealmValidator.IsBlockedAddress(address))
+            {
+                lastError = new RegistryException(
+                    $"Refusing to connect to '{host}': it resolves to a blocked (loopback/private/link-local) address '{address}'.");
+                continue;
+            }
+
+            var attempt = new System.Net.Sockets.Socket(address.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp)
+            {
+                NoDelay = true,
+            };
+            try
+            {
+                await attempt.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
+                socket = attempt;
+                break;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                attempt.Dispose();
+            }
+        }
+
+        if (socket is null)
+        {
+            throw lastError ?? new RegistryException($"Could not connect to '{host}:{port}'.");
+        }
+
+        return new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
     }
 
     private Uri Base => new($"https://{_registryHost}/v2/");
@@ -127,13 +199,62 @@ public sealed class RegistryClient : IDisposable
     }
 
     /// <summary>Downloads a blob by digest as a stream. The caller owns and must dispose the returned stream's response.</summary>
+    /// <remarks>
+    /// Auto-redirect is disabled on the transport (see <see cref="Create"/>), so redirects to object storage are
+    /// followed here explicitly, up to <see cref="MaxBlobRedirects"/> hops. Each hop's target is validated against
+    /// the blocked (loopback/private/link-local) networks so a redirect cannot bounce the download onto the host's
+    /// private network, and the Authorization header is not carried to a different host.
+    /// </remarks>
     public async Task<Stream> GetBlobAsync(string repository, string digest, CancellationToken cancellationToken = default)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Base, $"{repository}/blobs/{digest}"));
-        HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        await EnsureSuccessAsync(response, $"GET blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
-        return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        Uri uri = new(Base, $"{repository}/blobs/{digest}");
+
+        for (int hop = 0; ; hop++)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+
+            if (IsRedirect(response.StatusCode))
+            {
+                if (hop >= MaxBlobRedirects)
+                {
+                    response.Dispose();
+                    throw new RegistryRequestException((int)response.StatusCode, $"blob download for {repository} {digest} exceeded {MaxBlobRedirects} redirects.");
+                }
+
+                Uri? next = response.Headers.Location;
+                response.Dispose();
+                if (next is null)
+                {
+                    throw new RegistryRequestException(302, $"blob download for {repository} {digest} returned a redirect with no Location.");
+                }
+                if (!next.IsAbsoluteUri)
+                {
+                    next = new Uri(uri, next);
+                }
+                if (!next.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new RegistryRequestException(302, $"blob download for {repository} {digest} redirected to a non-https URL.");
+                }
+                // SSRF guard: never follow a redirect onto a blocked (loopback/private/link-local) address.
+                if (RealmValidator.IsBlockedHost(next))
+                {
+                    throw new RegistryRequestException(302, $"blob download for {repository} {digest} redirected to a blocked (loopback/private/link-local) host '{next.Host}'.");
+                }
+                uri = next;
+                continue;
+            }
+
+            await EnsureSuccessAsync(response, $"GET blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
+            return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
+
+    private const int MaxBlobRedirects = 5;
+
+    private static bool IsRedirect(HttpStatusCode status)
+        => status is HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther
+            or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
 
     /// <summary>
     /// Attempts a cross-repository blob mount so an already-present base-image layer is not re-uploaded.
@@ -212,9 +333,10 @@ public sealed class RegistryClient : IDisposable
         //    progress callback is supplied, wrap the source so bytes are reported as the HTTP stack reads them.
         Stream patchContent = onBytesSent is null ? content : new ProgressReportingStream(content, onBytesSent);
 
-        // Resolve the body length: prefer the caller-supplied value, else a seekable stream's own length. A known
-        // length lets HttpClient stream the body onto the socket instead of first buffering it all into memory.
-        long? bodyLength = contentLength ?? (content.CanSeek ? content.Length : null);
+        // Resolve the body length: prefer the caller-supplied value, else a seekable stream's REMAINING length
+        // (Length - Position). StreamContent sends from the current position, so advertising the full Length for a
+        // stream positioned past the start would claim more bytes than are actually sent and fail the upload.
+        long? bodyLength = contentLength ?? (content.CanSeek ? content.Length - content.Position : null);
 
         using (var patch = new HttpRequestMessage(HttpMethod.Patch, uploadUri)
         {
@@ -428,8 +550,7 @@ public sealed class RegistryClient : IDisposable
             // 1. Stream the blob to disk, hashing the exact bytes written as we go (download-side integrity).
             string downloadedDigest;
             await using (Stream source = await GetBlobAsync(repository, digest, cancellationToken).ConfigureAwait(false))
-            await using (var file = new FileStream(
-                tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            await using (var file = SpillFile.CreateWrite(tempPath))
             using (var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
             {
                 byte[] rented = System.Buffers.ArrayPool<byte>.Shared.Rent(81920);

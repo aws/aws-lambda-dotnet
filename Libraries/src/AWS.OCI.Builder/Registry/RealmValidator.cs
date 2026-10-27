@@ -64,12 +64,40 @@ internal static class RealmValidator
                 registryName, $"The authentication realm '{realm}' uses a loopback host name '{realmHost}'.");
         }
 
+        // NOTE: a DNS-name realm is not resolved here. Resolving in this method would (a) be a different lookup
+        // from the one the socket later performs, so it would not actually defend against DNS rebinding, and
+        // (b) make the spelling check depend on live DNS. Instead, the ACTUAL connection IP is validated at the
+        // socket layer by GuardedConnectCallback (see RegistryClient.Create), which refuses to connect to any
+        // blocked (loopback/private/link-local) address for realm requests, the registry itself, and blob
+        // redirects alike — defeating rebinding because it checks the address the connection truly uses.
         return realmUri;
     }
 
     private static bool IsLoopbackDnsName(string host)
         => host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
            || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="uri"/>'s host is a loopback name or a blocked IP
+    /// literal. This is a cheap pre-connect spelling check used for blob-download redirect hops; the authoritative
+    /// defense is <see cref="IsBlockedAddress"/> applied to the real resolved connection IP at the socket layer.
+    /// </summary>
+    internal static bool IsBlockedHost(Uri uri)
+    {
+        string host = TrimTrailingDot(uri.IdnHost);
+        if (IsLoopbackDnsName(host))
+        {
+            return true;
+        }
+        return IPAddress.TryParse(host, out IPAddress? literal) && IsBlockedIpLiteral(literal);
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="address"/> is a blocked loopback/private/link-local
+    /// address. Applied by the registry client's connect callback to the ACTUAL address a socket is about to
+    /// connect to, so it defends against DNS rebinding (the check sees the real IP, not a separately-resolved one).
+    /// </summary>
+    internal static bool IsBlockedAddress(IPAddress address) => IsBlockedIpLiteral(address);
 
     private static string TrimTrailingDot(string host)
         => host.Length > 1 && host[^1] == '.' ? host[..^1] : host;

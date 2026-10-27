@@ -78,20 +78,19 @@ public class EcrPushIntegrationTests
                 // Region is inferred from the ECR host in the target; the auth token is fetched via the SDK.
                 string authToken = await GetAuthorizationTokenStringAsync(ecr);
 
-                // Collect push progress so we can assert the event contract against real ECR byte streaming.
+                // Collect push progress so we can assert the event contract against real ECR byte streaming. Use a
+                // SYNCHRONOUS sink: Progress<T> marshals callbacks asynchronously, so completing PushToEcrAsync would
+                // not guarantee every Completed event has arrived, making the assertions below racy. A synchronous
+                // sink reports inline on the push thread, so all events are present once the push returns.
                 var events = new List<LayerPushProgress>();
                 var options = new EcrPushOptions
                 {
-                    Progress = new Progress<LayerPushProgress>(e =>
-                    {
-                        lock (events) { events.Add(e); }
-                    }),
+                    Progress = new SynchronousProgress(events.Add),
                 };
                 pushedDigest = await builder.PushToEcrAsync(targetImage, authToken, options);
 
-                // Verify the progress contract end to end. (Progress<T> marshals callbacks, so snapshot under lock.)
-                List<LayerPushProgress> seen;
-                lock (events) { seen = events.ToList(); }
+                // Verify the progress contract end to end. All events are already delivered (synchronous sink).
+                List<LayerPushProgress> seen = events;
 
                 Assert.NotEmpty(seen);
                 int totalLayers = seen[0].TotalLayers;
@@ -361,5 +360,17 @@ public class EcrPushIntegrationTests
     {
         string? value = Environment.GetEnvironmentVariable(name);
         return string.IsNullOrWhiteSpace(value) ? fallback : value;
+    }
+
+    /// <summary>
+    /// A deterministic <see cref="IProgress{T}"/> that invokes the callback synchronously on the reporting thread,
+    /// so all events are delivered by the time the awaited push completes — unlike <see cref="Progress{T}"/>, whose
+    /// asynchronous marshaling would make post-push assertions race the final callbacks.
+    /// </summary>
+    private sealed class SynchronousProgress : IProgress<LayerPushProgress>
+    {
+        private readonly Action<LayerPushProgress> _onReport;
+        public SynchronousProgress(Action<LayerPushProgress> onReport) => _onReport = onReport;
+        public void Report(LayerPushProgress value) => _onReport(value);
     }
 }

@@ -239,14 +239,33 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
 
         if (original.Content is not null)
         {
-            // Buffer the content so it can be sent again on the authenticated retry.
-            byte[] bytes = await original.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-            var content = new ByteArrayContent(bytes);
+            HttpContent replayContent;
+
+            // Prefer replaying a SEEKABLE body by rewinding it — this is the real upload case (the PATCH body is a
+            // StreamContent over a FileStream or MemoryStream), and rewinding avoids buffering the entire blob into
+            // memory, which would defeat the spill-to-disk memory bound for large layers. Only a non-seekable body
+            // of unknown provenance falls back to buffering (small control requests, never the large layer PATCH).
+            Stream? contentStream = original.Content is StreamContent
+                ? await original.Content.ReadAsStreamAsync().ConfigureAwait(false)
+                : null;
+
+            if (contentStream is { CanSeek: true })
+            {
+                contentStream.Position = 0;
+                replayContent = new StreamContent(contentStream);
+            }
+            else
+            {
+                // Fallback: buffer. Reached only for non-seekable, typically tiny, bodies.
+                byte[] bytes = await original.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                replayContent = new ByteArrayContent(bytes);
+            }
+
             foreach (KeyValuePair<string, IEnumerable<string>> header in original.Content.Headers)
             {
-                content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                replayContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
-            clone.Content = content;
+            clone.Content = replayContent;
         }
 
         return clone;

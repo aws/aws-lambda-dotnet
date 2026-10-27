@@ -303,6 +303,16 @@ public class OciImageBuilderTests
             Assert.True(afterAdd.Count >= 1, "AddLayerAsync should have spilled the built layer to a temp file.");
             Assert.All(afterAdd, path => Assert.True(File.Exists(path)));
 
+            // #5: on Unix the spill file must be owner-only (0600), not world-readable (0644). A private layer in
+            // the shared temp dir must not be readable by other local users.
+            if (!OperatingSystem.IsWindows())
+            {
+                const UnixFileMode groupOrOther =
+                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+                Assert.All(afterAdd, path => Assert.Equal((UnixFileMode)0, File.GetUnixFileMode(path) & groupOrOther));
+            }
+
             builder.Dispose();
 
             // Every file this test created must be gone after Dispose (regardless of what other tests are doing).

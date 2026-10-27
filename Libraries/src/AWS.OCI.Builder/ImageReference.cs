@@ -101,9 +101,17 @@ public sealed partial class ImageReference
         int atIndex = remainder.IndexOf('@');
         if (atIndex >= 0)
         {
-            repository = remainder[..atIndex];
+            string namePortion = remainder[..atIndex];
             refValue = remainder[(atIndex + 1)..];
             isDigest = true;
+
+            // A reference may carry BOTH a tag and a digest (e.g. "dotnet/runtime:8.0@sha256:..."). The digest is
+            // authoritative, so strip a trailing ":tag" from the name portion; otherwise the tag would leak into
+            // the repository and address the wrong path. Only a ':' AFTER the final '/' is a tag separator (a ':'
+            // inside an earlier segment would be a malformed host:port that repository validation rejects anyway).
+            int nameLastSlash = namePortion.LastIndexOf('/');
+            int nameTagColon = namePortion.IndexOf(':', nameLastSlash + 1);
+            repository = nameTagColon >= 0 ? namePortion[..nameTagColon] : namePortion;
         }
         else
         {
@@ -137,6 +145,20 @@ public sealed partial class ImageReference
             repository = "library/" + repository;
         }
 
+        // Validate the repository against the OCI/Docker name grammar. Without this, an input such as
+        // "123456789012.dkr.ecr.us-west-2.amazonaws.com///attacker.example/app" would be accepted and its
+        // "//attacker.example/app" repository would override the authority of the request URIs the RegistryClient
+        // builds — causing the caller's credentials (a StaticRegistryCredentialSource answers for every host) to
+        // be sent to an attacker-controlled host. Rejecting malformed names here closes that vector.
+        if (!RepositoryRegex().IsMatch(repository))
+        {
+            throw new ArgumentException(
+                $"The image reference '{reference}' has an invalid repository '{repository}'. A repository is one or " +
+                "more lowercase path components (letters, digits, and separators '.', '_', '-') separated by single " +
+                "'/' characters.",
+                nameof(reference));
+        }
+
         return new ImageReference(registry, repository, refValue, isDigest);
     }
 
@@ -148,4 +170,11 @@ public sealed partial class ImageReference
     // (also supports the FIPS and China/GovCloud partitions' domains).
     [GeneratedRegex(@"^\d{12}\.dkr\.ecr(-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(\.cn)?$", RegexOptions.IgnoreCase)]
     private static partial Regex EcrHostRegex();
+
+    // The OCI/Docker repository-name grammar: one or more path components separated by single '/' characters,
+    // each component lowercase alphanumerics with optional internal '.', '_', '__' or '-' separators. This rejects
+    // leading/trailing/double slashes, empty components, and uppercase — the shapes that could otherwise smuggle an
+    // alternate authority into a request URI.
+    [GeneratedRegex(@"^[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*$")]
+    private static partial Regex RepositoryRegex();
 }
