@@ -26,8 +26,9 @@ public sealed class EcrPushOptions
     /// <remarks>
     /// <para>
     /// This affects only the copy of <em>base-image</em> layers (which are downloaded from the source registry and
-    /// re-uploaded to ECR). Layers built by this library are produced in memory by construction and are uploaded
-    /// from memory regardless of this setting.
+    /// re-uploaded to ECR). Layers built by this library are always written to a temporary file when they are added
+    /// (see <see cref="OciImageBuilder.AddLayerAsync"/>) and uploaded from that file during the push, regardless
+    /// of this setting.
     /// </para>
     /// <para>
     /// Data integrity is preserved on both paths: the in-memory path verifies the downloaded bytes against the

@@ -183,6 +183,131 @@ public class AuthHandshakeHandlerTests
 
     private static readonly HttpRequestOptionsKey<string> MarkerOption = new("test-marker");
 
+    [Theory]
+    // ECR / Docker Hub style (no whitespace).
+    [InlineData("realm=\"https://a/token\",service=\"reg\",scope=\"repository:app:pull\"", "https://a/token", "reg", "repository:app:pull")]
+    // Optional whitespace after commas.
+    [InlineData("realm=\"https://a/token\", service=\"reg\", scope=\"repository:app:pull\"", "https://a/token", "reg", "repository:app:pull")]
+    // Optional whitespace BEFORE commas — the old regex silently dropped realm here.
+    [InlineData("realm=\"https://a/token\" , service=\"reg\"", "https://a/token", "reg", null)]
+    // Whitespace around '=' and tabs.
+    [InlineData("realm = \"https://a/token\",\tservice\t=\t\"reg\"", "https://a/token", "reg", null)]
+    // Unquoted token values — the old regex parsed nothing.
+    [InlineData("realm=https://a/token,service=reg", "https://a/token", "reg", null)]
+    // A comma inside a quoted value stays part of the value.
+    [InlineData("realm=\"https://a/token\",scope=\"repository:app:pull,push\"", "https://a/token", null, "repository:app:pull,push")]
+    public void Parses_bearer_challenge_parameters(string parameters, string realm, string? service, string? scope)
+    {
+        Dictionary<string, string> parsed = AuthHandshakeHandler.ParseBearerParameters(parameters);
+
+        Assert.Equal(realm, parsed["realm"]);
+        Assert.Equal(service, parsed.GetValueOrDefault("service"));
+        Assert.Equal(scope, parsed.GetValueOrDefault("scope"));
+    }
+
+    [Fact]
+    public void Parses_hyphenated_names_escaped_quotes_and_ignores_malformed_segments()
+    {
+        Dictionary<string, string> parsed = AuthHandshakeHandler.ParseBearerParameters(
+            "realm=\"https://a/token\", garbage, x-custom=\"1\", error_description=\"say \\\"hi\\\"\", REALM=\"second\"");
+
+        Assert.Equal("https://a/token", parsed["realm"]);        // first occurrence wins; names are case-insensitive
+        Assert.Equal("1", parsed["x-custom"]);                    // hyphen is a valid token character
+        Assert.Equal("say \"hi\"", parsed["error_description"]);  // backslash escapes are unescaped
+        Assert.False(parsed.ContainsKey("garbage"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Parses_empty_parameters_as_empty(string? parameters)
+        => Assert.Empty(AuthHandshakeHandler.ParseBearerParameters(parameters));
+
+    [Fact]
+    public async Task Handshake_succeeds_with_whitespace_before_commas_in_challenge()
+    {
+        var stub = new StubHandler(request =>
+        {
+            if (request.RequestUri!.ToString().StartsWith("https://auth.example.com/token"))
+            {
+                Assert.Contains("service=registry.example.com", request.RequestUri.Query, StringComparison.Ordinal);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"token\":\"abc123\",\"expires_in\":3600}"),
+                };
+            }
+
+            if (request.Headers.Authorization?.Scheme == "Bearer")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer", "realm=\"https://auth.example.com/token\" , service=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        using HttpResponseMessage response = await client.GetAsync("https://registry.example.com/v2/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(3, stub.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Handshake_retry_is_disposed_without_closing_the_callers_body_stream()
+    {
+        var stub = new StubHandler(request =>
+        {
+            if (request.RequestUri!.ToString().StartsWith("https://auth.example.com/token"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"token\":\"abc123\",\"expires_in\":3600}"),
+                };
+            }
+
+            if (request.Headers.Authorization?.Scheme == "Bearer")
+            {
+                return new HttpResponseMessage(HttpStatusCode.Accepted);
+            }
+
+            var unauthorized = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            unauthorized.Headers.WwwAuthenticate.Add(new AuthenticationHeaderValue(
+                "Bearer", "realm=\"https://auth.example.com/token\",service=\"registry.example.com\""));
+            return unauthorized;
+        });
+
+        var handler = new AuthHandshakeHandler(
+            new StaticCredentials(new BasicRegistryCredentials("AWS", "secret")), stub);
+        using var client = new HttpClient(handler);
+
+        // A seekable body, as in a real layer upload (FileStream / MemoryStream) — owned by the caller.
+        var body = new MemoryStream("layer-bytes"u8.ToArray());
+        using var request = new HttpRequestMessage(HttpMethod.Patch, "https://registry.example.com/v2/app/blobs/uploads/1")
+        {
+            Content = new StreamContent(body),
+        };
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        // The retry clone was disposed: its content can no longer be read.
+        HttpRequestMessage retry = stub.Requests[^1];
+        Assert.NotSame(request, retry);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => retry.Content!.ReadAsByteArrayAsync());
+
+        // ...but the caller's stream is still open and usable.
+        Assert.True(body.CanRead);
+        body.Position = 0;
+        Assert.Equal("layer-bytes"u8.ToArray(), body.ToArray());
+    }
+
     [Fact]
     public async Task Handshake_retry_preserves_version_policy_and_request_options()
     {

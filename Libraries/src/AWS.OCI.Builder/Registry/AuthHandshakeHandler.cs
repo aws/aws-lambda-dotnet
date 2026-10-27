@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using System.Web;
 
 namespace Amazon.OCI.Builder.Registry;
@@ -109,8 +108,9 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
 
         _cache[registryHost] = new CachedAuth(header, expiry);
 
-        // Retry the original request with the authorization header.
-        HttpRequestMessage retry = await CloneAsync(request).ConfigureAwait(false);
+        // Retry the original request with the authorization header. The clone is disposed once sent; its content
+        // never owns the caller's body stream (see CloneAsync), so disposing it cannot close that stream.
+        using HttpRequestMessage retry = await CloneAsync(request).ConfigureAwait(false);
         retry.Headers.Authorization = header;
         return await base.SendAsync(retry, cancellationToken).ConfigureAwait(false);
     }
@@ -243,20 +243,113 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         return false;
     }
 
-    private static Dictionary<string, string> ParseBearerParameters(string? parameters)
+    /// <summary>
+    /// Parses the <c>auth-param</c> list of a <c>WWW-Authenticate</c> challenge (RFC 7235 §2.1):
+    /// <c>name = ( token / quoted-string )</c> pairs separated by commas, with optional whitespace around both
+    /// the <c>=</c> and the <c>,</c>. Quoted values may contain commas and backslash-escaped characters; unquoted
+    /// (token) values are also accepted. Names are matched case-insensitively; if a name repeats, the first wins.
+    /// Malformed segments are skipped rather than aborting the whole parse.
+    /// </summary>
+    internal static Dictionary<string, string> ParseBearerParameters(string? parameters)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (parameters is null)
+        if (string.IsNullOrEmpty(parameters))
         {
             return result;
         }
 
-        foreach (Match match in BearerParameterSplitter().Matches(parameters))
+        string s = parameters;
+        int i = 0;
+        int n = s.Length;
+
+        while (i < n)
         {
-            result[match.Groups["key"].Value] = match.Groups["value"].Value;
+            // Skip list separators and optional whitespace before the next parameter.
+            while (i < n && (s[i] == ',' || IsOptionalWhitespace(s[i])))
+            {
+                i++;
+            }
+            if (i >= n)
+            {
+                break;
+            }
+
+            // Parameter name: one or more token characters.
+            int nameStart = i;
+            while (i < n && IsTokenChar(s[i]))
+            {
+                i++;
+            }
+            string name = s[nameStart..i];
+
+            while (i < n && IsOptionalWhitespace(s[i]))
+            {
+                i++;
+            }
+
+            if (name.Length == 0 || i >= n || s[i] != '=')
+            {
+                // Not a name=value pair: skip to the next separator and carry on.
+                SkipToNextSeparator(s, ref i);
+                continue;
+            }
+
+            i++; // consume '='
+            while (i < n && IsOptionalWhitespace(s[i]))
+            {
+                i++;
+            }
+
+            string value;
+            if (i < n && s[i] == '"')
+            {
+                // quoted-string: read until the closing quote, honoring backslash escapes (quoted-pair).
+                i++;
+                var builder = new StringBuilder();
+                while (i < n && s[i] != '"')
+                {
+                    if (s[i] == '\\' && i + 1 < n)
+                    {
+                        i++;
+                    }
+                    builder.Append(s[i]);
+                    i++;
+                }
+                i++; // consume the closing quote (harmless if it was missing)
+                value = builder.ToString();
+            }
+            else
+            {
+                // token value: read until a separator or whitespace.
+                int valueStart = i;
+                while (i < n && s[i] != ',' && !IsOptionalWhitespace(s[i]))
+                {
+                    i++;
+                }
+                value = s[valueStart..i];
+            }
+
+            result.TryAdd(name, value);
+            SkipToNextSeparator(s, ref i);
         }
+
         return result;
     }
+
+    private static void SkipToNextSeparator(string s, ref int i)
+    {
+        while (i < s.Length && s[i] != ',')
+        {
+            i++;
+        }
+    }
+
+    private static bool IsOptionalWhitespace(char c) => c is ' ' or '\t';
+
+    /// <summary>An RFC 7230 <c>tchar</c>: the characters allowed in a token such as a parameter name.</summary>
+    private static bool IsTokenChar(char c)
+        => char.IsAsciiLetterOrDigit(c) || c is '!' or '#' or '$' or '%' or '&' or '\'' or '*' or '+' or '-' or '.'
+            or '^' or '_' or '`' or '|' or '~';
 
     private static async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage original)
     {
@@ -293,7 +386,9 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
             if (contentStream is { CanSeek: true })
             {
                 contentStream.Position = 0;
-                replayContent = new StreamContent(contentStream);
+                // The stream belongs to the original request (and ultimately the caller); wrap it so that
+                // disposing the retry clone does not close it.
+                replayContent = new StreamContent(new NonOwningStream(contentStream));
             }
             else
             {
@@ -312,8 +407,37 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         return clone;
     }
 
-    [GeneratedRegex("(?<key>\\w+)=\"(?<value>[^\"]*)\"(?:,|$)")]
-    private static partial Regex BearerParameterSplitter();
+    /// <summary>
+    /// A pass-through stream that forwards everything to an inner stream but does NOT dispose it. Used for the
+    /// retry clone's body so disposing the clone leaves the original request's stream — owned by the caller —
+    /// open and usable.
+    /// </summary>
+    internal sealed class NonOwningStream : Stream
+    {
+        private readonly Stream _inner;
+
+        public NonOwningStream(Stream inner) => _inner = inner;
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => _inner.CanWrite;
+        public override long Length => _inner.Length;
+        public override long Position { get => _inner.Position; set => _inner.Position = value; }
+
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override int Read(Span<byte> buffer) => _inner.Read(buffer);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => _inner.ReadAsync(buffer, offset, count, cancellationToken);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => _inner.ReadAsync(buffer, cancellationToken);
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => _inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+        public override void Flush() => _inner.Flush();
+
+        // Dispose is intentionally not overridden: the base implementation never touches _inner, which belongs to
+        // the caller that owns the original request.
+    }
 
     /// <summary>Parsed <c>Bearer</c> challenge parameters.</summary>
     private sealed record AuthInfo(string Realm, string? Service, string? Scope);
