@@ -22,36 +22,52 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         private const string DebuggingEnvironmentVariable = "LAMBDA_RUNTIMESUPPORT_DEBUG";
 
         public static readonly InternalLogger ConsoleLogger = new InternalLogger(Console.WriteLine);
-        public static readonly InternalLogger NoOpLogger = new InternalLogger(message => { });
+        public static readonly InternalLogger NoOpLogger = new InternalLogger(message => { }, isEnabled: false);
 
         private readonly Action<string> _internalLoggingAction;
+
+        // Whether messages are logged. When false, messages are not formatted to avoid allocating
+        // strings that would be discarded, as the logger is called multiple times for every invocation.
+        private readonly bool _isEnabled;
 
         /// <summary>
         /// Constructs InternalLogger which logs to the internalLoggingAction.
         /// </summary>
         /// <param name="internalLoggingAction"></param>
-        private InternalLogger(Action<string> internalLoggingAction)
+        /// <param name="isEnabled">Whether messages are logged.</param>
+        private InternalLogger(Action<string> internalLoggingAction, bool isEnabled = true)
         {
             _internalLoggingAction = internalLoggingAction;
             if (_internalLoggingAction == null)
             {
                 throw new ArgumentNullException(nameof(internalLoggingAction));
             }
+
+            _isEnabled = isEnabled;
         }
 
         public void LogDebug(string message)
         {
-            _internalLoggingAction($"[Debug] {message}");
+            if (_isEnabled)
+            {
+                _internalLoggingAction($"[Debug] {message}");
+            }
         }
 
         public void LogError(Exception exception, string message)
         {
-            _internalLoggingAction($"[Error] {message} - {exception.ToString()}");
+            if (_isEnabled)
+            {
+                _internalLoggingAction($"[Error] {message} - {exception.ToString()}");
+            }
         }
 
         public void LogInformation(string message)
         {
-            _internalLoggingAction($"[Info] {message}");
+            if (_isEnabled)
+            {
+                _internalLoggingAction($"[Info] {message}");
+            }
         }
 
         /// <summary>
