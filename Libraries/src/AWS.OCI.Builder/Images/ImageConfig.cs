@@ -24,15 +24,14 @@ namespace Amazon.OCI.Builder.Images;
 /// </remarks>
 public sealed class ImageConfig
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
+    // Writer options for the canonical config bytes: compact (no insignificant whitespace) and relaxed escaping,
+    // matching what registries emit. The config digest is computed over these exact bytes, so this formatting is
+    // part of the contract. Writing the JsonNode tree through a Utf8JsonWriter keeps serialization trim/AOT-safe
+    // (no reflection-based JsonSerializer overload or DefaultJsonTypeInfoResolver).
+    private static readonly JsonWriterOptions WriterOptions = new()
     {
-        // Compact output: the config digest is computed over these exact bytes, so no extra whitespace.
-        WriteIndented = false,
-        // Do not re-escape non-ASCII; match what registries and other tools emit.
+        Indented = false,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        // Required on .NET 8: serializing a JsonNode through a custom options instance throws unless the options
-        // carry a TypeInfoResolver. .NET 9+ supplies a default implicitly, but we set it explicitly for net8.0.
-        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver(),
     };
 
     private readonly JsonObject _root;
@@ -94,7 +93,8 @@ public sealed class ImageConfig
             diffIds = new JsonArray();
             rootfs["diff_ids"] = diffIds;
         }
-        diffIds.Add(diffId);
+        // Add the diff_id as a JsonNode (not the generic Add<string>, which is trim/AOT-unsafe).
+        diffIds.Add(JsonValue.Create(diffId) as JsonNode);
 
         // history — one entry per layer keeps the array aligned with the layer stack. The timestamp is fixed so
         // the config stays reproducible (see Layer's reproducibility rationale).
@@ -111,7 +111,7 @@ public sealed class ImageConfig
         {
             entry["created_by"] = createdBy;
         }
-        history.Add(entry);
+        history.Add(entry as JsonNode);
     }
 
     /// <summary>Sets the container entrypoint (the config's <c>config.Entrypoint</c>).</summary>
@@ -162,7 +162,7 @@ public sealed class ImageConfig
                 return;
             }
         }
-        env.Add(entry);
+        env.Add(JsonValue.Create(entry) as JsonNode);
     }
 
     /// <summary>Adds or overwrites a label (the config's <c>config.Labels</c> map).</summary>
@@ -198,10 +198,18 @@ public sealed class ImageConfig
     }
 
     /// <summary>Serializes the config to its canonical, compact UTF-8 bytes (what the config digest is computed over).</summary>
-    public byte[] ToJsonBytes() => JsonSerializer.SerializeToUtf8Bytes(_root, SerializerOptions);
+    public byte[] ToJsonBytes()
+    {
+        var buffer = new System.Buffers.ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, WriterOptions))
+        {
+            _root.WriteTo(writer);
+        }
+        return buffer.WrittenSpan.ToArray();
+    }
 
     /// <summary>Serializes the config to its canonical, compact JSON string.</summary>
-    public string ToJsonString() => _root.ToJsonString(SerializerOptions);
+    public string ToJsonString() => System.Text.Encoding.UTF8.GetString(ToJsonBytes());
 
     /// <summary>Returns the <c>config</c> sub-object, creating it if absent.</summary>
     private JsonObject ConfigObject()
@@ -225,7 +233,7 @@ public sealed class ImageConfig
         var array = new JsonArray();
         foreach (string value in values)
         {
-            array.Add(value);
+            array.Add(JsonValue.Create(value) as JsonNode);
         }
         ConfigObject()[key] = array;
     }

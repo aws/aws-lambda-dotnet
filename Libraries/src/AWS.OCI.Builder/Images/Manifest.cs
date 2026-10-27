@@ -13,13 +13,6 @@ namespace Amazon.OCI.Builder.Images;
 /// </remarks>
 public sealed class Manifest
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     /// <summary>The manifest schema version. Always <c>2</c> for OCI and Docker V2 Schema 2.</summary>
     [JsonPropertyName("schemaVersion")]
     [JsonPropertyOrder(0)]
@@ -54,7 +47,7 @@ public sealed class Manifest
 
         try
         {
-            return JsonSerializer.Deserialize<Manifest>(json, SerializerOptions)
+            return JsonSerializer.Deserialize(json, OciJsonContext.ManifestInfo)
                    ?? throw new ArgumentException("The manifest JSON deserialized to null.", nameof(json));
         }
         catch (JsonException ex)
@@ -64,10 +57,10 @@ public sealed class Manifest
     }
 
     /// <summary>Serializes the manifest to its canonical, compact UTF-8 bytes (what the image digest is computed over).</summary>
-    public byte[] ToJsonBytes() => JsonSerializer.SerializeToUtf8Bytes(this, SerializerOptions);
+    public byte[] ToJsonBytes() => JsonSerializer.SerializeToUtf8Bytes(this, OciJsonContext.ManifestInfo);
 
     /// <summary>Serializes the manifest to its canonical, compact JSON string.</summary>
-    public string ToJsonString() => JsonSerializer.Serialize(this, SerializerOptions);
+    public string ToJsonString() => JsonSerializer.Serialize(this, OciJsonContext.ManifestInfo);
 }
 
 /// <summary>
@@ -77,13 +70,6 @@ public sealed class Manifest
 /// </summary>
 public sealed class ImageIndex
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     /// <summary>The schema version (always <c>2</c>).</summary>
     [JsonPropertyName("schemaVersion")]
     public int SchemaVersion { get; set; } = 2;
@@ -107,7 +93,7 @@ public sealed class ImageIndex
 
         try
         {
-            return JsonSerializer.Deserialize<ImageIndex>(json, SerializerOptions)
+            return JsonSerializer.Deserialize(json, OciJsonContext.ImageIndexInfo)
                    ?? throw new ArgumentException("The image index JSON deserialized to null.", nameof(json));
         }
         catch (JsonException ex)

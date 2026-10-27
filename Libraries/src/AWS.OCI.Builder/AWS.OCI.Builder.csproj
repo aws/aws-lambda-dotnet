@@ -10,6 +10,13 @@
     <Description>A .NET library for building OCI container images programmatically — overlay local files as a new layer on a base image and push the result to Amazon ECR, without a Docker daemon.</Description>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Native AOT / trimming: mark the assembly trim-safe and turn on the analyzers so trim/AOT
+         warnings surface at build time. The library has no reflection-based serialization left;
+         all System.Text.Json goes through the source-generated OciJsonContext. -->
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
     
     <!-- NuGet package metadata -->
     <Version>0.5.0</Version>
