@@ -189,7 +189,7 @@ function Save-LambdaPSAWSToolsModule {
         Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
         if (Test-Path -LiteralPath $staging) {
             # On Windows a scanner can still hold a file in it for a moment.
-            Write-Verbose "Could not remove the temporary AWS.Tools download folder '$staging'; delete it after this session ends."
+            Write-Warning "Could not remove the temporary AWS.Tools download folder '$staging'; delete it after this session ends."
         }
     }
 }

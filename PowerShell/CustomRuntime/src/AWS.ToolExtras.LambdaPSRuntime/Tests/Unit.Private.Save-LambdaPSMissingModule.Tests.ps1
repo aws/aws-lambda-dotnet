@@ -317,7 +317,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
         }
     }
 
-    It 'names the temporary Installer folder in a verbose message when it cannot be removed' {
+    It 'names the temporary Installer folder in a warning when it cannot be removed' {
         InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
             param($dl)
             $script:leftInstallerPath = $null
@@ -333,9 +333,8 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
             # Stands in for the Windows case, where the imported installer's assembly locks the folder.
             Mock 'Remove-Item' -ParameterFilter { $LiteralPath -like '*lambdaps-installer-*' }
             try {
-                $verbose = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.2' } -Path $dl -Verbose -WarningAction SilentlyContinue 4>&1 |
-                    Where-Object { $_ -is [System.Management.Automation.VerboseRecord] }
-                @($verbose.Message) -join ' ' | Should -BeLike "*Could not remove the temporary AWS.Tools.Installer folder '$script:leftInstallerPath'*"
+                $null = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.2' } -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
+                @($warnings.Message) | Should -Contain "Could not remove the temporary AWS.Tools.Installer folder '$script:leftInstallerPath'; delete it after this session ends."
             }
             finally {
                 if ($script:leftInstallerPath) {

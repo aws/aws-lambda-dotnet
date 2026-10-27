@@ -158,6 +158,30 @@ function Install-AWSToolsModule {
         Test-Path -LiteralPath ([System.IO.Path]::Combine($dl, 'AWS.Tools.S3', '9.9.1', 'AWS.Tools.S3.psd1')) | Should -BeTrue
     }
 
+    It 'names the temporary download folder in a warning when it cannot be removed' {
+        $installer = New-FakeInstaller -Path (Join-Path $TestDrive 'installed-locked') -Version '2.0.6' -Body '$global:LambdaPSFakeStaging = $Path; $d = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($Path, "AWS.Tools.S3", $Version)) -Force; Set-Content -LiteralPath ([System.IO.Path]::Combine($d.FullName, "AWS.Tools.S3.psd1")) -Value "@{}"'
+        try {
+            InModuleScope $script:moduleName -Parameters @{ installer = $installer; dl = (Join-Path $TestDrive 'aws-dl-locked') } {
+                param($installer, $dl)
+                Mock 'Get-Module' -ParameterFilter { $ListAvailable -and $Name -eq 'AWS.Tools.Installer' } -MockWith {
+                    [PSCustomObject]@{ Name = 'AWS.Tools.Installer'; Version = [version]'2.0.6'; Path = $installer }
+                }
+                # Stands in for Windows, where a scanner can still hold a file in the folder.
+                Mock 'Remove-Item' -ParameterFilter { $LiteralPath -like '*lambdaps-awstools-*' }
+
+                Save-LambdaPSAWSToolsModule -Name 'AWS.Tools.S3' -Version '9.9.1' -Path $dl -InstallerPath (Join-Path $dl '.unused') -WarningVariable warnings -WarningAction SilentlyContinue
+
+                @($warnings.Message) | Should -Be @("Could not remove the temporary AWS.Tools download folder '$global:LambdaPSFakeStaging'; delete it after this session ends.")
+            }
+        }
+        finally {
+            if ($global:LambdaPSFakeStaging -and (Test-Path -LiteralPath $global:LambdaPSFakeStaging)) {
+                [System.IO.Directory]::Delete($global:LambdaPSFakeStaging, $true)
+            }
+            Remove-Variable -Name LambdaPSFakeStaging -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
     It 'saves a 2.x installer when only a 3.x is installed' {
         InModuleScope $script:moduleName -Parameters @{ installerDir = (Join-Path $TestDrive 'bootstrap-3x') } {
             param($installerDir)

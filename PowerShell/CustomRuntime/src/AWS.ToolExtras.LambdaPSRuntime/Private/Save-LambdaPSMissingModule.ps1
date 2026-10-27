@@ -356,7 +356,7 @@ function Save-LambdaPSMissingModule {
             Remove-Item -LiteralPath $installerPath -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
             if (Test-Path -LiteralPath $installerPath) {
                 # On Windows the imported installer's assembly stays locked until the session ends.
-                Write-Verbose "Could not remove the temporary AWS.Tools.Installer folder '$installerPath'; delete it after this session ends."
+                Write-Warning "Could not remove the temporary AWS.Tools.Installer folder '$installerPath'; delete it after this session ends."
             }
         }
     }
