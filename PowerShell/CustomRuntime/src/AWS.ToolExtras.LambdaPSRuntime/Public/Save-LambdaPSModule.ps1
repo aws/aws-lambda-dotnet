@@ -46,9 +46,11 @@ function Save-LambdaPSModule {
         fetched out of -Path, and declining the copy leaves the installed modules out; either way a
         warning names the modules left out, because -Path then does not hold the complete set.
 
-        When anything is downloaded, a warning names the modules and says to test them before
-        production use; modules that came from PSGallery get a second warning that PSGallery is not
-        recommended as a direct production dependency.
+        When anything is downloaded, a warning names the modules, each with the repository it came
+        from, and says to test them before production use. It also names any module downloaded at the
+        minimum a ModuleVersion entry asks for, and, when -ModuleRepository is omitted and the modules
+        came from more than one repository, says to pass it. Modules that came from PSGallery get a
+        second warning that PSGallery is not recommended as a direct production dependency.
         Errors it can stop with (FullyQualifiedErrorId starts with):
           ModuleNameInvalid           a -Module name that is a wildcard or a path
           AWSPowerShellModuleNotSupported

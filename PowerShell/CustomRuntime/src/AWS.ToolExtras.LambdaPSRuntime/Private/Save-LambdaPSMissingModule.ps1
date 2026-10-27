@@ -25,9 +25,12 @@ function Save-LambdaPSMissingModule {
         there; an existing version folder is never overwritten. When one copy fails, a warning names
         the versions already installed by this run, which stay there.
 
-        When anything is downloaded, two warnings are written, once each: that the modules should be
-        tested before production use, and -- for modules that came from PSGallery -- that PSGallery is
-        not recommended as a direct production dependency.
+        When anything is downloaded, two warnings are written, once each. The first names each module
+        with the repository it came from (AWS.Tools.zip for AWS.Tools modules) and says to test them
+        before production use; it also names any module downloaded at a ModuleVersion minimum, and,
+        when -ModuleRepository was omitted and the modules came from more than one repository, says to
+        pass it. The second, for modules that came from PSGallery, says PSGallery is not recommended as
+        a direct production dependency.
 
         Downloads and installs honor ShouldProcess, one question per stage: -Confirm asks once before
         the first download (naming the modules and "any dependencies they need", which later passes
@@ -95,6 +98,8 @@ function Save-LambdaPSMissingModule {
     $downloadedKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $attempted = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $origin = @{}
+    # Keys of downloads that only ModuleVersion entries asked for, so they came at that minimum.
+    $atMinimum = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $pending = [System.Collections.Generic.List[string]]::new()
     $declined = [System.Collections.Generic.List[string]]::new()
     $installedInstaller = [System.Collections.Generic.List[string]]::new()
@@ -192,6 +197,7 @@ function Save-LambdaPSMissingModule {
                         $null = $downloadedKeys.Add($key)
                         $origin[$key] = @{ Source = 'AWS.Tools.Installer'; Repository = $null }
                     }
+                    foreach ($item in @($group.Group | Where-Object { $_.MinimumOnly })) { $null = $atMinimum.Add($item.Key) }
                 }
                 else {
                     foreach ($item in $group.Group) { $pending.Add($item.Key) }
@@ -214,6 +220,7 @@ function Save-LambdaPSMissingModule {
                     $saved = Save-LambdaPSModuleFromRepository -Name $item.Name -VersionRange "[$($item.Version)]" -Path $root @from
                     $null = $downloadedKeys.Add($item.Key)
                     $origin[$item.Key] = @{ Source = 'PSResourceGet'; Repository = $saved.Repository }
+                    if ($item.MinimumOnly) { $null = $atMinimum.Add($item.Key) }
                 }
                 else {
                     $pending.Add($item.Key)
@@ -304,10 +311,29 @@ function Save-LambdaPSMissingModule {
         }
 
         if ($downloaded.Count -gt 0 -or $pending.Count -gt 0) {
-            $listed = @(@($downloaded) + @($written) | ForEach-Object { "$($_.Name) $($_.Version)" }) + @($pending)
+            # Each module is named with where it came from, so a module from an unexpected feed shows.
+            $listed = @(@($downloaded) + @($written) | ForEach-Object {
+                    $from = if ($_.Repository) { $_.Repository } else { 'AWS.Tools.zip' }
+                    "$($_.Name) $($_.Version) ($from)" }) + @($pending)
             $verb = if ($downloaded.Count -gt 0) { 'Downloaded' } else { 'Would download' }
             $testWarning = "$verb modules that were not available locally: $($listed -join ', '). " +
                 'Test your function with these exact module versions before production use.'
+            # A module only ModuleVersion entries asked for came at that minimum, the oldest they allow.
+            $minimums = @(@($downloaded) + @($written) | Where-Object { $atMinimum.Contains("$($_.Name) $($_.Version)") } |
+                    ForEach-Object { "$($_.Name) $($_.Version)" })
+            if ($minimums.Count -gt 0) {
+                $testWarning += " $($minimums -join ', ') $(if ($minimums.Count -eq 1) { 'was' } else { 'were' }) downloaded at the " +
+                    'minimum version its dependents ask for (ModuleVersion), the oldest they allow; pin a later version ' +
+                    'in -Module to ship that instead.'
+            }
+            # Without -ModuleRepository each module comes from the first registered repository that has it,
+            # so a set spread over several repositories may have picked up a same-named package from one.
+            $repositories = @(@($downloaded) + @($written) | Where-Object { $_.Repository } | ForEach-Object { $_.Repository } |
+                    Sort-Object -Unique)
+            if (-not $ModuleRepository -and $repositories.Count -gt 1) {
+                $testWarning += " These modules came from more than one repository ($($repositories -join ', ')); pass " +
+                    '-ModuleRepository to download only from the ones you name.'
+            }
             # The bootstrapped Installer is installed too; name it, or the user never learns it was.
             $installed = @($downloaded | Where-Object { $_.Action -eq 'Installed' } | ForEach-Object { "$($_.Name) $($_.Version)" }) +
                 @($installedInstaller)

@@ -133,7 +133,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
             # The installer also wrote AWS.Tools.Common into -Path: it is reported, at its -Path folder.
             @($result.Written | ForEach-Object { "$($_.Name) $($_.Version) $($_.Action) $($_.Path)" }) |
                 Should -Be @("AWS.Tools.Common 9.9.1 Saved $([System.IO.Path]::Combine($dl, 'AWS.Tools.Common', '9.9.1'))")
-            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.1, AWS.Tools.Common 9.9.1. *'
+            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.1 (AWS.Tools.zip), AWS.Tools.Common 9.9.1 (AWS.Tools.zip). *'
         }
     }
 
@@ -174,7 +174,7 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
             $result = Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '9.9.2' } -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
             @($result.Downloaded.Name) | Should -Be @('AWS.Tools.S3')
             @($result.Resolved.Key) | Should -Contain 'AWS.Tools.Common 9.9.2'
-            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.2. *'
+            "$($warnings[0])" | Should -BeLike 'Downloaded modules that were not available locally: AWS.Tools.S3 9.9.2 (AWS.Tools.zip). *'
         }
     }
 
@@ -197,9 +197,58 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
             $null = Save-LambdaPSMissingModule -Module $specs -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
 
             @($warnings).Count | Should -Be 2
-            $warnings[0].Message | Should -BeLike '*LambdaPSFake.Gallery 1.0.0, LambdaPSFake.Private 1.0.0*before production use*'
+            $warnings[0].Message | Should -BeLike '*LambdaPSFake.Gallery 1.0.0 (PSGallery), LambdaPSFake.Private 1.0.0 (Internal)*before production use*'
             $warnings[1].Message | Should -BeLike 'LambdaPSFake.Gallery 1.0.0 came from the PowerShell Gallery*'
             $warnings[1].Message | Should -Not -BeLike '*LambdaPSFake.Private*'
+        }
+    }
+
+    It 'says to pass -ModuleRepository when the downloads came from more than one repository, only when it was omitted (<Case>)' -ForEach @(
+        @{ Case = 'omitted'; Repository = $null; Expected = $true }
+        @{ Case = 'given'; Repository = @('Internal*'); Expected = $false }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl; Repository = $Repository; Expected = $Expected } {
+            param($dl, $Repository, $Expected)
+            Mock 'Get-PSResourceRepository' -MockWith { [PSCustomObject]@{ Name = 'Internal' }; [PSCustomObject]@{ Name = 'InternalMirror' } }
+            Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                $exact = $VersionRange.Trim('[', ']')
+                $d = [System.IO.Path]::Combine($Path, $Name, $exact)
+                $null = New-Item -ItemType Directory -Path $d -Force
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$Name.psd1")) -Value "@{ ModuleVersion = '$exact' }"
+                $repo = if ($Name -eq 'LambdaPSFake.A') { 'Internal' } else { 'InternalMirror' }
+                [PSCustomObject]@{ Name = $Name; Version = $exact; Repository = $repo }
+            }
+            $specs = @(
+                @{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' }
+                @{ ModuleName = 'LambdaPSFake.B'; RequiredVersion = '1.0.0' }
+            )
+
+            $null = Save-LambdaPSMissingModule -Module $specs -Path $dl -ModuleRepository $Repository -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $sentence = '*These modules came from more than one repository (Internal, InternalMirror); pass -ModuleRepository to download only from the ones you name.'
+            if ($Expected) { $warnings[0].Message | Should -BeLike $sentence }
+            else { $warnings[0].Message | Should -Not -BeLike '*more than one repository*' }
+        }
+    }
+
+    It 'names a module downloaded at the minimum version only ModuleVersion entries ask for' {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
+            param($dl)
+            Mock 'Save-LambdaPSModuleFromRepository' -MockWith {
+                $exact = $VersionRange.Trim('[', ']')
+                $d = [System.IO.Path]::Combine($Path, $Name, $exact)
+                $null = New-Item -ItemType Directory -Path $d -Force
+                $requires = if ($Name -eq 'LambdaPSFake.A') { "@(@{ ModuleName = 'LambdaPSFake.Min'; ModuleVersion = '1.2.0' })" } else { '@()' }
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($d, "$Name.psd1")) -Value "@{ ModuleVersion = '$exact'; RequiredModules = $requires }"
+                [PSCustomObject]@{ Name = $Name; Version = $exact; Repository = 'Internal' }
+            }
+
+            $null = Save-LambdaPSMissingModule -Module @{ ModuleName = 'LambdaPSFake.A'; RequiredVersion = '1.0.0' } -Path $dl -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $warnings[0].Message | Should -BeLike ('*LambdaPSFake.A 1.0.0 (Internal), LambdaPSFake.Min 1.2.0 (Internal)*before production use. ' +
+                'LambdaPSFake.Min 1.2.0 was downloaded at the minimum version its dependents ask for (ModuleVersion), the oldest they ' +
+                'allow; pin a later version in -Module to ship that instead.')
+            $warnings[0].Message | Should -Not -BeLike '*LambdaPSFake.A 1.0.0 was downloaded at the minimum*'
         }
     }
 

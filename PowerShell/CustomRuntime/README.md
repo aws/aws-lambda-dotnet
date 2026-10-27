@@ -206,8 +206,10 @@ trust is not bypassed: an untrusted repository (PSGallery by default) prompts, a
 non-interactive session — trust it with `Set-PSResourceRepository -Name PSGallery -Trusted`, or pre-stage modules and
 use `Stop`.
 
-Whenever something is downloaded, a warning names the modules and says to test those exact versions
-before production use; modules that came from PSGallery get a second warning that PSGallery is not
+Whenever something is downloaded, a warning names the modules, each with the repository it came from, and says
+to test those exact versions before production use. It also names any module downloaded at the minimum a
+`ModuleVersion` entry asks for, and, when `-ModuleRepository` is omitted and the modules came from more than one
+repository, says to pass it. Modules that came from PSGallery get a second warning that PSGallery is not
 recommended as a direct production dependency.
 
 `Save-LambdaPSModule -Module <specs> -Path ./mods` runs the same download on its own, and also copies
