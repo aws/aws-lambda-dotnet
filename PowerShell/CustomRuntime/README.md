@@ -113,9 +113,9 @@ guess, and a handler naming a script that is not in the package is rejected befo
 deployed — Lambda accepts such a function, and its runtime then fails at start-up with "Handler
 script not found".
 
-**Architecture is checked, not assumed.** Lambda does not validate a customer-managed runtime's CPU
-architecture against the function bound to it — a mismatch deploys cleanly and fails at invoke,
-sometimes as a misleading capacity error. The service reports each runtime version's architecture from
+**Architecture is checked, not assumed.** Lambda rejects a function whose CPU architecture its
+customer-managed runtime does not support when the function is created; the deploy cmdlets check
+first, so the error names the runtime alias. The service reports each runtime version's architecture from
 the image manifest (not from anything the caller declares), and both deploy cmdlets check against it.
 `New-LambdaPSRuntimeDeployment -Architecture` builds for that platform and stops before moving the
 alias if the image turns out to be a different architecture — for example a buildx builder that cannot
