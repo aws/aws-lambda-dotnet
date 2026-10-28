@@ -220,6 +220,7 @@
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.Tests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.AspNetCoreServer.Test"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.AspNetCoreServer.Hosting.Tests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\AWS.OCI.Builder.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
         <!-- Each *.IntegrationTests.csproj deploys its own isolated CloudFormation stack, so the
