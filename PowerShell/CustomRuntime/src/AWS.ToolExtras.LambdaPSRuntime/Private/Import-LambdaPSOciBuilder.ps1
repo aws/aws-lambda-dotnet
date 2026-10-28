@@ -16,7 +16,7 @@ function Import-LambdaPSOciBuilder {
     .OUTPUTS
         System.Type
 
-        The progress sink type, LambdaPSOciProgressQueue[Amazon.OCI.Builder.LayerPushProgress].
+        The progress sink type, LambdaPSOciProgressQueue[AWS.OCI.Builder.LayerPushProgress].
     .EXAMPLE
         $sinkType = Import-LambdaPSOciBuilder
 
@@ -27,7 +27,7 @@ function Import-LambdaPSOciBuilder {
     param()
 
     $dllPath = [System.IO.Path]::Combine((Split-Path -Parent $PSScriptRoot), 'lib', 'AWS.OCI.Builder.dll')
-    $loaded = 'Amazon.OCI.Builder.OciImageBuilder' -as [type]
+    $loaded = 'AWS.OCI.Builder.OciImageBuilder' -as [type]
     if ($null -eq $loaded) {
         if (-not [System.IO.File]::Exists($dllPath)) {
             # `throw`, so the error stops the caller too (see Invoke-LambdaPSExternalTool).
@@ -45,7 +45,7 @@ function Import-LambdaPSOciBuilder {
                      'have loaded a different version of it; start a new session, or build with -BuildMethod Docker.'), $_.Exception),
                 'OciBuilderConflict', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, $dllPath)
         }
-        $loaded = [Amazon.OCI.Builder.OciImageBuilder]
+        $loaded = [AWS.OCI.Builder.OciImageBuilder]
     }
     # A copy another module loaded first is used only when it is the same build as ours.
     $expectedVersion = if ([System.IO.File]::Exists($dllPath)) { [System.Reflection.AssemblyName]::GetAssemblyName($dllPath).Version }
@@ -70,5 +70,5 @@ public sealed class LambdaPSOciProgressQueue<T> : System.IProgress<T>
 '@
     }
     # Resolved by name at run time: neither type exists when this file is parsed.
-    'LambdaPSOciProgressQueue[Amazon.OCI.Builder.LayerPushProgress]' -as [type]
+    'LambdaPSOciProgressQueue[AWS.OCI.Builder.LayerPushProgress]' -as [type]
 }

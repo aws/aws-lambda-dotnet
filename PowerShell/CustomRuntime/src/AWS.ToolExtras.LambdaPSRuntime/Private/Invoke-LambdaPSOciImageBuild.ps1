@@ -68,7 +68,7 @@ function Invoke-LambdaPSOciImageBuild {
         $Task.GetAwaiter().GetResult()
     }
     $drain = {
-        $pushEvent = [Amazon.OCI.Builder.LayerPushProgress]::new()
+        $pushEvent = [AWS.OCI.Builder.LayerPushProgress]::new()
         while ($sink.Items.TryDequeue([ref]$pushEvent)) {
             $layerProgress[$pushEvent.LayerIndex] = $pushEvent
             $done = @($layerProgress.Values | Where-Object { $_.Phase -eq 'Completed' }).Count
@@ -86,7 +86,7 @@ function Invoke-LambdaPSOciImageBuild {
     # image whose layer has files in a folder no layer creates (the version settles FAILED), so every folder
     # the image adds below /var/runtime or /var/task gets its own entry (0755), from an empty staged folder.
     $addFolders = {
-        param([Amazon.OCI.Builder.FileManifest]$Manifest)
+        param([AWS.OCI.Builder.FileManifest]$Manifest)
         $folders = [System.Collections.Generic.SortedSet[string]]::new([System.StringComparer]::Ordinal)
         foreach ($containerPath in @($Manifest.Entries.ContainerPath)) {
             $folder = $containerPath.Substring(0, $containerPath.LastIndexOf('/'))
@@ -107,7 +107,7 @@ function Invoke-LambdaPSOciImageBuild {
         Write-Progress -Activity $activity -Status "Downloading pwsh $($Plan.PwshVersion) ($($Plan.Architecture))"
         $archive = Get-LambdaPSPwshArchive -PwshVersion $Plan.PwshVersion -Architecture $Plan.Architecture
         $pwshRoot = [System.IO.Path]::Combine($stage, 'powershell')
-        $pwshFiles = [Amazon.OCI.Builder.FileManifest]::new()
+        $pwshFiles = [AWS.OCI.Builder.FileManifest]::new()
         $stream = [System.IO.File]::OpenRead($archive)
         try {
             $reader = [System.Formats.Tar.TarReader]::new([System.IO.Compression.GZipStream]::new($stream, [System.IO.Compression.CompressionMode]::Decompress))
@@ -135,7 +135,7 @@ function Invoke-LambdaPSOciImageBuild {
 
         # 2. Runtime files: executables staged LF-only without a BOM (the Dockerfile's sed), and the
         #    LambdaContext DLL when the bundled pwsh can run here.
-        $runtimeFiles = [Amazon.OCI.Builder.FileManifest]::new()
+        $runtimeFiles = [AWS.OCI.Builder.FileManifest]::new()
         $runtimeStage = [System.IO.Path]::Combine($stage, 'runtime')
         $null = [System.IO.Directory]::CreateDirectory($runtimeStage)
         foreach ($file in $Plan.RuntimeFiles) {
@@ -163,7 +163,7 @@ function Invoke-LambdaPSOciImageBuild {
 
         # 3. Base image, layers and config.
         Write-Progress -Activity $activity -Status "Reading base image $($Plan.BaseImage) ($($Plan.Platform))"
-        $builder = & $await ([Amazon.OCI.Builder.OciImageBuilder]::FromBaseImageAsync($Plan.BaseImage, $Plan.Platform, $cancellation.Token))
+        $builder = & $await ([AWS.OCI.Builder.OciImageBuilder]::FromBaseImageAsync($Plan.BaseImage, $Plan.Platform, $cancellation.Token))
         & $addFolders $pwshFiles
         & $addFolders $runtimeFiles
         Write-Progress -Activity $activity -Status 'Building the pwsh layer'
@@ -171,7 +171,7 @@ function Invoke-LambdaPSOciImageBuild {
         Write-Progress -Activity $activity -Status 'Building the runtime layer'
         $null = & $await ($builder.AddLayerAsync($runtimeFiles, 'LambdaPSRuntime: runtime', $cancellation.Token))
         if ($Plan.FunctionFiles.Count -gt 0) {
-            $functionFiles = [Amazon.OCI.Builder.FileManifest]::new()
+            $functionFiles = [AWS.OCI.Builder.FileManifest]::new()
             foreach ($file in $Plan.FunctionFiles) {
                 $functionFiles.Add($file.LocalPath, $file.ContainerPath, [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
             }
@@ -189,12 +189,12 @@ function Invoke-LambdaPSOciImageBuild {
         Write-Verbose ('Layers built; peak working set {0:N0} MB.' -f ($process.PeakWorkingSet64 / 1MB))
 
         # 4. Push.
-        $options = [Amazon.OCI.Builder.EcrPushOptions]@{ Progress = $sink }
+        $options = [AWS.OCI.Builder.EcrPushOptions]@{ Progress = $sink }
         $digest = & $await ($builder.PushToEcrAsync($ImageUri, $AuthorizationToken, $options, $cancellation.Token))
         Write-Verbose "Pushed '$ImageUri' as $digest."
         $digest
     }
-    catch [Amazon.OCI.Builder.Registry.RegistryException] {
+    catch [AWS.OCI.Builder.Registry.RegistryException] {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.InvalidOperationException]::new("The no-Docker build could not push '$ImageUri': $($_.Exception.Message)", $_.Exception),
             'OciImagePushFailed', [System.Management.Automation.ErrorCategory]::OperationStopped, $ImageUri)
