@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
-using Amazon.OCI.Builder;
-using Amazon.OCI.Builder.Images;
+using AWS.OCI.Builder;
+using AWS.OCI.Builder.Images;
 using Xunit;
 
 namespace AWS.OCI.Builder.Tests;

@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// Helpers for creating the temporary "spill" files this library writes layer/blob bytes to, with owner-only

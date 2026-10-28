@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
 
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// A <see cref="DelegatingHandler"/> that performs the Docker/OCI registry authentication handshake.

@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// Describes a set of local files and/or directories to add to an image, each mapped to an absolute

@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// Options controlling how an image is pushed to Amazon ECR.

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// An image manifest (OCI image manifest or Docker V2 Schema 2): the single-platform document that references the

@@ -1,7 +1,7 @@
 using Amazon;
 using Amazon.ECR;
 using Amazon.ECR.Model;
-using Amazon.OCI.Builder;
+using AWS.OCI.Builder;
 using Xunit;
 using Xunit.Abstractions;
 

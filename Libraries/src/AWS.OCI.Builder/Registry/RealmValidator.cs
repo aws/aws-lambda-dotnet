@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// Validates the <c>realm</c> (token endpoint) URL returned in a registry's <c>WWW-Authenticate</c>

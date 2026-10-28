@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// Helpers for expressing Unix file permissions the way <c>chmod</c> does — in octal — and converting them to the

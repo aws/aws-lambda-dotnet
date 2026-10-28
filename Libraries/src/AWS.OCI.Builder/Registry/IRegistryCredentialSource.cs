@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// Supplies the username/password a registry's authentication handshake needs for a given registry host.

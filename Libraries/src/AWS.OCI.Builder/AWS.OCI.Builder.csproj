@@ -6,7 +6,7 @@
     <TargetFrameworks>$(DefaultPackageTargets)</TargetFrameworks>
     <AssemblyName>AWS.OCI.Builder</AssemblyName>
     <PackageId>AWS.OCI.Builder</PackageId>
-    <RootNamespace>Amazon.OCI.Builder</RootNamespace>
+    <RootNamespace>AWS.OCI.Builder</RootNamespace>
     <Description>A .NET library for building OCI container images programmatically — overlay local files as a new layer on a base image and push the result to Amazon ECR, without a Docker daemon.</Description>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

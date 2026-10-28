@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// The lifecycle phase a layer is in when a <see cref="LayerPushProgress"/> event is reported.

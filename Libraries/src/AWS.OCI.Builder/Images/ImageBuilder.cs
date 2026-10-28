@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// Assembles a derived image from a base image's config and manifest plus one or more overlaid

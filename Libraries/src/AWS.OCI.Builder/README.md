@@ -37,7 +37,7 @@ string authorizationToken = auth.AuthorizationData[0].AuthorizationToken;   // b
 ## Usage
 
 ```csharp
-using Amazon.OCI.Builder;
+using AWS.OCI.Builder;
 
 // Pull the base image (selects the right platform from a manifest list).
 using var builder = await OciImageBuilder.FromBaseImageAsync(

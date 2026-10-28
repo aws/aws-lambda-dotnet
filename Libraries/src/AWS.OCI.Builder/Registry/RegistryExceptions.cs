@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// The base type for errors raised while interacting with a container registry — authentication,

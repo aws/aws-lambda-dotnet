@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// An OCI content descriptor: a typed, content-addressable reference to a blob

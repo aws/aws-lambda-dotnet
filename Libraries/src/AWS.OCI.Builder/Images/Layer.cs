@@ -2,7 +2,7 @@ using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Cryptography;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// The metadata of a single image layer produced from a <see cref="FileManifest"/> — a gzipped tar archive of

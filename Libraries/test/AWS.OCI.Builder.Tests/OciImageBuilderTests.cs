@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text;
-using Amazon.OCI.Builder;
-using Amazon.OCI.Builder.Images;
-using Amazon.OCI.Builder.Registry;
+using AWS.OCI.Builder;
+using AWS.OCI.Builder.Images;
+using AWS.OCI.Builder.Registry;
 using Xunit;
 
 namespace AWS.OCI.Builder.Tests;

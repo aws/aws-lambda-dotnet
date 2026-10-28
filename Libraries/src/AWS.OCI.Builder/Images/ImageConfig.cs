@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// A mutable view over an OCI / Docker image configuration JSON document — the object referenced by an image

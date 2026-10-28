@@ -1,4 +1,4 @@
-using Amazon.OCI.Builder;
+using AWS.OCI.Builder;
 using Xunit;
 
 namespace AWS.OCI.Builder.Tests;

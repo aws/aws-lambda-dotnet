@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// A parsed container image reference: the registry host, repository, and a tag or digest reference.

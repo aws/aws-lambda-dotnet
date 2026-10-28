@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>The JSON body returned by a registry token endpoint during the Bearer auth handshake.</summary>
 /// <remarks>

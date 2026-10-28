@@ -1,7 +1,7 @@
-using Amazon.OCI.Builder.Images;
-using Amazon.OCI.Builder.Registry;
+using AWS.OCI.Builder.Images;
+using AWS.OCI.Builder.Registry;
 
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// The programmatic entry point for building an OCI container image from a base image plus local files and

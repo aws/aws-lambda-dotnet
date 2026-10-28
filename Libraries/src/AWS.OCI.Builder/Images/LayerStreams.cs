@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// A write-only pass-through stream that feeds every byte written to an <see cref="IncrementalHash"/> and counts

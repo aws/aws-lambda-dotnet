@@ -2,9 +2,9 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using Amazon.OCI.Builder.Registry;
+using AWS.OCI.Builder.Registry;
 
-namespace Amazon.OCI.Builder.Images;
+namespace AWS.OCI.Builder.Images;
 
 /// <summary>
 /// The source-generated <see cref="JsonSerializerContext"/> for the strongly-typed documents this library

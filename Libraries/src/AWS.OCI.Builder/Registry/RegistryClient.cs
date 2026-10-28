@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 
-namespace Amazon.OCI.Builder.Registry;
+namespace AWS.OCI.Builder.Registry;
 
 /// <summary>
 /// A client for the OCI Distribution / Docker Registry HTTP API (v2): pull and push of manifests and blobs.

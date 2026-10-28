@@ -1,4 +1,4 @@
-namespace Amazon.OCI.Builder;
+namespace AWS.OCI.Builder;
 
 /// <summary>
 /// Well-known media type strings used by the OCI Image Specification and the legacy
