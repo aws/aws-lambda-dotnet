@@ -466,6 +466,8 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'ARG TARGETARCH'
         $dockerfile | Should -Match 'if \[ "\$TARGETARCH" = "arm64" \]'
+        # The legacy builder leaves TARGETARCH empty and cannot build the file (COPY --chmod): say so first.
+        $dockerfile | Should -Match "''\) echo `"TARGETARCH is not set, so this is not a BuildKit build"
         $dockerfile | Should -Match 'powershell-\$\{PWSH_VERSION\}-linux-arm64\.tar\.gz'
         $dockerfile | Should -Match 'sha256sum -c'
         $dockerfile | Should -Match 'packages\.microsoft\.com'

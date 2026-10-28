@@ -55,14 +55,23 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         # packages.microsoft.com has no aarch64 pwsh RPM, so the install branches on BuildKit's TARGETARCH.
         $dockerfile | Should -Match 'ARG TARGETARCH'
         $dockerfile | Should -Match 'if \[ "\$TARGETARCH" = "arm64" \]'
+        # The legacy builder leaves TARGETARCH empty and cannot build the file (COPY --chmod): say so first.
+        $dockerfile | Should -Match "''\) echo `"TARGETARCH is not set, so this is not a BuildKit build"
         $dockerfile | Should -Match ([regex]::Escape("`"$($script:pwshConfig.ReleaseUrl)/v`${PWSH_VERSION}/powershell-`${PWSH_VERSION}-linux-arm64.tar.gz`""))
         $dockerfile | Should -Not -Match '__PWSH_RELEASE_URL__'
-        # Both curls (the tarball and the Microsoft repo file) retry with the module's download limits.
+        # amd64 trusts Microsoft's signing key only with the pinned fingerprint, and dnf uses that copy.
+        $dockerfile | Should -Match '(?m)^ARG MICROSOFT_GPG_FINGERPRINT=BC528686B50D79E339D3721CEB3E94ADBE1229CF$'
+        $dockerfile | Should -Match ([regex]::Escape('if [ "$fingerprints" != "$MICROSOFT_GPG_FINGERPRINT" ]'))
+        $dockerfile | Should -Match ([regex]::Escape("s|^gpgkey=.*|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft|"))
+        $dockerfile | Should -Not -Match 'rpm --import https://'
+        # Lambda reserves /tmp, so .NET's /tmp/.dotnet, left by each pwsh run during the build, is removed.
+        ([regex]::Matches($dockerfile, 'rm -rf /tmp/\.dotnet')).Count | Should -Be 2
+        # All three curls (the tarball, the Microsoft signing key and its repo file) retry with the module's download limits.
         $retry = "--retry $($script:pwshConfig.Download.RetryCount) --retry-delay $($script:pwshConfig.Download.RetryDelaySeconds) " +
             "--connect-timeout $($script:pwshConfig.Download.ConnectTimeoutSeconds) "
-        ([regex]::Matches($dockerfile, [regex]::Escape($retry))).Count | Should -Be 2
+        ([regex]::Matches($dockerfile, [regex]::Escape($retry))).Count | Should -Be 3
         # And each download is limited as a whole, so a stalled transfer cannot hang the build.
-        ([regex]::Matches($dockerfile, [regex]::Escape("--max-time $($script:pwshConfig.Download.OperationTimeoutSeconds) "))).Count | Should -Be 2
+        ([regex]::Matches($dockerfile, [regex]::Escape("--max-time $($script:pwshConfig.Download.OperationTimeoutSeconds) "))).Count | Should -Be 3
         $dockerfile | Should -Not -Match '__DOWNLOAD_'
         $dockerfile | Should -Match 'sha256sum -c'
         # amd64 keeps the GPG-signed RPM path.

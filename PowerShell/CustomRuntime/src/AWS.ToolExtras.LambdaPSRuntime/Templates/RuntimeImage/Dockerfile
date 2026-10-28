@@ -5,8 +5,9 @@
 # rather than in a provided.al2023 layer (/opt).
 #
 # pwsh is obtained as follows: on amd64, the Microsoft GPG-signed RPM (provenance +
-# dependency resolution); on arm64, where Microsoft publishes no aarch64 RPM, the
-# official release tarball verified against a SHA256 pinned in the module. Both
+# dependency resolution), trusted only when the signing key has the fingerprint pinned
+# below; on arm64, where Microsoft publishes no aarch64 RPM, the official release
+# tarball verified against a SHA256 pinned in the module. Both
 # land in /opt/microsoft/powershell and a customer-managed runtime reserves /opt, so
 # the interpreter is relocated into /var/runtime/powershell and /opt/microsoft is
 # dropped. Because pwsh is installed in the image, its native deps (libicu,
@@ -17,23 +18,36 @@
 # (built with --provenance=false + oci-mediatypes=false; see Build-LambdaPSRuntimeImage).
 ARG PWSH_VERSION=__PWSH_VERSION__
 ARG PWSH_ARM64_SHA256=__PWSH_ARM64_SHA256__
+# The fingerprint of Microsoft's package signing key ("Microsoft (Release signing)"), which signs
+# the RPM and the repository metadata on amd64.
+ARG MICROSOFT_GPG_FINGERPRINT=BC528686B50D79E339D3721CEB3E94ADBE1229CF
 
 FROM public.ecr.aws/lambda/provided:al2023
 
 ARG PWSH_VERSION
 ARG PWSH_ARM64_SHA256
-# Set by BuildKit from --platform (amd64 | arm64).
+ARG MICROSOFT_GPG_FINGERPRINT
+# Set by BuildKit from --platform (amd64 | arm64). The legacy builder leaves it empty; it cannot
+# build this file anyway (COPY --chmod needs BuildKit), so the build stops at once and says so.
 ARG TARGETARCH
 
 # 1. Install pwsh and relocate it out of the reserved /opt path into /var/runtime. One RUN, so
-#    the /opt copy is never kept in an image layer.
-#    amd64: Microsoft's GPG-signed RPM repo; dnf resolves the system deps.
+#    the /opt copy is never kept in an image layer. pwsh leaves .NET's /tmp/.dotnet behind, which
+#    is removed: Lambda reserves /tmp, so a runtime image must leave it empty.
+#    amd64: Microsoft's GPG-signed RPM repo; dnf resolves the system deps. The signing key is
+#    imported only when its fingerprint is the pinned one, and the repo file is pointed at that
+#    copy, so dnf never fetches another key.
 #    arm64: Microsoft publishes no aarch64 RPM in rhel/9/prod, so use the official
 #    release tarball, verified against the SHA256 pinned in the module, and install
 #    libicu (the base image already has openssl via openssl-snapsafe-libs, plus
 #    krb5-libs, zlib and libstdc++). It is unpacked where the RPM would put it,
 #    so the relocation is identical for both architectures.
 RUN set -eu; \
+    case "${TARGETARCH:-}" in \
+        amd64|arm64) ;; \
+        '') echo "TARGETARCH is not set, so this is not a BuildKit build, which this Dockerfile needs (COPY --chmod). Build it with Build-LambdaPSRuntimeImage, or docker buildx build --platform linux/amd64 or linux/arm64." >&2; exit 1 ;; \
+        *) echo "Unsupported architecture '$TARGETARCH'; build for linux/amd64 or linux/arm64." >&2; exit 1 ;; \
+    esac; \
     if [ "$TARGETARCH" = "arm64" ]; then \
         case "$PWSH_ARM64_SHA256" in \
             [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; \
@@ -47,9 +61,16 @@ RUN set -eu; \
         tar -xzf /tmp/pwsh.tar.gz -C /opt/microsoft/powershell/7; \
         rm -f /tmp/pwsh.tar.gz; \
     else \
-        rpm --import https://packages.microsoft.com/keys/microsoft.asc; \
+        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ --max-time __DOWNLOAD_OPERATION_TIMEOUT__ https://packages.microsoft.com/keys/microsoft.asc \
+            -o /etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft; \
+        fingerprints="$(gpg --show-keys --with-colons /etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft | awk -F: '$1 == "pub" { want = 1 } $1 == "fpr" && want { print $10; want = 0 }')"; \
+        if [ "$fingerprints" != "$MICROSOFT_GPG_FINGERPRINT" ]; then \
+            echo "The Microsoft signing key has fingerprint(s) '$fingerprints', not the pinned $MICROSOFT_GPG_FINGERPRINT; not trusting it." >&2; exit 1; \
+        fi; \
+        rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft; \
         curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ --max-time __DOWNLOAD_OPERATION_TIMEOUT__ https://packages.microsoft.com/config/rhel/9/prod.repo \
             -o /etc/yum.repos.d/microsoft.repo; \
+        sed -i 's|^gpgkey=.*|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft|' /etc/yum.repos.d/microsoft.repo; \
         dnf install -y "powershell-${PWSH_VERSION}"; \
     fi; \
     dnf clean all; \
@@ -57,7 +78,8 @@ RUN set -eu; \
     cp -a /opt/microsoft/powershell/7/. /var/runtime/powershell/; \
     rm -rf /opt/microsoft /usr/bin/pwsh; \
     chmod +x /var/runtime/powershell/pwsh; \
-    /var/runtime/powershell/pwsh --version
+    /var/runtime/powershell/pwsh --version; \
+    rm -rf /tmp/.dotnet
 
 # 2. PRECOMPILE the LambdaContext assembly at build time (cold-start optimisation).
 #    Use the in-image pwsh's own Add-Type -OutputAssembly so the DLL targets the
@@ -69,6 +91,7 @@ COPY PowerShellLambdaContext.cs /var/runtime/PowerShellLambdaContext.cs
 RUN /var/runtime/powershell/pwsh -noprofile -c \
       "Add-Type -TypeDefinition ([IO.File]::ReadAllText('/var/runtime/PowerShellLambdaContext.cs')) -OutputAssembly '/var/runtime/PowerShellLambdaContext.dll'" \
  && test -f /var/runtime/PowerShellLambdaContext.dll \
+ && rm -rf /tmp/.dotnet \
  && echo 'LambdaContext.dll built OK'
 
 # 3. Lay down the runtime: the entrypoint, bootstrap, runtime.ps1 (the Runtime API event loop)
