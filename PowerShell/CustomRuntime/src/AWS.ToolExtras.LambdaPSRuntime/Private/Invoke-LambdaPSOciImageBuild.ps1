@@ -81,8 +81,27 @@ function Invoke-LambdaPSOciImageBuild {
         }
     }
 
+    # The library writes a tar entry only for a directory that is mapped, not for a file's parent folders,
+    # so that it keeps the base image's own folders (/tmp's 1777) as they are. Lambda does not accept a runtime
+    # image whose layer has files in a folder no layer creates (the version settles FAILED), so every folder
+    # the image adds below /var/runtime or /var/task gets its own entry (0755), from an empty staged folder.
+    $addFolders = {
+        param([Amazon.OCI.Builder.FileManifest]$Manifest)
+        $folders = [System.Collections.Generic.SortedSet[string]]::new([System.StringComparer]::Ordinal)
+        foreach ($containerPath in @($Manifest.Entries.ContainerPath)) {
+            $folder = $containerPath.Substring(0, $containerPath.LastIndexOf('/'))
+            while ($folder.StartsWith('/var/runtime/', [System.StringComparison]::Ordinal) -or $folder.StartsWith('/var/task/', [System.StringComparison]::Ordinal)) {
+                $null = $folders.Add($folder)
+                $folder = $folder.Substring(0, $folder.LastIndexOf('/'))
+            }
+        }
+        foreach ($folder in $folders) { $Manifest.Add($emptyFolder, $folder) }
+    }
+
     try {
         $null = New-Item -ItemType Directory -Path $stage -Force -WhatIf:$false -Confirm:$false
+        $emptyFolder = [System.IO.Path]::Combine($stage, 'empty')
+        $null = [System.IO.Directory]::CreateDirectory($emptyFolder)
 
         # 1. pwsh, with the tarball's own modes.
         Write-Progress -Activity $activity -Status "Downloading pwsh $($Plan.PwshVersion) ($($Plan.Architecture))"
@@ -145,6 +164,8 @@ function Invoke-LambdaPSOciImageBuild {
         # 3. Base image, layers and config.
         Write-Progress -Activity $activity -Status "Reading base image $($Plan.BaseImage) ($($Plan.Platform))"
         $builder = & $await ([Amazon.OCI.Builder.OciImageBuilder]::FromBaseImageAsync($Plan.BaseImage, $Plan.Platform, $cancellation.Token))
+        & $addFolders $pwshFiles
+        & $addFolders $runtimeFiles
         Write-Progress -Activity $activity -Status 'Building the pwsh layer'
         $null = & $await ($builder.AddLayerAsync($pwshFiles, "LambdaPSRuntime: pwsh $($Plan.PwshVersion)", $cancellation.Token))
         Write-Progress -Activity $activity -Status 'Building the runtime layer'
@@ -154,6 +175,7 @@ function Invoke-LambdaPSOciImageBuild {
             foreach ($file in $Plan.FunctionFiles) {
                 $functionFiles.Add($file.LocalPath, $file.ContainerPath, [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
             }
+            & $addFolders $functionFiles
             Write-Progress -Activity $activity -Status 'Building the function layer'
             $null = & $await ($builder.AddLayerAsync($functionFiles, 'LambdaPSRuntime: function', $cancellation.Token))
         }
