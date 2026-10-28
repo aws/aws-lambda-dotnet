@@ -173,17 +173,23 @@ public class ImageBuilderTests
         {"schemaVersion":2,"mediaType":"{{MediaTypes.OciManifestV1}}","config":{"mediaType":"{{configMediaType}}","size":10,"digest":"sha256:basecfg"},"layers":[{"mediaType":"{{layerMediaType}}","size":100,"digest":"sha256:baselayer"}]}
         """;
 
-    private static Layer FakeLayer(string mediaType) =>
-        // Build a real tiny layer so Digest/DiffId are genuine sha256 values.
-        Layer.CreateAsync(MakeManifest(), mediaType).GetAwaiter().GetResult();
-
-    private static FileManifest MakeManifest()
+    private static Layer FakeLayer(string mediaType)
     {
+        // Build a real tiny layer so Digest/DiffId are genuine sha256 values. The layer is fully built (into a
+        // throwaway stream) before returning, so its source directory can be removed immediately.
         string tmp = Path.Combine(Path.GetTempPath(), "aws-oci-ib-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmp);
-        string file = Path.Combine(tmp, "app.dll");
-        File.WriteAllText(file, "payload");
-        return new FileManifest { { file, "/app/app.dll" } };
+        try
+        {
+            string file = Path.Combine(tmp, "app.dll");
+            File.WriteAllText(file, "payload");
+            var manifest = new FileManifest { { file, "/app/app.dll" } };
+            return Layer.CreateAsync(manifest, new MemoryStream(), mediaType).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
     }
 
     [Fact]

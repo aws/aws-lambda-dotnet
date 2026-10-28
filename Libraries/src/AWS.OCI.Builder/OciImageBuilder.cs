@@ -210,18 +210,17 @@ public sealed class OciImageBuilder : IDisposable
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(files);
 
-        // Build the layer with the media type matching the image schema so the manifest stays consistent.
-        Layer layer = await Layer.CreateAsync(files, _imageBuilder.LayerMediaType, cancellationToken).ConfigureAwait(false);
-
-        // Spill the compressed layer to a temp file FIRST, so it is not retained in memory for the builder's
-        // lifetime. The file is created with owner-only permissions (see SpillFile) so other local users cannot
-        // read a private layer from the shared temp directory. The builder owns the file and deletes it on Dispose.
+        // Build the layer straight into an owner-only temp file (see SpillFile) in a single streaming pass, so it
+        // is never held in memory — layers can exceed the ~2 GiB a byte[]/MemoryStream could hold. The builder
+        // owns the file and deletes it on Dispose (or immediately, if building fails or is cancelled). The media
+        // type matches the image schema so the manifest stays consistent.
         string layerFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"aws-oci-built-layer-{Guid.NewGuid():N}.tmp");
+        Layer layer;
         try
         {
             await using (var file = Registry.SpillFile.CreateWrite(layerFile))
             {
-                await file.WriteAsync(layer.GzippedTarBytes, cancellationToken).ConfigureAwait(false);
+                layer = await Layer.CreateAsync(files, file, _imageBuilder.LayerMediaType, cancellationToken).ConfigureAwait(false);
             }
         }
         catch
@@ -235,7 +234,7 @@ public sealed class OciImageBuilder : IDisposable
         // write, leave the manifest referencing a layer whose blob never materializes — a later push would then
         // reference a missing blob, and a retry could duplicate the layer entry.
         _imageBuilder.AddLayer(layer, createdBy);
-        _pendingLayers.Add(new PendingLayer(layer.Digest, layerFile, layer.GzippedTarBytes.LongLength));
+        _pendingLayers.Add(new PendingLayer(layer.Digest, layerFile, layer.Size));
     }
 
     /// <summary>

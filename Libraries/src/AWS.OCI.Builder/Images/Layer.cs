@@ -5,8 +5,9 @@ using System.Security.Cryptography;
 namespace Amazon.OCI.Builder.Images;
 
 /// <summary>
-/// A single image layer produced from a <see cref="FileManifest"/>: a gzipped tar archive of the mapped files,
-/// together with the two digests the OCI format requires.
+/// The metadata of a single image layer produced from a <see cref="FileManifest"/> — a gzipped tar archive of
+/// the mapped files — together with the two digests the OCI format requires. The compressed blob itself is
+/// written to a caller-supplied stream by <see cref="CreateAsync"/>; this type does not hold the layer bytes.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,28 +28,22 @@ namespace Amazon.OCI.Builder.Images;
 ///   </item>
 /// </list>
 /// <para>
-/// Layers are written deterministically so that the same inputs always yield the same digests: entries are
-/// emitted in a stable sorted order, every emitted entry is stamped with a
-/// fixed epoch timestamp, and paths are normalized to forward-slash, non-rooted form. This reproducibility is
-/// what lets callers skip re-pushing an unchanged layer.
+/// Entries are written in a stable sorted order with fixed timestamps and normalized paths. Digests are not
+/// guaranteed to be identical across builds, even for identical input.
 /// </para>
 /// </remarks>
 public sealed class Layer
 {
-    /// <summary>A fixed timestamp used for every tar entry, so identical inputs produce identical archives.</summary>
+    /// <summary>A fixed timestamp used for every tar entry.</summary>
     private static readonly DateTimeOffset ReproducibleTimestamp = DateTimeOffset.UnixEpoch;
 
-    private Layer(byte[] gzippedTarBytes, string digest, string diffId, long size, string mediaType)
+    private Layer(string digest, string diffId, long size, string mediaType)
     {
-        GzippedTarBytes = gzippedTarBytes;
         Digest = digest;
         DiffId = diffId;
         Size = size;
         MediaType = mediaType;
     }
-
-    /// <summary>The compressed (gzipped) tar archive bytes — the blob content to upload.</summary>
-    public byte[] GzippedTarBytes { get; }
 
     /// <summary>
     /// The <c>sha256:...</c> digest of the <em>compressed</em> tar. Addresses the blob in the registry and is
@@ -62,7 +57,7 @@ public sealed class Layer
     /// </summary>
     public string DiffId { get; }
 
-    /// <summary>The size, in bytes, of the compressed tar (<see cref="GzippedTarBytes"/>).</summary>
+    /// <summary>The size, in bytes, of the compressed tar written to the destination stream.</summary>
     public long Size { get; }
 
     /// <summary>The layer media type (OCI or Docker gzipped-layer type, matching the target image's schema).</summary>
@@ -79,25 +74,49 @@ public sealed class Layer
     };
 
     /// <summary>
-    /// Builds a gzipped-tar layer from the files and directories described by <paramref name="manifest"/>.
+    /// Builds a gzipped-tar layer from the files and directories described by <paramref name="manifest"/>,
+    /// writing the compressed blob to <paramref name="destination"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The layer is produced in a single streaming pass — tar entries are written into a gzip compressor whose
+    /// output goes straight to <paramref name="destination"/> — while both digests are computed on the fly: the
+    /// <see cref="DiffId"/> over the uncompressed tar bytes, and the <see cref="Digest"/> and <see cref="Size"/>
+    /// over the compressed bytes. Memory use is therefore bounded by stream buffers regardless of layer size, and
+    /// there is no limit on layer size other than the capacity of the destination.
+    /// </para>
+    /// <para>
+    /// <paramref name="destination"/> is not disposed, closed, or rewound; the caller owns it. Its prior contents
+    /// and position are left alone, and the blob is appended starting at its current position. If this method
+    /// throws, the destination may hold a partial blob and must be discarded.
+    /// </para>
+    /// </remarks>
     /// <param name="manifest">The local-to-container path mappings that populate the layer.</param>
+    /// <param name="destination">A writable stream that receives the compressed (gzipped tar) layer blob.</param>
     /// <param name="mediaType">
     /// The gzipped-layer media type to report (defaults to <see cref="MediaTypes.OciLayerGzipV1"/>). Pass
     /// <see cref="MediaTypes.DockerLayerGzip"/> when overlaying onto a Docker-schema base image.
     /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>The built <see cref="Layer"/>, with both digests computed.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="manifest"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">The manifest is empty, or an entry has an invalid container path.</exception>
+    /// <returns>The built <see cref="Layer"/>'s metadata, with both digests and the compressed size.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="manifest"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// The manifest is empty, an entry has an invalid container path, or <paramref name="destination"/> is not writable.
+    /// </exception>
     /// <exception cref="FileNotFoundException">A mapped local file does not exist.</exception>
     /// <exception cref="DirectoryNotFoundException">A mapped local directory does not exist.</exception>
     public static async Task<Layer> CreateAsync(
         FileManifest manifest,
+        Stream destination,
         string mediaType = MediaTypes.OciLayerGzipV1,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentNullException.ThrowIfNull(destination);
+        if (!destination.CanWrite)
+        {
+            throw new ArgumentException("The destination stream must be writable.", nameof(destination));
+        }
         if (manifest.Entries.Count == 0)
         {
             throw new ArgumentException("The file manifest is empty; a layer must contain at least one file.", nameof(manifest));
@@ -114,19 +133,33 @@ public sealed class Layer
             CollectEntry(entry, files, directories);
         }
 
-        // diff_id is the hash of the uncompressed tar; digest is the hash of the gzipped tar. We compute the
-        // uncompressed hash by streaming the tar bytes through a hashing stream while they are written, then
-        // compress those same bytes. Buffering the tar in memory keeps the two passes consistent and lets us
-        // report an exact compressed size — image layers added by this library are app payloads, not whole OS
-        // images, so in-memory is appropriate.
-        byte[] uncompressedTar = await WriteTarAsync(files, directories, cancellationToken).ConfigureAwait(false);
+        // One streaming pass:  tar -> [hash: diff_id] -> gzip -> [normalize gzip header] -> [hash + count: digest,
+        // size] -> destination. Nothing is buffered beyond stream buffers, so layer size is not limited by memory
+        // (an in-memory MemoryStream/byte[] would cap a layer at ~2 GiB and hold several full copies at once).
+        using var diffIdHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        using var digestHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
-        string diffId = ComputeDigest(uncompressedTar);
-        byte[] gzipped = Compress(uncompressedTar);
-        string digest = ComputeDigest(gzipped);
+        var compressedSink = new HashingWriteStream(destination, digestHash);
+        var headerNormalizer = new GzipHeaderNormalizingStream(compressedSink);
 
-        return new Layer(gzipped, digest, diffId, gzipped.LongLength, mediaType);
+        // leaveOpen: true — disposing the compressor writes the gzip trailer through the wrappers but must not
+        // close the caller's destination. SmallestSize keeps layer blobs compact (same level as before).
+        await using (var gzip = new GZipStream(headerNormalizer, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            var tarSink = new HashingWriteStream(gzip, diffIdHash);
+            await WriteTarAsync(files, directories, tarSink, cancellationToken).ConfigureAwait(false);
+        }
+
+        await compressedSink.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        string diffId = ToDigestString(diffIdHash);
+        string digest = ToDigestString(digestHash);
+        return new Layer(digest, diffId, compressedSink.BytesWritten, mediaType);
     }
+
+    private static string ToDigestString(IncrementalHash hash)
+        // Convert.ToHexStringLower exists only on net9.0+, so lower-case explicitly for net8.0 compatibility.
+        => "sha256:" + Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
 
     /// <summary>
     /// Expands a single manifest entry into file additions and the directory entries to emit.
@@ -263,25 +296,23 @@ public sealed class Layer
     }
 
     /// <summary>
-    /// Writes the directory and file entries to an in-memory PAX tar archive, in a deterministic order, and
-    /// returns the raw (uncompressed) tar bytes.
+    /// Writes the directory and file entries as a PAX tar archive, in a deterministic order, to
+    /// <paramref name="destination"/> (the hashing/compression pipeline). Source files are streamed, not buffered.
     /// </summary>
     /// <remarks>
     /// PAX is the format used by container tooling (including <c>Microsoft.NET.Build.Containers</c>) and is what
-    /// registries and runtimes expect for image layers. PAX normally writes an extended-attribute header whose
-    /// contents (sub-second <c>mtime</c>/<c>atime</c>/<c>ctime</c>) would vary run-to-run, so this builder sets
-    /// a fixed extended-attribute set (see <see cref="ReproducibleExtendedAttributes"/>) and a fixed
-    /// <see cref="ReproducibleTimestamp"/> on every entry, making the archive bytes reproducible.
+    /// registries and runtimes expect for image layers. Every entry gets a fixed extended-attribute set (see
+    /// <see cref="ReproducibleExtendedAttributes"/>) and a fixed <see cref="ReproducibleTimestamp"/> rather than
+    /// the current time.
     /// </remarks>
-    private static async Task<byte[]> WriteTarAsync(
+    private static async Task WriteTarAsync(
         SortedDictionary<string, FileSource> files,
         SortedSet<string> directories,
+        Stream destination,
         CancellationToken cancellationToken)
     {
-        using var tarBuffer = new MemoryStream();
-
-        // leaveOpen: true so we can read the buffer back after the writer is disposed/flushed.
-        await using (var tar = new TarWriter(tarBuffer, TarEntryFormat.Pax, leaveOpen: true))
+        // leaveOpen: true — the destination is the hashing/compression pipeline, finalized by the caller.
+        await using (var tar = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true))
         {
             // Directories first, shallowest-to-deepest (the sorted set already yields a stable order), so every
             // file's parent exists before the file entry. Both collections are ordinally sorted for determinism.
@@ -311,8 +342,6 @@ public sealed class Layer
                 await tar.WriteEntryAsync(fileEntry, cancellationToken).ConfigureAwait(false);
             }
         }
-
-        return tarBuffer.ToArray();
     }
 
     /// <summary>A resolved file to place in the layer: its source path and the Unix mode to stamp on it.</summary>
@@ -322,11 +351,8 @@ public sealed class Layer
     /// The PAX extended attributes applied to every entry: fixed <c>mtime</c>, <c>atime</c> and <c>ctime</c>.
     /// </summary>
     /// <remarks>
-    /// On .NET 8 the PAX writer auto-populates <c>atime</c> and <c>ctime</c> in the extended header with the
-    /// current wall-clock time when they are not supplied, which makes the archive bytes (and thus the layer
-    /// digest) differ on every run. .NET 9+ stopped doing this. Pinning all three timestamps to a fixed epoch
-    /// here makes the output reproducible on every supported runtime. (Verified by byte-diffing two archives
-    /// built from identical input on .NET 8.)
+    /// On .NET 8 the PAX writer otherwise fills <c>atime</c> and <c>ctime</c> with the current wall-clock time;
+    /// pinning all three to a fixed epoch keeps them out of the archive.
     /// </remarks>
     private static Dictionary<string, string> ReproducibleExtendedAttributes()
     {
@@ -337,51 +363,6 @@ public sealed class Layer
             ["atime"] = epoch,
             ["ctime"] = epoch,
         };
-    }
-
-    /// <summary>
-    /// Gzip-compresses the supplied bytes, then normalizes the gzip member header so the output is byte-for-byte
-    /// reproducible across runs and target frameworks.
-    /// </summary>
-    /// <remarks>
-    /// A gzip member begins with a 10-byte header whose bytes 4–7 hold a modification time (MTIME) and whose
-    /// byte 9 holds the source OS. <see cref="GZipStream"/> populates these with values that vary by run and by
-    /// runtime (for example net8.0 writes the current time into MTIME while net9.0+ zeroes it). Left as-is, the
-    /// <em>compressed</em> digest would change run-to-run even for identical input. We therefore zero MTIME and
-    /// set the OS byte to 0xFF ("unknown"), matching the convention used by reproducible-build tooling.
-    /// </remarks>
-    private static byte[] Compress(byte[] data)
-    {
-        using var output = new MemoryStream();
-        // SmallestSize keeps layer blobs compact; layer payloads here are modest, so the extra CPU is cheap.
-        using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
-        {
-            gzip.Write(data, 0, data.Length);
-        }
-
-        byte[] bytes = output.ToArray();
-
-        // Normalize the gzip header for deterministic output. The header is present whenever there is output;
-        // a valid gzip stream is always at least the 10-byte header plus the 8-byte trailer.
-        if (bytes.Length >= 10)
-        {
-            // Bytes 4–7: MTIME (little-endian) -> zero.
-            bytes[4] = 0;
-            bytes[5] = 0;
-            bytes[6] = 0;
-            bytes[7] = 0;
-            // Byte 9: OS -> 0xFF (unknown), so it does not vary by platform.
-            bytes[9] = 0xFF;
-        }
-
-        return bytes;
-    }
-
-    private static string ComputeDigest(byte[] data)
-    {
-        byte[] hash = SHA256.HashData(data);
-        // Convert.ToHexStringLower exists only on net9.0+, so lower-case explicitly for net8.0 compatibility.
-        return "sha256:" + Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     /// <summary>

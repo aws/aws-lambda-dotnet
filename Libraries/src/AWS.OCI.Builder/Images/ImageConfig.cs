@@ -96,8 +96,7 @@ public sealed class ImageConfig
         // Add the diff_id as a JsonNode (not the generic Add<string>, which is trim/AOT-unsafe).
         diffIds.Add(JsonValue.Create(diffId) as JsonNode);
 
-        // history — one entry per layer keeps the array aligned with the layer stack. The timestamp is fixed so
-        // the config stays reproducible (see Layer's reproducibility rationale).
+        // history — one entry per layer keeps the array aligned with the layer stack. The timestamp is fixed.
         if (_root["history"] is not JsonArray history)
         {
             history = new JsonArray();

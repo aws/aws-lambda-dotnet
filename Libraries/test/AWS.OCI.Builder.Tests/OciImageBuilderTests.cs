@@ -304,7 +304,11 @@ public class OciImageBuilderTests
                 const UnixFileMode groupOrOther =
                     UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
                     UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
-                Assert.All(afterAdd, path => Assert.Equal((UnixFileMode)0, File.GetUnixFileMode(path) & groupOrOther));
+                // A plain loop (not an Assert.All lambda) keeps the call inside the platform guard for CA1416.
+                foreach (string path in afterAdd)
+                {
+                    Assert.Equal((UnixFileMode)0, File.GetUnixFileMode(path) & groupOrOther);
+                }
             }
 
             builder.Dispose();

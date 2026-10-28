@@ -22,6 +22,24 @@ public class LayerTests : IDisposable
         try { Directory.Delete(_tempRoot, recursive: true); } catch { /* best effort cleanup */ }
     }
 
+    /// <summary>A built layer plus the compressed bytes <see cref="Layer.CreateAsync"/> streamed out.</summary>
+    private sealed record BuiltLayer(Layer Layer, byte[] GzippedTarBytes)
+    {
+        public string Digest => Layer.Digest;
+        public string DiffId => Layer.DiffId;
+        public long Size => Layer.Size;
+        public string MediaType => Layer.MediaType;
+        public Descriptor ToDescriptor() => Layer.ToDescriptor();
+    }
+
+    /// <summary>Builds a layer into an in-memory destination (fine for these small fixtures).</summary>
+    private static async Task<BuiltLayer> BuildAsync(FileManifest manifest, string mediaType = MediaTypes.OciLayerGzipV1)
+    {
+        var destination = new MemoryStream();
+        Layer layer = await Layer.CreateAsync(manifest, destination, mediaType);
+        return new BuiltLayer(layer, destination.ToArray());
+    }
+
     private string WriteFile(string relativePath, string content)
     {
         string full = Path.Combine(_tempRoot, relativePath);
@@ -36,7 +54,7 @@ public class LayerTests : IDisposable
         string file = WriteFile("app.dll", "hello");
         var manifest = new FileManifest { { file, "/app/app.dll" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
 
         Assert.StartsWith("sha256:", layer.Digest);
         Assert.StartsWith("sha256:", layer.DiffId);
@@ -52,7 +70,7 @@ public class LayerTests : IDisposable
         string file = WriteFile("app.dll", new string('x', 4096));
         var manifest = new FileManifest { { file, "/app/app.dll" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
 
         // Digest is over the gzipped bytes; DiffId is over the raw tar. They must not be equal.
         Assert.NotEqual(layer.Digest, layer.DiffId);
@@ -64,7 +82,7 @@ public class LayerTests : IDisposable
         string file = WriteFile("app.dll", "hello");
         var manifest = new FileManifest { { file, "/app/app.dll" } };
 
-        Layer layer = await Layer.CreateAsync(manifest, MediaTypes.DockerLayerGzip);
+        BuiltLayer layer = await BuildAsync(manifest, MediaTypes.DockerLayerGzip);
         Descriptor descriptor = layer.ToDescriptor();
 
         Assert.Equal(MediaTypes.DockerLayerGzip, descriptor.MediaType);
@@ -79,8 +97,8 @@ public class LayerTests : IDisposable
         var manifest1 = new FileManifest { { file, "/app/app.dll" } };
         var manifest2 = new FileManifest { { file, "/app/app.dll" } };
 
-        Layer a = await Layer.CreateAsync(manifest1);
-        Layer b = await Layer.CreateAsync(manifest2);
+        BuiltLayer a = await BuildAsync(manifest1);
+        BuiltLayer b = await BuildAsync(manifest2);
 
         Assert.Equal(a.Digest, b.Digest);
         Assert.Equal(a.DiffId, b.DiffId);
@@ -95,8 +113,8 @@ public class LayerTests : IDisposable
         var ordered = new FileManifest { { f1, "/app/a.txt" }, { f2, "/app/b.txt" } };
         var reversed = new FileManifest { { f2, "/app/b.txt" }, { f1, "/app/a.txt" } };
 
-        Layer a = await Layer.CreateAsync(ordered);
-        Layer b = await Layer.CreateAsync(reversed);
+        BuiltLayer a = await BuildAsync(ordered);
+        BuiltLayer b = await BuildAsync(reversed);
 
         Assert.Equal(a.Digest, b.Digest);
     }
@@ -107,7 +125,7 @@ public class LayerTests : IDisposable
         string file = WriteFile("app.dll", "hello");
         var manifest = new FileManifest { { file, "/app/bin/app.dll" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         List<(TarEntryType Type, string Name)> entries = ReadTarEntries(layer.GzippedTarBytes);
 
         // The file is present (no leading slash). Its ancestor directories are NOT synthesized as tar entries:
@@ -127,7 +145,7 @@ public class LayerTests : IDisposable
 
         var manifest = new FileManifest { { dir, "/app/data" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         List<(TarEntryType Type, string Name)> entries = ReadTarEntries(layer.GzippedTarBytes);
 
         Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/data/root.txt" });
@@ -145,7 +163,7 @@ public class LayerTests : IDisposable
 
         var manifest = new FileManifest { { dir, "/app/data" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         List<(TarEntryType Type, string Name)> entries = ReadTarEntries(layer.GzippedTarBytes);
 
         Assert.Contains(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/data/root.txt" });
@@ -168,7 +186,7 @@ public class LayerTests : IDisposable
 
         // A symlinked source must be rejected rather than silently followed (which could pull in files from
         // outside the mapped set, e.g. host secrets).
-        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
     }
 
     [Fact]
@@ -187,21 +205,21 @@ public class LayerTests : IDisposable
 
         var manifest = new FileManifest { { dir, "/app" } };
 
-        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
     }
 
     [Fact]
     public async Task Empty_manifest_throws()
     {
         var manifest = new FileManifest();
-        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
     }
 
     [Fact]
     public async Task Missing_source_throws_FileNotFound()
     {
         var manifest = new FileManifest { { Path.Combine(_tempRoot, "does-not-exist"), "/app/x" } };
-        await Assert.ThrowsAsync<FileNotFoundException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<FileNotFoundException>(() => BuildAsync(manifest));
     }
 
     [Theory]
@@ -212,7 +230,7 @@ public class LayerTests : IDisposable
     {
         string file = WriteFile("app.dll", "hello");
         var manifest = new FileManifest { { file, containerPath } };
-        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
     }
 
     [Fact]
@@ -221,7 +239,7 @@ public class LayerTests : IDisposable
         string f1 = WriteFile("a.txt", "one");
         string f2 = WriteFile("b.txt", "two");
         var manifest = new FileManifest { { f1, "/app/same.txt" }, { f2, "/app/same.txt" } };
-        await Assert.ThrowsAsync<ArgumentException>(() => Layer.CreateAsync(manifest));
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
     }
 
     /// <summary>Decompresses the gzipped tar and returns its real entries (type + name) in order.</summary>
@@ -279,7 +297,7 @@ public class LayerTests : IDisposable
         string dir = Directory.CreateDirectory(Path.Combine(_tempRoot, "assets")).FullName;
         var manifest = new FileManifest { { file, "/app/app.dll" }, { dir, "/app/assets" } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
 
         // On Windows the source has no mode bits, so the file defaults to 0644. On Unix the source file written by
@@ -299,7 +317,7 @@ public class LayerTests : IDisposable
         string file = WriteFile("run.sh", "#!/bin/sh\necho hi\n");
         var manifest = new FileManifest { { file, "/app/run.sh", Mode0750 } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
 
         var fileEntry = Assert.Single(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/run.sh" });
@@ -313,7 +331,7 @@ public class LayerTests : IDisposable
         var manifest = new FileManifest();
         manifest.AddExecutable(file, "/app/entrypoint.sh");
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
 
         var fileEntry = Assert.Single(entries, e => e is { Type: TarEntryType.RegularFile, Name: "app/entrypoint.sh" });
@@ -329,7 +347,7 @@ public class LayerTests : IDisposable
 
         var manifest = new FileManifest { { dir, "/app/scripts", FileManifestEntry.ExecutableMode } };
 
-        Layer layer = await Layer.CreateAsync(manifest);
+        BuiltLayer layer = await BuildAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
 
         var a = Assert.Single(entries, e => e.Name == "app/scripts/a.sh");
@@ -339,7 +357,7 @@ public class LayerTests : IDisposable
     }
 
     [Fact]
-    public void Executable_bit_from_source_is_preserved_on_unix()
+    public async Task Executable_bit_from_source_is_preserved_on_unix()
     {
         // On Windows there is no source executable bit to read, so this behavior only applies to Unix hosts.
         if (OperatingSystem.IsWindows())
@@ -351,7 +369,7 @@ public class LayerTests : IDisposable
         File.SetUnixFileMode(file, Mode0755);
 
         var manifest = new FileManifest { { file, "/app/tool" } }; // no explicit mode -> derive from source
-        Layer layer = Layer.CreateAsync(manifest).GetAwaiter().GetResult();
+        BuiltLayer layer = await BuildAsync(manifest);
         var entries = ReadTarEntriesWithMode(layer.GzippedTarBytes);
 
         var fileEntry = Assert.Single(entries, e => e.Name == "app/tool");
@@ -368,8 +386,8 @@ public class LayerTests : IDisposable
         var m2 = new FileManifest();
         m2.AddExecutable(file, "/app/run.sh");
 
-        Layer a = await Layer.CreateAsync(m1);
-        Layer b = await Layer.CreateAsync(m2);
+        BuiltLayer a = await BuildAsync(m1);
+        BuiltLayer b = await BuildAsync(m2);
 
         Assert.Equal(a.Digest, b.Digest);
     }
@@ -382,8 +400,8 @@ public class LayerTests : IDisposable
         var executable = new FileManifest();
         executable.AddExecutable(file, "/app/run.sh");
 
-        Layer a = await Layer.CreateAsync(plain);
-        Layer b = await Layer.CreateAsync(executable);
+        BuiltLayer a = await BuildAsync(plain);
+        BuiltLayer b = await BuildAsync(executable);
 
         // Same content, different permissions -> different layer bytes -> different digest.
         Assert.NotEqual(a.Digest, b.Digest);
