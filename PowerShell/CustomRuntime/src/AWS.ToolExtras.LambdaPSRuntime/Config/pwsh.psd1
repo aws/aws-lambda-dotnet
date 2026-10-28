@@ -6,9 +6,11 @@
 
     # How those downloads retry and time out. A failed HTTP response (a GitHub rate limit or server
     # error) is retried up to RetryCount times, RetryDelaySeconds apart. ConnectTimeoutSeconds limits
-    # only connecting to the host; OperationTimeoutSeconds limits a whole download, so a transfer that
-    # stalls part-way fails instead of waiting indefinitely. The Layer and self-contained .zip builds
-    # use all four for the tarball download, and the scaffolded Dockerfiles for every curl they run.
+    # only connecting to the host. OperationTimeoutSeconds stops a transfer that stalls part-way instead
+    # of waiting indefinitely: the Layer and self-contained .zip builds' tarball download
+    # (Invoke-WebRequest -OperationTimeoutSeconds) fails when one read waits that long for data, and
+    # every curl in the scaffolded Dockerfiles (--max-time) fails when the whole transfer takes that
+    # long. Those builds and Dockerfiles use all four.
     Download      = @{
         RetryCount              = 3
         RetryDelaySeconds       = 2

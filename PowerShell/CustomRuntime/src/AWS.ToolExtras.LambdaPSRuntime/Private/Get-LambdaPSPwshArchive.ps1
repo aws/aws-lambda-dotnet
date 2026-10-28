@@ -17,8 +17,9 @@ function Get-LambdaPSPwshArchive {
         hash the file is used as-is (the caller owns that file's provenance).
 
         The download retries a failed HTTP response (a GitHub rate limit or server error), gives up on a
-        host that does not connect in time, and fails a download that does not finish in time (one that
-        stalls part-way), rather than waiting indefinitely.
+        host that does not connect in time, and fails a download that stalls part-way (no data arrives
+        for the configured time), rather than waiting indefinitely. There is no limit on the download as
+        a whole, so a slow but steady transfer is not cut off.
     .PARAMETER PwshVersion
         The full pwsh version (x.y.z, for example 7.4.20) to download and verify.
     .PARAMETER Architecture
@@ -109,7 +110,8 @@ function Get-LambdaPSPwshArchive {
     $verified = $false
     try {
         # Retry a failed HTTP response (a GitHub rate limit or server error), give up on a host that does
-        # not connect in time, and fail a download that does not finish in time. A dropped connection is
+        # not connect in time, and fail a download when one read waits too long for data:
+        # -OperationTimeoutSeconds limits each read, not the whole download. A dropped connection is
         # not retried. The limits are in Config/pwsh.psd1.
         $download = $script:Config.pwsh.Download
         Invoke-WebRequest -Uri $url -OutFile $destination -UseBasicParsing -ErrorAction Stop `
