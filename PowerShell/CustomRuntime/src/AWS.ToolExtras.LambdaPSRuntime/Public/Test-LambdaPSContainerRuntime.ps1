@@ -7,15 +7,15 @@ function Test-LambdaPSContainerRuntime {
         that the 'docker' CLI is on PATH and that its 'buildx' subcommand is installed, because that is
         exactly what the image build shells out to:
 
-            docker buildx build --provenance=false --output type=image,oci-mediatypes=false ...
+            docker buildx build --provenance=false --sbom=false --output type=image,oci-mediatypes=false ...
 
         Docker is the only supported container CLI. The image build depends on buildx specifically --
-        on '--provenance=false' and 'oci-mediatypes=false' -- to emit the Docker v2 Schema 2 manifest
-        that a customer-managed runtime requires, and neither the flags nor the single-step push
-        behaviour carry over to podman, finch, or nerdctl. Probing for those would report a runtime
-        the build then cannot use, so this cmdlet does not pretend to support them. Customers who do
-        not want Docker have a fully container-free path instead: the Layer and self-contained .zip
-        targets, built with Build-LambdaPSRuntimePackage.
+        on '--provenance=false', '--sbom=false' and 'oci-mediatypes=false' -- to emit the Docker v2
+        Schema 2 manifest that a customer-managed runtime requires, and neither the flags nor the
+        single-step push behaviour carry over to podman, finch, or nerdctl. Probing for those would
+        report a runtime the build then cannot use, so this cmdlet does not pretend to support them.
+        Customers who do not want Docker have a fully container-free path instead: the Layer and
+        self-contained .zip targets, built with Build-LambdaPSRuntimePackage.
 
         The CLI is located with Get-Command docker -CommandType Application, so only a real
         executable on PATH matches (aliases and functions are ignored). buildx is probed by running
@@ -66,7 +66,7 @@ function Test-LambdaPSContainerRuntime {
         if ($LASTEXITCODE -ne 0) {
             $message = "The docker CLI at '$($command.Source)' does not support 'buildx' " +
                 "(docker buildx version exited with $LASTEXITCODE). buildx is required: the image build " +
-                'uses --provenance=false and oci-mediatypes=false to produce the Docker v2 Schema 2 ' +
+                'uses --provenance=false, --sbom=false and oci-mediatypes=false to produce the Docker v2 Schema 2 ' +
                 'manifest a customer-managed runtime needs. Install the buildx plugin: see ' +
                 'https://github.com/docker/buildx#installing.'
             $PSCmdlet.ThrowTerminatingError(

@@ -36,6 +36,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
                 $ArgumentList[[array]::IndexOf($ArgumentList, '-t') + 1] -eq 'powershell-runtime:v1' -and
                 $ArgumentList[-1] -eq $script:projectPath -and
                 $ArgumentList -contains '--provenance=false' -and
+                $ArgumentList -contains '--sbom=false' -and
                 $ArgumentList -contains '--load' -and
                 $ArgumentList[[array]::IndexOf($ArgumentList, '--platform') + 1] -eq 'linux/amd64' -and
                 # buildx errors with "load and image output can't be used together", so the
@@ -72,6 +73,8 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
                 $ArgumentList -contains 'type=image,oci-mediatypes=false,push=true' -and
+                $ArgumentList -contains '--provenance=false' -and
+                $ArgumentList -contains '--sbom=false' -and
                 $ArgumentList -notcontains '--load' -and
                 # Only the registry-qualified URI is tagged; the bare 'rt:v1' must NOT be a -t
                 # (buildx --push would try to push it to docker.io and get denied).

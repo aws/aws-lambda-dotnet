@@ -6,8 +6,8 @@ function Build-LambdaPSRuntimeImage {
         Wraps 'docker buildx build' so callers never have to remember the fragile flags required to
         produce a Lambda-compatible Docker v2 Schema 2 image. It builds a project with a Dockerfile (a
         runtime image from New-LambdaPSRuntimeProject, or a container-image function from
-        New-LambdaPSFunctionProject -Target Container) with provenance disabled and OCI media types
-        turned off, and either loads the image locally or pushes it.
+        New-LambdaPSFunctionProject -Target Container) with provenance and SBOM attestations disabled
+        and OCI media types turned off, and either loads the image locally or pushes it.
 
         A Container project's Dockerfile copies the project folder into the image with its hidden files
         (COPY . /var/task, less what .dockerignore lists), so keep secrets such as .env files out of it.
@@ -18,7 +18,7 @@ function Build-LambdaPSRuntimeImage {
 
         The exact recipe issued is:
 
-            docker buildx build --provenance=false --platform <linux/amd64|linux/arm64>
+            docker buildx build --provenance=false --sbom=false --platform <linux/amd64|linux/arm64>
                 --load -t <Tag> <Path>                                                 (local)
                 --output type=image,oci-mediatypes=false,push=true --metadata-file <temp>
                 -t <ImageUri> <Path>                                                   (-ImageUri)
@@ -137,6 +137,10 @@ function Build-LambdaPSRuntimeImage {
         $dockerArgs.Add('buildx')
         $dockerArgs.Add('build')
         $dockerArgs.Add('--provenance=false')
+        # No SBOM attestation either, whatever the builder or environment defaults to: an attestation
+        # wraps the image in an index with an attestation manifest, so the push would not be the single
+        # Docker v2 Schema 2 manifest this recipe produces.
+        $dockerArgs.Add('--sbom=false')
         if ($push) {
             # Direct single-step push: type=image + oci-mediatypes=false pushes a Docker v2
             # Schema 2 manifest straight to the registry (the CMR-required format).
