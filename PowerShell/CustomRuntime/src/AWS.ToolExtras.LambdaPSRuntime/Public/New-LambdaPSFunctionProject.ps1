@@ -112,7 +112,8 @@ function New-LambdaPSFunctionProject {
                    available for local testing.
           Stop     fail with ModuleNotFoundLocally.
         AWS.Tools modules are downloaded with AWS.Tools.Installer 2.0.5 or a later 2.x (the
-        SHA512-checked AWS.Tools.zip from CloudFront); anything else with PSResourceGet from your
+        AWS.Tools.zip from CloudFront, checked against the SHA512 published beside it, which detects a
+        corrupted download, not a tampered one); anything else with PSResourceGet from your
         registered repositories.
         PowerShellGet is never used, and repository trust is not bypassed. See Save-LambdaPSModule.
         A download stops with ModuleInstallerNotFound when PSResourceGet is not available,
@@ -126,8 +127,9 @@ function New-LambdaPSFunctionProject {
         an internal mirror). When omitted, every registered repository is searched in priority order,
         so a same-named package in a higher-priority feed would be used. AWS.Tools modules always come
         from the AWS.Tools.zip that AWS.Tools.Installer downloads; when the installer itself must be
-        fetched, it comes from these repositories (PSGallery when this is omitted) and, on Windows, only
-        when its Authenticode signature is valid.
+        fetched, it comes from these repositories (PSGallery when this is omitted) at the version this
+        module pins, and is used only when its files match the pinned SHA256 and, on Windows, its
+        Authenticode signature is valid.
         A repository name, or a pattern with '*' wildcards, that matches no registered PSResourceGet
         repository (Get-PSResourceRepository) stops the download with ModuleRepositoryNotFound, as does
         a missing PSGallery when the installer must come from it.
