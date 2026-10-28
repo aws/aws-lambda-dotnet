@@ -140,6 +140,55 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
         Test-Path -LiteralPath $zip | Should -BeFalse
     }
 
+    # Lambda's quotas: 50 MB zipped for a direct upload, 250 MB unzipped for code and layers together.
+    Context 'Lambda''s package size limits' {
+        It 'warns about the <Case>' -ForEach @(
+            @{ Case = 'direct-upload limit for a zip over 50 MB'; Random = $true; Bytes = 51MB; Expected = "*is 51* MB, over the 50 MB Lambda accepts in a direct upload*-Code_S3Bucket*" }
+            @{ Case = 'unzipped limit for files over 250 MB'; Random = $false; Bytes = 251MB; Expected = '*unzips to 251 MB, over the 250 MB*' }
+        ) {
+            $stage = Join-Path $TestDrive "size-$Bytes"
+            $null = New-Item -ItemType Directory -Path $stage
+            $file = [System.IO.File]::Create((Join-Path $stage 'payload.bin'))
+            try {
+                # Random bytes do not compress, so the zip is as large as the file; zeros compress to almost nothing.
+                if ($Random) {
+                    $buffer = [byte[]]::new(1MB)
+                    for ($i = 0; $i -lt $Bytes / 1MB; $i++) {
+                        [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+                        $file.Write($buffer, 0, $buffer.Length)
+                    }
+                }
+                else { $file.SetLength($Bytes) }
+            }
+            finally { $file.Dispose() }
+            $zip = Join-Path $TestDrive "size-$Bytes.zip"
+
+            $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+                param($Stage, $Zip)
+                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -WarningVariable w -WarningAction SilentlyContinue
+                $w
+            }
+
+            @($warnings).Count | Should -Be 1
+            "$($warnings[0])" | Should -BeLike $Expected
+            Test-Path -LiteralPath $zip | Should -BeTrue -Because 'the package is still written'
+        }
+
+        It 'does not warn for a package within both limits' {
+            $stage = Join-Path $TestDrive 'size-small'
+            $null = New-Item -ItemType Directory -Path $stage
+            'x' | Set-Content -LiteralPath (Join-Path $stage 'handler.ps1')
+
+            $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = (Join-Path $TestDrive 'size-small.zip') } {
+                param($Stage, $Zip)
+                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -WarningVariable w -WarningAction SilentlyContinue
+                $w
+            }
+
+            $warnings | Should -BeNullOrEmpty
+        }
+    }
+
     It 'names a file in a subfolder with a forward slash' {
         $stage = Join-Path $TestDrive 'subfolder-stage'
         $null = New-Item -ItemType Directory -Path (Join-Path $stage 'lib') -Force

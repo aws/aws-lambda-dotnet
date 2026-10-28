@@ -22,6 +22,10 @@ function Compress-LambdaPSFunctionPackage {
         The high-level New-LambdaPSFunctionDeployment calls this cmdlet, so both the one-command and
         the manual (scaffold, package, create) paths stage modules the same way.
 
+        A package over Lambda's 50 MB direct-upload limit is written with a warning to upload it
+        through S3, and one whose files add up to more than Lambda's 250 MB unzipped limit with a
+        warning that Lambda rejects it.
+
         For a project New-LambdaPSFunctionProject scaffolded (its top-level manifest.json has the
         scaffolder's HandlerString and ScriptFile), the scaffolding-only 'manifest.json' and
         'README.md' at the top level are dropped from the archive, after manifest.json is read to

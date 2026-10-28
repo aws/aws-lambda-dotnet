@@ -34,7 +34,10 @@ function Build-LambdaPSRuntimePackage {
              gives a byte-identical package (except for a precompiled
              PowerShellLambdaContext.dll, whose compiled bytes can differ between builds), and the executable
              bit set on bootstrap and powershell/pwsh, and on any file that is executable on a Linux or
-             macOS build host; everything else is mode 0644.
+             macOS build host; everything else is mode 0644. The package bundles pwsh, so it is over
+             Lambda's 50 MB direct-upload limit, and is written with a warning to upload it through S3;
+             one whose files add up to more than Lambda's 250 MB unzipped limit is written with a
+             warning that Lambda rejects it.
 
         The target is read from the project's lambdaps-runtime.json marker; -Target names it for a
         project with no marker.
