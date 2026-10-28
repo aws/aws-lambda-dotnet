@@ -147,15 +147,24 @@ public sealed class RegistryClient : IDisposable
     /// </summary>
     public async Task<ManifestResponse> GetManifestAsync(string repository, string reference, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateReference(reference);
+
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Base, $"{repository}/manifests/{reference}"));
         AddManifestAcceptHeaders(request);
 
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, $"GET manifest {repository}:{reference}", cancellationToken).ConfigureAwait(false);
 
         // Read the exact bytes on the wire. Digests must be computed over these, not over a string that has been
         // decoded and re-encoded (which could differ by BOM/charset), so the raw bytes are exposed for verification.
-        byte[] raw = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        // The read is bounded so a hostile registry cannot exhaust memory with an enormous "manifest".
+        (byte[] raw, bool exceeded) = await BoundedRead.ReadAsync(response.Content, BoundedRead.MaxMetadataBytes, cancellationToken).ConfigureAwait(false);
+        if (exceeded)
+        {
+            throw new RegistryException(
+                $"The manifest {repository}:{reference} is larger than the {BoundedRead.MaxMetadataBytes}-byte limit for manifests.");
+        }
         string json = System.Text.Encoding.UTF8.GetString(raw);
         string mediaType = response.Content.Headers.ContentType?.MediaType
                            ?? throw new RegistryRequestException((int)response.StatusCode, "manifest response had no Content-Type.");
@@ -169,6 +178,9 @@ public sealed class RegistryClient : IDisposable
     /// <summary>Checks whether a manifest exists for the given reference without downloading it.</summary>
     public async Task<bool> ManifestExistsAsync(string repository, string reference, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateReference(reference);
+
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/manifests/{reference}"));
         AddManifestAcceptHeaders(request);
         using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -178,6 +190,9 @@ public sealed class RegistryClient : IDisposable
     /// <summary>Uploads a manifest under the given tag or digest reference.</summary>
     public async Task PutManifestAsync(string repository, string reference, string manifestJson, string mediaType, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateReference(reference);
+
         using var request = new HttpRequestMessage(HttpMethod.Put, new Uri(Base, $"{repository}/manifests/{reference}"))
         {
             Content = new StringContent(manifestJson),
@@ -193,6 +208,9 @@ public sealed class RegistryClient : IDisposable
     /// <summary>Checks whether a blob with the given digest already exists in the repository.</summary>
     public async Task<bool> BlobExistsAsync(string repository, string digest, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateDigest(digest);
+
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/blobs/{digest}"));
         using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         return response.StatusCode == HttpStatusCode.OK;
@@ -207,6 +225,9 @@ public sealed class RegistryClient : IDisposable
     /// </remarks>
     public async Task<Stream> GetBlobAsync(string repository, string digest, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateDigest(digest);
+
         Uri uri = new(Base, $"{repository}/blobs/{digest}");
 
         for (int hop = 0; ; hop++)
@@ -342,6 +363,10 @@ public sealed class RegistryClient : IDisposable
     /// </summary>
     public async Task<bool> TryMountBlobAsync(string repository, string digest, string fromRepository, CancellationToken cancellationToken = default)
     {
+        ValidateRepository(repository);
+        ValidateDigest(digest);
+        ValidateRepository(fromRepository, nameof(fromRepository));
+
         var uri = new Uri(Base, $"{repository}/blobs/uploads/?mount={Uri.EscapeDataString(digest)}&from={Uri.EscapeDataString(fromRepository)}");
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -400,6 +425,9 @@ public sealed class RegistryClient : IDisposable
         Action<long>? onBytesSent = null,
         long? contentLength = null)
     {
+        ValidateRepository(repository);
+        ValidateDigest(digest);
+
         if (await BlobExistsAsync(repository, digest, cancellationToken).ConfigureAwait(false))
         {
             return;
@@ -501,7 +529,10 @@ public sealed class RegistryClient : IDisposable
         string body = string.Empty;
         try
         {
-            body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            // Read only the start of the body: it is just context for the exception message, and an unbounded
+            // read would let a hostile registry exhaust memory with a huge error response.
+            (byte[] prefix, _) = await BoundedRead.ReadAsync(response.Content, BoundedRead.MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false);
+            body = System.Text.Encoding.UTF8.GetString(prefix);
         }
         catch
         {
@@ -511,6 +542,33 @@ public sealed class RegistryClient : IDisposable
         throw new RegistryRequestException(
             (int)response.StatusCode,
             $"{operation} failed with {(int)response.StatusCode} {response.ReasonPhrase}. {Truncate(body, 512)}");
+    }
+
+    private static void ValidateRepository(string repository, string paramName = "repository")
+    {
+        if (!OciNames.IsValidRepository(repository))
+        {
+            throw new ArgumentException($"'{OciNames.ForDisplay(repository)}' is not a valid repository name.", paramName);
+        }
+    }
+
+    private static void ValidateDigest(string digest)
+    {
+        if (!OciNames.IsValidDigest(digest))
+        {
+            throw new ArgumentException(
+                $"'{OciNames.ForDisplay(digest)}' is not a valid digest; expected 'sha256:' followed by 64 lowercase hex characters.",
+                nameof(digest));
+        }
+    }
+
+    private static void ValidateReference(string reference)
+    {
+        if (!OciNames.IsValidReference(reference))
+        {
+            throw new ArgumentException(
+                $"'{OciNames.ForDisplay(reference)}' is not a valid tag or digest.", nameof(reference));
+        }
     }
 
     private static string Truncate(string value, int max)
@@ -591,12 +649,30 @@ public sealed class RegistryClient : IDisposable
     /// <exception cref="BlobSizeMismatchException">The downloaded length differs from <paramref name="expectedSize"/>.</exception>
     public async Task<byte[]> GetVerifiedBlobBytesAsync(string repository, string digest, string what, long? expectedSize = null, CancellationToken cancellationToken = default)
     {
+        if (expectedSize is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expectedSize), expectedSize, "The expected size must not be negative.");
+        }
+
         byte[] bytes;
         await using (Stream stream = await GetBlobAsync(repository, digest, cancellationToken).ConfigureAwait(false))
         {
-            using var buffer = new MemoryStream();
-            await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-            bytes = buffer.ToArray();
+            if (expectedSize is { } limit)
+            {
+                // Stop as soon as the blob runs past its declared size, rather than buffering whatever the
+                // registry sends.
+                (bytes, bool exceeded) = await BoundedRead.ReadAsync(stream, limit, cancellationToken).ConfigureAwait(false);
+                if (exceeded)
+                {
+                    throw BlobSizeMismatchException.LargerThanDeclared(what, digest, limit);
+                }
+            }
+            else
+            {
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+                bytes = buffer.ToArray();
+            }
         }
 
         VerifyDigest(what, digest, bytes);
@@ -637,6 +713,11 @@ public sealed class RegistryClient : IDisposable
     /// <exception cref="BlobSizeMismatchException">The downloaded length differs from <paramref name="expectedSize"/>.</exception>
     public async Task<VerifiedBlobFile> GetVerifiedBlobToFileAsync(string repository, string digest, string what, long? expectedSize = null, CancellationToken cancellationToken = default)
     {
+        if (expectedSize is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expectedSize), expectedSize, "The expected size must not be negative.");
+        }
+
         // A unique temp path under the system temp dir (honors TMPDIR). Created now so we can always clean it up.
         string tempPath = Path.Combine(Path.GetTempPath(), $"aws-oci-layer-{Guid.NewGuid():N}.tmp");
 
@@ -655,6 +736,13 @@ public sealed class RegistryClient : IDisposable
                     int read;
                     while ((read = await source.ReadAsync(rented.AsMemory(0, rented.Length), cancellationToken).ConfigureAwait(false)) > 0)
                     {
+                        // Stop as soon as the blob runs past its declared size, so a lying registry cannot fill
+                        // the disk. The catch below deletes the partial file.
+                        if (expectedSize is { } limit && downloadedLength + read > limit)
+                        {
+                            throw BlobSizeMismatchException.LargerThanDeclared(what, digest, limit);
+                        }
+
                         hasher.AppendData(rented, 0, read);
                         downloadedLength += read;
                         await file.WriteAsync(rented.AsMemory(0, read), cancellationToken).ConfigureAwait(false);

@@ -156,6 +156,20 @@ public sealed class OciImageBuilder : IDisposable
                 throw new RegistryException($"The base manifest for '{baseImage}' has no config descriptor.");
             }
 
+            // The base manifest is untrusted input: its digests go into request URLs (including authenticated ECR
+            // requests during the push) and its sizes bound how much is downloaded. Validate them all up front.
+            ValidateBaseDescriptor(baseImage, "config", manifest.Config.Digest, manifest.Config.Size);
+            if (manifest.Config.Size > BoundedRead.MaxMetadataBytes)
+            {
+                throw new RegistryException(
+                    $"The base image '{baseImage}' declares a {manifest.Config.Size}-byte config, which exceeds the " +
+                    $"{BoundedRead.MaxMetadataBytes}-byte limit for image configs.");
+            }
+            for (int i = 0; i < manifest.Layers.Count; i++)
+            {
+                ValidateBaseDescriptor(baseImage, $"layer {i}", manifest.Layers[i].Digest, manifest.Layers[i].Size);
+            }
+
             byte[] configBytes = await sourceClient
                 .GetVerifiedBlobBytesAsync(baseReference.Repository, manifest.Config.Digest, "base image config", manifest.Config.Size, cancellationToken)
                 .ConfigureAwait(false);
@@ -311,7 +325,7 @@ public sealed class OciImageBuilder : IDisposable
 
         // Decode the ECR authorization token into the Basic username/password the registry handshake expects.
         (string username, string password) = DecodeEcrAuthorizationToken(authorizationToken);
-        var credentialSource = new StaticRegistryCredentialSource(username, password);
+        var credentialSource = new StaticRegistryCredentialSource(target.Registry, username, password);
 
         IProgress<LayerPushProgress>? progress = options?.Progress;
 
@@ -537,6 +551,8 @@ public sealed class OciImageBuilder : IDisposable
                 $"The base image '{baseReference}' has no manifest for platform '{os}/{architecture}'. " +
                 $"Available: {DescribePlatforms(index)}.");
 
+        ValidateBaseDescriptor(baseReference.ToString(), $"{os}/{architecture} manifest", selected.Digest, selected.Size);
+
         ManifestResponse platformManifest =
             await client.GetManifestAsync(baseReference.Repository, selected.Digest, cancellationToken).ConfigureAwait(false);
 
@@ -576,6 +592,24 @@ public sealed class OciImageBuilder : IDisposable
 
     private void ThrowIfDisposed()
         => ObjectDisposedException.ThrowIf(_disposed, this);
+
+    /// <summary>
+    /// Rejects a descriptor from the (untrusted) base image whose digest is not a well-formed sha256 digest or
+    /// whose size is negative.
+    /// </summary>
+    internal static void ValidateBaseDescriptor(string baseImage, string what, string? digest, long size)
+    {
+        if (!OciNames.IsValidDigest(digest))
+        {
+            throw new RegistryException(
+                $"The base image '{baseImage}' has an invalid {what} digest '{OciNames.ForDisplay(digest)}'; expected " +
+                "'sha256:' followed by 64 lowercase hex characters.");
+        }
+        if (size < 0)
+        {
+            throw new RegistryException($"The base image '{baseImage}' declares a negative size ({size}) for its {what}.");
+        }
+    }
 
     /// <summary>
     /// Decodes an ECR authorization token (base64 of <c>username:password</c>, where the username is <c>AWS</c>)

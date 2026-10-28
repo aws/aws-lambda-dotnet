@@ -85,15 +85,33 @@ public sealed class BlobSizeMismatchException : RegistryException
     /// <summary>The size, in bytes, declared by the manifest descriptor.</summary>
     public long DeclaredSize { get; }
 
-    /// <summary>The actual size, in bytes, of the downloaded blob.</summary>
+    /// <summary>
+    /// The actual size, in bytes, of the downloaded blob. When the download was stopped because the blob ran past
+    /// its declared size, this is the number of bytes accepted before stopping (the declared size), and the real
+    /// size is larger.
+    /// </summary>
     public long ActualSize { get; }
 
     /// <summary>Creates the exception.</summary>
     public BlobSizeMismatchException(string what, string digest, long declaredSize, long actualSize)
-        : base($"Integrity check failed for {what} {digest}: the manifest declares a size of {declaredSize} bytes but the blob is {actualSize} bytes.")
+        : this(
+            $"Integrity check failed for {what} {digest}: the manifest declares a size of {declaredSize} bytes but the blob is {actualSize} bytes.",
+            declaredSize, actualSize, digest)
+    {
+    }
+
+    private BlobSizeMismatchException(string message, long declaredSize, long actualSize, string digest)
+        : base(message)
     {
         Digest = digest;
         DeclaredSize = declaredSize;
         ActualSize = actualSize;
     }
+
+    /// <summary>Creates the exception for a download stopped because the blob is larger than declared.</summary>
+    internal static BlobSizeMismatchException LargerThanDeclared(string what, string digest, long declaredSize)
+        => new(
+            $"Integrity check failed for {what} {digest}: the manifest declares a size of {declaredSize} bytes but the " +
+            "blob is larger, so the download was stopped.",
+            declaredSize, declaredSize, digest);
 }

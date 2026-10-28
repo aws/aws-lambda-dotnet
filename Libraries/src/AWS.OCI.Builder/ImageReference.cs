@@ -148,14 +148,23 @@ public sealed partial class ImageReference
         // Validate the repository against the OCI/Docker name grammar. Without this, an input such as
         // "123456789012.dkr.ecr.us-west-2.amazonaws.com///attacker.example/app" would be accepted and its
         // "//attacker.example/app" repository would override the authority of the request URIs the RegistryClient
-        // builds — causing the caller's credentials (a StaticRegistryCredentialSource answers for every host) to
-        // be sent to an attacker-controlled host. Rejecting malformed names here closes that vector.
-        if (!RepositoryRegex().IsMatch(repository))
+        // builds, sending the push to an attacker-controlled host. Rejecting malformed names here closes that vector.
+        if (!OciNames.IsValidRepository(repository))
         {
             throw new ArgumentException(
-                $"The image reference '{reference}' has an invalid repository '{repository}'. A repository is one or " +
-                "more lowercase path components (letters, digits, and separators '.', '_', '-') separated by single " +
-                "'/' characters.",
+                $"The image reference '{OciNames.ForDisplay(reference)}' has an invalid repository '{OciNames.ForDisplay(repository)}'. " +
+                "A repository is one or more lowercase path components (letters, digits, and separators '.', '_', '-') " +
+                "separated by single '/' characters.",
+                nameof(reference));
+        }
+
+        // The tag or digest is also spliced into request paths, so it must match its grammar too.
+        if (isDigest ? !OciNames.IsValidDigest(refValue) : !OciNames.IsValidTag(refValue))
+        {
+            throw new ArgumentException(
+                isDigest
+                    ? $"The image reference '{OciNames.ForDisplay(reference)}' has an invalid digest '{OciNames.ForDisplay(refValue)}'; expected 'sha256:' followed by 64 lowercase hex characters."
+                    : $"The image reference '{OciNames.ForDisplay(reference)}' has an invalid tag '{OciNames.ForDisplay(refValue)}'.",
                 nameof(reference));
         }
 
@@ -170,11 +179,4 @@ public sealed partial class ImageReference
     // (also supports the FIPS and China/GovCloud partitions' domains).
     [GeneratedRegex(@"^\d{12}\.dkr\.ecr(-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(\.cn)?$", RegexOptions.IgnoreCase)]
     private static partial Regex EcrHostRegex();
-
-    // The OCI/Docker repository-name grammar: one or more path components separated by single '/' characters,
-    // each component lowercase alphanumerics with optional internal '.', '_', '__' or '-' separators. This rejects
-    // leading/trailing/double slashes, empty components, and uppercase — the shapes that could otherwise smuggle an
-    // alternate authority into a request URI.
-    [GeneratedRegex(@"^[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*$")]
-    private static partial Regex RepositoryRegex();
 }

@@ -588,6 +588,93 @@ public class OciImageBuilderTests
         return builder;
     }
 
+    /// <summary>
+    /// Sits in front of <see cref="FakeRegistry"/>, demands Basic auth on every ECR host, and records each
+    /// Authorization value an ECR host receives.
+    /// </summary>
+    private sealed class EcrAuthGate : HttpMessageHandler
+    {
+        private readonly HttpMessageInvoker _registry;
+        private readonly object _lock = new();
+        private readonly List<(string Host, string? Authorization)> _seen = new();
+
+        public EcrAuthGate(FakeRegistry registry) => _registry = new HttpMessageInvoker(registry, disposeHandler: false);
+
+        public IReadOnlyList<(string Host, string? Authorization)> Seen
+        {
+            get { lock (_lock) { return _seen.ToList(); } }
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string host = request.RequestUri!.Host;
+            if (host.Contains(".dkr.ecr.", StringComparison.Ordinal))
+            {
+                lock (_lock)
+                {
+                    _seen.Add((host, request.Headers.Authorization?.ToString()));
+                }
+                if (request.Headers.Authorization is null)
+                {
+                    var challenge = new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                    challenge.Headers.WwwAuthenticate.Add(
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", "realm=\"ecr\""));
+                    return Task.FromResult(challenge);
+                }
+            }
+            return _registry.SendAsync(request, cancellationToken);
+        }
+    }
+
+    private static string EcrToken(string password) => Convert.ToBase64String(Encoding.UTF8.GetBytes("AWS:" + password));
+
+    private static string BasicHeader(string password) => "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("AWS:" + password));
+
+    [Fact]
+    public async Task A_later_push_never_receives_credentials_from_an_earlier_push()
+    {
+        // Push A goes to a legitimate target; push B, from the SAME builder, goes to a different host standing in for
+        // a malicious endpoint. Host B must only ever see push B's credentials, never push A's.
+        const string hostA = "111111111111.dkr.ecr.us-west-2.amazonaws.com";
+        const string hostB = "222222222222.dkr.ecr.us-west-2.amazonaws.com";
+        var registry = new FakeRegistry();
+        var gate = new EcrAuthGate(registry);
+
+        string tempDir = Path.Combine(Path.GetTempPath(), "oci-e2e-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            using OciImageBuilder builder = await BuildTwoLayerImageAsync(registry, "dotnet/aspnet", tempDir);
+
+            // Use the real auth handler with whatever credential source each push hands the factory, over one shared
+            // transport, so any credential state that survived from push A would reach host B.
+            builder.UseTargetClientFactoryForTest((host, credentialSource) =>
+                new RegistryClient(host, new HttpClient(new AuthHandshakeHandler(credentialSource, gate))));
+
+            await builder.PushToEcrAsync($"{hostA}/app:v1", EcrToken("password-A"));
+            await builder.PushToEcrAsync($"{hostB}/app:v1", EcrToken("password-B"));
+
+            IReadOnlyList<(string Host, string? Authorization)> seen = gate.Seen;
+            var seenByA = seen.Where(s => s.Host == hostA).Select(s => s.Authorization).ToList();
+            var seenByB = seen.Where(s => s.Host == hostB).Select(s => s.Authorization).ToList();
+
+            // Each push authenticated, with its own credentials.
+            Assert.Contains(BasicHeader("password-A"), seenByA);
+            Assert.Contains(BasicHeader("password-B"), seenByB);
+
+            // Neither host ever saw the other push's credentials.
+            Assert.DoesNotContain(BasicHeader("password-A"), seenByB);
+            Assert.DoesNotContain(BasicHeader("password-B"), seenByA);
+
+            // Push B's manifest really went to host B.
+            Assert.Equal(hostB, registry.PutManifest!.Value.Host);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task PushToEcrAsync_reports_progress_for_every_layer_with_stable_index_total_and_kind()
     {

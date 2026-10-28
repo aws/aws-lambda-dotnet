@@ -24,6 +24,10 @@ internal sealed record TokenResponse
     /// <summary>The usable token (registries populate either <c>token</c> or <c>access_token</c>).</summary>
     public string? ResolvedToken => Token ?? AccessToken;
 
+    /// <summary>Describes the response with the token values redacted.</summary>
+    public override string ToString()
+        => $"{nameof(TokenResponse)} {{ Token = {(ResolvedToken is null ? "(none)" : "***")}, ExpiresIn = {ExpiresIn}, IssuedAt = {IssuedAt:O} }}";
+
     /// <summary>
     /// The computed expiry. Per the token spec, default to 60 seconds of validity when the endpoint
     /// omits <c>expires_in</c>; subtract a small safety margin so a cached token is refreshed before it

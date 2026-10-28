@@ -53,7 +53,11 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         : base(innerHandler)
         => _credentialSource = credentialSource ?? throw new ArgumentNullException(nameof(credentialSource));
 
-    private readonly record struct CachedAuth(AuthenticationHeaderValue Header, DateTimeOffset Expiry);
+    private readonly record struct CachedAuth(AuthenticationHeaderValue Header, DateTimeOffset Expiry)
+    {
+        // The header carries the credential (a bearer token or encoded username:password); never print it.
+        public override string ToString() => $"{nameof(CachedAuth)} {{ Scheme = {Header.Scheme}, Expiry = {Expiry:O} }}";
+    }
 
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -79,7 +83,9 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        string registryHost = request.RequestUri.Host;
+        // Host plus port (Authority omits the default 443), so credentials and cached headers never carry over to the
+        // same host name on a different port.
+        string registryHost = request.RequestUri.Authority;
 
         // Apply a cached, still-valid authorization header if we have one.
         if (_cache.TryGetValue(registryHost, out CachedAuth cached) && cached.Expiry > DateTimeOffset.UtcNow)
@@ -99,8 +105,9 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
             return response; // No usable challenge; let the caller handle the 401.
         }
 
-        // Drain the 401 body so the connection is freed for the token request.
-        _ = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        // Drain (a bounded prefix of) the 401 body so the connection can be reused for the token request. The read
+        // is capped because the body comes from the registry; anything beyond the cap is dropped with the response.
+        _ = await BoundedRead.ReadAsync(response.Content, BoundedRead.MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false);
         response.Dispose();
 
         (AuthenticationHeaderValue header, DateTimeOffset expiry) =
@@ -118,11 +125,11 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
     private async Task<(AuthenticationHeaderValue, DateTimeOffset)> AuthenticateAsync(
         string registryHost, string scheme, AuthInfo? authInfo, CancellationToken cancellationToken)
     {
-        BasicRegistryCredentials? creds =
-            await _credentialSource.GetCredentialsAsync(registryHost, cancellationToken).ConfigureAwait(false);
-
         if (scheme.Equals(BasicScheme, StringComparison.OrdinalIgnoreCase))
         {
+            // Basic credentials go to the registry host itself, so ask for that host's credentials.
+            BasicRegistryCredentials? creds =
+                await _credentialSource.GetCredentialsAsync(registryHost, cancellationToken).ConfigureAwait(false);
             if (creds is not { } basic)
             {
                 throw new RegistryAuthenticationException(registryHost, "the registry requires Basic auth but no credentials were available.");
@@ -136,17 +143,22 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
             {
                 throw new InvalidAuthResponseException(registryHost, "the Bearer challenge did not include a realm.");
             }
-            return await GetBearerTokenAsync(registryHost, info, creds, cancellationToken).ConfigureAwait(false);
+            return await GetBearerTokenAsync(registryHost, info, cancellationToken).ConfigureAwait(false);
         }
 
         throw new RegistryAuthenticationException(registryHost, $"unsupported authentication scheme '{scheme}'.");
     }
 
     private async Task<(AuthenticationHeaderValue, DateTimeOffset)> GetBearerTokenAsync(
-        string registryHost, AuthInfo info, BasicRegistryCredentials? creds, CancellationToken cancellationToken)
+        string registryHost, AuthInfo info, CancellationToken cancellationToken)
     {
         // SSRF guard: never send credentials to an unvalidated realm.
         Uri realm = RealmValidator.Validate(info.Realm, registryHost);
+
+        // The credentials are sent to the token endpoint, not the registry, so ask for the realm host's credentials.
+        // A challenge pointing the realm at some other host then gets none, rather than the registry's.
+        BasicRegistryCredentials? creds =
+            await _credentialSource.GetCredentialsAsync(realm.Authority, cancellationToken).ConfigureAwait(false);
 
         var builder = new UriBuilder(realm);
         System.Collections.Specialized.NameValueCollection query = HttpUtility.ParseQueryString(realm.Query);
@@ -177,9 +189,20 @@ public sealed partial class AuthHandshakeHandler : DelegatingHandler
         }
 
         TokenResponse? token;
-        await using (Stream s = await tokenResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+        (byte[] tokenBytes, bool exceeded) =
+            await BoundedRead.ReadAsync(tokenResponse.Content, BoundedRead.MaxMetadataBytes, cancellationToken).ConfigureAwait(false);
+        if (exceeded)
         {
-            token = await JsonSerializer.DeserializeAsync(s, Images.OciJsonContext.TokenResponseInfo, cancellationToken: cancellationToken).ConfigureAwait(false);
+            throw new InvalidAuthResponseException(
+                registryHost, $"the token endpoint response is larger than the {BoundedRead.MaxMetadataBytes}-byte limit.");
+        }
+        try
+        {
+            token = JsonSerializer.Deserialize(tokenBytes, Images.OciJsonContext.TokenResponseInfo);
+        }
+        catch (JsonException)
+        {
+            token = null;
         }
 
         if (token is null || token.ResolvedToken is null)
