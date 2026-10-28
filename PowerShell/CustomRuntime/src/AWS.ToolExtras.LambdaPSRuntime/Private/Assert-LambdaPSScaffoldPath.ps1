@@ -20,6 +20,11 @@ function Assert-LambdaPSScaffoldPath {
           - An existing -Path must be listable (TargetNotReadable), even with -Force: a folder you
             cannot list could hold files the scaffold would write over.
           - A non-empty -Path needs -Force (TargetNotEmpty).
+          - A non-empty -Path that -Force would empty must not be a symbolic link or a junction
+            (TargetIsLink): the delete would empty the folder it points to, which the -WhatIf and
+            -Confirm messages do not name. Nor may it be, once links are resolved, the current
+            location, your home folder, the root of a drive, or a folder that contains one of them
+            (TargetProtected): replacing it would delete the folder you are working in, or your files.
 
         Returns the existing children of -Path (empty when it does not exist or is empty), which
         Invoke-LambdaPSProjectScaffold removes before writing. Writes nothing.
@@ -104,6 +109,35 @@ function Assert-LambdaPSScaffoldPath {
             throw [System.Management.Automation.ErrorRecord]::new(
                 [System.IO.IOException]::new("Target '$Path' already exists and is not empty. Use -Force to replace it."),
                 'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $Path)
+        }
+    }
+
+    # What -Force would empty. Checked only when there is something to delete.
+    if ($existing.Count -gt 0) {
+        $linkTarget = (Get-Item -LiteralPath $Path -Force).LinkTarget
+        if ($linkTarget) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.IO.IOException]::new("Target '$Path' is a link to '$linkTarget'. -Force would delete the contents of '$linkTarget', so a link is not replaced. Pass the folder itself as -Path if it is the one to replace."),
+                'TargetIsLink', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path)
+        }
+        # Compared with links resolved, so a path that reaches one of these another way is refused too.
+        # Windows and macOS file systems ignore case by default.
+        $comparison = if ($IsLinux) { [System.StringComparison]::Ordinal } else { [System.StringComparison]::OrdinalIgnoreCase }
+        $separator = [System.IO.Path]::DirectorySeparatorChar
+        $target = Get-LambdaPSRealPath -Path (Resolve-LambdaPSPath -Path $Path)
+        $protected = [ordered]@{ 'the current location' = (Get-Location -PSProvider FileSystem).ProviderPath }
+        if ($HOME) { $protected['your home folder'] = $HOME }
+        $reason = $null
+        foreach ($name in @($protected.Keys)) {
+            $real = Get-LambdaPSRealPath -Path $protected[$name]
+            if ($target.Equals($real, $comparison)) { $reason = "is $name"; break }
+            if ($real.StartsWith($target.TrimEnd($separator) + $separator, $comparison)) { $reason = "contains $name ('$real')"; break }
+        }
+        if (-not $reason -and $target.Equals([System.IO.Path]::GetPathRoot($target), $comparison)) { $reason = 'is the root of a drive' }
+        if ($reason) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.IO.IOException]::new("Target '$Path' $reason, so -Force will not delete its contents. Choose a folder of its own for the project."),
+                'TargetProtected', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path)
         }
     }
 

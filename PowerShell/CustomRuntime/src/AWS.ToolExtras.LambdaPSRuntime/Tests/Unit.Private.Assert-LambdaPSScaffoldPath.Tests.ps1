@@ -198,6 +198,82 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
             }
         }
     }
+
+    # Only checked when -Force has something to delete. A junction needs no privilege on Windows, where
+    # creating a symbolic link may.
+    Context 'what -Force would empty' {
+        BeforeAll {
+            $script:linkType = if ($IsWindows) { 'Junction' } else { 'SymbolicLink' }
+        }
+
+        It 'refuses a non-empty link with TargetIsLink, naming the folder it points to' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'link-target')
+            $link = [System.IO.Path]::Combine($TestDrive, 'link-to-it')
+            $null = New-Item -ItemType Directory -Path $dir
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'keep.txt')) -Value 'x'
+            $null = New-Item -ItemType $script:linkType -Path $link -Target $dir
+            InModuleScope $script:moduleName -Parameters @{ Path = $link; Dir = $dir } {
+                param($Path, $Dir)
+                { Assert-LambdaPSScaffoldPath -Path $Path -Force } | Should -Throw -ErrorId 'TargetIsLink' -ExpectedMessage "*is a link to '$Dir'*"
+            }
+        }
+
+        It 'accepts an empty link, which -Force has nothing to delete in' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'empty-link-target')
+            $link = [System.IO.Path]::Combine($TestDrive, 'empty-link')
+            $null = New-Item -ItemType Directory -Path $dir
+            $null = New-Item -ItemType $script:linkType -Path $link -Target $dir
+            InModuleScope $script:moduleName -Parameters @{ Path = $link } {
+                param($Path)
+                (Assert-LambdaPSScaffoldPath -Path $Path -Force).Count | Should -Be 0
+            }
+        }
+
+        It 'refuses <Case> with TargetProtected' -ForEach @(
+            @{ Case = 'the current location'; Path = '.'; Message = '*is the current location*' }
+            @{ Case = 'a folder that contains the current location'; Path = '..'; Message = '*contains the current location*' }
+            @{ Case = 'a path through a link that contains the current location'; Path = 'LINK'; Message = '*contains the current location*' }
+        ) {
+            $base = [System.IO.Path]::Combine($TestDrive, "protected-$($Case -replace '\W', '-')")
+            $work = [System.IO.Path]::Combine($base, 'real', 'sub', 'work')
+            $null = New-Item -ItemType Directory -Path $work
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($work, 'keep.txt')) -Value 'x'
+            if ($Path -eq 'LINK') {
+                $null = New-Item -ItemType $script:linkType -Path ([System.IO.Path]::Combine($base, 'alias')) -Target ([System.IO.Path]::Combine($base, 'real'))
+                $Path = [System.IO.Path]::Combine($base, 'alias', 'sub')
+            }
+            Push-Location -LiteralPath $work
+            try {
+                InModuleScope $script:moduleName -Parameters @{ Path = $Path; Message = $Message } {
+                    param($Path, $Message)
+                    { Assert-LambdaPSScaffoldPath -Path $Path -Force } | Should -Throw -ErrorId 'TargetProtected' -ExpectedMessage $Message
+                }
+            }
+            finally { Pop-Location }
+        }
+
+        # Run from the root of the drive, so the home folder does not contain the current location.
+        It 'refuses the home folder with TargetProtected' -Skip:(-not $HOME) {
+            Push-Location -LiteralPath ([System.IO.Path]::GetPathRoot($TestDrive))
+            try {
+                InModuleScope $script:moduleName {
+                    $homePath = Get-LambdaPSRealPath -Path $HOME
+                    { Assert-LambdaPSScaffoldPath -Path $homePath -Force } | Should -Throw -ErrorId 'TargetProtected' -ExpectedMessage '*is your home folder*'
+                }
+            }
+            finally { Pop-Location }
+        }
+
+        It 'returns the contents of a folder of its own, for -Force to replace' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'own-folder')
+            $null = New-Item -ItemType Directory -Path $dir
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'old.txt')) -Value 'x'
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                (Assert-LambdaPSScaffoldPath -Path $Path -Force).Name | Should -Be 'old.txt'
+            }
+        }
+    }
 }
 
 # The public cmdlets call this inside try and rethrow with their own $PSCmdlet; the error they

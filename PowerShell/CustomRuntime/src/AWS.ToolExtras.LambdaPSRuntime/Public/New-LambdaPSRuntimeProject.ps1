@@ -118,7 +118,10 @@ function New-LambdaPSRuntimeProject {
         the top would leave files the new target does not emit (for example a CMR Dockerfile in a
         re-scaffolded Layer project), producing a project that looks valid and builds into a broken
         image. -WhatIf names the full path of the folder whose contents would be deleted. -Force does not lift the owner check on an
-        existing -Path (TargetOwnedByAnotherUser; see -Path).
+        existing -Path (TargetOwnedByAnotherUser; see -Path). Nor does it replace a non-empty -Path
+        that is a symbolic link or a junction (TargetIsLink), since that would empty the folder it
+        points to, or one that, with links resolved, is the current location, your home folder, the
+        root of a drive, or a folder that contains one of them (TargetProtected).
 
         Under -Confirm the module download (when a module must be downloaded), the install for the
         current user (under -MissingModuleAction Install), the delete, the file write and the module
