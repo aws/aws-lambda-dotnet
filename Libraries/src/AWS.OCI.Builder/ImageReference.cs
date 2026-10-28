@@ -22,7 +22,7 @@ namespace AWS.OCI.Builder;
 /// string is a Docker Hub repository.
 /// </para>
 /// </remarks>
-public sealed partial class ImageReference
+internal sealed partial class ImageReference
 {
     private const string DockerHubHost = "registry-1.docker.io";
 

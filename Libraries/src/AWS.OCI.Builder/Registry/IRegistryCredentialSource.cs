@@ -9,7 +9,7 @@ namespace AWS.OCI.Builder.Registry;
 /// from a caller-supplied ECR authorization token), while pulls of public base images use
 /// <see cref="AnonymousRegistryCredentialSource"/>.
 /// </remarks>
-public interface IRegistryCredentialSource
+internal interface IRegistryCredentialSource
 {
     /// <summary>
     /// Returns the credentials for <paramref name="registryHost"/>, or <see langword="null"/> to attempt
@@ -27,7 +27,7 @@ public interface IRegistryCredentialSource
 /// <remarks><see cref="ToString"/> never includes the password.</remarks>
 /// <param name="Username">The registry username.</param>
 /// <param name="Password">The registry password or token.</param>
-public readonly record struct BasicRegistryCredentials(string Username, string Password)
+internal readonly record struct BasicRegistryCredentials(string Username, string Password)
 {
     /// <summary>Returns the username with the password redacted.</summary>
     public override string ToString() => $"{nameof(BasicRegistryCredentials)} {{ Username = {Username}, Password = *** }}";
@@ -38,7 +38,7 @@ public readonly record struct BasicRegistryCredentials(string Username, string P
 /// anonymous access. Suitable for pulling public base images (for example from
 /// <c>mcr.microsoft.com</c> or Docker Hub).
 /// </summary>
-public sealed class AnonymousRegistryCredentialSource : IRegistryCredentialSource
+internal sealed class AnonymousRegistryCredentialSource : IRegistryCredentialSource
 {
     /// <inheritdoc />
     public Task<BasicRegistryCredentials?> GetCredentialsAsync(string registryHost, CancellationToken cancellationToken = default)
@@ -55,7 +55,7 @@ public sealed class AnonymousRegistryCredentialSource : IRegistryCredentialSourc
 /// host. A request that reaches an unexpected host (a forged upload location, a token endpoint on another host)
 /// therefore never receives them.
 /// </remarks>
-public sealed class StaticRegistryCredentialSource : IRegistryCredentialSource
+internal sealed class StaticRegistryCredentialSource : IRegistryCredentialSource
 {
     private readonly string _registryHost;
     private readonly BasicRegistryCredentials _credentials;

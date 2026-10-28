@@ -19,7 +19,7 @@ namespace AWS.OCI.Builder.Registry;
 /// are deliberately avoided.
 /// </para>
 /// </remarks>
-public sealed class RegistryClient : IDisposable
+internal sealed class RegistryClient : IDisposable
 {
     private readonly HttpClient _http;
     private readonly string _registryHost;
@@ -866,13 +866,13 @@ public sealed class RegistryClient : IDisposable
 /// <param name="RawBytes">The exact bytes received on the wire — digests must be computed over these.</param>
 /// <param name="MediaType">The manifest media type (OCI or Docker; single image or index).</param>
 /// <param name="Digest">The server-reported <c>Docker-Content-Digest</c>, if present.</param>
-public readonly record struct ManifestResponse(string Json, byte[] RawBytes, string MediaType, string? Digest);
+internal readonly record struct ManifestResponse(string Json, byte[] RawBytes, string MediaType, string? Digest);
 
 /// <summary>
 /// A verified blob that has been spilled to a temporary file on disk. Owns both the open read stream (positioned
 /// at the start, ready to upload) and the temp file; disposing it closes the stream and deletes the file.
 /// </summary>
-public sealed class VerifiedBlobFile : IAsyncDisposable, IDisposable
+internal sealed class VerifiedBlobFile : IAsyncDisposable, IDisposable
 {
     private readonly string _path;
     private bool _disposed;

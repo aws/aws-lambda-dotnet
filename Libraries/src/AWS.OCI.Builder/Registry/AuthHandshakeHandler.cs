@@ -29,7 +29,7 @@ namespace AWS.OCI.Builder.Registry;
 /// source returns <see langword="null"/> (public base-image pulls do not need credentials to fetch a token).
 /// </para>
 /// </remarks>
-public sealed partial class AuthHandshakeHandler : DelegatingHandler
+internal sealed partial class AuthHandshakeHandler : DelegatingHandler
 {
     private const string BasicScheme = "Basic";
     private const string BearerScheme = "Bearer";

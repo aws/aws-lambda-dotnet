@@ -32,7 +32,7 @@ namespace AWS.OCI.Builder.Images;
 /// guaranteed to be identical across builds, even for identical input.
 /// </para>
 /// </remarks>
-public sealed class Layer
+internal sealed class Layer
 {
     /// <summary>A fixed timestamp used for every tar entry.</summary>
     private static readonly DateTimeOffset ReproducibleTimestamp = DateTimeOffset.UnixEpoch;

@@ -41,7 +41,7 @@ public sealed class ImageConfig
     /// <summary>Parses an existing image config document (typically the base image's config blob).</summary>
     /// <param name="json">The config JSON.</param>
     /// <exception cref="ArgumentException">The JSON is null, empty, or not a JSON object.</exception>
-    public static ImageConfig Parse(string json)
+    internal static ImageConfig Parse(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -78,7 +78,7 @@ public sealed class ImageConfig
     /// </summary>
     /// <param name="diffId">The layer's uncompressed-tar digest (<see cref="Layer.DiffId"/>).</param>
     /// <param name="createdBy">An optional free-text description recorded in the history entry.</param>
-    public void AddLayer(string diffId, string? createdBy = null)
+    internal void AddLayer(string diffId, string? createdBy = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(diffId);
 
@@ -197,7 +197,7 @@ public sealed class ImageConfig
     }
 
     /// <summary>Serializes the config to its canonical, compact UTF-8 bytes (what the config digest is computed over).</summary>
-    public byte[] ToJsonBytes()
+    internal byte[] ToJsonBytes()
     {
         var buffer = new System.Buffers.ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, WriterOptions))
@@ -208,7 +208,7 @@ public sealed class ImageConfig
     }
 
     /// <summary>Serializes the config to its canonical, compact JSON string.</summary>
-    public string ToJsonString() => System.Text.Encoding.UTF8.GetString(ToJsonBytes());
+    internal string ToJsonString() => System.Text.Encoding.UTF8.GetString(ToJsonBytes());
 
     /// <summary>Returns the <c>config</c> sub-object, creating it if absent.</summary>
     private JsonObject ConfigObject()

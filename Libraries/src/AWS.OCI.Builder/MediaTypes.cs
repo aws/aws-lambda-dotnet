@@ -5,7 +5,7 @@ namespace AWS.OCI.Builder;
 /// Docker Image Manifest V2 Schema 2. A base image may use either family; the builder
 /// preserves the base image's family when producing the output manifest.
 /// </summary>
-public static class MediaTypes
+internal static class MediaTypes
 {
     // --- OCI (application/vnd.oci.*) ---
 

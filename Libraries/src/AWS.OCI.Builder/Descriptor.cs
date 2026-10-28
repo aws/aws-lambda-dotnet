@@ -7,7 +7,7 @@ namespace AWS.OCI.Builder;
 /// (a layer, a config, or a manifest) by its media type, size, and digest.
 /// See the OCI Image Specification "descriptor" definition.
 /// </summary>
-public sealed record Descriptor
+internal sealed record Descriptor
 {
     /// <summary>The media type of the referenced content (for example an image config or a gzipped layer).</summary>
     [JsonPropertyName("mediaType")]

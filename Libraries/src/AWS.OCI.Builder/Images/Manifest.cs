@@ -11,7 +11,7 @@ namespace AWS.OCI.Builder.Images;
 /// The manifest is serialized compactly and its property order is fixed (schema version, media type, config,
 /// layers), because the image's digest/tag is computed over these exact bytes.
 /// </remarks>
-public sealed class Manifest
+internal sealed class Manifest
 {
     /// <summary>The manifest schema version. Always <c>2</c> for OCI and Docker V2 Schema 2.</summary>
     [JsonPropertyName("schemaVersion")]
@@ -68,7 +68,7 @@ public sealed class Manifest
 /// single-platform <see cref="Manifest"/> for a specific OS/architecture. Base images are frequently published as
 /// an index, so the builder must select the right per-platform manifest from it.
 /// </summary>
-public sealed class ImageIndex
+internal sealed class ImageIndex
 {
     /// <summary>The schema version (always <c>2</c>).</summary>
     [JsonPropertyName("schemaVersion")]
@@ -120,7 +120,7 @@ public sealed class ImageIndex
 }
 
 /// <summary>A manifest descriptor within an <see cref="ImageIndex"/>, carrying the target platform.</summary>
-public sealed class PlatformManifestDescriptor
+internal sealed class PlatformManifestDescriptor
 {
     /// <summary>The media type of the referenced manifest.</summary>
     [JsonPropertyName("mediaType")]
@@ -140,7 +140,7 @@ public sealed class PlatformManifestDescriptor
 }
 
 /// <summary>An OS/architecture platform descriptor within an image index.</summary>
-public sealed class Platform
+internal sealed class Platform
 {
     /// <summary>The operating system, for example <c>linux</c>.</summary>
     [JsonPropertyName("os")]

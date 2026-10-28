@@ -21,7 +21,7 @@ namespace AWS.OCI.Builder.Images;
 /// producing a manifest whose media types are inconsistent with its config, which some registries reject.
 /// </para>
 /// </remarks>
-public sealed class ImageBuilder
+internal sealed class ImageBuilder
 {
     private readonly ImageConfig _config;
     private readonly Manifest _manifest;
@@ -164,7 +164,7 @@ public sealed class ImageBuilder
 /// <param name="ManifestBytes">The canonical manifest bytes to upload (and PUT under the target tag).</param>
 /// <param name="ManifestDigest">The <c>sha256:...</c> digest of <paramref name="ManifestBytes"/> (the image digest).</param>
 /// <param name="ManifestMediaType">The manifest media type to send as the <c>Content-Type</c> on upload.</param>
-public sealed record BuiltImage(
+internal sealed record BuiltImage(
     byte[] ConfigBytes,
     string ConfigDigest,
     string ConfigMediaType,
