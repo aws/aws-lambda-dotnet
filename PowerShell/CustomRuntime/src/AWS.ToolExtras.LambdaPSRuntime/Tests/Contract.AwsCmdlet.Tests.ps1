@@ -95,6 +95,9 @@ BeforeDiscovery {
         # --- ECR image tag preflight (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-ECRImageMetadata'; Module = 'AWS.Tools.ECR'
            Parameters = @('RepositoryName', 'ImageId', 'Region', 'ClientConfig') }
+        # --- ECR token for the no-Docker push (Private/Get-LambdaPSEcrAuthorizationToken.ps1) ---
+        @{ Cmdlet = 'Get-ECRAuthorizationToken'; Module = 'AWS.Tools.ECR'
+           Parameters = @('Region', 'ClientConfig') }
 
         # --- STS (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-STSCallerIdentity'; Module = 'AWS.Tools.SecurityToken'

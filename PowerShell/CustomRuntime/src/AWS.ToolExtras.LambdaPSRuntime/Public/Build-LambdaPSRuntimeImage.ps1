@@ -35,9 +35,19 @@ function Build-LambdaPSRuntimeImage {
         ECR repository, set its policy or log docker in to it: New-LambdaPSRuntimeDeployment does
         all three, or use New-ECRRepository, Set-ECRRepositoryPolicy and Get-ECRLoginCommand.
 
+        -BuildMethod NoDocker (or Auto, when docker or buildx is missing) builds and pushes the image
+        without Docker, with the AWS.OCI.Builder library that ships in the module. It builds the recipe
+        of the Dockerfile the module scaffolds (see Get-LambdaPSOciImagePlan), so it refuses a project
+        whose Dockerfile was edited, and it can only push (-ImageUri). It reads an ECR authorization
+        token with Get-ECRAuthorizationToken, honouring -Region, -ProfileName, -ProfileLocation and
+        -Credential, instead of using docker login. The image runs with
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, since it has no libicu.
+
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
         PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound and DockerBuildxNotFound (the preflight,
-        Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code).
+        Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code); for
+        a no-Docker build NoDockerLocalBuild, DockerfileModified, OciBuilderNotFound, OciBuilderConflict
+        and OciImagePushFailed.
     .PARAMETER Path
         The project directory containing the Dockerfile. Alias: -ProjectPath.
     .PARAMETER Tag
@@ -50,6 +60,17 @@ function Build-LambdaPSRuntimeImage {
     .PARAMETER ImageUri
         The fully-qualified image reference to push the image to (for example an ECR URI). Use
         -ImageUri or -Tag.
+    .PARAMETER BuildMethod
+        Auto (default): Docker when docker and buildx are installed, else the no-Docker builder (-ImageUri
+        only). Docker: always docker buildx. NoDocker: always the no-Docker builder.
+    .PARAMETER Region
+        No-Docker push only: the region of the ECR token. Defaults to the region in -ImageUri's host.
+    .PARAMETER ProfileName
+        No-Docker push only: the AWS credential profile to read the ECR token with.
+    .PARAMETER ProfileLocation
+        No-Docker push only: the credential file that holds -ProfileName.
+    .PARAMETER Credential
+        No-Docker push only: an Amazon.Runtime.AWSCredentials object to read the ECR token with.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeImage
 
@@ -66,6 +87,11 @@ function Build-LambdaPSRuntimeImage {
     #>
     [CmdletBinding(SupportsShouldProcess, PositionalBinding = $false, DefaultParameterSetName = 'Local')]
     [OutputType('AWS.ToolExtras.LambdaPSRuntime.RuntimeImage')]
+    # -Credential is an Amazon.Runtime.AWSCredentials, as on every AWS.Tools cmdlet, not a PSCredential.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUsePSCredentialType', '',
+        Justification = 'AWS.Tools -Credential takes an AWSCredentials object, not a PSCredential.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '',
+        Justification = 'AWS.Tools -Credential takes an AWSCredentials object, not a password string.')]
     param(
         [Parameter(Mandatory, Position = 0)]
         [Alias('ProjectPath')]
@@ -82,7 +108,27 @@ function Build-LambdaPSRuntimeImage {
 
         [Parameter(Mandatory, ParameterSetName = 'Push')]
         [ValidateNotNullOrWhiteSpace()]
-        [string]$ImageUri
+        [string]$ImageUri,
+
+        [Parameter()]
+        [ValidateSet('Auto', 'Docker', 'NoDocker')]
+        [string]$BuildMethod = 'Auto',
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$Region,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ProfileName,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ProfileLocation,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNull()]
+        [object]$Credential
     )
 
     try {
@@ -131,7 +177,35 @@ function Build-LambdaPSRuntimeImage {
 
         # The same docker and buildx check as the deploy preflight (DockerNotFound / DockerBuildxNotFound).
         # The build runs the docker program it found, so a docker function or alias cannot stand in for it.
-        $containerRuntime = Test-LambdaPSContainerRuntime
+        # Auto falls back to the no-Docker builder only when that check fails and the image is pushed.
+        $resolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -LocalBuild:(-not $push)
+        if ($resolved.Method -eq 'NoDocker') {
+            # Every check that reads only local files runs before ShouldProcess, so -WhatIf fails the same way.
+            $plan = Get-LambdaPSOciImagePlan -Path $root -Architecture $Architecture
+            $tokenRegion = if ($Region) { $Region }
+            elseif ($ImageUri -match '\A[0-9]{12}\.dkr\.ecr\.([a-z0-9-]+)\.') { $Matches[1] }
+            else {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new("'$ImageUri' is not an Amazon ECR image URI. The no-Docker build pushes to Amazon ECR only.", 'ImageUri'),
+                        'NoDockerTargetNotEcr', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ImageUri))
+            }
+            if (-not $PSCmdlet.ShouldProcess($root, "Build and push image '$ImageUri' without Docker")) {
+                return
+            }
+            $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
+            $token = Get-LambdaPSEcrAuthorizationToken -Region $tokenRegion -CredentialParameter $credentialParameter
+            $digest = Invoke-LambdaPSOciImageBuild -Plan $plan -ImageUri $ImageUri -AuthorizationToken $token
+            return [PSCustomObject]@{
+                PSTypeName   = 'AWS.ToolExtras.LambdaPSRuntime.RuntimeImage'
+                Tag          = $null
+                ImageUri     = $ImageUri
+                ImageDigest  = $digest
+                Architecture = $Architecture
+                Pushed       = $true
+            }
+        }
+        $containerRuntime = $resolved.ContainerRuntime
 
         $dockerArgs = [System.Collections.Generic.List[string]]::new()
         $dockerArgs.Add('buildx')

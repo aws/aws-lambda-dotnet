@@ -29,6 +29,8 @@ function New-LambdaPSRuntimeDeployment {
         Docker is the only supported container CLI: the build depends on buildx flags that have no
         equivalent in podman, finch, or nerdctl. The Layer and self-contained .zip targets are the
         container-free path (New-LambdaPSRuntimeProject -Target Layer, Build-LambdaPSRuntimePackage).
+        Where Docker is missing, -BuildMethod Auto (the default) or NoDocker builds and pushes the image
+        without it (see Build-LambdaPSRuntimeImage): there is then no local build and no docker login.
 
         The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-STSCallerIdentity,
         Get-ECRImageMetadata, Get-ECRRepository, Get-ECRRepositoryPolicy, Get-ECRLoginCommand,
@@ -202,6 +204,9 @@ function New-LambdaPSRuntimeDeployment {
         does not, the alias is still moved, with a warning given before anything is created or
         confirmed, and under -WhatIf: functions bound to it that were built for that architecture fail
         to invoke from their next cold start until they are redeployed.
+    .PARAMETER BuildMethod
+        Auto (default): Docker when docker and buildx are installed, else the no-Docker builder. Docker or
+        NoDocker: that one only.
     .PARAMETER ProjectPath
         Where to scaffold the runtime-image project (alias -Path). Defaults to ./<RuntimeName>-runtime
         under the current location. NOTE: this directory is REPLACED. If it is a project this cmdlet
@@ -309,7 +314,11 @@ function New-LambdaPSRuntimeDeployment {
         [Parameter()]
         [Alias('Path')]
         [ValidateNotNullOrWhiteSpace()]
-        [string]$ProjectPath
+        [string]$ProjectPath,
+
+        [Parameter()]
+        [ValidateSet('Auto', 'Docker', 'NoDocker')]
+        [string]$BuildMethod = 'Auto'
     )
 
     # AWS is reached only through AWS.Tools cmdlets: the state-changing calls are wrapped in small
@@ -441,8 +450,17 @@ function New-LambdaPSRuntimeDeployment {
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
-        $runtimeProbe = Test-LambdaPSContainerRuntime
-        Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
+        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod
+        $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
+        if ($noDocker) {
+            Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy'
+            # Load the library now, so a missing or conflicting copy fails before anything is created.
+            $null = Import-LambdaPSOciBuilder
+        }
+        else {
+            $runtimeProbe = $buildMethodResolved.ContainerRuntime
+            Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
+        }
 
         # Account id + image URI (read-only; safe to resolve for the -WhatIf preview).
         $stsConfig = Get-LambdaPSClientConfig -Service STS
@@ -762,9 +780,16 @@ function New-LambdaPSRuntimeDeployment {
             Write-Warning "Skipped building and pushing the image, because the $declinedStage stage was declined."
         }
         elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository' and its Lambda pull grant, and push image")) {
-            $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -Confirm:$false
-            $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
-            $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -Confirm:$false
+            if ($noDocker) {
+                # No local build to stop on first: the scaffold is fresh, so the recipe always applies.
+                $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -SkipDockerLogin -Confirm:$false
+                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod NoDocker -Region $Region @credentialParameter -Confirm:$false
+            }
+            else {
+                $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -Confirm:$false
+                $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
+                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -Confirm:$false
+            }
             # Publish exactly the image just pushed: by digest, so a tag moved in between cannot change
             # what the version runs. The tag is the fallback when buildx reported no digest.
             if ($null -ne $pushed -and $pushed.ImageDigest) {
