@@ -47,7 +47,10 @@ internal sealed partial class ImageReference
     public bool ReferenceIsDigest { get; }
 
     /// <summary>Whether this reference points at an Amazon ECR registry.</summary>
-    public bool IsEcr => EcrHostRegex().IsMatch(Registry);
+    public bool IsEcr => IsEcrHost(Registry);
+
+    /// <summary>Whether <paramref name="registryHost"/> is an Amazon ECR registry host.</summary>
+    internal static bool IsEcrHost(string registryHost) => EcrHostRegex().IsMatch(registryHost);
 
     /// <summary>
     /// The AWS region embedded in an ECR registry host (for example <c>us-west-2</c>), or <see langword="null"/>
@@ -177,6 +180,7 @@ internal sealed partial class ImageReference
 
     // Matches an ECR host and captures the region: <account>.dkr.ecr.<region>.amazonaws.com
     // (also supports the FIPS and China/GovCloud partitions' domains).
-    [GeneratedRegex(@"^\d{12}\.dkr\.ecr(-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(\.cn)?$", RegexOptions.IgnoreCase)]
+    // Anchored with \z, not $, so a trailing newline can't pass (the host decides which registry is trusted).
+    [GeneratedRegex(@"^\d{12}\.dkr\.ecr(-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(\.cn)?\z", RegexOptions.IgnoreCase)]
     private static partial Regex EcrHostRegex();
 }
