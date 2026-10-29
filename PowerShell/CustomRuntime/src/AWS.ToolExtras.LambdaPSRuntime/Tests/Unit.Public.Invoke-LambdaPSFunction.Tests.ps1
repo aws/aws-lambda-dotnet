@@ -330,20 +330,21 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
         }
 
         # ConvertTo-Json only warns when it cuts an object short, so a deep payload would arrive truncated.
-        It 'refuses a payload nested deeper than 32 levels, before invoking' {
+        # The innermost table is level 1, so 33 wraps make 34 levels: one more than fits.
+        It 'refuses a payload nested 34 levels deep, before invoking' {
             $payload = @{ leaf = 'value' }
-            foreach ($level in 1..40) { $payload = @{ inner = $payload } }
+            foreach ($level in 1..33) { $payload = @{ inner = $payload } }
 
             $err = { Invoke-LambdaPSFunction -FunctionName hello -Payload $payload } |
                 Should -Throw -ErrorId 'PayloadTooDeep,Invoke-LambdaPSFunction' -PassThru
 
-            $err.Exception.Message | Should -BeLike '*nested deeper than 32 levels*'
+            $err.Exception.Message | Should -BeLike '*nested more than 33 levels deep*'
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
-        It 'sends a payload nested 30 levels deep in full' {
+        It 'sends a payload nested 33 levels deep in full' {
             $payload = @{ leaf = 'value' }
-            foreach ($level in 1..30) { $payload = @{ inner = $payload } }
+            foreach ($level in 1..32) { $payload = @{ inner = $payload } }
 
             $null = Invoke-LambdaPSFunction -FunctionName hello -Payload $payload -WarningVariable warnings
 

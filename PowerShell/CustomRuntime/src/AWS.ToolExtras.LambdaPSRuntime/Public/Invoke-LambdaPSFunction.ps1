@@ -39,10 +39,10 @@ function Invoke-LambdaPSFunction {
         (its FunctionName and Region bind). An object piped in must carry a FunctionName property;
         anything else is converted to text.
     .PARAMETER Payload
-        The event payload. An object is serialized to JSON, to a depth of 32, and an array stays an
-        array (@() is sent as [] and @(1) as [1]); a string is sent verbatim (assumed to be JSON
-        already). An object nested deeper than 32 levels fails with PayloadTooDeep before anything is
-        sent, rather than reach the function cut short. Omit for an empty invoke.
+        The event payload. An object is serialized to JSON, and an array stays an array (@() is sent
+        as [] and @(1) as [1]); a string is sent verbatim (assumed to be JSON already). An object
+        nested more than 33 levels deep, counting the top level, fails with PayloadTooDeep before
+        anything is sent, rather than reach the function cut short. Omit for an empty invoke.
     .PARAMETER IncludeLog
         Request the tail of the execution log and write the decoded log to the Information stream.
     .PARAMETER Qualifier
@@ -141,14 +141,14 @@ function Invoke-LambdaPSFunction {
                 else {
                     # -InputObject, not the pipeline, so an array is sent as an array: @(1) as [1], @() as [].
                     # ConvertTo-Json only warns when it cuts a deeper object short, so that warning stops
-                    # the invoke here.
+                    # the invoke here. -Depth 32 counts the levels below the top one, so 33 levels in all fit.
                     $depthWarnings = $null
                     ConvertTo-Json -InputObject $Payload -Depth 32 -Compress -WarningAction SilentlyContinue -WarningVariable depthWarnings
                     if ($depthWarnings) {
                         $PSCmdlet.ThrowTerminatingError(
                             [System.Management.Automation.ErrorRecord]::new(
                                 [System.ArgumentException]::new(
-                                    ('-Payload is nested deeper than 32 levels, so its JSON would be cut short and the ' +
+                                    ('-Payload is nested more than 33 levels deep, so its JSON would be cut short and the ' +
                                      'function would receive a different event. Flatten the payload, or pass it as a JSON string.')),
                                 'PayloadTooDeep', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
                     }
