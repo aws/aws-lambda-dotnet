@@ -19,8 +19,9 @@ function Merge-LambdaPSEcrPullPolicy {
 
           * No existing policy        -> a new policy containing only the scoped Lambda statement.
           * Already grants this pull  -> $null (nothing to change). An Allow statement for the
-                                         lambda.amazonaws.com service principal whose actions include
-                                         both required actions, 'ecr:*' or '*' covers the pull when
+                                         lambda.amazonaws.com service principal whose actions match
+                                         both required actions (exactly, or by a wildcard such as
+                                         'ecr:*' or 'ecr:BatchGet*') covers the pull when
                                          it has no Condition, or when this pull meets every condition
                                          in it (see Test-LambdaPSPullConditionMet). Such a statement
                                          is left as it is, with a warning unless one condition key
@@ -34,6 +35,9 @@ function Merge-LambdaPSEcrPullPolicy {
                                          function does not evaluate): adding a grant scoped to this
                                          runtime does not widen what it allows. Existing statements
                                          are written back with the same keys, order and values.
+
+        ECR caps a repository policy at 10,240 characters. A merged policy longer than that throws,
+        naming the length, rather than failing later at Set-ECRRepositoryPolicy.
 
         Deny statements are not evaluated. A Deny aimed at Lambda still blocks the pull, so publishing
         the version fails as it does with no grant.
@@ -104,10 +108,15 @@ function Merge-LambdaPSEcrPullPolicy {
         $services = if ($principal -is [System.Collections.IDictionary]) { @($principal['Service']) } else { @() }
         if ($services -notcontains 'lambda.amazonaws.com') { continue }
 
-        $actions = @($statement['Action'])
-        $covers = ($actions -contains '*') -or ($actions -contains 'ecr:*') -or
-            (@($requiredActions | Where-Object { $actions -notcontains $_ }).Count -eq 0)
-        if (-not $covers) { continue }
+        # IAM matches actions without regard to case, with * and ? as wildcards (ecr:*, ecr:BatchGet*).
+        $patterns = @($statement['Action'] | ForEach-Object {
+                [System.Management.Automation.WildcardPattern]::Escape([string]$_).Replace('`*', '*').Replace('`?', '?')
+            })
+        $uncovered = @($requiredActions | Where-Object {
+                $action = $_
+                @($patterns | Where-Object { $action -like $_ }).Count -eq 0
+            })
+        if ($uncovered.Count -gt 0) { continue }
 
         if (Test-LambdaPSPullConditionMet -Condition $statement['Condition'] -AccountId $AccountId -RuntimeArn $RuntimeArn) {
             # A met Condition names only aws:SourceArn and aws:SourceAccount. Unless one of them pins the
@@ -177,5 +186,22 @@ function Merge-LambdaPSEcrPullPolicy {
     # The relaxed encoder writes characters such as + and < as they are rather than as \u escapes.
     $options = [System.Text.Json.JsonSerializerOptions]::new()
     $options.Encoder = [System.Text.Encodings.Web.JavaScriptEncoder]::UnsafeRelaxedJsonEscaping
-    return $document.ToJsonString($options)
+    $merged = $document.ToJsonString($options)
+
+    # Fail with the limit named rather than leave Set-ECRRepositoryPolicy to reject the write. Each
+    # runtime that shares the repository adds a statement of about 300 characters, and statements for
+    # deleted runtimes stay, so about 30 runtimes fill the policy. Widening the grant to every runtime
+    # in the account is the owner's call, so it is suggested, not done.
+    $maxPolicyLength = 10240
+    if ($merged.Length -gt $maxPolicyLength) {
+        $accountRuntimes = $RuntimeArn -replace ':runtime/.+\z', ':runtime/*'
+        $message = "Adding the Lambda image-pull grant for '$RuntimeArn' would make the ECR repository policy " +
+            "$($merged.Length) characters; ECR allows $maxPolicyLength. Remove the statements for runtimes that no longer exist, " +
+            "or replace the per-runtime statements with one that allows every runtime in the account: " +
+            "aws:SourceAccount '$AccountId' with StringEquals, and aws:SourceArn '$accountRuntimes' with ArnLike."
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.InvalidOperationException]::new($message), 'EcrRepositoryPolicyTooLong',
+            [System.Management.Automation.ErrorCategory]::LimitsExceeded, $RuntimeArn)
+    }
+    return $merged
 }

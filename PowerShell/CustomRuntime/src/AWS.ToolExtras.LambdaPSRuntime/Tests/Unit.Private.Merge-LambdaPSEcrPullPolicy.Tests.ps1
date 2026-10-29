@@ -29,6 +29,9 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
         @{ Case = 'Lambda has ecr:*'; Action = '"ecr:*"'; Service = '"lambda.amazonaws.com"' }
         @{ Case = 'Lambda has *'; Action = '"*"'; Service = '"lambda.amazonaws.com"' }
         @{ Case = 'the Service principal is an array'; Action = '["ecr:BatchGetImage","ecr:GetDownloadUrlForLayer"]'; Service = '["ecs-tasks.amazonaws.com","lambda.amazonaws.com"]' }
+        @{ Case = 'Lambda has action wildcards'; Action = '["ecr:BatchGet*","ecr:Get*"]'; Service = '"lambda.amazonaws.com"' }
+        @{ Case = 'Lambda has a ? wildcard'; Action = '["ecr:BatchGetImag?","ecr:GetDownloadUrlForLayer"]'; Service = '"lambda.amazonaws.com"' }
+        @{ Case = 'the actions differ in case'; Action = '["ECR:batchgetimage","ecr:getdownloadurlforlayer"]'; Service = '"lambda.amazonaws.com"' }
     ) {
         $text = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":' + $Service + '},"Action":' + $Action + '}]}'
         InModuleScope $script:moduleName -Parameters @{ Text = $text } {
@@ -81,6 +84,33 @@ Describe 'Merge-LambdaPSEcrPullPolicy' -Tag 'Unit' {
             $sids = @((Merge-LambdaPSEcrPullPolicy @scope -PolicyText $text | ConvertFrom-Json).Statement.Sid)
             $sids | Should -Contain 'Partial'
             $sids | Should -Contain 'LambdaPSRuntimeImagePull'
+        }
+    }
+
+    It 'adds a statement when a wildcard matches only one of the two required actions' {
+        InModuleScope $script:moduleName {
+            $text = '{"Version":"2012-10-17","Statement":[{"Sid":"GetOnly","Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"ecr:Get*"}]}'
+            @((Merge-LambdaPSEcrPullPolicy @scope -PolicyText $text | ConvertFrom-Json).Statement.Sid) | Should -Be @('GetOnly', 'LambdaPSRuntimeImagePull')
+        }
+    }
+
+    # Each runtime that shares a repository adds a statement, so enough runtimes fill ECR's 10,240-character limit.
+    It 'throws, naming the limit and the account-wide statement, when the merged policy would exceed 10,240 characters' {
+        InModuleScope $script:moduleName {
+            $policy = $null
+            $failure = $null
+            for ($n = 1; $n -le 100 -and $null -eq $failure; $n++) {
+                $arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps-{0:d2}' -f $n
+                try { $policy = Merge-LambdaPSEcrPullPolicy -AccountId '111122223333' -RuntimeArn $arn -PolicyText $policy }
+                catch { $failure = $_ }
+            }
+            $failure | Should -Not -BeNullOrEmpty
+            $failure.FullyQualifiedErrorId | Should -Be 'EcrRepositoryPolicyTooLong'
+            $failure.CategoryInfo.Category | Should -Be 'LimitsExceeded'
+            $failure.Exception.Message | Should -BeLike "*ECR allows 10240.*aws:SourceAccount '111122223333' with StringEquals, and aws:SourceArn 'arn:aws:lambda:us-east-1:111122223333:runtime/``*' with ArnLike."
+            # The last policy written still fits.
+            $policy.Length | Should -BeLessOrEqual 10240
+            ($policy | ConvertFrom-Json).Statement.Count | Should -BeGreaterThan 25
         }
     }
 
