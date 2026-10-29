@@ -35,8 +35,9 @@ ARG TARGETARCH
 #    the /opt copy is never kept in an image layer. pwsh leaves .NET's /tmp/.dotnet behind, which
 #    is removed: Lambda reserves /tmp, so a runtime image must leave it empty.
 #    amd64: Microsoft's GPG-signed RPM repo; dnf resolves the system deps. The signing key is
-#    imported only when its fingerprint is the pinned one, and the repo file is pointed at that
-#    copy, so dnf never fetches another key.
+#    imported only when its fingerprint is the pinned one. The repo file is written here, not
+#    downloaded, so its baseurl and its package and metadata signature checks are fixed, and it
+#    names that copy of the key, so dnf never fetches another.
 #    arm64: Microsoft publishes no aarch64 RPM in rhel/9/prod, so use the official
 #    release tarball, verified against the SHA256 pinned in the module, and install
 #    libicu (the base image already has openssl via openssl-snapsafe-libs, plus
@@ -68,9 +69,10 @@ RUN set -eu; \
             echo "The Microsoft signing key has fingerprint(s) '$fingerprints', not the pinned $MICROSOFT_GPG_FINGERPRINT; not trusting it." >&2; exit 1; \
         fi; \
         rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft; \
-        curl -sSLf --retry __DOWNLOAD_RETRY_COUNT__ --retry-delay __DOWNLOAD_RETRY_DELAY__ --connect-timeout __DOWNLOAD_CONNECT_TIMEOUT__ --max-time __DOWNLOAD_OPERATION_TIMEOUT__ https://packages.microsoft.com/config/rhel/9/prod.repo \
-            -o /etc/yum.repos.d/microsoft.repo; \
-        sed -i 's|^gpgkey=.*|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft|' /etc/yum.repos.d/microsoft.repo; \
+        printf '%s\n' '[packages-microsoft-com-prod]' 'name=Microsoft Production' \
+            'baseurl=https://packages.microsoft.com/rhel/9/prod/' 'enabled=1' 'gpgcheck=1' \
+            'repo_gpgcheck=1' 'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft' 'sslverify=1' \
+            > /etc/yum.repos.d/microsoft.repo; \
         dnf install -y "powershell-${PWSH_VERSION}"; \
     fi; \
     dnf clean all; \
