@@ -31,10 +31,11 @@ foreach ($file in @(Get-ChildItem -LiteralPath $configPath -Filter '*.psd1' -Err
 # timeout), so an install without one of these files or settings is refused here, by name, rather
 # than failing or misbehaving later in a helper. A dotted name is a setting inside a table.
 $requiredSetting = [ordered]@{
-    pwsh     = 'ReleaseUrl', 'Download.RetryCount', 'Download.RetryDelaySeconds', 'Download.ConnectTimeoutSeconds',
-               'Download.OperationTimeoutSeconds', 'DefaultPatch', 'ArchiveSha256'
-    wait     = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds'
-    function = 'Timeout', 'MemorySize'
+    pwsh      = 'ReleaseUrl', 'Download.RetryCount', 'Download.RetryDelaySeconds', 'Download.ConnectTimeoutSeconds',
+                'Download.OperationTimeoutSeconds', 'DefaultPatch', 'ArchiveSha256'
+    wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds'
+    function  = 'Timeout', 'MemorySize'
+    installer = 'Version', 'FilesSha256'
 }
 $missingConfig = @($requiredSetting.Keys) | Where-Object { -not $script:Config.ContainsKey($_) }
 if ($missingConfig) {

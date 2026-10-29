@@ -194,19 +194,24 @@ cmdlets:
 | `Install` | Download the same way, and also install into the CurrentUser module folder (never over an existing version). |
 | `Stop` | Fail with `ModuleNotFoundLocally`. |
 
-Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the
-SHA512-checked AWS.Tools.zip from CloudFront, one download per version) and **PSResourceGet** (`Save-PSResource`) for everything
+Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the AWS.Tools.zip from
+CloudFront, one download per version; the Installer checks it against the SHA512 published beside it, which detects a
+corrupted download, not a tampered one, and only on Windows also checks each module manifest's Authenticode signer)
+and **PSResourceGet** (`Save-PSResource`) for everything
 else, from your registered repositories in priority order, or from the ones you name with
 `-ModuleRepository` (for example an internal mirror, so a same-named package in another feed cannot be
 picked up). PowerShellGet is never called, but AWS.Tools.Installer requires it to be installed. If Installer 2.x
-is not installed it is itself saved with PSResourceGet, from `-ModuleRepository` or else PSGallery and, on
-Windows, only when its Authenticode signature is valid. It is then used from the temporary folder. Repository
+is not installed, the version this module pins is itself saved with PSResourceGet, from `-ModuleRepository` or
+else PSGallery, and used from the temporary folder only when its files match the pinned SHA256 and, on Windows,
+its Authenticode signature is valid. Repository
 trust is not bypassed: an untrusted repository (PSGallery by default) prompts, and fails in a
 non-interactive session — trust it with `Set-PSResourceRepository -Name PSGallery -Trusted`, or pre-stage modules and
 use `Stop`.
 
-Whenever something is downloaded, a warning names the modules and says to test those exact versions
-before production use; modules that came from PSGallery get a second warning that PSGallery is not
+Whenever something is downloaded, a warning names the modules, each with the repository it came from, and says
+to test those exact versions before production use. It also names any module downloaded at the minimum a
+`ModuleVersion` entry asks for, and, when `-ModuleRepository` is omitted and the modules came from more than one
+repository, says to pass it. Modules that came from PSGallery get a second warning that PSGallery is not
 recommended as a direct production dependency.
 
 `Save-LambdaPSModule -Module <specs> -Path ./mods` runs the same download on its own, and also copies
