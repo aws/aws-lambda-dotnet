@@ -15,8 +15,10 @@ function Write-LambdaPSZipArchive {
           - Every entry's "version made by" names Unix as its host, whichever OS built the zip.
             Extractors such as Info-ZIP apply the Unix mode only for a Unix host, and .NET records
             the OS it runs on (Windows, on a Windows build host).
-          - Top-level files named in -ExcludeTopLevel are left out (case-insensitive); nested files of
-            the same name are kept.
+          - Top-level files named in -ExcludeTopLevel are left out; nested files of the same name are
+            kept. Names are compared as the file system compares them: case-sensitively on Linux, and
+            case-insensitively on Windows and macOS, where a file left out only because its name differs
+            in case is named in a warning (Lambda's paths are case-sensitive).
           - A file or folder that is a link fails with PackageEntryIsLink: the package holds files, and a
             link would ship whatever it points to, inside -Path or not.
           - Off Windows, where '\' is an ordinary file-name character, a file with '\' in its name
@@ -73,7 +75,8 @@ function Write-LambdaPSZipArchive {
         $null = New-Item -ItemType Directory -Path $parent -Force -Confirm:$false -WhatIf:$false
     }
 
-    $excluded = [System.Collections.Generic.HashSet[string]]::new([string[]]@($ExcludeTopLevel | Where-Object { $_ }), [System.StringComparer]::OrdinalIgnoreCase)
+    $comparer = if ($IsLinux) { [System.StringComparer]::Ordinal } else { [System.StringComparer]::OrdinalIgnoreCase }
+    $excluded = [System.Collections.Generic.HashSet[string]]::new([string[]]@($ExcludeTopLevel | Where-Object { $_ }), $comparer)
     $executable = [System.Collections.Generic.HashSet[string]]::new([string[]]@($ExecutableEntry | Where-Object { $_ }), [System.StringComparer]::Ordinal)
     # Unix mode 0100755 / 0100644 in the high 16 bits of the zip external attributes.
     $execAttr = [Convert]::ToInt32('100755', 8) -shl 16
@@ -114,6 +117,11 @@ function Write-LambdaPSZipArchive {
                         'BackslashInFileName', [System.Management.Automation.ErrorCategory]::InvalidArgument, $entryName)
                 }
                 if (-not $entryName.Contains('/') -and $excluded.Contains($entryName)) {
+                    # Off Linux the file system cannot tell the two names apart, but Lambda can.
+                    if (@($ExcludeTopLevel) -cnotcontains $entryName) {
+                        Write-Warning ("Left out '$entryName': its name differs only in case from a file the package leaves out, " +
+                            'and this file system does not tell them apart. Rename it to package it.')
+                    }
                     continue
                 }
                 # Add, not the indexer: two files can never share one entry name silently.

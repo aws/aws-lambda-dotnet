@@ -138,6 +138,27 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         @($warnings | Where-Object { "$_" -like '*old.zip*ships inside the package*' }).Count | Should -Be 1
     }
 
+    # Lambda's paths are case-sensitive, so on Linux only the exact names are left out.
+    It 'leaves out only a powershell folder of that exact name, with a warning, and packages PowerShell/ and readme.md, on Linux' -Skip:(-not $IsLinux) {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-case')
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($proj, 'powershell')), ([System.IO.Path]::Combine($proj, 'PowerShell')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'powershell', 'stale.txt')) -Value 'x'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'PowerShell', 'lib.ps1')) -Value '# lib'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'readme.md')) -Value 'mine'
+        $out = [System.IO.Path]::Combine($TestDrive, 'scz-case.zip')
+
+        $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $script:fakeTarball -WarningVariable warnings -WarningAction SilentlyContinue
+
+        $names = Get-ZipEntryNames -ZipPath $out
+        # -ccontains: Should -Contain compares case-insensitively.
+        $names -ccontains 'PowerShell/lib.ps1' | Should -BeTrue
+        $names -ccontains 'readme.md' | Should -BeTrue
+        $names -ccontains 'README.md' | Should -BeFalse
+        $names -ccontains 'powershell/stale.txt' | Should -BeFalse
+        @($warnings | Where-Object { "$_" -like "The project's own 'powershell' folder in '*' is not packaged*" }).Count | Should -Be 1
+    }
+
     It 'throws <ErrorId> for <Case>' -ForEach @(
         @{ Case = 'a missing project directory'; ErrorId = 'ProjectNotFound'; Setup = { } }
         @{ Case = 'a project with no PowerShellLambdaContext.cs'; ErrorId = 'ContextSourceNotFound'

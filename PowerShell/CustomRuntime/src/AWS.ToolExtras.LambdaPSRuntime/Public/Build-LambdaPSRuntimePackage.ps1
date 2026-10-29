@@ -20,8 +20,11 @@ function Build-LambdaPSRuntimePackage {
              with its hidden files, so keep secrets such as .env files out of it, and by the same rules as
              Compress-LambdaPSFunctionPackage, whose help lists what is left out (.git, links that leave
              the folder or loop back into it, -OutFile and its .partial files, ...) and which skips warn; a zip file at the top
-             level ships with a warning. The project's lambdaps-runtime.json and README.md at its top
-             level are left out too. A required file (bootstrap, runtime.ps1,
+             level ships with a warning. The project's lambdaps-runtime.json, README.md and
+             PowerShellLambdaContext.dll at its top level are left out too, and so is a powershell
+             folder there, with a warning, since the package's powershell/ is the bundled pwsh. On Linux
+             these names match only in that case, so a readme.md or PowerShell/ is packaged; on Windows
+             and macOS, where the file system does not tell them apart, one is left out with a warning. A required file (bootstrap, runtime.ps1,
              PowerShellLambdaContext.cs) that is a link leaving the project is not packaged, so the build
              stops with ProjectFileNotFound or ContextSourceNotFound.
           3. Precompiles the staged PowerShellLambdaContext.cs to a DLL with the BUNDLED pwsh, so the DLL
@@ -455,6 +458,11 @@ function Build-LambdaPSRuntimePackage {
             #    marker and README are scaffolding, and powershell/ and the DLL are this build's outputs.
             $exclude = @('lambdaps-runtime.json', 'README.md', 'PowerShellLambdaContext.dll', 'powershell') |
                 ForEach-Object { [System.IO.Path]::Combine($root, $_) }
+            # The package's powershell/ folder is the bundled pwsh, so a project folder of that name is not packaged.
+            if (@(Get-ChildItem -LiteralPath $root -Directory -Force | Where-Object Name -CEQ 'powershell').Count -gt 0) {
+                Write-Warning ("The project's own 'powershell' folder in '$Path' is not packaged: the package's powershell/ folder " +
+                    'holds the bundled pwsh. Rename the folder to package it.')
+            }
             # The partial .zip an interrupted run left beside -OutFile is never part of the project.
             $partials = @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetDirectoryName($destination)) -Filter "$([System.IO.Path]::GetFileName($destination)).*.partial" -File -Force -ErrorAction SilentlyContinue | ForEach-Object FullName)
             Copy-LambdaPSFunctionSource -Path $root -Destination $stage -ExcludePath (@($exclude) + $destination + $partials)

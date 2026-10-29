@@ -18,7 +18,7 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
 
         InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
             param($Stage, $Zip)
-            Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -ExcludeTopLevel 'readme.md' -ExecutableEntry 'bootstrap'
+            Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -ExcludeTopLevel 'README.md' -ExecutableEntry 'bootstrap'
         }
 
         Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -138,6 +138,49 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
                 Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
             } } | Should -Throw -ErrorId 'PackageEntryIsLink'
         Test-Path -LiteralPath $zip | Should -BeFalse
+    }
+
+    # Lambda's paths are case-sensitive: on Linux a file whose name differs from an excluded one only in
+    # case is another file, and is packaged.
+    It 'packages a top-level file whose name differs from an excluded one only in case, on Linux' -Skip:(-not $IsLinux) {
+        $stage = Join-Path $TestDrive 'case-stage'
+        $null = New-Item -ItemType Directory -Path $stage
+        'x' | Set-Content -LiteralPath (Join-Path $stage 'README.md')
+        'x' | Set-Content -LiteralPath (Join-Path $stage 'readme.md')
+        $zip = Join-Path $TestDrive 'case.zip'
+
+        $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+            param($Stage, $Zip)
+            Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -ExcludeTopLevel 'README.md' -WarningVariable w -WarningAction SilentlyContinue
+            $w
+        }
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+        try { @($archive.Entries.FullName) | Should -Be @('readme.md') }
+        finally { $archive.Dispose() }
+        $warnings | Should -BeNullOrEmpty
+    }
+
+    It 'leaves out, with a warning, a top-level file whose name differs from an excluded one only in case, off Linux' -Skip:$IsLinux {
+        $stage = Join-Path $TestDrive 'case-stage'
+        $null = New-Item -ItemType Directory -Path $stage
+        'x' | Set-Content -LiteralPath (Join-Path $stage 'readme.md')
+        'x' | Set-Content -LiteralPath (Join-Path $stage 'handler.ps1')
+        $zip = Join-Path $TestDrive 'case.zip'
+
+        $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+            param($Stage, $Zip)
+            Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -ExcludeTopLevel 'README.md' -WarningVariable w -WarningAction SilentlyContinue
+            $w
+        }
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+        try { @($archive.Entries.FullName) | Should -Be @('handler.ps1') }
+        finally { $archive.Dispose() }
+        @($warnings).Count | Should -Be 1
+        "$($warnings[0])" | Should -BeLike "*Left out 'readme.md': its name differs only in case*"
     }
 
     # Lambda's quotas: 50 MB zipped for a direct upload, 250 MB unzipped for code and layers together.

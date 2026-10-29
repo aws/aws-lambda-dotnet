@@ -16,8 +16,11 @@ function Copy-LambdaPSFolderContent {
             or two folders that link to each other), which would copy a folder into itself; links whose
             target cannot be resolved (for example two links that point at each other); and links to
             something that does not exist. They are skipped with a warning.
-          - The paths in -ExcludePath, compared case-insensitively, what is inside them, and links to
-            them. Excluding a link leaves out the link, not what it points to.
+          - The paths in -ExcludePath, what is inside them, and links to them. Excluding a link leaves
+            out the link, not what it points to. Paths are compared as the file system compares them:
+            case-sensitively on Linux, where 'README.md' and 'readme.md' are two files, and
+            case-insensitively on Windows and macOS. Lambda's paths are case-sensitive, so an item left
+            out there only because its name differs in case from an excluded path is named in a warning.
 
         Every link is decided by the real location of its final target, resolved as the OS resolves
         it by Get-LambdaPSRealPath (each link along the way followed, and '..' applied after it), so
@@ -71,7 +74,9 @@ function Copy-LambdaPSFolderContent {
     # An exclude names an item, so only its folder is resolved: excluding a link leaves out the link,
     # not the file it points to. A link whose target is excluded, or inside an excluded folder, is left
     # out too.
-    $excluded = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $comparer = if ($IsLinux) { [System.StringComparer]::Ordinal } else { [System.StringComparer]::OrdinalIgnoreCase }
+    $comparison = if ($IsLinux) { [System.StringComparison]::Ordinal } else { [System.StringComparison]::OrdinalIgnoreCase }
+    $excluded = [System.Collections.Generic.HashSet[string]]::new($comparer)
     foreach ($exclude in @($ExcludePath | Where-Object { $_ })) {
         $null = $excluded.Add($exclude.TrimEnd($separator))
         $parent = [System.IO.Path]::GetDirectoryName($exclude.TrimEnd($separator))
@@ -79,13 +84,13 @@ function Copy-LambdaPSFolderContent {
             $null = $excluded.Add([System.IO.Path]::Combine((Get-LambdaPSRealPath -Path $parent), [System.IO.Path]::GetFileName($exclude.TrimEnd($separator))))
         }
     }
-    $isExcluded = {
+    # Returns the excluded path that $Candidate is, or is inside; $null when it is neither.
+    $excludedBy = {
         param([string]$Candidate)
         foreach ($entry in $excluded) {
-            if ($Candidate.Equals($entry, [System.StringComparison]::OrdinalIgnoreCase) -or
-                $Candidate.StartsWith($entry + $separator, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+            if ($Candidate.Equals($entry, $comparison) -or $Candidate.StartsWith($entry + $separator, $comparison)) { return $entry }
         }
-        $false
+        $null
     }
 
     # Each queued folder carries the real folders it was reached through, so a folder link back to any
@@ -97,11 +102,19 @@ function Copy-LambdaPSFolderContent {
     while ($pending.Count -gt 0) {
         $from, $to, $chain, $reachedFrom = $pending.Dequeue()
         foreach ($item in Get-ChildItem -LiteralPath $from -Force -ErrorAction Stop) {
-            if (& $isExcluded $item.FullName) { continue }
+            $reached = [System.IO.Path]::Combine($reachedFrom, $item.Name)
+            $excludedAs = & $excludedBy $item.FullName
+            if ($null -ne $excludedAs) {
+                # Off Linux the file system cannot tell the two names apart, but Lambda can.
+                if ($item.FullName.Length -eq $excludedAs.Length -and $item.Name -cne [System.IO.Path]::GetFileName($excludedAs)) {
+                    Write-Warning ("Left out '$reached': its name differs only in case from '$([System.IO.Path]::GetFileName($excludedAs))', " +
+                        'which is excluded, and this file system does not tell them apart. Rename it to package it.')
+                }
+                continue
+            }
             if ($item.PSIsContainer -and $item.Name -eq '.git') { continue }
             $walkFrom = $item.FullName
             $copyFrom = $item.FullName
-            $reached = [System.IO.Path]::Combine($reachedFrom, $item.Name)
             if ($item.LinkType) {
                 try {
                     $targetPath = Get-LambdaPSRealPath -Path $item.FullName
@@ -131,7 +144,7 @@ function Copy-LambdaPSFolderContent {
                 # A link into a .git folder is repository history under another name: left out like .git.
                 $relative = if (& $isRoot $targetPath) { '' } else { $targetPath.Substring($rootPrefix.Length) }
                 if (@($relative.Split([char[]]@('/', '\'), [System.StringSplitOptions]::RemoveEmptyEntries)) -contains '.git') { continue }
-                if (& $isExcluded $targetPath) { continue }
+                if ($null -ne (& $excludedBy $targetPath)) { continue }
                 # A folder link to a folder this one was reached through would be copied into itself
                 # until the path is too long, so it is skipped too.
                 if ($item.PSIsContainer) {

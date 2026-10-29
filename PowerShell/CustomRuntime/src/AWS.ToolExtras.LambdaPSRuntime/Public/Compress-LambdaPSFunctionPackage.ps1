@@ -29,7 +29,9 @@ function Compress-LambdaPSFunctionPackage {
         For a project New-LambdaPSFunctionProject scaffolded (its top-level manifest.json has the
         scaffolder's HandlerString and ScriptFile), the scaffolding-only 'manifest.json' and
         'README.md' at the top level are dropped from the archive, after manifest.json is read to
-        locate the handler script. Any other folder or single .ps1 is packaged as-is, including a
+        locate the handler script. On Linux only those exact names are dropped, so a readme.md is
+        packaged; on Windows and macOS, where the file system does not tell them apart, it is dropped
+        with a warning. Any other folder or single .ps1 is packaged as-is, including a
         manifest.json or README.md of your own. A top-level manifest.json that is not valid JSON is a
         terminating InvalidProjectManifest error, since it may be a scaffolded project's.
 
