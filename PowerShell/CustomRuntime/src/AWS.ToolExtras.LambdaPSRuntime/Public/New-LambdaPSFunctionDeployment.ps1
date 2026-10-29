@@ -148,7 +148,8 @@ function New-LambdaPSFunctionDeployment {
         anything is downloaded.
     .PARAMETER Architecture
         The function architecture: x86_64 or arm64. When omitted, a scaffolded project's manifest.json
-        supplies it (and it is checked like an explicit value); otherwise a redeploy keeps the
+        supplies it (and it is checked like an explicit value: one that is not x86_64 or arm64 is an
+        InvalidProjectManifest error naming manifest.json); otherwise a redeploy keeps the
         function's architecture while the alias it will be on supports it, and a new function takes it
         from the runtime: the architecture Lambda reports for the alias's current version, which it
         reads from the image manifest. If it reports several, x86_64 is preferred; if it reports none,
@@ -364,7 +365,18 @@ function New-LambdaPSFunctionDeployment {
                 $RuntimeAlias = $manifestAlias
                 $manifestAliasUsed = $true
             }
-            if (-not $PSBoundParameters.ContainsKey('Architecture') -and @('x86_64', 'arm64') -contains $projectManifest.Architecture) {
+            if (-not $PSBoundParameters.ContainsKey('Architecture') -and $projectManifest.Architecture) {
+                # Checked as -Architecture's ValidateSet would check it, so a bad value stops the deploy
+                # rather than be dropped for the alias's architecture.
+                if (@('x86_64', 'arm64') -notcontains $projectManifest.Architecture) {
+                    $manifestPath = [System.IO.Path]::Combine($source.FullName, 'manifest.json')
+                    $PSCmdlet.ThrowTerminatingError(
+                        [System.Management.Automation.ErrorRecord]::new(
+                            [System.IO.InvalidDataException]::new(
+                                ("The function manifest '$manifestPath' records Architecture '$($projectManifest.Architecture)', " +
+                                 "which is not x86_64 or arm64. Fix it in manifest.json, or pass -Architecture.")),
+                            'InvalidProjectManifest', [System.Management.Automation.ErrorCategory]::InvalidData, $manifestPath))
+                }
                 $Architecture = $projectManifest.Architecture
                 $architectureFromManifest = $true
             }

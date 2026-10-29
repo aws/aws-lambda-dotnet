@@ -956,6 +956,24 @@ Describe 'New-LambdaPSFunctionDeployment -RuntimeName and -RuntimeAlias' -Tag 'U
         $err.Exception.Message | Should -BeLike "*$([System.IO.Path]::Combine($project, 'manifest.json'))*RuntimeAlias*not a valid runtime alias name*"
         Should -Invoke 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -Times 0 -Exactly
     }
+
+    # -Architecture's ValidateSet refuses such a value, so one from manifest.json is refused too, not dropped
+    # for the alias's architecture.
+    It 'throws InvalidProjectManifest, naming manifest.json, for a manifest Architecture that is not x86_64 or arm64: <Architecture>' -ForEach @(
+        @{ Architecture = 'amr64' }, @{ Architecture = 'x86-64' }
+    ) {
+        Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { throw 'must not read the runtime' }
+        $project = Join-Path $TestDrive "manifest-arch-$Architecture"
+        $null = New-Item -ItemType Directory -Path $project -Force
+        Set-Content -LiteralPath (Join-Path $project 'handler.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+        Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Encoding utf8 `
+            -Value (@{ HandlerString = 'handler.ps1'; ScriptFile = 'handler.ps1'; Architecture = $Architecture } | ConvertTo-Json)
+
+        $err = { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $project -RuntimeName rt -Role arn:aws:iam::111122223333:role/r -Region us-east-1 } |
+            Should -Throw -ErrorId 'InvalidProjectManifest,New-LambdaPSFunctionDeployment' -PassThru
+        $err.Exception.Message | Should -BeLike "*$([System.IO.Path]::Combine($project, 'manifest.json'))*Architecture '$Architecture'*not x86_64 or arm64*"
+        Should -Invoke 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -Times 0 -Exactly
+    }
 }
 
 Describe 'New-LambdaPSFunctionDeployment -Role' -Tag 'Unit' {
