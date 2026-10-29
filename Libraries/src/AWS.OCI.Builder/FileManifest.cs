@@ -27,9 +27,13 @@ namespace AWS.OCI.Builder;
 public sealed class FileManifest : IEnumerable<FileManifestEntry>
 {
     private readonly List<FileManifestEntry> _entries = new();
+    private readonly List<string> _directories = new();
 
     /// <summary>The entries that make up this manifest.</summary>
     public IReadOnlyList<FileManifestEntry> Entries => _entries;
+
+    /// <summary>The container folders added with <see cref="AddDirectory"/>.</summary>
+    public IReadOnlyList<string> Directories => _directories;
 
     /// <summary>
     /// Adds a local file or directory to be placed at <paramref name="containerPath"/> inside the container, with
@@ -60,6 +64,22 @@ public sealed class FileManifest : IEnumerable<FileManifestEntry>
     /// <param name="containerPath">The absolute destination path inside the container.</param>
     public void AddExecutable(string localPath, string containerPath)
         => _entries.Add(new FileManifestEntry(localPath, containerPath, FileManifestEntry.ExecutableMode));
+
+    /// <summary>
+    /// Adds a folder entry (mode <c>0755</c>) at <paramref name="containerPath"/>, with no local source.
+    /// </summary>
+    /// <remarks>
+    /// The layer has no entries for the parent folders of mapped files; tar extraction creates them implicitly, and
+    /// leaving them out keeps the base image's own folders (for example <c>/tmp</c>'s <c>1777</c>) unchanged. Some
+    /// image consumers require an entry for every folder a layer creates, so add each new folder here. Don't add
+    /// folders the base image already has, or their mode is reset to <c>0755</c>.
+    /// </remarks>
+    /// <param name="containerPath">The absolute folder path inside the container (for example <c>/opt/app/lib</c>).</param>
+    public void AddDirectory(string containerPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(containerPath);
+        _directories.Add(containerPath);
+    }
 
     /// <inheritdoc />
     public IEnumerator<FileManifestEntry> GetEnumerator() => _entries.GetEnumerator();

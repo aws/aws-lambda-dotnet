@@ -28,8 +28,10 @@ namespace AWS.OCI.Builder.Images;
 ///   </item>
 /// </list>
 /// <para>
-/// Entries are written in a stable sorted order with fixed timestamps and normalized paths. Digests are not
-/// guaranteed to be identical across builds, even for identical input.
+/// Entries are written in a stable sorted order with fixed timestamps, owners and normalized paths, so the same
+/// input produces the same digests on every build with the same .NET major version. Different major versions can
+/// produce different bytes, both compressed (their zlib differs) and uncompressed (.NET 8 writes the ustar uid and
+/// gid fields as NULs, .NET 10 as zeros), so the digest and the diff_id can both change across them.
 /// </para>
 /// </remarks>
 internal sealed class Layer
@@ -117,9 +119,9 @@ internal sealed class Layer
         {
             throw new ArgumentException("The destination stream must be writable.", nameof(destination));
         }
-        if (manifest.Entries.Count == 0)
+        if (manifest.Entries.Count == 0 && manifest.Directories.Count == 0)
         {
-            throw new ArgumentException("The file manifest is empty; a layer must contain at least one file.", nameof(manifest));
+            throw new ArgumentException("The file manifest is empty; a layer must contain at least one file or folder.", nameof(manifest));
         }
 
         // Expand every manifest entry into concrete file additions (container path -> local file + mode), plus the
@@ -132,6 +134,16 @@ internal sealed class Layer
         {
             CollectEntry(entry, files, directories);
         }
+        foreach (string directory in manifest.Directories)
+        {
+            string containerPath = NormalizeContainerPath(directory);
+            if (files.ContainsKey(containerPath))
+            {
+                throw new ArgumentException($"The container path '{containerPath}' is mapped as both a file and a folder.");
+            }
+            directories.Add(containerPath);
+        }
+        RejectEntriesUnderFiles(files, directories);
 
         // One streaming pass:  tar -> [hash: diff_id] -> gzip -> [normalize gzip header] -> [hash + count: digest,
         // size] -> destination. Nothing is buffered beyond stream buffers, so layer size is not limited by memory
@@ -155,6 +167,26 @@ internal sealed class Layer
         string diffId = ToDigestString(diffIdHash);
         string digest = ToDigestString(digestHash);
         return new Layer(digest, diffId, compressedSink.BytesWritten, mediaType);
+    }
+
+    /// <summary>
+    /// Throws when a file or folder would sit beneath a path that is mapped as a file, which no filesystem can
+    /// represent: extracting such a layer fails or silently drops one of the entries.
+    /// </summary>
+    private static void RejectEntriesUnderFiles(SortedDictionary<string, FileSource> files, SortedSet<string> directories)
+    {
+        foreach (string path in files.Keys.Concat(directories))
+        {
+            for (int slash = path.LastIndexOf('/'); slash > 0; slash = path.LastIndexOf('/', slash - 1))
+            {
+                string ancestor = path[..slash];
+                if (files.ContainsKey(ancestor))
+                {
+                    throw new ArgumentException(
+                        $"The container path '{path}' is beneath '{ancestor}', which is mapped as a file.");
+                }
+            }
+        }
     }
 
     private static string ToDigestString(IncrementalHash hash)
@@ -296,14 +328,23 @@ internal sealed class Layer
     }
 
     /// <summary>
-    /// Writes the directory and file entries as a PAX tar archive, in a deterministic order, to
+    /// Writes the directory and file entries as a tar archive, in a deterministic order, to
     /// <paramref name="destination"/> (the hashing/compression pipeline). Source files are streamed, not buffered.
     /// </summary>
     /// <remarks>
-    /// PAX is the format used by container tooling (including <c>Microsoft.NET.Build.Containers</c>) and is what
-    /// registries and runtimes expect for image layers. Every entry gets a fixed extended-attribute set (see
-    /// <see cref="ReproducibleExtendedAttributes"/>) and a fixed <see cref="ReproducibleTimestamp"/> rather than
-    /// the current time.
+    /// <para>
+    /// Entries are written as ustar wherever ustar can hold them, so the archive is byte-for-byte reproducible.
+    /// ustar has no atime or ctime fields, and every entry gets the fixed <see cref="ReproducibleTimestamp"/>.
+    /// The alternatives can't be made reproducible on every runtime the library supports. .NET's PAX writer names
+    /// each extended header <c>PaxHeaders.&lt;process id&gt;</c>. .NET 8's GNU writer stamps the current time into
+    /// atime and ctime and rejects anything earlier than the epoch, and the epoch written there makes readers that
+    /// treat those bytes as a ustar prefix (Python's <c>tarfile</c>) misread every name.
+    /// </para>
+    /// <para>
+    /// An entry ustar can't hold falls back to PAX with fixed time attributes: a name too long for ustar's 100-byte
+    /// name and 155-byte prefix fields, or a file of 8 GiB or more. Only layers with such entries vary between
+    /// processes.
+    /// </para>
     /// </remarks>
     private static async Task WriteTarAsync(
         SortedDictionary<string, FileSource> files,
@@ -312,48 +353,102 @@ internal sealed class Layer
         CancellationToken cancellationToken)
     {
         // leaveOpen: true — the destination is the hashing/compression pipeline, finalized by the caller.
-        await using (var tar = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true))
+        await using (var tar = new TarWriter(destination, TarEntryFormat.Ustar, leaveOpen: true))
         {
             // Directories first, shallowest-to-deepest (the sorted set already yields a stable order), so every
             // file's parent exists before the file entry. Both collections are ordinally sorted for determinism.
             foreach (string dir in directories)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var dirEntry = new PaxTarEntry(TarEntryType.Directory, ToTarEntryName(dir, isDirectory: true), ReproducibleExtendedAttributes())
-                {
-                    Mode = DefaultDirectoryMode,
-                    ModificationTime = ReproducibleTimestamp,
-                };
+                TarEntry dirEntry = CreateEntry(TarEntryType.Directory, ToTarEntryName(dir, isDirectory: true), DefaultDirectoryMode, size: 0);
                 await tar.WriteEntryAsync(dirEntry, cancellationToken).ConfigureAwait(false);
             }
 
             foreach ((string containerPath, FileSource file) in files)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var fileEntry = new PaxTarEntry(TarEntryType.RegularFile, ToTarEntryName(containerPath, isDirectory: false), ReproducibleExtendedAttributes())
-                {
-                    Mode = file.Mode,
-                    ModificationTime = ReproducibleTimestamp,
-                };
 
                 // Open each source file read-only and shared so concurrent readers (e.g. the build) aren't blocked.
                 await using FileStream source = new(file.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TarEntry fileEntry = CreateEntry(TarEntryType.RegularFile, ToTarEntryName(containerPath, isDirectory: false), file.Mode, source.Length);
                 fileEntry.DataStream = source;
                 await tar.WriteEntryAsync(fileEntry, cancellationToken).ConfigureAwait(false);
             }
         }
     }
 
-    /// <summary>A resolved file to place in the layer: its source path and the Unix mode to stamp on it.</summary>
-    private readonly record struct FileSource(string LocalPath, UnixFileMode Mode);
+    /// <summary>Creates a ustar entry, or a PAX entry when ustar can't hold the name or size (see <see cref="FitsUstar"/>).</summary>
+    internal static TarEntry CreateEntry(TarEntryType type, string name, UnixFileMode mode, long size)
+    {
+        // A directory name longer than ustar's 100-byte name field loses its trailing '/'. Otherwise .NET splits it
+        // at that slash and leaves the name field empty, which tar itself never writes; the type flag already marks
+        // the entry as a directory.
+        if (type == TarEntryType.Directory && System.Text.Encoding.UTF8.GetByteCount(name) > 100)
+        {
+            name = name.TrimEnd('/');
+        }
+
+        TarEntry entry = FitsUstar(type, name, size)
+            ? new UstarTarEntry(type, name)
+            : new PaxTarEntry(type, name, ReproducibleExtendedAttributes());
+        entry.Mode = mode;
+        entry.ModificationTime = ReproducibleTimestamp;
+        return entry;
+    }
 
     /// <summary>
-    /// The PAX extended attributes applied to every entry: fixed <c>mtime</c>, <c>atime</c> and <c>ctime</c>.
+    /// Whether a ustar header can hold <paramref name="name"/> and <paramref name="size"/>. This asks .NET's own ustar
+    /// writer, against a throwaway stream, rather than re-implementing its rule for splitting a long name into the
+    /// prefix and name fields (it does not accept every split the format allows).
     /// </summary>
-    /// <remarks>
-    /// On .NET 8 the PAX writer otherwise fills <c>atime</c> and <c>ctime</c> with the current wall-clock time;
-    /// pinning all three to a fixed epoch keeps them out of the archive.
-    /// </remarks>
+    internal static bool FitsUstar(TarEntryType type, string name, long size)
+    {
+        using var writer = new TarWriter(Stream.Null, TarEntryFormat.Ustar, leaveOpen: true);
+        try
+        {
+            var probe = new UstarTarEntry(type, name);
+            if (size > 0)
+            {
+                probe.DataStream = new HeaderProbeStream(size);
+            }
+            writer.WriteEntry(probe);
+            return true;
+        }
+        catch (HeaderProbeStream.HeaderWrittenException)
+        {
+            return true; // the header was accepted; the writer had started on the data
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A stream that reports a length but throws as soon as it is read, so <see cref="FitsUstar"/> can test a header
+    /// without supplying the data.
+    /// </summary>
+    private sealed class HeaderProbeStream(long length) : Stream
+    {
+        internal sealed class HeaderWrittenException : Exception;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override bool CanWrite => false;
+        public override long Length => length;
+        public override long Position { get => 0; set { } }
+        public override int Read(byte[] buffer, int offset, int count) => throw new HeaderWrittenException();
+        public override int Read(Span<byte> buffer) => throw new HeaderWrittenException();
+        public override long Seek(long offset, SeekOrigin origin) => 0;
+        public override void Flush() { }
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// The PAX extended attributes for an entry that falls back to PAX: fixed <c>mtime</c>, <c>atime</c> and
+    /// <c>ctime</c> (the .NET 8 writer otherwise fills <c>atime</c> and <c>ctime</c> with the current time).
+    /// </summary>
     private static Dictionary<string, string> ReproducibleExtendedAttributes()
     {
         string epoch = ReproducibleTimestamp.ToUnixTimeSeconds().ToString("D", System.Globalization.CultureInfo.InvariantCulture);
@@ -364,6 +459,9 @@ internal sealed class Layer
             ["ctime"] = epoch,
         };
     }
+
+    /// <summary>A resolved file to place in the layer: its source path and the Unix mode to stamp on it.</summary>
+    private readonly record struct FileSource(string LocalPath, UnixFileMode Mode);
 
     /// <summary>
     /// Normalizes a caller-supplied container path to an absolute, forward-slash path with no trailing slash

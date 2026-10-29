@@ -25,6 +25,9 @@ internal sealed class RegistryClient : IDisposable
     private readonly string _registryHost;
     private readonly bool _ownsHttpClient;
 
+    // Whether this client never sends credentials (base-image pulls), which changes what a 401/403 most likely means.
+    private readonly bool _anonymous;
+
     /// <summary>Creates a client for <paramref name="registryHost"/> using the supplied authenticating client.</summary>
     /// <param name="registryHost">The registry host, for example <c>registry-1.docker.io</c> or an ECR endpoint.</param>
     /// <param name="httpClient">
@@ -38,11 +41,18 @@ internal sealed class RegistryClient : IDisposable
         _ownsHttpClient = false;
     }
 
-    private RegistryClient(string registryHost, HttpClient httpClient, bool ownsHttpClient)
+    /// <summary>Test-only: a client over a supplied transport that reports failures as an anonymous client does.</summary>
+    internal RegistryClient(string registryHost, HttpClient httpClient, bool anonymous)
+        : this(registryHost, httpClient, ownsHttpClient: false, anonymous)
+    {
+    }
+
+    private RegistryClient(string registryHost, HttpClient httpClient, bool ownsHttpClient, bool anonymous)
     {
         _registryHost = registryHost;
         _http = httpClient;
         _ownsHttpClient = ownsHttpClient;
+        _anonymous = anonymous;
     }
 
     /// <summary>The registry host this client targets.</summary>
@@ -59,7 +69,14 @@ internal sealed class RegistryClient : IDisposable
     /// PATCH layer upload is bounded by the caller's cancellation token rather than cancelled by the 100-second
     /// client default. Must be positive or <see cref="Timeout.InfiniteTimeSpan"/>.
     /// </param>
-    public static RegistryClient Create(string registryHost, IRegistryCredentialSource credentialSource, TimeSpan? timeout = null)
+    /// <param name="proxy">An explicit proxy, or <see langword="null"/> for the system default proxy.</param>
+    /// <param name="resolveHost">Test-only: replaces DNS resolution in the connect guard.</param>
+    public static RegistryClient Create(
+        string registryHost,
+        IRegistryCredentialSource credentialSource,
+        TimeSpan? timeout = null,
+        IWebProxy? proxy = null,
+        Func<string, CancellationToken, Task<IPAddress[]>>? resolveHost = null)
     {
         // Automatic redirects are DISABLED: the same transport also carries the token requests issued by
         // AuthHandshakeHandler, and an auto-followed redirect from a validated public realm to a private/loopback
@@ -72,8 +89,15 @@ internal sealed class RegistryClient : IDisposable
             // SSRF defense at the socket layer: resolve the target, reject any blocked (loopback/private/link-local)
             // address, and connect to the SAME address we validated — so a DNS name that resolves to a private
             // address is refused, and DNS rebinding cannot swap in a different address between check and connect.
-            ConnectCallback = GuardedConnectAsync,
+            // An Amazon ECR registry is trusted even on a private address, which is how ECR resolves through an
+            // interface VPC endpoint. Any other host, including a caller-supplied base registry, is checked.
+            ConnectCallback = (context, cancellationToken) =>
+                GuardedConnectAsync(context, TrustedHostOf(registryHost), proxy ?? HttpClient.DefaultProxy, resolveHost, cancellationToken),
         };
+        if (proxy is not null)
+        {
+            inner.Proxy = proxy;
+        }
         var authHandler = new AuthHandshakeHandler(credentialSource, inner);
         var http = new HttpClient(authHandler)
         {
@@ -81,7 +105,7 @@ internal sealed class RegistryClient : IDisposable
             // cancel large uploads on slow links. The caller's cancellation token is the intended deadline.
             Timeout = timeout ?? Timeout.InfiniteTimeSpan,
         };
-        return new RegistryClient(registryHost, http, ownsHttpClient: true);
+        return new RegistryClient(registryHost, http, ownsHttpClient: true, anonymous: credentialSource is AnonymousRegistryCredentialSource);
     }
 
     /// <summary>
@@ -90,14 +114,25 @@ internal sealed class RegistryClient : IDisposable
     /// check and the connect use the same resolved address, this is robust against DNS rebinding — unlike a
     /// separate pre-resolution that the socket could override with a second lookup.
     /// </summary>
-    private static async ValueTask<Stream> GuardedConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    private static async ValueTask<Stream> GuardedConnectAsync(
+        SocketsHttpConnectionContext context,
+        string? trustedHost,
+        IWebProxy? proxy,
+        Func<string, CancellationToken, Task<IPAddress[]>>? resolveHost,
+        CancellationToken cancellationToken)
     {
         string host = context.DnsEndPoint.Host;
         int port = context.DnsEndPoint.Port;
 
+        // When a proxy is configured the handler connects to the proxy, not to the request's host. The proxy is
+        // the caller's own configuration and is often on a loopback or private address, and the target's address
+        // is resolved by the proxy, out of this callback's sight. So the address check applies only to direct
+        // connections, and not to the trusted ECR registry.
+        bool checkAddress = IsAddressCheckRequired(context.InitialRequestMessage, host, trustedHost, proxy);
+
         IPAddress[] addresses = IPAddress.TryParse(host, out IPAddress? literal)
             ? [literal]
-            : await System.Net.Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+            : await (resolveHost ?? System.Net.Dns.GetHostAddressesAsync)(host, cancellationToken).ConfigureAwait(false);
 
         // Try each resolved address in order, skipping blocked ones, connecting to the first that is allowed AND
         // reachable. A blocked address is never dialed.
@@ -105,7 +140,7 @@ internal sealed class RegistryClient : IDisposable
         Exception? lastError = null;
         foreach (IPAddress address in addresses)
         {
-            if (RealmValidator.IsBlockedAddress(address))
+            if (checkAddress && RealmValidator.IsBlockedAddress(address))
             {
                 lastError = new RegistryException(
                     $"Refusing to connect to '{host}': it resolves to a blocked (loopback/private/link-local) address '{address}'.");
@@ -137,6 +172,86 @@ internal sealed class RegistryClient : IDisposable
         return new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
     }
 
+    /// <summary>
+    /// Whether a connection to <paramref name="connectHost"/> must pass the blocked-address check. It is skipped
+    /// for the trusted ECR registry (<paramref name="trustedHost"/>, or <see langword="null"/> when the client's
+    /// registry is not ECR) and for a proxy: the target of the handler's CONNECT tunnel request, or the proxy that
+    /// <paramref name="proxy"/> selects for <paramref name="request"/>. It is required for every other host.
+    /// </summary>
+    internal static bool IsAddressCheckRequired(HttpRequestMessage request, string connectHost, string? trustedHost, IWebProxy? proxy)
+    {
+        string host = NormalizeHost(connectHost);
+        if (trustedHost is not null && string.Equals(host, trustedHost, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        Uri? requestUri = request.RequestUri;
+
+        // An https request through a proxy opens its connection with the handler's own CONNECT request, which is
+        // addressed to the proxy. Only the handler sends CONNECT, and only to a proxy it was configured with.
+        if (request.Method == HttpMethod.Connect && requestUri is not null
+            && string.Equals(host, NormalizeHost(requestUri.IdnHost), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (requestUri is not null && proxy is not null && !proxy.IsBypassed(requestUri)
+            && proxy.GetProxy(requestUri) is { } proxyUri
+            // Some IWebProxy implementations return the destination itself to mean "connect directly".
+            && !string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(requestUri.IdnHost), StringComparison.OrdinalIgnoreCase)
+            && string.Equals(host, NormalizeHost(proxyUri.IdnHost), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Strips IPv6 brackets and a trailing dot so host spellings compare equal.</summary>
+    private static string NormalizeHost(string host)
+        => TrimTrailingDot(host.Length > 1 && host[0] == '[' && host[^1] == ']' ? host[1..^1] : host);
+
+    /// <summary>
+    /// The host name (no port, no trailing dot) of the registry this client was created for, when it is an Amazon
+    /// ECR registry; otherwise <see langword="null"/>, so no host is exempt from the address check.
+    /// </summary>
+    internal static string? TrustedHostOf(string registryHost)
+    {
+        // Match the ECR pattern against the host alone, so an explicit port (for example ':443') doesn't hide it.
+        if (!Uri.TryCreate($"https://{registryHost}", UriKind.Absolute, out Uri? uri))
+        {
+            return null;
+        }
+        string host = NormalizeHost(uri.IdnHost);
+        return ImageReference.IsEcrHost(host) ? host : null;
+    }
+
+    private static string TrimTrailingDot(string host)
+        => host.Length > 1 && host[^1] == '.' ? host[..^1] : host;
+
+    /// <summary>
+    /// Sends a request, reporting a failure to send it or to receive the response headers (DNS, connection, TLS,
+    /// proxy, or the connect guard) as a <see cref="RegistryException"/> with the <see cref="HttpRequestException"/>
+    /// as its inner exception. Not covered: an <see cref="IOException"/> while a blob body is being read, and the
+    /// <see cref="TaskCanceledException"/> raised when <see cref="EcrPushOptions.UploadTimeout"/> or the caller's
+    /// token expires.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _http.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            string message = ex.InnerException is RegistryException inner
+                ? inner.Message
+                : $"{request.Method} {request.RequestUri?.GetLeftPart(UriPartial.Path)} failed: {ex.Message}";
+            throw new RegistryException(message, ex);
+        }
+    }
+
     private Uri Base => new($"https://{_registryHost}/v2/");
 
     // ---- Manifests ----------------------------------------------------------------------------
@@ -153,7 +268,7 @@ internal sealed class RegistryClient : IDisposable
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Base, $"{repository}/manifests/{reference}"));
         AddManifestAcceptHeaders(request);
 
-        using HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, $"GET manifest {repository}:{reference}", cancellationToken).ConfigureAwait(false);
 
         // Read the exact bytes on the wire. Digests must be computed over these, not over a string that has been
@@ -183,8 +298,8 @@ internal sealed class RegistryClient : IDisposable
 
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/manifests/{reference}"));
         AddManifestAcceptHeaders(request);
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        return response.StatusCode == HttpStatusCode.OK;
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
+        return await ExistsFromAsync(response, $"HEAD manifest {repository}:{reference}", cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Uploads a manifest under the given tag or digest reference.</summary>
@@ -199,7 +314,7 @@ internal sealed class RegistryClient : IDisposable
         };
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
 
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, $"PUT manifest {repository}:{reference}", cancellationToken).ConfigureAwait(false);
     }
 
@@ -212,8 +327,45 @@ internal sealed class RegistryClient : IDisposable
         ValidateDigest(digest);
 
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/blobs/{digest}"));
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        return response.StatusCode == HttpStatusCode.OK;
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
+        return await ExistsFromAsync(response, $"HEAD blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Interprets a HEAD response: success or a redirect means present (a registry may redirect a blob HEAD to
+    /// its storage, as the distribution spec allows) and 404 means absent. Anything else (denied, throttled,
+    /// server error) is an error, not "absent"; treating it as absent would, for example, make a push with an
+    /// expired token download every base layer before failing.
+    /// </summary>
+    private async Task<bool> ExistsFromAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode || IsRedirect(response.StatusCode))
+        {
+            return true;
+        }
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        // A HEAD response has no body, and ECR reports a rejected token on it as a bare 400; the DENIED code is
+        // only in the body of a GET. Ask the API root, which needs the same credentials, so the error can be
+        // reported for what it is.
+        // Only a denial from the probe is reported; any other probe failure says nothing about the HEAD, which is
+        // then reported as it was.
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            using var probe = new HttpRequestMessage(HttpMethod.Get, Base);
+            using HttpResponseMessage probeResponse = await SendAsync(probe, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
+            string probeBody = await ReadErrorBodyAsync(probeResponse, cancellationToken).ConfigureAwait(false);
+            if (IsDenial(probeResponse.StatusCode, probeBody))
+            {
+                throw CreateFailure(probeResponse, probeBody, operation);
+            }
+        }
+
+        await EnsureSuccessAsync(response, operation, cancellationToken).ConfigureAwait(false);
+        return false;
     }
 
     /// <summary>Downloads a blob by digest as a stream. Disposing the returned stream also disposes the underlying HTTP response.</summary>
@@ -242,7 +394,7 @@ internal sealed class RegistryClient : IDisposable
                 // via a 401 challenge. Presigned storage URLs carry their own authorization.
                 request.Options.Set(AuthHandshakeHandler.SkipAuthentication, true);
             }
-            HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
             if (IsRedirect(response.StatusCode))
             {
@@ -369,7 +521,7 @@ internal sealed class RegistryClient : IDisposable
 
         var uri = new Uri(Base, $"{repository}/blobs/uploads/?mount={Uri.EscapeDataString(digest)}&from={Uri.EscapeDataString(fromRepository)}");
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
 
         if (response.StatusCode == HttpStatusCode.Created)
         {
@@ -457,7 +609,7 @@ internal sealed class RegistryClient : IDisposable
                 patch.Content.Headers.ContentLength = length;
             }
 
-            using HttpResponseMessage patchResponse = await _http.SendAsync(patch, cancellationToken).ConfigureAwait(false);
+            using HttpResponseMessage patchResponse = await SendAsync(patch, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
             await EnsureSuccessAsync(patchResponse, $"PATCH blob {repository}", cancellationToken).ConfigureAwait(false);
 
             // The registry hands back the upload URL to use for the commit.
@@ -471,14 +623,14 @@ internal sealed class RegistryClient : IDisposable
             Content = new ByteArrayContent(Array.Empty<byte>()),
         };
         put.Content.Headers.ContentLength = 0;
-        using HttpResponseMessage putResponse = await _http.SendAsync(put, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage putResponse = await SendAsync(put, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(putResponse, $"PUT blob commit {repository} {digest}", cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Uri> StartUploadAsync(string repository, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(Base, $"{repository}/blobs/uploads/"));
-        using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, $"POST blob upload start {repository}", cancellationToken).ConfigureAwait(false);
 
         return LocationFrom(response)
@@ -519,29 +671,59 @@ internal sealed class RegistryClient : IDisposable
         return builder.Uri;
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
+    private async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
             return;
         }
 
-        string body = string.Empty;
+        string body = await ReadErrorBodyAsync(response, cancellationToken).ConfigureAwait(false);
+        throw CreateFailure(response, body, operation);
+    }
+
+    /// <summary>Reads the start of an error body (it is only context for the message), or "" if it can't be read.</summary>
+    private static async Task<string> ReadErrorBodyAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
         try
         {
-            // Read only the start of the body: it is just context for the exception message, and an unbounded
-            // read would let a hostile registry exhaust memory with a huge error response.
+            // Bounded: an unbounded read would let a hostile registry exhaust memory with a huge error response.
             (byte[] prefix, _) = await BoundedRead.ReadAsync(response.Content, BoundedRead.MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false);
-            body = System.Text.Encoding.UTF8.GetString(prefix);
+            return System.Text.Encoding.UTF8.GetString(prefix);
         }
         catch
         {
-            // Ignore body read failures; the status code is the primary signal.
+            return string.Empty; // the status code is the primary signal
+        }
+    }
+
+    /// <summary>
+    /// Whether a failure is a denial: 401/403 (the handshake already ran and the registry still refused), or ECR's
+    /// 400 with error code DENIED, which it uses for an invalid or expired token and for missing permissions.
+    /// </summary>
+    private static bool IsDenial(HttpStatusCode status, string body)
+        => status is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+           || (status == HttpStatusCode.BadRequest && body.Contains("\"DENIED\"", StringComparison.Ordinal));
+
+    private Exception CreateFailure(HttpResponseMessage response, string body, string operation)
+    {
+        string status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+        if (!IsDenial(response.StatusCode, body))
+        {
+            return new RegistryRequestException((int)response.StatusCode, $"{operation} failed with {status}. {Truncate(body, 512)}");
         }
 
-        throw new RegistryRequestException(
-            (int)response.StatusCode,
-            $"{operation} failed with {(int)response.StatusCode} {response.ReasonPhrase}. {Truncate(body, 512)}");
+        // Without credentials, a refusal usually means the repository or tag doesn't exist (Docker Hub, for
+        // example, answers a misspelled repository with 401) or the image is private.
+        string advice = _anonymous
+            ? "No credentials are sent for base images, so the repository may not exist, the tag may be wrong, or the " +
+              "image may be private. "
+            : "Check that the credentials are valid, have not expired, and are allowed to perform this operation on " +
+              "the repository; for Amazon ECR, an expired token needs a new one from GetAuthorizationToken. ";
+        return new RegistryAuthenticationException(_registryHost, $"{operation} was denied ({status}). {advice}{Truncate(body, 512)}")
+        {
+            StatusCode = (int)response.StatusCode,
+        };
     }
 
     private static void ValidateRepository(string repository, string paramName = "repository")

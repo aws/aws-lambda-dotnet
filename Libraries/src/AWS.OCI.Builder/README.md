@@ -115,8 +115,23 @@ Every event carries the layer's stable `LayerIndex` (1-based), `TotalLayers`, `D
 (`BaseLayer` vs `BuiltLayer`), all fixed before any upload begins. Key your state by `LayerIndex` or `Digest`
 rather than the order events arrive: the contract is designed so that if the library later uploads layers in
 parallel — interleaving their events — consumers keep working unchanged. A custom `IProgress<T>` implementation
-must be thread-safe for that reason; `System.Progress<T>` already marshals callbacks to the captured
-synchronization context.
+must be thread-safe for that reason.
+
+`System.Progress<T>` raises callbacks on the synchronization context it captured. Where there is none (console
+apps, services, PowerShell), it raises them on thread-pool threads, possibly several at once. To read events on
+your own thread instead, pass a `LayerPushProgressQueue` and drain it while the push runs:
+
+```csharp
+var queue = new LayerPushProgressQueue();
+Task<string> push = builder.PushToEcrAsync(target, authorizationToken, new EcrPushOptions { Progress = queue });
+while (!push.IsCompleted)
+{
+    while (queue.TryDequeue(out LayerPushProgress p)) { /* render p */ }
+    await Task.WhenAny(push, Task.Delay(200));
+}
+while (queue.TryDequeue(out LayerPushProgress p)) { /* render p */ }
+string digest = await push;
+```
 
 ### File permissions
 
