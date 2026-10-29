@@ -3,9 +3,11 @@ function Test-LambdaPSBootstrapEnvironment {
     .SYNOPSIS
         Checks that the bootstrap resolves pwsh and its libraries without image ENV.
     .DESCRIPTION
-        Pure rule evaluator. Whether Lambda applies a runtime image's Dockerfile ENV directives to a
-        customer-managed runtime is not documented, so the bootstrap itself must guarantee the
-        interpreter and its native libraries resolve. There are two valid strategies, and this rule accepts either:
+        Pure rule evaluator. A layer or self-contained .zip runtime has no image ENV to inherit. Lambda
+        does apply a runtime image's Dockerfile ENV to a customer-managed runtime (verified in
+        eu-west-1 on 2026-10-29), but the bootstrap cannot see those lines, so for every target the
+        bootstrap itself must guarantee the interpreter and its native libraries resolve. There are
+        two valid strategies, and this rule accepts either:
 
           1. Export PATH and LD_LIBRARY_PATH in the bootstrap (the AWSLabs /opt layer approach,
              where pwsh is found via PATH and its libs via LD_LIBRARY_PATH), OR
@@ -23,7 +25,8 @@ function Test-LambdaPSBootstrapEnvironment {
         variable was already exported).
 
         A bootstrap that does neither (bare `exec pwsh` with no exports) relies on inherited ENV
-        that Lambda may not apply, and is flagged. Returns one finding per concern; performs no disk access.
+        that it does not set itself, and is flagged. Returns one finding per concern; performs no
+        disk access.
     .PARAMETER Bootstrap
         The bootstrap as Read-LambdaPSBootstrap returns it.
     .OUTPUTS
@@ -65,7 +68,7 @@ function Test-LambdaPSBootstrapEnvironment {
     $setsPath = $pwsh.Environment.ContainsKey('PATH') -and $pwsh.Environment['PATH'].Length -gt 0
     $setsLdLibraryPath = $pwsh.Environment.ContainsKey('LD_LIBRARY_PATH') -and $pwsh.Environment['LD_LIBRARY_PATH'].Length -gt 0
     $scaffoldedPwsh = '/var/runtime/powershell/pwsh for CMR and Container, /opt/powershell/pwsh for Layer, /var/task/powershell/pwsh for SelfContainedZip'
-    $noInheritedEnvironment = 'A bootstrap cannot rely on inherited environment variables (a customer-managed runtime may not apply the image''s ENV, and a layer or .zip has none)'
+    $noInheritedEnvironment = 'A bootstrap cannot rely on inherited environment variables (a layer or .zip runtime has none, and in a runtime image they come from Dockerfile ENV lines the bootstrap cannot check)'
 
     # Assigned but not exported: it reaches pwsh only if the variable was already exported, which
     # this check cannot see.
