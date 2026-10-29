@@ -142,8 +142,9 @@ function New-LambdaPSFunctionDeployment {
         an internal mirror). When omitted, every registered repository is searched in priority order,
         so a same-named package in a higher-priority feed would be used. AWS.Tools modules always come
         from the AWS.Tools.zip that AWS.Tools.Installer downloads; when the installer itself must be
-        fetched, it comes from these repositories (PSGallery when this is omitted) and, on Windows, only
-        when its Authenticode signature is valid. Every name, or pattern with `*` wildcards, must match
+        fetched, it comes from these repositories (PSGallery when this is omitted) at the version this
+        module pins, and is used only when its files match the pinned SHA256 and, on Windows, its
+        Authenticode signature is valid. Every name, or pattern with `*` wildcards, must match
         a registered PSResourceGet repository, or the deploy stops with ModuleRepositoryNotFound before
         anything is downloaded.
     .PARAMETER Architecture
