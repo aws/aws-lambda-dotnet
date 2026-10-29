@@ -117,9 +117,9 @@ internal sealed class Layer
         {
             throw new ArgumentException("The destination stream must be writable.", nameof(destination));
         }
-        if (manifest.Entries.Count == 0)
+        if (manifest.Entries.Count == 0 && manifest.Directories.Count == 0)
         {
-            throw new ArgumentException("The file manifest is empty; a layer must contain at least one file.", nameof(manifest));
+            throw new ArgumentException("The file manifest is empty; a layer must contain at least one file or folder.", nameof(manifest));
         }
 
         // Expand every manifest entry into concrete file additions (container path -> local file + mode), plus the
@@ -132,6 +132,16 @@ internal sealed class Layer
         {
             CollectEntry(entry, files, directories);
         }
+        foreach (string directory in manifest.Directories)
+        {
+            string containerPath = NormalizeContainerPath(directory);
+            if (files.ContainsKey(containerPath))
+            {
+                throw new ArgumentException($"The container path '{containerPath}' is mapped as both a file and a folder.");
+            }
+            directories.Add(containerPath);
+        }
+        RejectEntriesUnderFiles(files, directories);
 
         // One streaming pass:  tar -> [hash: diff_id] -> gzip -> [normalize gzip header] -> [hash + count: digest,
         // size] -> destination. Nothing is buffered beyond stream buffers, so layer size is not limited by memory
@@ -155,6 +165,26 @@ internal sealed class Layer
         string diffId = ToDigestString(diffIdHash);
         string digest = ToDigestString(digestHash);
         return new Layer(digest, diffId, compressedSink.BytesWritten, mediaType);
+    }
+
+    /// <summary>
+    /// Throws when a file or folder would sit beneath a path that is mapped as a file, which no filesystem can
+    /// represent: extracting such a layer fails or silently drops one of the entries.
+    /// </summary>
+    private static void RejectEntriesUnderFiles(SortedDictionary<string, FileSource> files, SortedSet<string> directories)
+    {
+        foreach (string path in files.Keys.Concat(directories))
+        {
+            for (int slash = path.LastIndexOf('/'); slash > 0; slash = path.LastIndexOf('/', slash - 1))
+            {
+                string ancestor = path[..slash];
+                if (files.ContainsKey(ancestor))
+                {
+                    throw new ArgumentException(
+                        $"The container path '{path}' is beneath '{ancestor}', which is mapped as a file.");
+                }
+            }
+        }
     }
 
     private static string ToDigestString(IncrementalHash hash)
