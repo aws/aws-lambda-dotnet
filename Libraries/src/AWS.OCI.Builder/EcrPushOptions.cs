@@ -59,10 +59,11 @@ public sealed class EcrPushOptions
     /// so the contract holds even if layers are later uploaded concurrently — see <see cref="LayerPushProgress"/>.
     /// </para>
     /// <para>
-    /// Use <see cref="System.Progress{T}"/> for the common case: it captures the current
-    /// <see cref="System.Threading.SynchronizationContext"/> and raises callbacks on it, which keeps UI updates on
-    /// the UI thread. Any custom implementation must be thread-safe, since a future parallel push may report from
-    /// multiple threads at once.
+    /// In a UI app, use <see cref="System.Progress{T}"/>: it raises callbacks on the
+    /// <see cref="System.Threading.SynchronizationContext"/> it captured, which keeps UI updates on the UI thread.
+    /// Where there is no synchronization context (console apps, services, PowerShell), <see cref="System.Progress{T}"/>
+    /// raises callbacks on thread-pool threads, possibly several at once. To read events on your own thread instead,
+    /// use <see cref="LayerPushProgressQueue"/>. Any custom implementation must be thread-safe.
     /// </para>
     /// </remarks>
     public IProgress<LayerPushProgress>? Progress { get; init; }
