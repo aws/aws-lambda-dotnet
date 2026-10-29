@@ -25,6 +25,9 @@ internal sealed class RegistryClient : IDisposable
     private readonly string _registryHost;
     private readonly bool _ownsHttpClient;
 
+    // Whether this client never sends credentials (base-image pulls), which changes what a 401/403 most likely means.
+    private readonly bool _anonymous;
+
     /// <summary>Creates a client for <paramref name="registryHost"/> using the supplied authenticating client.</summary>
     /// <param name="registryHost">The registry host, for example <c>registry-1.docker.io</c> or an ECR endpoint.</param>
     /// <param name="httpClient">
@@ -38,11 +41,18 @@ internal sealed class RegistryClient : IDisposable
         _ownsHttpClient = false;
     }
 
-    private RegistryClient(string registryHost, HttpClient httpClient, bool ownsHttpClient)
+    /// <summary>Test-only: a client over a supplied transport that reports failures as an anonymous client does.</summary>
+    internal RegistryClient(string registryHost, HttpClient httpClient, bool anonymous)
+        : this(registryHost, httpClient, ownsHttpClient: false, anonymous)
+    {
+    }
+
+    private RegistryClient(string registryHost, HttpClient httpClient, bool ownsHttpClient, bool anonymous)
     {
         _registryHost = registryHost;
         _http = httpClient;
         _ownsHttpClient = ownsHttpClient;
+        _anonymous = anonymous;
     }
 
     /// <summary>The registry host this client targets.</summary>
@@ -95,7 +105,7 @@ internal sealed class RegistryClient : IDisposable
             // cancel large uploads on slow links. The caller's cancellation token is the intended deadline.
             Timeout = timeout ?? Timeout.InfiniteTimeSpan,
         };
-        return new RegistryClient(registryHost, http, ownsHttpClient: true);
+        return new RegistryClient(registryHost, http, ownsHttpClient: true, anonymous: credentialSource is AnonymousRegistryCredentialSource);
     }
 
     /// <summary>
@@ -289,7 +299,7 @@ internal sealed class RegistryClient : IDisposable
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/manifests/{reference}"));
         AddManifestAcceptHeaders(request);
         using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
-        return response.StatusCode == HttpStatusCode.OK;
+        return await ExistsFromAsync(response, $"HEAD manifest {repository}:{reference}", cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Uploads a manifest under the given tag or digest reference.</summary>
@@ -318,7 +328,44 @@ internal sealed class RegistryClient : IDisposable
 
         using var request = new HttpRequestMessage(HttpMethod.Head, new Uri(Base, $"{repository}/blobs/{digest}"));
         using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
-        return response.StatusCode == HttpStatusCode.OK;
+        return await ExistsFromAsync(response, $"HEAD blob {repository} {digest}", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Interprets a HEAD response: success or a redirect means present (a registry may redirect a blob HEAD to
+    /// its storage, as the distribution spec allows) and 404 means absent. Anything else (denied, throttled,
+    /// server error) is an error, not "absent"; treating it as absent would, for example, make a push with an
+    /// expired token download every base layer before failing.
+    /// </summary>
+    private async Task<bool> ExistsFromAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode || IsRedirect(response.StatusCode))
+        {
+            return true;
+        }
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        // A HEAD response has no body, and ECR reports a rejected token on it as a bare 400; the DENIED code is
+        // only in the body of a GET. Ask the API root, which needs the same credentials, so the error can be
+        // reported for what it is.
+        // Only a denial from the probe is reported; any other probe failure says nothing about the HEAD, which is
+        // then reported as it was.
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+        {
+            using var probe = new HttpRequestMessage(HttpMethod.Get, Base);
+            using HttpResponseMessage probeResponse = await SendAsync(probe, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
+            string probeBody = await ReadErrorBodyAsync(probeResponse, cancellationToken).ConfigureAwait(false);
+            if (IsDenial(probeResponse.StatusCode, probeBody))
+            {
+                throw CreateFailure(probeResponse, probeBody, operation);
+            }
+        }
+
+        await EnsureSuccessAsync(response, operation, cancellationToken).ConfigureAwait(false);
+        return false;
     }
 
     /// <summary>Downloads a blob by digest as a stream. Disposing the returned stream also disposes the underlying HTTP response.</summary>
@@ -624,29 +671,59 @@ internal sealed class RegistryClient : IDisposable
         return builder.Uri;
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
+    private async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
             return;
         }
 
-        string body = string.Empty;
+        string body = await ReadErrorBodyAsync(response, cancellationToken).ConfigureAwait(false);
+        throw CreateFailure(response, body, operation);
+    }
+
+    /// <summary>Reads the start of an error body (it is only context for the message), or "" if it can't be read.</summary>
+    private static async Task<string> ReadErrorBodyAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
         try
         {
-            // Read only the start of the body: it is just context for the exception message, and an unbounded
-            // read would let a hostile registry exhaust memory with a huge error response.
+            // Bounded: an unbounded read would let a hostile registry exhaust memory with a huge error response.
             (byte[] prefix, _) = await BoundedRead.ReadAsync(response.Content, BoundedRead.MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false);
-            body = System.Text.Encoding.UTF8.GetString(prefix);
+            return System.Text.Encoding.UTF8.GetString(prefix);
         }
         catch
         {
-            // Ignore body read failures; the status code is the primary signal.
+            return string.Empty; // the status code is the primary signal
+        }
+    }
+
+    /// <summary>
+    /// Whether a failure is a denial: 401/403 (the handshake already ran and the registry still refused), or ECR's
+    /// 400 with error code DENIED, which it uses for an invalid or expired token and for missing permissions.
+    /// </summary>
+    private static bool IsDenial(HttpStatusCode status, string body)
+        => status is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+           || (status == HttpStatusCode.BadRequest && body.Contains("\"DENIED\"", StringComparison.Ordinal));
+
+    private Exception CreateFailure(HttpResponseMessage response, string body, string operation)
+    {
+        string status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+        if (!IsDenial(response.StatusCode, body))
+        {
+            return new RegistryRequestException((int)response.StatusCode, $"{operation} failed with {status}. {Truncate(body, 512)}");
         }
 
-        throw new RegistryRequestException(
-            (int)response.StatusCode,
-            $"{operation} failed with {(int)response.StatusCode} {response.ReasonPhrase}. {Truncate(body, 512)}");
+        // Without credentials, a refusal usually means the repository or tag doesn't exist (Docker Hub, for
+        // example, answers a misspelled repository with 401) or the image is private.
+        string advice = _anonymous
+            ? "No credentials are sent for base images, so the repository may not exist, the tag may be wrong, or the " +
+              "image may be private. "
+            : "Check that the credentials are valid, have not expired, and are allowed to perform this operation on " +
+              "the repository; for Amazon ECR, an expired token needs a new one from GetAuthorizationToken. ";
+        return new RegistryAuthenticationException(_registryHost, $"{operation} was denied ({status}). {advice}{Truncate(body, 512)}")
+        {
+            StatusCode = (int)response.StatusCode,
+        };
     }
 
     private static void ValidateRepository(string repository, string paramName = "repository")
