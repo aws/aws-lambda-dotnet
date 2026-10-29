@@ -156,8 +156,8 @@ image whose bootstrap points at a path the image does not contain. `-WhatIf` sho
 On Linux and macOS, an existing target directory owned by a user other than you, or by root and
 writable by group or others, is refused with `TargetOwnedByAnotherUser`, even with `-Force` (no check
 when running as root). `-Force` does not replace a non-empty target that is a link
-(`TargetIsLink`), or one that is, or contains, the current location, your home folder or a drive root
-(`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
+(`TargetIsLink`), a drive root, or the current location or your home folder or a folder that contains
+either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
 `-ProjectPath` the same way, but only when it holds a runtime-image project this module scaffolded
 (a `lambdaps-runtime.json` marker with target CMR); any other non-empty directory is refused with
 `TargetNotEmpty` before anything is created.
