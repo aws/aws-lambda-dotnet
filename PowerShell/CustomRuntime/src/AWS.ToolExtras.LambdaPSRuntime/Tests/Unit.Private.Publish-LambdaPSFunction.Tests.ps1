@@ -882,6 +882,44 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
+    # The package goes in the request, and Lambda takes at most 50 MB zipped that way. The file is
+    # extended without being written, so it takes no disk space where the file system is sparse.
+    It 'throws PackageTooLarge for a .zip over 50 MB, before any AWS call, and accepts one of exactly 50 MB' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Publish-LMFunction' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
+            Mock 'Get-LMFunctionConfiguration' -MockWith { [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful' } }
+            Mock 'Start-Sleep' -MockWith { }
+            $zip = [System.IO.Path]::Combine($TestDrive, 'large.zip')
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $zip; Region = 'us-east-1'
+            }
+            try {
+                $stream = [System.IO.File]::Create($zip)
+                try { $stream.SetLength(50MB + 1) } finally { $stream.Dispose() }
+
+                $err = { Publish-LambdaPSFunction @splat } | Should -Throw -ErrorId 'PackageTooLarge' -PassThru
+                $err.Exception.Message | Should -BeLike "*over the 50 MB Lambda accepts in a direct upload*-Code_S3Bucket*"
+                Should -Invoke 'Get-LMFunctionConfiguration' -Times 0 -Exactly
+                Should -Invoke 'Publish-LMFunction' -Times 0 -Exactly
+
+                $stream = [System.IO.File]::Open($zip, 'Open')
+                try { $stream.SetLength(50MB) } finally { $stream.Dispose() }
+
+                $null = Publish-LambdaPSFunction @splat
+                Should -Invoke 'Publish-LMFunction' -Times 1 -Exactly
+            }
+            finally { Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue }
+        }
+    }
+
     It 'rejects a whitespace function name at parameter binding' {
         InModuleScope $script:moduleName {
             $splat = @{

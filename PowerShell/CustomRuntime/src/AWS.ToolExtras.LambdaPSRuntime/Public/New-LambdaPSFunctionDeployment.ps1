@@ -50,6 +50,9 @@ function New-LambdaPSFunctionDeployment {
         failed, so the function keeps its previous code and configuration: fix the cause Lambda names,
         then deploy again.
 
+        The package is uploaded directly, not through S3, so one over the 50 MB Lambda accepts in a
+        direct upload stops the deploy with PackageTooLarge before the function is created or updated.
+
         The cmdlet returns once the function can be invoked: it waits while Lambda reports the
         function Pending or its last update InProgress (up to 120 seconds, before the code update,
         before the configuration update and after the last update). An existing function that is

@@ -49,6 +49,10 @@ function Publish-LambdaPSFunction {
         function) is refused with FunctionNotRuntimeBound, before its code is touched: PowerShell code
         would not run on it.
 
+        The package is sent in the request (-Code_ZipFile, -ZipFile), so a .zip over the 50 MB Lambda
+        accepts in a direct upload is refused with PackageTooLarge before any AWS call. This module has
+        no S3 upload path.
+
     .PARAMETER FunctionName
         The Lambda function name to create or update.
     .PARAMETER Handler
@@ -154,6 +158,18 @@ function Publish-LambdaPSFunction {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.IO.FileNotFoundException]::new("Function package '$ZipPath' was not found."),
             'PackageNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $ZipPath)
+    }
+    # Lambda takes at most 50 MB zipped in a direct upload; a larger package would fail at the API
+    # after the function's state was read, so it is refused here first.
+    $zipLength = ([System.IO.FileInfo]::new((Resolve-Path -LiteralPath $ZipPath).ProviderPath)).Length
+    if ($zipLength -gt 50MB) {
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.IO.IOException]::new(
+                ("Function package '$ZipPath' is $([math]::Round($zipLength / 1MB, 1)) MB, over the 50 MB Lambda " +
+                 'accepts in a direct upload, which is how this module deploys it. Make the package smaller (fewer ' +
+                 'modules or files), or upload it to S3 and create or update the function with Publish-LMFunction ' +
+                 '-Code_S3Bucket and -Code_S3Key, or Update-LMFunctionCode -S3Bucket and -S3Key.')),
+            'PackageTooLarge', [System.Management.Automation.ErrorCategory]::LimitsExceeded, $ZipPath)
     }
 
     if (-not $PSCmdlet.ShouldProcess($FunctionName, 'Create or update Lambda function')) {
