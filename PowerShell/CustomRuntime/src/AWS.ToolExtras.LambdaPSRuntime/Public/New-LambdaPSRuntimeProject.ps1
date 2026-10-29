@@ -40,8 +40,8 @@ function New-LambdaPSRuntimeProject {
         New-LMCRuntime, New-LMCRuntimeVersion, New-LMCRuntimeAlias).
     .PARAMETER Path
         The directory to create the project in. Alias: -ProjectPath.
-        An existing file, or a link to nothing, is a TargetIsFile error, a folder you cannot list
-        TargetNotReadable, a drive that does not exist DriveNotFound, and a provider other than the
+        An existing file, a link to a file, or a link to nothing, is a TargetIsFile error, a folder
+        you cannot list TargetNotReadable, a drive that does not exist DriveNotFound, and a provider other than the
         file system (for example Env:) PathNotFileSystem. Create projects in a
         folder only you can write to: a new -Path's parent folder is not checked, so another user who
         can write to it could change the project.

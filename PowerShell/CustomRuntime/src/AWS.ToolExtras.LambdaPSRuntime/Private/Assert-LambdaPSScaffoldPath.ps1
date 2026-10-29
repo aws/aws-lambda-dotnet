@@ -8,7 +8,7 @@ function Assert-LambdaPSScaffoldPath {
         directory behind:
 
           - -Path must not be blank (a parameter validation error).
-          - -Path must not be a file, or a link to nothing (TargetIsFile), even with -Force.
+          - -Path must not be a file, a link to a file, or a link to nothing (TargetIsFile), even with -Force.
             Get-ChildItem on a file returns the file itself, so without this check it would be
             reported as a non-empty directory and -Force would delete it.
           - On Linux and macOS, an existing -Path (after following a link) must be owned by the
@@ -55,9 +55,17 @@ function Assert-LambdaPSScaffoldPath {
     )
 
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
-        # Test-Path calls a link to nothing a leaf: name the link, not a file.
+        # Test-Path calls a link to nothing a leaf: name the link, not a file. Whether the link reaches a
+        # file is read from its final target: File.Exists is true for a link to nothing too, and a link
+        # loop (which ResolveLinkTarget throws on) reaches nothing.
         $link = (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue).LinkTarget
-        $message = if ($link -and -not [System.IO.Directory]::Exists($Path)) { "Target '$Path' is a link to '$link', which does not exist. Choose a directory path for the project." }
+        $reachesFile = $false
+        if ($link) {
+            try { $reachesFile = [System.IO.FileInfo]::new((Resolve-LambdaPSPath -Path $Path)).ResolveLinkTarget($true).Exists }
+            catch [System.IO.IOException] { $reachesFile = $false }
+        }
+        $message = if ($link -and -not $reachesFile) { "Target '$Path' is a link to '$link', which does not exist. Choose a directory path for the project." }
+        elseif ($link) { "Target '$Path' is a link to the file '$link', not a directory. Choose a directory path for the project." }
         else { "Target '$Path' is a file, not a directory. Choose a directory path for the project." }
         # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the error with
         # its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would also reach the

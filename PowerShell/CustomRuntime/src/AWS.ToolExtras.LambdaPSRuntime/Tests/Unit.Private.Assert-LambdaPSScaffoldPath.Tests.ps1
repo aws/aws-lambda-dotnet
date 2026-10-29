@@ -155,6 +155,18 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
         }
     }
 
+    # File.Exists follows the link, so a link to a file that exists is not called a link to nothing.
+    It 'names a link to a file as such, with TargetIsFile' -Skip:$IsWindows {
+        $file = [System.IO.Path]::Combine($TestDrive, 'real-file.txt')
+        Set-Content -LiteralPath $file -Value 'x'
+        $link = [System.IO.Path]::Combine($TestDrive, 'link-to-file')
+        $null = New-Item -ItemType SymbolicLink -Path $link -Target $file
+        InModuleScope $script:moduleName -Parameters @{ Path = $link; File = $file } {
+            param($Path, $File)
+            { Assert-LambdaPSScaffoldPath -Path $Path -Force } | Should -Throw -ErrorId 'TargetIsFile' -ExpectedMessage "*is a link to the file '$File', not a directory*"
+        }
+    }
+
     # Another user's directory is simulated by reporting a different current user ID.
     Context 'a directory another user owns' -Skip:$IsWindows {
         It 'refuses it with TargetOwnedByAnotherUser, <Case>' -ForEach @(
