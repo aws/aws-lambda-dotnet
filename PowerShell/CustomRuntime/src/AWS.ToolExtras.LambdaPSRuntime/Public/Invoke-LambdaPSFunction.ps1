@@ -11,7 +11,8 @@ function Invoke-LambdaPSFunction {
             value that is already a JSON string is sent verbatim.
           - Output out: the response Payload (a MemoryStream from the SDK) is read and, when it is
             JSON, deserialized, so the cmdlet returns the parsed function output directly instead of
-            a raw stream. JSON whose keys differ only in case is returned as text.
+            a raw stream. JSON with an empty key, or with keys that differ only in case, is returned
+            as text.
 
         With -IncludeLog it requests the tail of the execution log, decodes it from base64, and
         writes it to the Information stream (view it with -InformationAction Continue). The parsed
@@ -214,28 +215,31 @@ function Invoke-LambdaPSFunction {
             $isJson = -not [string]::IsNullOrEmpty($responseText) -and
                 (Test-Json -Json $responseText -Options IgnoreComments, AllowTrailingCommas -ErrorAction Ignore)
 
-            # Parses JSON with no error record: ConvertFrom-Json refuses keys that differ only in case (as
-            # in {"a":1,"A":2}) with an error that reaches the caller's -ErrorVariable even when caught.
-            # Hashtables accept such keys, so the text is parsed into them first to look for any, and is
-            # returned as objects without them, or as the text itself with them.
+            # Parses JSON with no error record: ConvertFrom-Json refuses an empty key (as in {"":1}) and
+            # keys that differ only in case (as in {"a":1,"A":2}) with an error that reaches the caller's
+            # -ErrorVariable even when caught. Hashtables accept such keys, so the text is parsed into
+            # them first to look for any, and is returned as objects without them, or as the text itself
+            # with them.
             $parseJson = {
                 param([string]$Text)
                 $table = ConvertFrom-Json -InputObject $Text -NoEnumerate -AsHashtable
                 $pending = [System.Collections.Generic.Stack[object]]::new()
                 $pending.Push($table)
-                $caseClash = $false
-                while (-not $caseClash -and $pending.Count -gt 0) {
+                $refused = $false
+                while (-not $refused -and $pending.Count -gt 0) {
                     $item = $pending.Pop()
                     if ($item -is [System.Collections.IDictionary]) {
                         $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-                        foreach ($key in $item.Keys) { if (-not $seen.Add([string]$key)) { $caseClash = $true } }
+                        foreach ($key in $item.Keys) {
+                            if ([string]::IsNullOrEmpty([string]$key) -or -not $seen.Add([string]$key)) { $refused = $true }
+                        }
                         foreach ($value in $item.Values) { $pending.Push($value) }
                     }
                     elseif ($item -is [System.Collections.IList]) {
                         foreach ($value in $item) { $pending.Push($value) }
                     }
                 }
-                if ($caseClash) { $Text } else { , (ConvertFrom-Json -InputObject $Text -NoEnumerate) }
+                if ($refused) { $Text } else { , (ConvertFrom-Json -InputObject $Text -NoEnumerate) }
             }
 
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
@@ -267,8 +271,8 @@ function Invoke-LambdaPSFunction {
 
             # Return parsed output when the payload is JSON; fall back to the raw string otherwise.
             # -NoEnumerate and the comma keep a JSON array an array: '[1]' stays a one-element array
-            # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON with keys
-            # that differ only in case, which ConvertFrom-Json refuses, is returned as text.
+            # and '[]' an empty one, rather than being unrolled into a scalar or nothing. JSON with an
+            # empty key or keys that differ only in case, which ConvertFrom-Json refuses, is returned as text.
             if (-not $isJson) { return $responseText }
             return , (& $parseJson $responseText)
         }

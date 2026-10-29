@@ -194,6 +194,24 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $result | Should -BeExactly '{"a":1,"A":2}'
         }
 
+        # ConvertFrom-Json refuses an empty key at any depth, so such JSON is returned as text, and no error is recorded.
+        It 'returns JSON with an empty key <Case> as text, and leaves -ErrorVariable empty' -ForEach @(
+            @{ Case = 'at the top level'; Body = '{"":1}' }
+            @{ Case = 'in a nested object'; Body = '{"a":{"":1}}' }
+            @{ Case = 'in an object in an array'; Body = '{"a":[{"":1}]}' }
+        ) {
+            $script:emptyKeyBody = $Body
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream $script:emptyKeyBody); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors
+
+            @($errors).Count | Should -Be 0
+            $result | Should -BeOfType ([string])
+            $result | Should -BeExactly $Body
+        }
+
         It 'returns nothing for an empty payload' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream ''); LogResult = $null; FunctionError = $null }
@@ -270,6 +288,18 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             @($errors).Count | Should -Be 1
             $errors[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
             $errors[0].TargetObject | Should -BeExactly '{"errorType":"E","ErrorType":"F"}'
+        }
+
+        It 'reports a function error whose JSON has an empty key as the one record, with the text as its target' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{"errorType":"E","":"x"}'); LogResult = $null; FunctionError = 'Unhandled' }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -ErrorVariable errors -ErrorAction SilentlyContinue
+
+            @($errors).Count | Should -Be 1
+            $errors[0].FullyQualifiedErrorId | Should -Be 'FunctionInvocationError,Invoke-LambdaPSFunction'
+            $errors[0].TargetObject | Should -BeExactly '{"errorType":"E","":"x"}'
         }
 
         It 'reports a function error whose payload is <Case>' -ForEach @(
