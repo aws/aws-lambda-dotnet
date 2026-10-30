@@ -35,6 +35,8 @@ function Publish-LambdaPSRuntimeVersion {
     .PARAMETER RuntimeAlias
         The alias the caller points at the version once it is ACTIVE. Optional; it only fills in the
         alias command the timeout error suggests, which otherwise shows <alias>.
+    .PARAMETER ReleaseNote
+        The version's release note (for example 'pwsh 7.6.9'). Optional; not sent when omitted.
     .PARAMETER Region
         The AWS region the runtime is in.
     .PARAMETER CredentialParameter
@@ -69,6 +71,10 @@ function Publish-LambdaPSRuntimeVersion {
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
         [string]$RuntimeAlias,
+
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ReleaseNote,
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
@@ -122,6 +128,7 @@ function Publish-LambdaPSRuntimeVersion {
         Region                     = $Region
         ClientConfig               = $clientConfig
     }
+    if ($ReleaseNote) { $publishParams.ReleaseNote = $ReleaseNote }
     $published = New-LMCRuntimeVersion @publishParams @CredentialParameter -ErrorAction Stop
 
     # A freshly published version is CREATING; wait for it to settle so an alias can point at it. A

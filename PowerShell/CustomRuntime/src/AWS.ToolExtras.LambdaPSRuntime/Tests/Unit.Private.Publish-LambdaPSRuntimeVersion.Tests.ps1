@@ -37,6 +37,23 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         }
     }
 
+    It 'sends -ReleaseNote only when it is given' -ForEach @(@{ Note = 'pwsh 7.6.9' }, @{ Note = $null }) {
+        InModuleScope $script:moduleName -Parameters @{ Note = $Note } {
+            param($Note)
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { }
+            Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v1' } }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } } }
+            $splat = if ($Note) { @{ ReleaseNote = $Note } } else { @{} }
+
+            $null = Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' @splat
+
+            Should -Invoke 'New-LMCRuntimeVersion' -Times 1 -Exactly -ParameterFilter { $ReleaseNote -eq $Note }
+        }
+    }
+
     # The orchestrator discards the seam's result with '$null =', so a version that settled to FAILED
     # must THROW: returning it would let the alias be pointed at it and the deploy reported as a
     # success, and every invoke of the resulting function would fail. FAILED is
