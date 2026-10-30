@@ -24,7 +24,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             return new List<string>
             {
                 "/// <summary>",
-                $"/// The generated Lambda function handler for <see cref=\"{lambdaMethod.ContainingType.FullName}\"/>.",
+                $"/// The generated Lambda function handler for <see cref=\"{FormatCrefType(lambdaMethod.ContainingType.FullName)}\"/>.",
                 "/// </summary>"
             };
         }
@@ -39,7 +39,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             };
             if (lambdaMethod.Parameters.Any())
             {
-                docStringlines.Add($"/// The generated Lambda function handler for <see cref=\"{lambdaMethod.Name}({string.Join(", ", lambdaMethod.Parameters.Select(p => p.Type.FullName))})\"/>");
+                docStringlines.Add($"/// The generated Lambda function handler for <see cref=\"{lambdaMethod.Name}({string.Join(", ", lambdaMethod.Parameters.Select(p => FormatCrefType(p.Type.FullName)))})\"/>");
             }
             else
             {
@@ -55,6 +55,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             docStringlines.Add("/// <returns>Result of the Lambda function execution</returns>");
 
             return docStringlines;
+        }
+
+        private static string FormatCrefType(string typeName)
+        {
+            if (string.IsNullOrEmpty(typeName))
+            {
+                return typeName;
+            }
+
+            return typeName.Replace('<', '{').Replace('>', '}');
         }
     }
 }
