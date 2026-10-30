@@ -6,6 +6,7 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeModule.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PwshConfig.ps1'))
 }
 
 AfterAll {
@@ -21,6 +22,8 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
             throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')
         }
         Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
+        Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { }
+        Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { $script:pwshConfig.DefaultPatch[$PowerShellVersion] }
         # A preview must not reach AWS: every AWS write the deploy makes throws if it is called.
         foreach ($command in 'New-LMCRuntime', 'New-LMCRuntimeVersion', 'New-LMCRuntimeAlias', 'Update-LMCRuntimeAlias',
             'New-ECRRepository', 'Set-ECRRepositoryPolicy', 'Get-ECRLoginCommand') {

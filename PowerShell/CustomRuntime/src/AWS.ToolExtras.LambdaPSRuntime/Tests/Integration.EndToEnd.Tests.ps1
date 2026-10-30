@@ -20,8 +20,8 @@
 #   - LayerRuntime: a layer (<prefix>layer) and a provided.al2023 function (<prefix>layer) that uses it;
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
-#   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with version v1
-#     and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
+#   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with a version named
+#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
 #     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, and fails listing anything it could not remove. Nothing whose name does
@@ -265,8 +265,12 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        Add-IntegrationResource -Kind 'runtime version v1 of' -Name $runtimeName -Remove {
-            Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name 'v1' -Region $region -Force -ErrorAction Stop
+        # The deploy names the version after the pwsh release it installs, so every version the run's
+        # own runtime lists is removed.
+        Add-IntegrationResource -Kind 'runtime versions of' -Name $runtimeName -Remove {
+            foreach ($version in @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)) {
+                Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name $version.Name -Region $region -Force -ErrorAction Stop
+            }
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop

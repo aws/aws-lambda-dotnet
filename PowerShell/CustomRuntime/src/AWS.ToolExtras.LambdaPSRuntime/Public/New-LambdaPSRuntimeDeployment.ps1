@@ -14,13 +14,23 @@ function New-LambdaPSRuntimeDeployment {
         alias at it. A version that does not reach ACTIVE is a terminating error, so the cmdlet never
         reports success over a runtime that cannot be invoked.
 
+        Running the same command again patches the runtime: it installs the newest pwsh release the build
+        can verify (see -PwshVersion), publishes it as the next version (see -RuntimeVersion) with the
+        release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
+        it returns that version and prints the Update-LMCRuntimeAlias command that points the alias back.
+        Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit
+        also patches the alias's functions. Deploy to a test alias first (-RuntimeAlias test), then point
+        the production alias at the same version with Update-LMCRuntimeAlias (New-LMCRuntimeAlias the
+        first time).
+
         Docker is the only supported container CLI: the build depends on buildx flags that have no
         equivalent in podman, finch, or nerdctl. The Layer and self-contained .zip targets are the
         container-free path (New-LambdaPSRuntimeProject -Target Layer, Build-LambdaPSRuntimePackage).
 
         The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-STSCallerIdentity,
         Get-ECRRepository, Get-ECRRepositoryPolicy, Get-ECRLoginCommand, Get-LMCRuntime,
-        Get-LMCRuntimeVersion and Get-LMCRuntimeAlias. State-changing: New-ECRRepository (when the
+        Get-LMCRuntimeVersion, Get-LMCRuntimeVersionList (without -RuntimeVersion) and
+        Get-LMCRuntimeAlias. State-changing: New-ECRRepository (when the
         repository does not exist), Set-ECRRepositoryPolicy (for the pull grant), New-LMCRuntime
         (when the runtime does not exist), New-LMCRuntimeVersion, and New-LMCRuntimeAlias or
         Update-LMCRuntimeAlias.
@@ -73,8 +83,9 @@ function New-LambdaPSRuntimeDeployment {
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
-                                RuntimeServiceAccessDenied, RuntimeVersionCheckFailed,
-                                RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
+                                RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
+                                runtime's versions could not be listed to name a new one),
+                                RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
@@ -100,7 +111,10 @@ function New-LambdaPSRuntimeDeployment {
         The PowerShell version the runtime image targets, in major.minor form (for example 7.4).
     .PARAMETER PwshVersion
         The full pwsh version to install (x.y.z, for example 7.4.20), forwarded to
-        New-LambdaPSRuntimeProject. When omitted, the default release for -PowerShellVersion is used.
+        New-LambdaPSRuntimeProject. When omitted, the newest release of -PowerShellVersion the build
+        can verify is used: on x86_64 the newest in Microsoft's RPM repository (the module's pinned
+        release if the repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
+        Give it to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release.
     .PARAMETER IncludeModule
         Modules to bake into the runtime, forwarded to New-LambdaPSRuntimeProject (with transitive
         dependencies). Accepts a list. Each specification must pin an exact RequiredVersion (for
@@ -152,10 +166,15 @@ function New-LambdaPSRuntimeDeployment {
         New-LambdaPSFunctionDeployment binds to. ASCII letters, digits, '_', '.' and '-', up to 128
         characters, not starting or ending with '.' or '-'. Alias names are case-sensitive.
     .PARAMETER RuntimeVersion
-        The runtime version label / image tag to publish. Defaults to 'v1'. It must be valid as both
-        a runtime version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128
-        characters, not starting or ending with '.' or '-'. Version names are case-sensitive: 'V1' and
-        'v1' are different versions.
+        The runtime version label / image tag to publish. Defaults to <pwsh release>-<n>, for example
+        7.6.9-1, where n is one more than the highest n the runtime already has for that release (1 for
+        a new runtime), so every run publishes a new version; deleting the newest version frees its
+        name for the next deploy. Naming it lists the runtime's versions, which needs
+        lambda:ListRuntimeVersions. A name you give is used as is, and one the runtime
+        already has stops the deploy with RuntimeVersionExists. It must be valid as both a runtime
+        version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128 characters,
+        not starting or ending with '.' or '-'. Version names are case-sensitive: 'V1' and 'v1' are
+        different versions.
     .PARAMETER Architecture
         The target architecture: x86_64 (default, mapped to linux/amd64) or arm64 (linux/arm64). The
         image is built for that platform, and after publishing, the architecture the service reads
@@ -187,11 +206,15 @@ function New-LambdaPSRuntimeDeployment {
         ModulesStaged are empty under -WhatIf, and for the stages skipped when one is declined under
         -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
         when its stage ran, and declining that stage alone is warned about with the command that points it.
+        PreviousRuntimeVersion is the version the alias pointed at before the deploy (empty when the
+        alias is new), and RollbackCommand the Update-LMCRuntimeAlias command that points it back there,
+        set only when the alias was moved.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1 -InformationAction Continue
 
-        Runs the full flow with the ECR repository defaulted to the runtime name, alias 'default',
-        version 'v1', and x86_64 architecture, showing a progress line as each stage completes.
+        Runs the full flow with the ECR repository defaulted to the runtime name, alias 'default', the
+        newest pwsh 7.6 release, a version named after it (for example 7.6.9-1), and x86_64
+        architecture, showing a progress line as each stage completes.
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.6 -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
 
@@ -263,7 +286,7 @@ function New-LambdaPSRuntimeDeployment {
         [ValidateNotNullOrWhiteSpace()]
         # Options = 'None': ignoring case, U+212A KELVIN SIGN would match 'k', which the service refuses.
         [ValidatePattern('^[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,126}[A-Za-z0-9_])?\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime version name and image tag (letters, digits, '_', '.' and '-', up to 128 characters, not starting or ending with '.' or '-').")]
-        [string]$RuntimeVersion = 'v1',
+        [string]$RuntimeVersion,
 
         [Parameter()]
         [ValidateSet('x86_64', 'arm64')]
@@ -289,25 +312,8 @@ function New-LambdaPSRuntimeDeployment {
         # sends, which carries the lowercase name, so a region given in another case is lowercased here,
         # before it is used in any ARN, image URI or call.
         $Region = $Region.ToLowerInvariant()
-        # Resolve pwsh first: an unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
-        $resolvedPwshVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
-        # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
-        # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
-        if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
-            # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
-            $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
-                    $_.StartsWith("$PowerShellVersion.") -and
-                    -not [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $_ -Architecture arm64)) } |
-                Sort-Object { [version]$_ })
-            $pinnedList = if ($pinnedArm64.Count -gt 0) { " ($($pinnedArm64 -join ', '))" } else { '' }
-            $PSCmdlet.ThrowTerminatingError(
-                [System.Management.Automation.ErrorRecord]::new(
-                    [System.InvalidOperationException]::new(
-                        ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
-                         "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
-                         "arm64 hash$pinnedList. Nothing was created.")),
-                    'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
-        }
+        # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
+        $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
             $ProjectPath = [System.IO.Path]::Combine((Get-Location).Path, "$RuntimeName-runtime")
         }
@@ -384,6 +390,38 @@ function New-LambdaPSRuntimeDeployment {
         }
 
         # Preflight (read-only; always runs, even under -WhatIf).
+        # The pwsh lookup reads Microsoft's package repository, so it runs after the local checks.
+        $releaseParams = @{
+            PowerShellVersion = $PowerShellVersion
+            PwshVersion       = $PwshVersion
+            InstallSource     = if ($Architecture -eq 'arm64') { 'PinnedArchive' } else { 'PackageRepository' }
+            Architecture      = $Architecture
+        }
+        $pwshRelease = Resolve-LambdaPSPwshRelease @releaseParams
+        $resolvedPwshVersion = $pwshRelease.Version
+        $pwshSource = switch ($pwshRelease.Source) {
+            'Parameter' { '-PwshVersion' }
+            'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
+            default { "the newest PowerShell $PowerShellVersion release this module pins" }
+        }
+        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy'
+        # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
+        # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
+        if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
+            # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
+            $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
+                    $_.StartsWith("$PowerShellVersion.") -and
+                    -not [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $_ -Architecture arm64)) } |
+                Sort-Object { [version]$_ })
+            $pinnedList = if ($pinnedArm64.Count -gt 0) { " ($($pinnedArm64 -join ', '))" } else { '' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
+                         "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
+                         "arm64 hash$pinnedList. Nothing was created.")),
+                    'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
+        }
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
         $runtimeProbe = Test-LambdaPSContainerRuntime
         Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
@@ -392,10 +430,8 @@ function New-LambdaPSRuntimeDeployment {
         $stsConfig = Get-LambdaPSClientConfig -Service STS
         $accountId = (Get-STSCallerIdentity -Region $Region -ClientConfig $stsConfig @credentialParameter -ErrorAction Stop).Account
         $partition = Get-LambdaPSPartition -Region $Region
-        $imageUri = "$accountId.dkr.ecr.$Region.$($partition.DnsSuffix)/$effectiveRepository`:$RuntimeVersion"
         # The runtime's ARN, known before the runtime exists: the ECR pull grant is scoped to it.
         $runtimeArnForGrant = "arn:$($partition.Name):lambda:${Region}:${accountId}:runtime/$RuntimeName"
-        Write-Information "Target image URI: $imageUri" -Tags 'LambdaPSDeploy'
 
         # Runtime preflight (read-only; always runs, even under -WhatIf). Without it, each of these
         # surfaces only at publish or later, AFTER the scaffold, the ECR repository and the image push.
@@ -408,7 +444,11 @@ function New-LambdaPSRuntimeDeployment {
         #   ResourceNotFoundException, so one read answers the question.
         # - Alias: moving the alias to a version of another architecture breaks the functions bound to it,
         #   so the alias is read and the move is warned about before anything is created.
+        # - Version name: the default <pwsh release>-<n> is one past the highest n the runtime has, so
+        #   running the same command again publishes a new version.
         $lambdaCoreConfig = Get-LambdaPSClientConfig -Service LambdaCore
+        $runtimeVersionDefaulted = -not $PSBoundParameters.ContainsKey('RuntimeVersion')
+        if ($runtimeVersionDefaulted) { $RuntimeVersion = "$resolvedPwshVersion-1" }
         $runtimeExists = $true
         # The alias as read for a new version; it stays null when the runtime or the alias does not exist.
         $currentAlias = $null
@@ -425,6 +465,30 @@ function New-LambdaPSRuntimeDeployment {
             else {
                 throw
             }
+        }
+        if ($runtimeExists -and $runtimeVersionDefaulted) {
+            try {
+                $versionNames = @(Get-LMCRuntimeVersionList -RuntimeName $RuntimeName -Region $Region -ClientConfig $lambdaCoreConfig @credentialParameter -ErrorAction Stop |
+                        ForEach-Object { [string]$_.Name })
+            }
+            catch {
+                $serviceText = $_.Exception.Message.Trim()
+                if ($serviceText -and $serviceText -notmatch '[.!?]["'')\]]*\z') { $serviceText += '.' }
+                $serviceDetail = if ($serviceText) { ": $serviceText" } else { '.' }
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Could not list the versions of runtime '$RuntimeName' in region '$Region' to name the new " +
+                             "one$serviceDetail Pass -RuntimeVersion to name it yourself. Nothing was built or pushed."), $_.Exception),
+                        'RuntimeVersionListFailed', [System.Management.Automation.ErrorCategory]::ReadError, $RuntimeName))
+            }
+            # Version names are case-sensitive. Up to 9 digits, so n stays an [int].
+            $versionPattern = "\A$([regex]::Escape($resolvedPwshVersion))-([0-9]{1,9})\z"
+            $highest = 0
+            foreach ($name in $versionNames) {
+                if ($name -cmatch $versionPattern -and [int]$Matches[1] -gt $highest) { $highest = [int]$Matches[1] }
+            }
+            $RuntimeVersion = "$resolvedPwshVersion-$($highest + 1)"
         }
         if ($runtimeExists) {
             $existingVersion = $null
@@ -549,6 +613,12 @@ function New-LambdaPSRuntimeDeployment {
             }
         }
 
+        $imageUri = "$accountId.dkr.ecr.$Region.$($partition.DnsSuffix)/$effectiveRepository`:$RuntimeVersion"
+        Write-Information "Target image URI: $imageUri" -Tags 'LambdaPSDeploy'
+        # Version names are case-sensitive, so it is kept as read.
+        $previousRuntimeVersion = if ($null -ne $currentAlias) { [string]$currentAlias.RuntimeVersion }
+        $rollbackCommand = $null
+
         # ModulesStaged is read from the scaffolded project's modules/ folder after Stage 1 -- what the
         # image will actually contain, including transitive dependencies -- not from -IncludeModule. It
         # stays empty under -WhatIf, because nothing was scaffolded.
@@ -582,6 +652,8 @@ function New-LambdaPSRuntimeDeployment {
             IncludeModule       = $IncludeModule
             MissingModuleAction = $MissingModuleAction
             Force               = $true
+            WarningAction       = 'SilentlyContinue'
+            WarningVariable     = 'scaffoldWarnings'
         }
         if ($ModuleRepository) { $scaffoldParams.ModuleRepository = $ModuleRepository }
         # Each stage needs the one before it, so once a stage is declined under -Confirm the later ones
@@ -599,6 +671,11 @@ function New-LambdaPSRuntimeDeployment {
             $null = New-LambdaPSRuntimeProject @scaffoldParams -WhatIf
         }
         else { $declinedStage = 'scaffold' }
+        # The scaffold's advice to pin an arm64 hash by hand doesn't apply: an arm64 deploy without one
+        # was refused in preflight, and the amd64 image doesn't use it.
+        foreach ($warning in $scaffoldWarnings) {
+            if ($warning.Message -notlike 'No SHA256 is pinned for the pwsh * arm64 tarball*') { Write-Warning $warning.Message }
+        }
 
         # Stage 2: Build the image locally, then ensure the ECR repo, then push. Building first means a
         # failed build (for example a package that cannot install for the target platform) stops before
@@ -638,6 +715,7 @@ function New-LambdaPSRuntimeDeployment {
                 RuntimeVersion = $RuntimeVersion
                 RuntimeAlias   = $RuntimeAlias
                 Architecture   = $Architecture
+                ReleaseNote    = "pwsh $resolvedPwshVersion"
                 Region         = $Region
             }
             $published = Publish-LambdaPSRuntimeVersion @publishParams -CredentialParameter $credentialParameter -Confirm:$false
@@ -652,7 +730,7 @@ function New-LambdaPSRuntimeDeployment {
         if ($declinedStage) {
             Write-Warning "Skipped pointing alias '$RuntimeAlias' at '$RuntimeVersion', because the $declinedStage stage was declined."
         }
-        elseif ($PSCmdlet.ShouldProcess("$RuntimeName/$RuntimeAlias", "Point alias at $RuntimeVersion")) {
+        elseif ($PSCmdlet.ShouldProcess("$RuntimeName/$RuntimeAlias", "Point alias at $RuntimeVersion$(if ($previousRuntimeVersion) { " (from $previousRuntimeVersion)" })")) {
             $aliasParams = @{
                 RuntimeName    = $RuntimeName
                 RuntimeAlias   = $RuntimeAlias
@@ -661,6 +739,15 @@ function New-LambdaPSRuntimeDeployment {
             }
             $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
+            if ($previousRuntimeVersion) {
+                $rollbackCommand = ("Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $previousRuntimeVersion " +
+                    "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)")
+                # Shown even without -InformationAction Continue, since it is the way back; an
+                # -InformationAction the caller gives still applies.
+                $rollbackInformation = @{}
+                if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $rollbackInformation.InformationAction = 'Continue' }
+                Write-Information "Alias '$RuntimeAlias' moved from '$previousRuntimeVersion'. To roll back: $rollbackCommand" -Tags 'LambdaPSDeploy' @rollbackInformation
+            }
         }
         elseif (-not $WhatIfPreference) {
             # The version is published, but functions bound to the alias stay where they are. The preflight
@@ -672,20 +759,22 @@ function New-LambdaPSRuntimeDeployment {
         }
 
         [PSCustomObject]@{
-            PSTypeName        = 'AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment'
-            RuntimeName       = $RuntimeName
-            RuntimeArn        = $runtimeArn
-            PowerShellVersion = $PowerShellVersion
-            PwshVersion       = $resolvedPwshVersion
-            Region            = $Region
-            RepositoryName    = $effectiveRepository
-            ImageUri          = $imageUri
-            ImageDigest       = $imageDigest
-            RuntimeVersion    = $RuntimeVersion
-            RuntimeAlias      = $RuntimeAlias
-            Architecture      = $Architecture
-            ModulesStaged     = $modulesStaged
-            ProjectPath       = $ProjectPath
+            PSTypeName             = 'AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment'
+            RuntimeName            = $RuntimeName
+            RuntimeArn             = $runtimeArn
+            PowerShellVersion      = $PowerShellVersion
+            PwshVersion            = $resolvedPwshVersion
+            Region                 = $Region
+            RepositoryName         = $effectiveRepository
+            ImageUri               = $imageUri
+            ImageDigest            = $imageDigest
+            RuntimeVersion         = $RuntimeVersion
+            RuntimeAlias           = $RuntimeAlias
+            PreviousRuntimeVersion = $previousRuntimeVersion
+            RollbackCommand        = $rollbackCommand
+            Architecture           = $Architecture
+            ModulesStaged          = $modulesStaged
+            ProjectPath            = $ProjectPath
         }
     }
     catch {
