@@ -1,0 +1,7 @@
+{
+  "HandlerString": "handler.ps1",
+  "ScriptFile": "handler.ps1",
+  "RuntimeAlias": __RUNTIME_ALIAS__,
+  "Architecture": __ARCHITECTURE__,
+  "ModulesPath": "modules"
+}
