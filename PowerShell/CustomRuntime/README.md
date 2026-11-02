@@ -16,8 +16,8 @@ image. This module automates building and deploying it. It lives deliberately ou
 - PowerShell 7.4+
 - For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
   `PATH`. Docker is the only container CLI this module supports. A customer-managed runtime needs a
-  Docker v2 Schema 2 manifest, which the image build emits with buildx's `--provenance=false` and
-  `oci-mediatypes=false`. Other CLIs can produce one too (for example `podman push --format v2s2`),
+  Docker v2 Schema 2 manifest, which the image build emits with buildx's `--provenance=false`,
+  `--sbom=false` and `oci-mediatypes=false`. Other CLIs can produce one too (for example `podman push --format v2s2`),
   but the module builds and tests with Docker only.
   `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
 - The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —

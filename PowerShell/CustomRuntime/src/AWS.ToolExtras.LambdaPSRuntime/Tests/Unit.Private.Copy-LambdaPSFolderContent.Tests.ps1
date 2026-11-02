@@ -22,11 +22,46 @@ Describe 'Copy-LambdaPSFolderContent' -Tag 'Unit' {
         $skip = [System.IO.Path]::Combine($script:source, 'a.ps1')
         InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination; Skip = $skip } {
             param($Source, $Destination, $Skip)
-            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludePath $Skip.ToUpperInvariant()
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludePath $Skip
         }
 
         @(Get-ChildItem -LiteralPath $script:destination -Recurse -Force -File | ForEach-Object { $_.FullName.Substring($script:destination.Length + 1) }) |
             Sort-Object | Should -Be @('.hidden', [System.IO.Path]::Combine('sub', 'b.ps1'))
+    }
+
+    # Lambda's paths are case-sensitive. On Linux 'README.md' and 'readme.md' are two files, so only the
+    # excluded one is left out.
+    It 'copies an item whose name differs from an excluded path only in case, on Linux' -Skip:(-not $IsLinux) {
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, 'readme.md')) -Value 'mine'
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:source, 'PowerShell')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, 'PowerShell', 'lib.ps1')) -Value '# lib'
+        $exclude = @('README.md', 'powershell') | ForEach-Object { [System.IO.Path]::Combine($script:source, $_) }
+
+        $warnings = InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination; Exclude = $exclude } {
+            param($Source, $Destination, $Exclude)
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludePath $Exclude -WarningVariable w -WarningAction SilentlyContinue
+            $w
+        }
+
+        Test-Path -LiteralPath ([System.IO.Path]::Combine($script:destination, 'readme.md')) | Should -BeTrue
+        Test-Path -LiteralPath ([System.IO.Path]::Combine($script:destination, 'PowerShell', 'lib.ps1')) | Should -BeTrue
+        $warnings | Should -BeNullOrEmpty
+    }
+
+    # On Windows and macOS the file system cannot tell the names apart, so the item is the excluded path.
+    It 'leaves out, with a warning, an item whose name differs from an excluded path only in case, off Linux' -Skip:$IsLinux {
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, 'readme.md')) -Value 'mine'
+        $exclude = [System.IO.Path]::Combine($script:source, 'README.md')
+
+        $warnings = InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination; Exclude = $exclude } {
+            param($Source, $Destination, $Exclude)
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludePath $Exclude -WarningVariable w -WarningAction SilentlyContinue
+            $w
+        }
+
+        @(Get-ChildItem -LiteralPath $script:destination -Force -File | Where-Object Name -EQ 'readme.md') | Should -BeNullOrEmpty
+        @($warnings).Count | Should -Be 1
+        "$($warnings[0])" | Should -BeLike "*Left out '*readme.md': its name differs only in case from 'README.md'*"
     }
 
     It 'copies a link inside the folder as its content, and skips links that leave it or contain themselves' -Skip:$IsWindows {
