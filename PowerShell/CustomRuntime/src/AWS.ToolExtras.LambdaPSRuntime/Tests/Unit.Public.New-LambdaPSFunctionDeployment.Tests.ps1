@@ -836,6 +836,18 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             $result.Region | Should -Be 'ap-southeast-2'
         }
 
+        It 'refuses a -FunctionName with a qualifier, before anything is read or packaged: <Value>' -ForEach @(
+            @{ Value = 'hello:prod'; Qualifier = 'prod' }
+            @{ Value = 'arn:aws:lambda:eu-west-1:111122223333:function:hello:live'; Qualifier = 'live' }
+            @{ Value = '111122223333:function:hello:3'; Qualifier = '3' }
+        ) {
+            $err = { New-LambdaPSFunctionDeployment -FunctionName $Value -ProjectPath $script:handlerFile -RuntimeName my-ps `
+                    -Role 'arn:aws:iam::111122223333:role/r' -Region eu-west-1 } |
+                Should -Throw -ErrorId 'FunctionNameQualified,New-LambdaPSFunctionDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike "*names the version or alias '$Qualifier' of function 'hello'*without the qualifier*"
+            Should -Invoke 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
         It 'refuses a -Region that differs from the region in a function ARN, before anything is read or packaged' {
             $err = { New-LambdaPSFunctionDeployment -FunctionName 'arn:aws:lambda:eu-west-1:111122223333:function:hello' -ProjectPath $script:handlerFile `
                     -RuntimeName my-ps -Role 'arn:aws:iam::111122223333:role/r' -Region us-west-2 -PackagePath (Join-Path $TestDrive 'explicit.zip') } |

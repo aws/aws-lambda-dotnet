@@ -68,7 +68,8 @@ function New-LambdaPSFunctionDeployment {
         The Lambda function name to create or update, or its full or partial ARN. When -Region is
         omitted, the region in a full ARN is used (a -Region that differs from it fails with
         FunctionRegionMismatch), and the default -PackagePath is named after the function name in either
-        form of ARN.
+        form of ARN. A name or ARN with a version or alias (hello:live) fails with FunctionNameQualified
+        before anything is read or packaged: a deploy creates or updates the function itself.
     .PARAMETER ProjectPath
         Your handler code: a single .ps1 script, or a prepared folder packaged as-is. Aliased as
         -ScriptPath and -Path. A path that does not exist fails with ProjectNotFound. A folder with a
@@ -305,6 +306,19 @@ function New-LambdaPSFunctionDeployment {
         # where the function cannot be found, and rather than an ARN as a file name.
         $functionParts = Split-LambdaPSFunctionArn -FunctionName $FunctionName
         $packageName = $functionParts.Name
+        # A deploy changes the unqualified function's code and configuration, never a version's or an
+        # alias's, so a qualifier would be dropped or, on Windows, written to an alternate data stream of a
+        # file named after the function.
+        if ($functionParts.Qualifier) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        ("-FunctionName '$FunctionName' names the version or alias '$($functionParts.Qualifier)' of function " +
+                         "'$($functionParts.Name)'. A deploy creates or updates the function itself, so pass -FunctionName " +
+                         'without the qualifier. To move an alias to the new code, publish a version and update the alias ' +
+                         'with Publish-LMVersion and Update-LMAlias.')),
+                    'FunctionNameQualified', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
+        }
         if (-not $PSBoundParameters.ContainsKey('Region')) {
             $Region = if ($functionParts.Region) { $functionParts.Region } else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState }
         }
