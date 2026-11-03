@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -83,15 +84,40 @@ public static class DurableFunction
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
         IDurableServiceClient serviceClient)
-        => WrapAsyncCore(workflow, invocationInput, lambdaContext, serviceClient);
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, serviceClient, options: null);
+
+    /// <summary>
+    /// Internal overload for tests that override <see cref="DurableInvocationOptions"/>
+    /// (Lambda Managed Instances detection and the cleanup budget).
+    /// </summary>
+    internal static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IDurableServiceClient serviceClient,
+        DurableInvocationOptions options)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext, serviceClient, options);
 
     private static async Task<DurableExecutionInvocationOutput> WrapAsyncCore<TInput, TOutput>(
         Func<TInput, IDurableContext, Task<TOutput>> workflow,
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
-        IDurableServiceClient serviceClient)
+        IDurableServiceClient serviceClient,
+        DurableInvocationOptions? options = null)
     {
         var serializer = LambdaSerializerHelper.GetRequired(lambdaContext);
+
+        // Lambda Managed Instances only: run the invocation against its deadline.
+        // On-demand Lambda gets no deadline, so every wait below is unbounded as
+        // before and the environment's own timeout stops the invocation.
+        var startTimestamp = Stopwatch.GetTimestamp();
+        var deadline = InvocationDeadline.Resolve(
+            lambdaContext.RemainingTime,
+            options?.IsMultiConcurrency ?? InvocationDeadline.IsMultiConcurrency());
+        var cleanupTimeout = options?.CleanupTimeout ?? DurableInvocationOptions.DefaultCleanupTimeout;
+
+        var terminationManager = new TerminationManager();
+        using var workflowCancellation = new WorkflowCancellation(terminationManager, deadline);
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
@@ -99,17 +125,23 @@ public static class DurableFunction
         var checkpointToken = invocationInput.CheckpointToken;
 
         var nextMarker = invocationInput.InitialExecutionState?.NextMarker;
-        while (!string.IsNullOrEmpty(nextMarker))
+        try
         {
-            var (operations, marker) = await serviceClient.GetExecutionStateAsync(
-                invocationInput.DurableExecutionArn, checkpointToken, nextMarker);
-            state.AddOperations(operations);
-            nextMarker = marker;
+            while (!string.IsNullOrEmpty(nextMarker))
+            {
+                var (operations, marker) = await serviceClient.GetExecutionStateAsync(
+                    invocationInput.DurableExecutionArn, checkpointToken, nextMarker,
+                    workflowCancellation.DeadlineToken);
+                state.AddOperations(operations);
+                nextMarker = marker;
+            }
+        }
+        catch (OperationCanceledException ex) when (workflowCancellation.IsDeadlineExceeded)
+        {
+            throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
         }
 
         var userPayload = ExtractUserPayload<TInput>(invocationInput, serializer);
-        var terminationManager = new TerminationManager();
-        using var workflowCancellation = new WorkflowCancellation(terminationManager);
         var idGenerator = new OperationIdGenerator();
 
         await using var batcher = new CheckpointBatcher(
@@ -145,15 +177,44 @@ public static class DurableFunction
             {
                 result = await DurableExecutionHandler.RunAsync<TOutput>(
                     state, terminationManager,
-                    async () => await workflow(userPayload, context));
+                    async () => await workflow(userPayload, context),
+                    workflowCancellation);
             }
 
-            await batcher.DrainAsync();
+            // The invocation's outcome is decided. Cancel the workflow token now,
+            // synchronously, so user work abandoned by a suspension (a losing
+            // parallel branch, a step body still running) unwinds before the
+            // drain below. Waiting for TerminationManager's threadpool
+            // continuation instead could let it run after disposal, losing the
+            // cancel. From here on, new durable operations are rejected.
+            workflowCancellation.BeginTeardown();
+
+            if (deadline is null)
+            {
+                await batcher.DrainAsync();
+            }
+            else
+            {
+                // Lambda Managed Instances: a stalled checkpoint call must not hold
+                // this invocation (and one of the runtime's processing loops) open
+                // indefinitely. Allow time up to the deadline plus a fixed cleanup
+                // budget, then abandon the flush.
+                var untilDeadline = deadline.Value - Stopwatch.GetElapsedTime(startTimestamp);
+                var drainTimeout = (untilDeadline > TimeSpan.Zero ? untilDeadline : TimeSpan.Zero) + cleanupTimeout;
+                if (!await batcher.DrainAsync(drainTimeout))
+                    throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
+            }
+
+            if (result.DeadlineExceeded)
+                throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
 
             if (batcher.IsCheckpointTokenMissing)
                 result = new HandlerResult<TOutput> { Status = InvocationStatus.Pending };
         }
-        catch (DurableExecutionException ex) when (ex.InnerException is AmazonServiceException sdkEx && IsTerminalCheckpointError(sdkEx))
+        catch (DurableExecutionException ex) when (
+            !workflowCancellation.IsDeadlineExceeded
+            && ex.InnerException is AmazonServiceException sdkEx
+            && IsTerminalCheckpointError(sdkEx))
         {
             return new DurableExecutionInvocationOutput
             {
@@ -161,9 +222,28 @@ public static class DurableFunction
                 Error = ErrorObject.FromException(ex)
             };
         }
+        catch (Exception ex) when (workflowCancellation.IsDeadlineExceeded && ex is not TimeoutException)
+        {
+            // Once the deadline has passed, any failure (a cancelled checkpoint
+            // call, a checkpoint rejected for the stale token) is a consequence of
+            // the timeout. Report the timeout so the invocation is retried, never
+            // a permanent durable failure.
+            throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
+        }
 
         return MapToOutput(result, serializer);
     }
+
+    /// <summary>
+    /// The exception thrown when a Lambda Managed Instances invocation runs out
+    /// of time. It escapes to the Lambda runtime as an invocation error, the same
+    /// outcome as an on-demand timeout, so the durable execution is re-invoked and
+    /// replays from its last checkpoint instead of being marked failed.
+    /// </summary>
+    private static TimeoutException CreateDeadlineException(string durableExecutionArn, Exception? innerException) =>
+        new($"The invocation for durable execution '{durableExecutionArn}' reached its deadline before it completed. " +
+            "Durable work for this invocation was cancelled; work that was not checkpointed runs again on replay.",
+            innerException);
 
     /// <summary>
     /// Returns true for checkpoint-flush SDK errors that should fail the workflow
@@ -187,7 +267,7 @@ public static class DurableFunction
     ///   1. A flush triggered synchronously from inside a user <c>StepAsync</c> call
     ///      (the user awaits <c>EnqueueAsync</c> → batch flush → SDK throws → service client
     ///      wraps).
-    ///   2. The final <see cref="CheckpointBatcher.DrainAsync"/> after the workflow returns.
+    ///   2. The final <see cref="CheckpointBatcher.DrainAsync()"/> after the workflow returns.
     ///
     /// State-hydration errors (<c>GetExecutionStateAsync</c>) propagate as
     /// <see cref="DurableExecutionException"/> too, but they are NOT caught here — they

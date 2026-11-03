@@ -22,6 +22,19 @@ When either trigger fires, the token transitions to `IsCancellationRequested = t
 - **`OperationCanceledException` thrown out of a step body via the token** (i.e. `linked.IsCancellationRequested` is true) is treated as cancellation: no FAIL checkpoint is written, no retry is consulted. The exception propagates up.
 - **`OperationCanceledException` thrown by user code for unrelated reasons** (token never fired) is treated as a normal step failure: FAIL checkpoint, retry per the configured `RetryStrategy`.
 - **The SDK's own writes (checkpoints, batcher flush, the runtime API response)** never observe the workflow-shutdown signal. Successful work is never lost to teardown.
+- **When the invocation ends**, the token is cancelled before `DurableFunction.WrapAsync` returns. Work the workflow started but did not await (for example a step still running when a sibling suspended) observes the cancellation. Starting a new durable operation after this point throws `OperationCanceledException`.
+
+## Lambda Managed Instances
+
+On Lambda Managed Instances several invocations run in the same process, and Lambda does not stop an invocation that times out. The SDK therefore applies the invocation deadline (`ILambdaContext.RemainingTime`) itself:
+
+- At the deadline the token is cancelled, new durable operations are rejected, and state loading is cancelled.
+- Checkpoint cleanup gets a short budget past the deadline, then is abandoned.
+- `WrapAsync` throws `TimeoutException`. Lambda treats this as an invocation error, the same outcome as a timeout in on-demand Lambda: the execution is not marked failed, and work that was not checkpointed runs again on replay.
+
+Only cooperative code can be stopped. Code that ignores the token, or blocks synchronously, keeps running until it returns, and keeps a thread busy that other invocations could use.
+
+On-demand Lambda is unchanged: the SDK applies no deadline, and the environment's timeout ends the invocation.
 
 ## Guidance
 

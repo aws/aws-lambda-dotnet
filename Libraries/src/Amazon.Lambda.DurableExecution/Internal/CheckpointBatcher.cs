@@ -16,7 +16,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <remarks>
 /// Fire-and-forget semantics are achieved by simply not awaiting the returned
 /// Task. Errors still surface deterministically via <c>_terminalError</c>: the
-/// next sync <see cref="EnqueueAsync"/> or <see cref="DrainAsync"/> rethrows.
+/// next sync <see cref="EnqueueAsync"/> or <see cref="DrainAsync()"/> rethrows.
 /// Callers using fire-and-forget should observe the discarded Task's exception
 /// (see <c>StepOperation.FireAndForget</c>) so it doesn't trip the runtime's
 /// <c>UnobservedTaskException</c> event.
@@ -34,6 +34,7 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     private string? _checkpointToken;
     private Exception? _terminalError;
     private int _disposed;
+    private int _abandoned;
     private int _tokenMissing;
 
     // Per-update wire-footprint estimate constants. Deliberate over-estimates:
@@ -139,11 +140,62 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         if (terminal != null) ExceptionDispatchInfo.Throw(terminal);
     }
 
+    /// <summary>
+    /// Like <see cref="DrainAsync()"/>, but gives up after <paramref name="timeout"/>.
+    /// Used for Lambda Managed Instances, where a stalled checkpoint call must not
+    /// hold the invocation open past its deadline.
+    /// </summary>
+    /// <returns>
+    /// <c>true</c> when the worker finished. <c>false</c> when the timeout elapsed:
+    /// the in-flight flush is cancelled and the worker is abandoned, so any
+    /// checkpoint it had not yet sent is not persisted (replay re-runs that work).
+    /// </returns>
+    public async Task<bool> DrainAsync(TimeSpan timeout)
+    {
+        _channel.Writer.TryComplete();
+        try
+        {
+            await _worker.WaitAsync(timeout).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Abandon();
+            return false;
+        }
+        catch
+        {
+            // Surfaced via _terminalError below.
+        }
+
+        var terminal = Volatile.Read(ref _terminalError);
+        if (terminal != null) ExceptionDispatchInfo.Throw(terminal);
+        return true;
+    }
+
+    private void Abandon()
+    {
+        if (Interlocked.Exchange(ref _abandoned, 1) != 0) return;
+
+        // Ask the in-flight flush to stop. A flush that ignores the token keeps
+        // running until it returns; its outcome is no longer awaited.
+        try { _shutdownCts.Cancel(); } catch (ObjectDisposedException) { }
+        _worker.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
 
         _channel.Writer.TryComplete();
+
+        // An abandoned worker may never finish. Don't wait for it, and leave its
+        // cancellation source undisposed because the worker may still read the token.
+        if (Volatile.Read(ref _abandoned) == 1) return;
+
         _shutdownCts.Cancel();
         try { await _worker.ConfigureAwait(false); }
         catch { /* swallow on dispose */ }
