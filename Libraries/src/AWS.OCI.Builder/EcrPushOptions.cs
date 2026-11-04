@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AWS.OCI.Builder;
 
 /// <summary>
@@ -59,10 +61,11 @@ public sealed class EcrPushOptions
     /// so the contract holds even if layers are later uploaded concurrently — see <see cref="LayerPushProgress"/>.
     /// </para>
     /// <para>
-    /// Use <see cref="System.Progress{T}"/> for the common case: it captures the current
-    /// <see cref="System.Threading.SynchronizationContext"/> and raises callbacks on it, which keeps UI updates on
-    /// the UI thread. Any custom implementation must be thread-safe, since a future parallel push may report from
-    /// multiple threads at once.
+    /// In a UI app, use <see cref="System.Progress{T}"/>: it raises callbacks on the
+    /// <see cref="System.Threading.SynchronizationContext"/> it captured, which keeps UI updates on the UI thread.
+    /// Where there is no synchronization context (console apps, services, PowerShell), <see cref="System.Progress{T}"/>
+    /// raises callbacks on thread-pool threads, possibly several at once. To read events on your own thread instead,
+    /// use <see cref="LayerPushProgressQueue"/>. Any custom implementation must be thread-safe.
     /// </para>
     /// </remarks>
     public IProgress<LayerPushProgress>? Progress { get; init; }
@@ -81,4 +84,15 @@ public sealed class EcrPushOptions
     /// (zero or negative) is rejected at push time.
     /// </remarks>
     public TimeSpan UploadTimeout { get; init; } = System.Threading.Timeout.InfiniteTimeSpan;
+
+    /// <summary>
+    /// The proxy for requests to the target ECR registry, or <see langword="null"/> (the default) for
+    /// <see cref="System.Net.Http.HttpClient.DefaultProxy"/>, which reads the <c>HTTPS_PROXY</c>, <c>HTTP_PROXY</c>
+    /// and <c>NO_PROXY</c> environment variables (and, on Windows, the system proxy settings).
+    /// </summary>
+    /// <remarks>
+    /// This proxy is used only for ECR. Base layers are downloaded from their source registry by the client that
+    /// pulled the base image; set <see cref="BaseImagePullOptions.Proxy"/> for those requests.
+    /// </remarks>
+    public IWebProxy? Proxy { get; init; }
 }

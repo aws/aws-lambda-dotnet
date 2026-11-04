@@ -57,23 +57,31 @@ public sealed class OciImageBuilder : IDisposable
     /// push time and read by the default target-client factory.</summary>
     private TimeSpan _uploadTimeout = Timeout.InfiniteTimeSpan;
 
-    /// <summary>Creates the push-target registry client, honoring the resolved upload timeout. A test override
-    /// (<see cref="UseTargetClientFactoryForTest"/>) takes precedence when set.</summary>
+    /// <summary>The proxy for the push client, from <see cref="EcrPushOptions.Proxy"/>, read by the default
+    /// target-client factory.</summary>
+    private System.Net.IWebProxy? _pushProxy;
+
+    /// <summary>Creates the push-target registry client, honoring the resolved upload timeout and proxy. A test
+    /// override (<see cref="UseTargetClientFactoryForTest"/>) takes precedence when set.</summary>
     private RegistryClient CreateTargetClient(string host, IRegistryCredentialSource credentialSource)
         => _targetClientFactory is { } factory
             ? factory(host, credentialSource)
-            : RegistryClient.Create(host, credentialSource, _uploadTimeout);
+            : RegistryClient.Create(host, credentialSource, _uploadTimeout, _pushProxy);
 
     private OciImageBuilder(
         ImageReference baseReference,
         RegistryClient sourceClient,
         ImageBuilder imageBuilder,
-        IReadOnlyList<Descriptor> baseLayers)
+        IReadOnlyList<Descriptor> baseLayers,
+        string baseImageDigest,
+        string? baseImageIndexDigest)
     {
         _baseReference = baseReference;
         _sourceClient = sourceClient;
         _imageBuilder = imageBuilder;
         _baseLayers = baseLayers;
+        BaseImageDigest = baseImageDigest;
+        BaseImageIndexDigest = baseImageIndexDigest;
     }
 
     /// <summary>
@@ -85,8 +93,10 @@ public sealed class OciImageBuilder : IDisposable
         ImageReference baseReference,
         RegistryClient sourceClient,
         ImageBuilder imageBuilder,
-        IReadOnlyList<Descriptor> baseLayers)
-        => new(baseReference, sourceClient, imageBuilder, baseLayers);
+        IReadOnlyList<Descriptor> baseLayers,
+        string baseImageDigest = "",
+        string? baseImageIndexDigest = null)
+        => new(baseReference, sourceClient, imageBuilder, baseLayers, baseImageDigest, baseImageIndexDigest);
 
     /// <summary>Test-only: overrides how the push-target registry client is created.</summary>
     internal void UseTargetClientFactoryForTest(Func<string, IRegistryCredentialSource, RegistryClient> factory)
@@ -97,6 +107,18 @@ public sealed class OciImageBuilder : IDisposable
     /// files this instance owns instead of scanning the shared temp directory, which parallel tests also write to.
     /// </summary>
     internal IReadOnlyList<string> SpilledLayerPathsForTest => _pendingLayers.Select(p => p.FilePath).ToArray();
+
+    /// <summary>
+    /// The digest (<c>sha256:...</c>) of the base image's single-platform manifest that this build is based on,
+    /// whether the base reference was a tag, a digest, or a multi-platform manifest list.
+    /// </summary>
+    public string BaseImageDigest { get; }
+
+    /// <summary>
+    /// The digest of the manifest list (image index) the platform manifest was selected from, or
+    /// <see langword="null"/> when the base reference resolved directly to a single-platform manifest.
+    /// </summary>
+    public string? BaseImageIndexDigest { get; }
 
     /// <summary>The config of the image being built, exposed for customization (entrypoint, env, labels, ...).</summary>
     public ImageConfig Config => _imageBuilder.Config;
@@ -116,17 +138,66 @@ public sealed class OciImageBuilder : IDisposable
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <exception cref="ArgumentException">The base reference or platform string is malformed.</exception>
     /// <exception cref="RegistryException">The base image or the requested platform could not be fetched.</exception>
-    public static async Task<OciImageBuilder> FromBaseImageAsync(
+    public static Task<OciImageBuilder> FromBaseImageAsync(
         string baseImage,
         string platform = "linux/amd64",
         CancellationToken cancellationToken = default)
+        // Public base images pull anonymously (the handshake still performs a Bearer-token exchange when the
+        // registry demands one, e.g. Docker Hub; the token is obtained without credentials).
+        => FromBaseImageAsync(baseImage, platform, options: null, cancellationToken);
+
+    /// <summary>
+    /// Fetches a base image and prepares a builder to overlay layers onto it, with the proxy and timeout in
+    /// <paramref name="options"/>.
+    /// </summary>
+    /// <param name="baseImage">The base image reference, as for <see cref="FromBaseImageAsync(string, string, CancellationToken)"/>.</param>
+    /// <param name="platform">The target platform as <c>os/architecture</c> (for example <c>linux/arm64</c>).</param>
+    /// <param name="options">
+    /// The proxy and timeout for requests to the base image's registry, or <see langword="null"/> for the defaults.
+    /// They also apply when <see cref="PushToEcrAsync"/> downloads base layers to copy them to ECR.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <exception cref="ArgumentException">
+    /// The base reference or platform string is malformed, or <see cref="BaseImagePullOptions.Timeout"/> is zero or
+    /// negative.
+    /// </exception>
+    /// <exception cref="RegistryException">The base image or the requested platform could not be fetched.</exception>
+    public static Task<OciImageBuilder> FromBaseImageAsync(
+        string baseImage,
+        string platform,
+        BaseImagePullOptions? options,
+        CancellationToken cancellationToken = default)
+    {
+        TimeSpan timeout = options?.Timeout ?? Timeout.InfiniteTimeSpan;
+        if (timeout != Timeout.InfiniteTimeSpan && timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentException(
+                $"{nameof(BaseImagePullOptions)}.{nameof(BaseImagePullOptions.Timeout)} must be positive or Timeout.InfiniteTimeSpan (was {timeout}).",
+                nameof(options));
+        }
+        System.Net.IWebProxy? proxy = options?.Proxy;
+
+        return FromBaseImageAsync(
+            baseImage,
+            platform,
+            registry => RegistryClient.Create(registry, new AnonymousRegistryCredentialSource(), timeout, proxy),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// <see cref="FromBaseImageAsync(string, string, CancellationToken)"/> with the source registry client supplied
+    /// by <paramref name="createSourceClient"/> (given the registry host); tests use it to inject a stubbed transport.
+    /// </summary>
+    internal static async Task<OciImageBuilder> FromBaseImageAsync(
+        string baseImage,
+        string platform,
+        Func<string, RegistryClient> createSourceClient,
+        CancellationToken cancellationToken)
     {
         ImageReference baseReference = ImageReference.Parse(baseImage);
         (string os, string architecture) = ParsePlatform(platform);
 
-        // Public base images pull anonymously (the handshake still performs a Bearer-token exchange when the
-        // registry demands one, e.g. Docker Hub; the token is obtained without credentials).
-        RegistryClient sourceClient = RegistryClient.Create(baseReference.Registry, new AnonymousRegistryCredentialSource());
+        RegistryClient sourceClient = createSourceClient(baseReference.Registry);
 
         try
         {
@@ -201,7 +272,11 @@ public sealed class OciImageBuilder : IDisposable
             // new layer(s). They are a snapshot of the base manifest, distinct from layers added by this build.
             IReadOnlyList<Descriptor> baseLayers = manifest.Layers.ToArray();
 
-            return new OciImageBuilder(baseReference, sourceClient, imageBuilder, baseLayers);
+            // Record what the build is based on. Both digests are computed over the bytes that were verified above.
+            string baseImageDigest = RegistryClient.ComputeDigest(platformManifest.RawBytes);
+            string? baseImageIndexDigest = IsIndexMediaType(top.MediaType) ? RegistryClient.ComputeDigest(top.RawBytes) : null;
+
+            return new OciImageBuilder(baseReference, sourceClient, imageBuilder, baseLayers, baseImageDigest, baseImageIndexDigest);
         }
         catch
         {
@@ -322,6 +397,7 @@ public sealed class OciImageBuilder : IDisposable
                 nameof(options));
         }
         _uploadTimeout = uploadTimeout;
+        _pushProxy = options?.Proxy;
 
         // Decode the ECR authorization token into the Basic username/password the registry handshake expects.
         (string username, string password) = DecodeEcrAuthorizationToken(authorizationToken);

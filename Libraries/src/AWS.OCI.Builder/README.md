@@ -115,8 +115,23 @@ Every event carries the layer's stable `LayerIndex` (1-based), `TotalLayers`, `D
 (`BaseLayer` vs `BuiltLayer`), all fixed before any upload begins. Key your state by `LayerIndex` or `Digest`
 rather than the order events arrive: the contract is designed so that if the library later uploads layers in
 parallel — interleaving their events — consumers keep working unchanged. A custom `IProgress<T>` implementation
-must be thread-safe for that reason; `System.Progress<T>` already marshals callbacks to the captured
-synchronization context.
+must be thread-safe for that reason.
+
+`System.Progress<T>` raises callbacks on the synchronization context it captured. Where there is none (console
+apps, services, PowerShell), it raises them on thread-pool threads, possibly several at once. To read events on
+your own thread instead, pass a `LayerPushProgressQueue` and drain it while the push runs:
+
+```csharp
+var queue = new LayerPushProgressQueue();
+Task<string> push = builder.PushToEcrAsync(target, authorizationToken, new EcrPushOptions { Progress = queue });
+while (!push.IsCompleted)
+{
+    while (queue.TryDequeue(out LayerPushProgress p)) { /* render p */ }
+    await Task.WhenAny(push, Task.Delay(200));
+}
+while (queue.TryDequeue(out LayerPushProgress p)) { /* render p */ }
+string digest = await push;
+```
 
 ### File permissions
 
@@ -133,3 +148,21 @@ runnable in the container regardless of the build host:
 - `UnixPermissions.FromOctal("755")` / `FromOctal(755)` — express a mode in `chmod`-style octal (C# has no octal
   literal, so `FromOctal` is how you write `0755`). For a directory mapping, an explicit mode applies to every file
   it contains; directory entries themselves are always `0755`.
+
+### Proxy and timeouts
+
+By default requests use `HttpClient.DefaultProxy`, which reads `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and have
+no client timeout, so the cancellation token is the deadline. To set them per build:
+
+```csharp
+var proxy = new WebProxy("http://proxy.corp.example:8080");
+
+using var builder = await OciImageBuilder.FromBaseImageAsync(
+    "public.ecr.aws/lambda/provided:al2023", "linux/arm64",
+    new BaseImagePullOptions { Proxy = proxy, Timeout = TimeSpan.FromMinutes(5) });
+
+await builder.PushToEcrAsync(target, authorizationToken,
+    new EcrPushOptions { Proxy = proxy, UploadTimeout = TimeSpan.FromMinutes(30) });
+```
+
+`BaseImagePullOptions` also applies to the base layer downloads during the push, and `EcrPushOptions` only to ECR.

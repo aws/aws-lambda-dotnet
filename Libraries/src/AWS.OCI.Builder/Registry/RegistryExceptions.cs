@@ -31,6 +31,13 @@ public sealed class RegistryAuthenticationException : RegistryException
     /// <summary>The registry that denied access.</summary>
     public string RegistryName { get; }
 
+    /// <summary>
+    /// The HTTP status the registry returned when it denied a request (401, 403, or 400 for Amazon ECR's
+    /// <c>DENIED</c>), or <see langword="null"/> when no request was refused, for example when the registry asked
+    /// for credentials that were not available.
+    /// </summary>
+    public int? StatusCode { get; init; }
+
     /// <summary>Creates the exception.</summary>
     public RegistryAuthenticationException(string registryName, string message)
         : base($"Unable to authenticate to registry '{registryName}': {message}")
