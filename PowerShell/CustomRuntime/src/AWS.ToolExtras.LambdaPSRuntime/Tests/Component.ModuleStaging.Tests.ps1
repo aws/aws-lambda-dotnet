@@ -41,4 +41,25 @@ Describe 'Module staging across commands' -Tag 'Component' {
         $names | Should -Contain 'modules/LambdaPSFake.Local/1.0.0/LambdaPSFake.Local.psd1'
         Test-LambdaPSRuntimeProject -Path $proj -Quiet | Should -BeTrue
     }
+
+    # AWS.Tools service modules ship cmdlet help, about half their size, which Lambda never reads.
+    It 'stages an AWS.Tools module without *.xml and *.pdb, keeps *.ps1xml, and the staged copy imports; other modules stay whole' {
+        $source = Join-Path $TestDrive 'help-symbols-src'
+        $null = New-FakeModule -Root $source -Name 'AWS.Tools.LambdaPSFake' -Version '9.0.1' -WithHelpAndSymbols
+        $other = New-FakeModule -Root $source -Name 'LambdaPSFake.Other' -Version '1.0.0' -WithHelpAndSymbols
+        $modules = Join-Path $TestDrive 'help-symbols-modules'
+
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Modules = $modules } {
+            param($Source, $Modules)
+            $specs = @('AWS.Tools.LambdaPSFake', '9.0.1'), @('LambdaPSFake.Other', '1.0.0') | ForEach-Object { @{ ModuleName = $_[0]; RequiredVersion = $_[1] } }
+            $null = Copy-LambdaPSModuleSet -Module $specs -Path $Modules -SearchPath $Source -Confirm:$false
+        }
+
+        $staged = [System.IO.Path]::Combine($modules, 'AWS.Tools.LambdaPSFake', '9.0.1')
+        @(Get-ChildItem -LiteralPath $staged -File).Name | Sort-Object | Should -Be @('AWS.Tools.LambdaPSFake.Format.ps1xml', 'AWS.Tools.LambdaPSFake.psd1')
+        @(Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($modules, 'LambdaPSFake.Other', '1.0.0')) -File).Name |
+            Sort-Object | Should -Be (@(Get-ChildItem -LiteralPath $other -File).Name | Sort-Object)
+        $command = "try { Import-Module '$([System.IO.Path]::Combine($staged, 'AWS.Tools.LambdaPSFake.psd1'))' -ErrorAction Stop; 'IMPORTED' } catch { 'FAILED: ' + `$_.Exception.Message }"
+        & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command $command 2>&1 | Out-String | Should -BeLike '*IMPORTED*'
+    }
 }

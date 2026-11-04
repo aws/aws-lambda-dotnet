@@ -21,6 +21,8 @@ function Copy-LambdaPSModuleFolder {
         The module version's folder (ModuleBase).
     .PARAMETER Destination
         The folder to copy its contents into, normally <modules>/<Name>/<Version>.
+    .PARAMETER ExcludeExtension
+        File extensions to leave out, passed to Copy-LambdaPSFolderContent.
     .OUTPUTS
         None.
     .EXAMPLE
@@ -37,12 +39,16 @@ function Copy-LambdaPSModuleFolder {
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
-        [string]$Destination
+        [string]$Destination,
+
+        [Parameter()]
+        [AllowEmptyCollection()]
+        [string[]]$ExcludeExtension = @()
     )
 
     if (Test-Path -LiteralPath $Destination) {
         # An existing folder belongs to its owner: copy into it, and leave it as it is on failure.
-        Copy-LambdaPSFolderContent -Path $Path -Destination $Destination
+        Copy-LambdaPSFolderContent -Path $Path -Destination $Destination -ExcludeExtension $ExcludeExtension
         return
     }
 
@@ -52,7 +58,7 @@ function Copy-LambdaPSModuleFolder {
     $null = [System.IO.Directory]::CreateDirectory($staging)
     $moved = $false
     try {
-        Copy-LambdaPSFolderContent -Path $Path -Destination $staging
+        Copy-LambdaPSFolderContent -Path $Path -Destination $staging -ExcludeExtension $ExcludeExtension
         # On Windows an antivirus scanner or the search indexer can hold a handle on a fresh folder for
         # a moment, so the rename fails as "in use". Any I/O or access error is retried briefly, on
         # every OS; a destination that appeared in the meantime is a conflict and fails at once, as

@@ -187,11 +187,12 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
     Context 'Lambda''s package size limits' {
         It 'warns about the <Case>' -ForEach @(
             @{ Case = 'direct-upload limit for a zip over 50 MB'; Random = $true; Bytes = 51MB; Expected = "*is 51* MB, over the 50 MB Lambda accepts in a direct upload*-Code_S3Bucket*" }
-            @{ Case = 'unzipped limit for files over 250 MB'; Random = $false; Bytes = 251MB; Expected = '*unzips to 251 MB, over the 250 MB*' }
+            @{ Case = 'unzipped limit for files of exactly 250 MB, with the largest module'; Random = $false; Bytes = 250MB; Folder = 'modules/Big/1.0.0'
+                Expected = "*unzips to 250 MB, close to the 250 MB*leaves 0 MB for the code or layers deployed with it. The largest modules: Big (250 MB).*" }
         ) {
             $stage = Join-Path $TestDrive "size-$Bytes"
-            $null = New-Item -ItemType Directory -Path $stage
-            $file = [System.IO.File]::Create((Join-Path $stage 'payload.bin'))
+            $null = New-Item -ItemType Directory -Path (Join-Path $stage "$Folder") -Force
+            $file = [System.IO.File]::Create((Join-Path $stage "$Folder/payload.bin"))
             try {
                 # Random bytes do not compress, so the zip is as large as the file; zeros compress to almost nothing.
                 if ($Random) {
@@ -215,6 +216,27 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
             @($warnings).Count | Should -Be 1
             "$($warnings[0])" | Should -BeLike $Expected
             Test-Path -LiteralPath $zip | Should -BeTrue -Because 'the package is still written'
+        }
+
+        # Checked before the archive is opened, so nothing is written; pwsh and the largest modules say what to remove.
+        It 'stops with UnzippedPackageTooLarge over 250 MB, before writing, naming pwsh and the three largest modules' {
+            $stage = Join-Path $TestDrive 'size-over'
+            foreach ($f in @(@('powershell/pwsh', 170MB), @('modules/Big/1.0.0/b.bin', 50MB), @('modules/Mid/Mid.psm1', 20MB),
+                    @('modules/Small/1.0.0/s.bin', 5MB), @('modules/Tiny/1.0.0/t.bin', 6MB), @('modules/Private/helper.ps1', 30MB))) {
+                $target = Join-Path $stage $f[0]
+                $null = New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force
+                $file = [System.IO.File]::Create($target)
+                try { $file.SetLength($f[1]) } finally { $file.Dispose() }
+            }
+            $zip = Join-Path $TestDrive 'out-over/size-over.zip'
+
+            $err = { InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
+                    param($Stage, $Zip)
+                    Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+                } } | Should -Throw -ErrorId 'UnzippedPackageTooLarge' -PassThru
+            $err.Exception.Message | Should -BeLike "'size-over.zip' would unzip to 281 MB, over the 250 MB*it was not written. The bundled pwsh takes 170 MB. The largest modules: Big (50 MB), Mid (20 MB), Tiny (6 MB). Remove modules*"
+            Test-Path -LiteralPath $zip | Should -BeFalse
+            @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
         }
 
         It 'does not warn for a package within both limits' {

@@ -70,6 +70,8 @@ function New-LambdaPSRuntimeProject {
         (for example @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }); minimum-version and
         version-range specs are rejected. A module that is not installed locally is handled according
         to -MissingModuleAction. Defaults to none. Alias: -Module.
+        AWS.Tools modules are staged without their *.xml help and *.pdb symbols, so Get-Help shows no
+        help text for them and Test-ModuleManifest reports their FileList entries as missing.
         AWSPowerShell (the Windows PowerShell module, which doesn't run in PowerShell 7) and
         AWSPowerShell.NetCore (over 600 MB, more than Lambda's 250 MB package limit) fail with
         AWSPowerShellModuleNotSupported: name the AWS.Tools.* modules for the services you use

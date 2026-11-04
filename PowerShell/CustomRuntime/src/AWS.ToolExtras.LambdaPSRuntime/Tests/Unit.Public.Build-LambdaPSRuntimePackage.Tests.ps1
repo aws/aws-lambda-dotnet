@@ -669,6 +669,19 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
         @(Get-ChildItem -LiteralPath $temp -Directory -Filter 'lambdaps-pkg-*') | Should -BeNullOrEmpty
     }
 
+    It 'throws UnzippedPackageTooLarge for a package over 250 MB unzipped, naming pwsh, and writes no .zip' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'err-too-large')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $file = [System.IO.File]::Create([System.IO.Path]::Combine($proj, 'data.bin'))
+        try { $file.SetLength(251MB) } finally { $file.Dispose() }
+        $out = [System.IO.Path]::Combine($TestDrive, 'err-too-large.zip')
+
+        $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $script:fakeTarball -WarningAction SilentlyContinue } |
+            Should -Throw -ErrorId 'UnzippedPackageTooLarge,Build-LambdaPSRuntimePackage' -PassThru
+        $err.Exception.Message | Should -BeLike "*'err-too-large.zip' would unzip to 251* MB, over the 250 MB*The bundled pwsh takes*"
+        Test-Path -LiteralPath $out | Should -BeFalse
+    }
+
     It 'throws PwshArchiveHashMismatch for a supplied tarball that differs from the pinned hash, before extracting' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-hash')
         $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer

@@ -60,6 +60,8 @@ The Layer and self-contained `.zip` packages bundle pwsh, so they are large: abo
 174 MB unzipped for PowerShell 7.4 on x86_64, before any modules. That is over Lambda's direct-upload
 limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Content_S3Bucket`/
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 75 MB for modules and code.
+`Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
+before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
 
 ## Quick start (high-level)
 
