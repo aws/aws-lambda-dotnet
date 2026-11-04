@@ -108,7 +108,8 @@ function Build-LambdaPSRuntimePackage {
         handler requires (or a dependency) that is not available locally, as on
         Compress-LambdaPSFunctionPackage: Save (default) downloads it into a temporary folder that
         is deleted afterwards; Install also installs it for the current user; Stop fails with
-        ModuleNotFoundLocally. Versions are matched exactly, so a requirement that differs from an
+        ModuleNotFoundLocally, naming the project's modules/ folder when the missing version is there
+        (it is not searched). Versions are matched exactly, so a requirement that differs from an
         available version only in a trailing .0 fails with ModuleVersionSpelling.
     .PARAMETER ModuleRepository
         For SelfContainedZip (ignored, with a warning, for a Layer): the PSResourceGet repositories to
@@ -359,6 +360,7 @@ function Build-LambdaPSRuntimePackage {
         # checks. runtime.ps1 is the runtime's own script, so it is never taken for the handler.
         $handlerName = $null
         $requiredModules = @()
+        $shippedModules = [System.IO.Path]::Combine($root, 'modules')
         if ($effectiveTarget -eq 'SelfContainedZip') {
             $handlerName = if (-not [string]::IsNullOrWhiteSpace($HandlerScript)) { $HandlerScript }
             else {
@@ -390,7 +392,7 @@ function Build-LambdaPSRuntimePackage {
                 $handlerRelative = [System.IO.Path]::GetRelativePath($root, [System.IO.Path]::GetFullPath(
                         [System.IO.Path]::Combine($root, $handlerName)))
                 # PowerShell's own modules are part of every pwsh, so they are not staged (Select-LambdaPSUnmetModule).
-                $requiredModules = @(Select-LambdaPSUnmetModule -Module @(Get-LambdaPSRequiredModule -Path $handlerFile) -ModulesPath ([System.IO.Path]::Combine($root, 'modules')))
+                $requiredModules = @(Select-LambdaPSUnmetModule -Module @(Get-LambdaPSRequiredModule -Path $handlerFile) -ModulesPath $shippedModules)
                 foreach ($spec in $requiredModules) {
                     $pinError = Get-LambdaPSModulePinError -Specification $spec -DeclaredIn $handlerName
                     if ($null -ne $pinError) { $PSCmdlet.ThrowTerminatingError($pinError) }
@@ -400,7 +402,7 @@ function Build-LambdaPSRuntimePackage {
         # With Stop nothing is downloaded, so a missing module is reported now, before ShouldProcess and the
         # pwsh download, rather than after them.
         if ($MissingModuleAction -eq 'Stop' -and $requiredModules.Count -gt 0) {
-            $closure = Get-LambdaPSModuleClosure -Module $requiredModules -RequireAll
+            $closure = Get-LambdaPSModuleClosure -Module $requiredModules -RequireAll -SourceModulesPath $shippedModules
             if ($null -ne $closure.Error) { $PSCmdlet.ThrowTerminatingError($closure.Error) }
         }
         # Modules that are not available locally are downloaded here, never into the stage directly.

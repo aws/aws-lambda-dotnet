@@ -463,6 +463,18 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         Test-Path -LiteralPath $out | Should -BeFalse
     }
 
+    It 'names the project''s modules/ folder in ModuleNotFoundLocally under Stop when the module is only there' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-req-vendored')
+        $null = Copy-Item -LiteralPath $script:reqProj -Destination $proj -Recurse
+        $null = New-FakeModule -Root ([System.IO.Path]::Combine($proj, 'modules')) -Name 'LambdaPSFake.Req' -Version '1.0.0'
+
+        $err = $null
+        try { $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-req-vendored.zip')) -PwshArchivePath $script:fakeTarball -MissingModuleAction Stop -WarningAction SilentlyContinue }
+        catch { $err = $_ }
+        $err.FullyQualifiedErrorId | Should -Be 'ModuleNotFoundLocally,Build-LambdaPSRuntimePackage'
+        $err.Exception.Message | Should -BeLike "*'LambdaPSFake.Req' 1.0.0 is in '*scz-req-vendored*modules*LambdaPSFake.Req', which is packaged as it is but not searched*"
+    }
+
     It 'builds under -MissingModuleAction Stop when the required module is installed locally' {
         $installed = [System.IO.Path]::Combine($TestDrive, 'stop-installed')
         $null = New-FakeModule -Root $installed -Name 'LambdaPSFake.Req' -Version '1.0.0'
