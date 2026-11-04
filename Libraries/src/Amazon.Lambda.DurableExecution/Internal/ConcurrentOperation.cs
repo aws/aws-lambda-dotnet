@@ -345,6 +345,10 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // does): controlToken is linked to it through a callback, so while
         // cancellation is still being delivered it can lag behind. A unit that
         // failed because of the cancellation must never reach the parent checkpoint.
+        // The deadline is checked against the clock too, in case the deadline
+        // timer has not run yet when units failed because time ran out.
+        _workflowCancellation.ThrowIfDeadlineExceeded(
+            "The invocation deadline passed before the operation completed; its outcome is not recorded.");
         _workflowCancellation.Token.ThrowIfCancellationRequested();
         controlToken.ThrowIfCancellationRequested();
 

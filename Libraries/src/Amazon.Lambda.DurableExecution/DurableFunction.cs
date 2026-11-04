@@ -117,7 +117,8 @@ public static class DurableFunction
         var cleanupTimeout = options?.CleanupTimeout ?? DurableInvocationOptions.DefaultCleanupTimeout;
 
         var terminationManager = new TerminationManager();
-        using var workflowCancellation = new WorkflowCancellation(terminationManager, deadline);
+        // Anchor the deadline to when RemainingTime was read, so setup time is not added to it.
+        using var workflowCancellation = new WorkflowCancellation(terminationManager, deadline, startTimestamp);
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);
@@ -138,7 +139,7 @@ public static class DurableFunction
                     invocationInput.DurableExecutionArn, checkpointToken, nextMarker,
                     workflowCancellation.DeadlineToken);
                 // Bound the wait too, in case the call does not honor the token.
-                var (operations, marker) = await WaitWithDeadlineAsync(page, workflowCancellation.DeadlineToken);
+                var (operations, marker) = await WaitWithDeadlineAsync(page, workflowCancellation);
                 state.AddOperations(operations);
                 nextMarker = marker;
             }
@@ -271,32 +272,31 @@ public static class DurableFunction
     }
 
     /// <summary>
-    /// Awaits <paramref name="task"/>, but stops waiting when
-    /// <paramref name="deadlineToken"/> is cancelled. A task that is abandoned this
-    /// way has its eventual fault observed. With no deadline this is a plain await.
+    /// Awaits <paramref name="task"/>, but stops waiting when the invocation
+    /// deadline passes, and then throws <see cref="OperationCanceledException"/>.
+    /// Races <see cref="WorkflowCancellation.DeadlineTask"/>, which the SDK
+    /// signals before any foreign callback runs, rather than the deadline token:
+    /// a blocking callback the client registered on that token could otherwise
+    /// delay the wait. A task that is abandoned this way has its eventual fault
+    /// observed. With no deadline this is a plain await.
     /// </summary>
-    private static async Task<T> WaitWithDeadlineAsync<T>(Task<T> task, CancellationToken deadlineToken)
+    internal static async Task<T> WaitWithDeadlineAsync<T>(Task<T> task, WorkflowCancellation workflowCancellation)
     {
-        if (!deadlineToken.CanBeCanceled)
+        if (!workflowCancellation.DeadlineToken.CanBeCanceled)
             return await task.ConfigureAwait(false);
 
-        try
-        {
-            return await task.WaitAsync(deadlineToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // Observe the request in every case: it may fault after WaitAsync chose
-            // cancellation but before this handler runs, in which case nothing else
-            // ever awaits it. Only a fault is observed; a request that honored the
-            // token completes cancelled and needs nothing.
-            _ = task.ContinueWith(
-                static t => _ = t.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-            throw;
-        }
+        if (await Task.WhenAny(task, workflowCancellation.DeadlineTask).ConfigureAwait(false) == task)
+            return await task.ConfigureAwait(false);
+
+        // Nothing else ever awaits the abandoned request; observe its fault.
+        // A request that honored the token completes cancelled and needs nothing.
+        _ = task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+        throw new OperationCanceledException("The invocation deadline passed while loading execution state.",
+            workflowCancellation.DeadlineToken);
     }
 
     /// <summary>

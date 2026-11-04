@@ -22,6 +22,7 @@ When either trigger fires, the token transitions to `IsCancellationRequested = t
 - **`OperationCanceledException` thrown out of a step body via the token** (i.e. `linked.IsCancellationRequested` is true) is treated as cancellation: no FAIL checkpoint is written, no retry is consulted. The exception propagates up.
 - **`OperationCanceledException` thrown by user code for unrelated reasons** (token never fired) is treated as a normal step failure: FAIL checkpoint, retry per the configured `RetryStrategy`.
 - **The SDK's own writes (checkpoints, batcher flush, the runtime API response)** never observe the workflow-shutdown signal. Successful work is never lost to teardown.
+- **Callbacks you register on the token** (`ct.Register(...)`) run on the thread pool, not on the thread that cancelled. The token itself reports `IsCancellationRequested` immediately. A callback that throws is logged, not rethrown.
 - **When the invocation ends**, the token is cancelled before `DurableFunction.WrapAsync` returns. Work the workflow started but did not await (for example a step still running when a sibling suspended) observes the cancellation. Starting a new durable operation after this point throws `OperationCanceledException`.
 
 ## Lambda Managed Instances

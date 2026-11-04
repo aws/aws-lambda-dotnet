@@ -130,10 +130,11 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         {
             await completion.WaitAsync(_abandonCts.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (_abandonCts.IsCancellationRequested && !completion.IsCompleted)
+        catch (OperationCanceledException) when (_abandonCts.IsCancellationRequested)
         {
-            // The worker may still fail this item later; observe that so it never
-            // reaches TaskScheduler.UnobservedTaskException.
+            // The worker may fail this item later, or may have just failed it after
+            // the abandonment won the wait. Either way nothing else awaits it, so
+            // always observe it; it never reaches TaskScheduler.UnobservedTaskException.
             ObserveFault(completion);
             throw new OperationCanceledException(
                 "The checkpoint was not confirmed before the invocation's cleanup budget ran out.", _abandonCts.Token);

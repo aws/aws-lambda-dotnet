@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using Amazon.Lambda.Core;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -42,16 +43,28 @@ internal enum WorkflowCancellationReason
 /// being torn down.
 /// </para>
 /// <para>
-/// Lifetime rules that matter when several invocations share one process
-/// (Lambda Managed Instances):
+/// Rules that matter when several invocations share one process (Lambda
+/// Managed Instances), where a stuck SDK thread blocks a runtime processing loop:
 /// </para>
 /// <list type="bullet">
-///   <item><see cref="BeginTeardown"/> and <see cref="Dispose"/> cancel the token
-///       synchronously before releasing anything. Termination delivers its cancel
-///       through a threadpool continuation, which could otherwise run after
-///       disposal and be lost.</item>
-///   <item><see cref="Token"/> is captured at construction, so abandoned user code
-///       that reads it after disposal gets a cancelled token instead of an
+///   <item>The SDK never runs cancellation callbacks it does not own on its own
+///       threads. User code and the service client register callbacks on these
+///       tokens (directly, or through linked tokens), and a callback can block or
+///       throw. Every cancel the SDK starts uses
+///       <see cref="CancellationTokenSource.CancelAsync"/>: the token reports
+///       <c>IsCancellationRequested</c> immediately, and callbacks run on the
+///       threadpool. Their exceptions are observed and logged.</item>
+///   <item>The SDK's own decisions are published before any foreign code runs:
+///       admission is closed, the deadline is recorded and
+///       <see cref="DeadlineTask"/> is signalled first.</item>
+///   <item>The deadline is a monotonic timestamp, not just a timer. A timer
+///       callback can run late when the threadpool is busy, so
+///       <see cref="IsDeadlineExceeded"/> also compares the clock, and fires the
+///       deadline itself when the timer has not yet.</item>
+///   <item>Cancellation sources are disposed only after callback delivery has
+///       finished, so no registered callback is ever skipped. <see cref="Token"/>
+///       is captured at construction, so abandoned user code that reads it after
+///       disposal gets a cancelled token instead of an
 ///       <see cref="ObjectDisposedException"/>.</item>
 /// </list>
 /// </remarks>
@@ -60,11 +73,15 @@ internal sealed class WorkflowCancellation : IDisposable
     private readonly CancellationTokenSource _cts = new();
     private readonly CancellationToken _token;
     private readonly CancellationTokenSource? _deadlineCts;
-    private readonly CancellationTokenRegistration _deadlineRegistration;
+    private readonly long _deadlineTimestamp;
     private readonly Timer? _deadlineTimer;
     private readonly TaskCompletionSource _deadlineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly object _cancelLock = new();
+    private Task? _cancelDelivery;
+    private Task? _deadlineDelivery;
     private int _reason;
     private int _tornDown;
+    private int _deadlineFired;
     private int _disposed;
 
     public CancellationToken Token => _token;
@@ -75,37 +92,70 @@ internal sealed class WorkflowCancellation : IDisposable
     public WorkflowCancellationReason Reason => (WorkflowCancellationReason)Volatile.Read(ref _reason);
 
     /// <summary>
-    /// True once the invocation deadline passed. Read from the deadline token
-    /// itself, so it is accurate even when a suspension or teardown cancelled the
-    /// workflow first, and becomes true before any cancellation callback runs.
+    /// True once the invocation deadline passed. Compares the clock as well as
+    /// checking whether the deadline fired, so it is accurate even when the
+    /// threadpool delays the timer or a suspension cancelled the workflow first.
+    /// When the clock shows the deadline has passed but the timer has not run,
+    /// this fires the deadline, so every observer sees one consistent outcome.
     /// </summary>
-    public bool IsDeadlineExceeded => DeadlineToken.IsCancellationRequested;
+    public bool IsDeadlineExceeded
+    {
+        get
+        {
+            if (_deadlineCts is null) return false;
+            if (Volatile.Read(ref _deadlineFired) == 1) return true;
+            if (Stopwatch.GetTimestamp() < _deadlineTimestamp) return false;
+            TriggerDeadline();
+            return true;
+        }
+    }
 
     /// <summary>
     /// True once the invocation is being torn down (the wrapper finished or the
     /// deadline passed). New durable operations are rejected from this point.
     /// </summary>
-    public bool IsTornDown => Volatile.Read(ref _tornDown) == 1;
+    public bool IsTornDown => Volatile.Read(ref _tornDown) == 1 || IsDeadlineExceeded;
 
     /// <summary>
-    /// Cancels only when the invocation deadline passes. Passed to SDK-owned
-    /// service calls (state hydration). <see cref="CancellationToken.None"/> when
-    /// there is no deadline, so on-demand Lambda calls are unchanged.
+    /// Cancels when the invocation deadline passes. Passed to SDK-owned service
+    /// calls (state hydration). <see cref="CancellationToken.None"/> when there is
+    /// no deadline, so on-demand Lambda calls are unchanged. Do not wait on this
+    /// token to learn the deadline passed: its callbacks belong to the client and
+    /// may be delayed. Use <see cref="DeadlineTask"/> or <see cref="IsDeadlineExceeded"/>.
     /// </summary>
     public CancellationToken DeadlineToken { get; }
 
     /// <summary>
-    /// Completes when the invocation deadline passes. Never completes when there
-    /// is no deadline.
+    /// Completes when the invocation deadline passes, before any foreign callback
+    /// runs. Never completes when there is no deadline.
     /// </summary>
     public Task DeadlineTask => _deadlineTcs.Task;
+
+    /// <summary>
+    /// Completes once every callback registered on <see cref="Token"/> has run.
+    /// Already complete before the token is cancelled. Exposed for tests and
+    /// for disposal ordering.
+    /// </summary>
+    internal Task CancellationDelivered => Volatile.Read(ref _cancelDelivery) ?? Task.CompletedTask;
 
     /// <param name="terminationManager">Suspension signal for this invocation.</param>
     /// <param name="deadline">
     /// Time until the invocation deadline, or <c>null</c> for no deadline. Only
     /// set for Lambda Managed Instances; see <see cref="InvocationDeadline"/>.
     /// </param>
-    public WorkflowCancellation(TerminationManager terminationManager, TimeSpan? deadline = null)
+    /// <param name="anchorTimestamp">
+    /// The <see cref="Stopwatch.GetTimestamp"/> at which <paramref name="deadline"/>
+    /// was measured. Time elapsed since then is subtracted, so the deadline does
+    /// not drift by however long it took to get here. Defaults to now.
+    /// </param>
+    /// <param name="armTimer">
+    /// Test seam. <c>false</c> leaves the deadline to fire only through
+    /// <see cref="TriggerDeadline"/> or the clock check in
+    /// <see cref="IsDeadlineExceeded"/>, which models a timer the threadpool has
+    /// not run yet. Production code always arms the timer.
+    /// </param>
+    public WorkflowCancellation(TerminationManager terminationManager, TimeSpan? deadline = null, long? anchorTimestamp = null,
+        bool armTimer = true)
     {
         _token = _cts.Token;
 
@@ -120,26 +170,28 @@ internal sealed class WorkflowCancellation : IDisposable
         {
             _deadlineCts = new CancellationTokenSource();
             DeadlineToken = _deadlineCts.Token;
-            _deadlineRegistration = _deadlineCts.Token.Register(
-                static state => ((WorkflowCancellation)state!).OnDeadline(),
-                this);
 
-            // Own the timer rather than using CancellationTokenSource(TimeSpan):
-            // the deadline token is also handed to the service client, and if one
-            // of its cancellation callbacks threw on the CTS's internal timer the
-            // exception would crash the process. FireDeadline contains it.
-            // A zero deadline means the invocation was already out of time when it
-            // started, so it fires at once.
-            if (remaining > TimeSpan.Zero)
-                _deadlineTimer = new Timer(static state => ((WorkflowCancellation)state!).FireDeadline(), this, remaining, Timeout.InfiniteTimeSpan);
+            var anchor = anchorTimestamp ?? Stopwatch.GetTimestamp();
+            _deadlineTimestamp = anchor + (long)(remaining.TotalSeconds * Stopwatch.Frequency);
+            var untilDeadline = remaining - Stopwatch.GetElapsedTime(anchor);
+
+            // A deadline already reached (including one that ran out between
+            // reading RemainingTime and getting here) fires at once.
+            if (!armTimer)
+            {
+                // Test seam: nothing fires the deadline on its own.
+            }
+            else if (untilDeadline > TimeSpan.Zero)
+                _deadlineTimer = new Timer(static state => ((WorkflowCancellation)state!).TriggerDeadline(), this, untilDeadline, Timeout.InfiniteTimeSpan);
             else
-                FireDeadline();
+                TriggerDeadline();
         }
     }
 
     /// <summary>
-    /// Marks the invocation as torn down and cancels the token synchronously,
-    /// so the cancel is delivered before the caller releases any resources.
+    /// Marks the invocation as torn down and cancels the token. Returns without
+    /// running user cancellation callbacks: they run on the threadpool, so one
+    /// that blocks cannot stall the wrapper before its bounded drain.
     /// </summary>
     public void BeginTeardown()
     {
@@ -158,58 +210,96 @@ internal sealed class WorkflowCancellation : IDisposable
                 "The durable invocation has ended; no new durable operations can be started.", _token);
     }
 
-    private void FireDeadline()
+    /// <summary>
+    /// Throws <see cref="OperationCanceledException"/> when the invocation
+    /// deadline has passed, so a timed-out invocation records no outcome.
+    /// </summary>
+    public void ThrowIfDeadlineExceeded(string message)
     {
-        try { _deadlineCts!.Cancel(); }
-        catch (ObjectDisposedException)
-        {
-            // The timer fired while the invocation was being disposed.
-        }
-        catch (AggregateException ex)
-        {
-            // A callback registered on the deadline token (for example by the
-            // service client) threw. Cancel ran every other callback, including
-            // OnDeadline, before throwing.
-            LambdaLogger.Log(
-                "Warning", ex,
-                "A cancellation callback registered on the durable invocation deadline threw.");
-        }
+        if (IsDeadlineExceeded)
+            throw new OperationCanceledException(message, _token);
     }
 
-    private void OnDeadline()
+    /// <summary>
+    /// Fires the deadline now: by the timer, by an observer that saw the clock
+    /// pass it, or by a test. Idempotent. Runs no foreign code on the caller's
+    /// thread, so it is safe to call from anywhere.
+    /// </summary>
+    internal void TriggerDeadline()
     {
-        // Stop admitting new operations and signal the deadline BEFORE cancelling
-        // the token. Cancel runs user cancellation callbacks synchronously; a
-        // callback that blocks must not stop DurableExecutionHandler from seeing
-        // the deadline. _deadlineTcs runs its continuations asynchronously, so
-        // signalling it never runs the handler on this timer thread.
+        if (_deadlineCts is null) return;
+        if (Interlocked.Exchange(ref _deadlineFired, 1) != 0) return;
+
+        // The SDK's own state first: record why, close admission, and signal the
+        // handler. _deadlineTcs runs its continuations asynchronously, so this
+        // never runs the handler on the calling thread.
         Interlocked.CompareExchange(ref _reason, (int)WorkflowCancellationReason.DeadlineExceeded, 0);
         Volatile.Write(ref _tornDown, 1);
         _deadlineTcs.TrySetResult();
+
+        // Then the workflow token, then the client's deadline token. Both only
+        // queue their callbacks.
         Cancel(WorkflowCancellationReason.DeadlineExceeded);
+        StartCancelOnce(ref _deadlineDelivery, _deadlineCts,
+            "A cancellation callback registered on the durable invocation deadline threw.");
     }
 
     private void Cancel(WorkflowCancellationReason reason)
     {
         Interlocked.CompareExchange(ref _reason, (int)reason, 0);
-        try { _cts.Cancel(); }
+        StartCancelOnce(ref _cancelDelivery, _cts,
+            "A cancellation callback registered by the durable workflow threw while the workflow was being cancelled.");
+    }
+
+    /// <summary>
+    /// Starts cancelling <paramref name="source"/> exactly once, and records the
+    /// delivery so <see cref="Dispose"/> can wait for it.
+    /// </summary>
+    /// <remarks>
+    /// The lock makes every caller return only after the source reports
+    /// <c>IsCancellationRequested</c>: a caller that loses the race waits for the
+    /// winner to start cancelling instead of returning early. It is held only
+    /// while <see cref="CancellationTokenSource.CancelAsync"/> flips the state and
+    /// queues the callbacks, so no foreign code ever runs under it.
+    /// </remarks>
+    private void StartCancelOnce(ref Task? deliverySlot, CancellationTokenSource source, string callbackFailureMessage)
+    {
+        lock (_cancelLock)
+        {
+            if (deliverySlot != null) return;
+            Volatile.Write(ref deliverySlot, StartCancel(source, callbackFailureMessage));
+        }
+    }
+
+    /// <summary>
+    /// Cancels <paramref name="source"/> without running its callbacks on this
+    /// thread. The returned task completes when every callback has run; callback
+    /// exceptions are logged, never rethrown.
+    /// </summary>
+    private static Task StartCancel(CancellationTokenSource source, string callbackFailureMessage)
+    {
+        Task delivery;
+        try
+        {
+            delivery = source.CancelAsync();
+        }
         catch (ObjectDisposedException)
         {
-            // Only reachable from the late termination continuation or deadline
-            // timer. Dispose cancels before disposing, so the token is already
-            // cancelled.
+            // Only reachable after disposal, which happens once delivery finished,
+            // so the source was already cancelled.
+            return Task.CompletedTask;
         }
-        catch (AggregateException ex)
-        {
-            // A user cancellation callback threw. Cancel still ran every other
-            // callback before throwing, so cancellation is fully delivered. Never
-            // let the exception escape: on the deadline timer it would crash the
-            // process (and every invocation sharing it), and during teardown it
-            // would replace the invocation's real outcome.
-            LambdaLogger.Log(
-                "Warning", ex,
-                "A cancellation callback registered by the durable workflow threw while the workflow was being cancelled.");
-        }
+
+        return delivery.ContinueWith(
+            static (t, message) =>
+            {
+                if (t.Exception is { } ex)
+                    LambdaLogger.Log("Warning", ex.Flatten(), (string)message!);
+            },
+            callbackFailureMessage,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     public void Dispose()
@@ -217,14 +307,42 @@ internal sealed class WorkflowCancellation : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
 
         BeginTeardown();
-
-        // Unregister rather than Dispose: Dispose waits for a deadline callback
-        // that is still running, and a user cancellation callback that blocks
-        // would then hang the invocation here.
-        _deadlineRegistration.Unregister();
         _deadlineTimer?.Dispose();
-        _deadlineCts?.Dispose();
-        _cts.Dispose();
+
+        // Dispose each source only after its callbacks have all run. Disposing
+        // earlier could skip callbacks that have not run yet, so linked tokens
+        // (and the user code behind them) would never be cancelled. A callback
+        // that never returns just leaves its source undisposed. Read the delivery
+        // handles under the lock, so a cancel that is starting is never missed.
+        Task workflowDelivery;
+        Task? deadlineDelivery;
+        lock (_cancelLock)
+        {
+            workflowDelivery = _cancelDelivery ?? Task.CompletedTask;
+            deadlineDelivery = _deadlineDelivery;
+        }
+
+        DisposeAfter(_cts, workflowDelivery);
+        if (_deadlineCts != null)
+        {
+            // A deadline that never fired was never cancelled: dispose it now and
+            // the timer can no longer fire it (CancelAsync on a disposed source is
+            // tolerated by StartCancel).
+            DisposeAfter(_deadlineCts, deadlineDelivery ?? Task.CompletedTask);
+        }
+    }
+
+    private static void DisposeAfter(CancellationTokenSource source, Task delivery)
+    {
+        if (delivery.IsCompleted)
+            source.Dispose();
+        else
+            delivery.ContinueWith(
+                static (_, s) => ((CancellationTokenSource)s!).Dispose(),
+                source,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
     }
 }
 
@@ -267,8 +385,8 @@ internal static class InvocationDeadline
         if (!isMultiConcurrency) return null;
         if (remainingTime <= TimeSpan.Zero) return TimeSpan.Zero;
 
-        // CancellationTokenSource rejects delays above int.MaxValue milliseconds.
-        // Lambda timeouts are far below that; treat anything larger as no deadline.
+        // Timer rejects delays above int.MaxValue milliseconds. Lambda timeouts
+        // are far below that; treat anything larger as no deadline.
         if (remainingTime.TotalMilliseconds >= int.MaxValue) return null;
         return remainingTime;
     }

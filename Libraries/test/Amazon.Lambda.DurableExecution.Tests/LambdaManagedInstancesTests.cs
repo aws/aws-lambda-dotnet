@@ -104,8 +104,13 @@ public class LambdaManagedInstancesTests
                 new DurableInvocationOptions { IsMultiConcurrency = isMultiConcurrency });
 
             Assert.Equal(InvocationStatus.Pending, output.Status);
-            // Checked immediately: cancellation must already be delivered.
-            Assert.True(stepToken.IsCancellationRequested, $"Abandoned step not cancelled on iteration {i}.");
+            // Cancellation is requested before the wrapper returns, and its
+            // callbacks are delivered on the threadpool (never on the wrapper's
+            // thread, where a blocking user callback could stall it). It must
+            // arrive, never be lost to disposal.
+            var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            stepToken.Register(() => cancelled.TrySetResult());
+            await cancelled.Task.NoHang();
         }
     }
 
@@ -265,14 +270,14 @@ public class LambdaManagedInstancesTests
     [Fact]
     public async Task RunAsync_WorkflowFaultsFromDeadlineBeforeDeadlineTaskCompletes_ReportsDeadline()
     {
-        // Forces the race where the workflow task faults before DeadlineTask
-        // completes. The workflow registers on the deadline token before the
-        // deadline fires; that callback runs before WorkflowCancellation's own
-        // (callbacks run in reverse order), so the workflow faults while the
-        // deadline has passed but DeadlineTask is not yet signalled. The fault
-        // must still be reported as a deadline, not as a durable failure.
+        // The workflow faults while the deadline has passed but DeadlineTask is
+        // not yet signalled: the deadline is already behind the clock and its
+        // timer has not run (as when the threadpool delays it). The workflow wins
+        // the race; the fault must still be reported as a deadline, not as a
+        // durable failure.
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        var (wfc, deadlinePassed) = DeadlineWithTimerNotRun(tm);
+        using var _ = wfc;
         var workflowRan = false;
 
         var result = await DurableExecutionHandler.RunAsync<string>(
@@ -281,11 +286,8 @@ public class LambdaManagedInstancesTests
             async () =>
             {
                 workflowRan = true;
-                // No RunContinuationsAsynchronously: the await below resumes
-                // inline inside the cancellation callback.
-                var faulted = new TaskCompletionSource<string>();
-                wfc.DeadlineToken.Register(() => faulted.TrySetException(new InvalidOperationException("user gave up")));
-                return await faulted.Task;
+                await deadlinePassed();
+                throw new InvalidOperationException("user gave up");
             },
             wfc).NoHang();
 
@@ -315,16 +317,17 @@ public class LambdaManagedInstancesTests
     }
 
     [Fact]
-    public void WorkflowCancellation_DeadlineIsReported_EvenWhenTerminationCancelledFirst()
+    public async Task WorkflowCancellation_DeadlineIsReported_EvenWhenTerminationCancelledFirst()
     {
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
-        var deadlineHit = new ManualResetEventSlim();
-        wfc.DeadlineToken.Register(deadlineHit.Set);
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
+        var deadlineHit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        wfc.DeadlineToken.Register(() => deadlineHit.TrySetResult());
 
         // A suspension sets the first cancellation reason before the deadline.
         wfc.BeginTeardown();
-        Assert.True(deadlineHit.Wait(HangGuard));
+        wfc.TriggerDeadline();
+        await deadlineHit.Task.NoHang();
 
         Assert.True(wfc.IsDeadlineExceeded);
     }
@@ -333,18 +336,20 @@ public class LambdaManagedInstancesTests
     public async Task WorkflowCancellation_ThrowingCallback_DoesNotEscapeDeadlineOrTeardown()
     {
         var tm = new TerminationManager();
-        var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        var wfc = new WorkflowCancellation(tm, ControlledDeadline);
         // Callbacks run in reverse registration order: the throwing one runs
-        // first, then this one. It still running proves Cancel delivered to
-        // every callback despite the throw.
+        // first, then this one. It still running proves every callback was
+        // delivered despite the throw.
         var otherCallbackRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         wfc.Token.Register(() => otherCallbackRan.TrySetResult());
         wfc.Token.Register(() => throw new InvalidOperationException("user callback threw"));
 
-        // The deadline fires on a timer thread: the throwing callback must not
-        // escape there (that would crash the test host) or block the signal.
+        // Firing the deadline must not throw on the caller's thread (on the timer
+        // thread that would crash the process) or block the signal.
+        wfc.TriggerDeadline();
         await wfc.DeadlineTask.NoHang();
         await otherCallbackRan.Task.NoHang();
+        await wfc.CancellationDelivered.NoHang();
         Assert.True(wfc.Token.IsCancellationRequested);
 
         // Teardown and dispose must not throw either.
@@ -353,7 +358,7 @@ public class LambdaManagedInstancesTests
     }
 
     [Fact]
-    public void WorkflowCancellation_ThrowingCallback_DoesNotEscapeTeardown()
+    public async Task WorkflowCancellation_ThrowingCallback_DoesNotEscapeTeardown()
     {
         // No deadline: the first cancel comes from the wrapper's teardown, as on
         // every invocation. A throwing user callback must not replace the
@@ -364,6 +369,7 @@ public class LambdaManagedInstancesTests
         wfc.Token.Register(() => throw new InvalidOperationException("user callback threw"));
 
         wfc.BeginTeardown();
+        await wfc.CancellationDelivered.NoHang();
         wfc.Dispose();
 
         Assert.True(wfc.Token.IsCancellationRequested);
@@ -375,13 +381,14 @@ public class LambdaManagedInstancesTests
     {
         var tm = new TerminationManager();
         using var release = new ManualResetEventSlim();
-        var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        var wfc = new WorkflowCancellation(tm, ControlledDeadline);
         wfc.Token.Register(() => release.Wait());
 
         try
         {
-            // DeadlineTask completes even though a cancellation callback blocks
-            // the thread that is delivering the cancel.
+            // Firing returns at once and DeadlineTask completes, even though a
+            // cancellation callback blocks the thread delivering the cancel.
+            await Task.Run(wfc.TriggerDeadline).NoHang();
             await wfc.DeadlineTask.NoHang();
             Assert.True(wfc.IsDeadlineExceeded);
         }
@@ -392,30 +399,213 @@ public class LambdaManagedInstancesTests
         }
     }
 
+    // ── Copilot review round 3 ─────────────────────────────────────────
+
+    [Fact]
+    public async Task WorkflowCancellation_BeginTeardown_DoesNotRunUserCallbacksOnCaller()
+    {
+        // A step's linked token carries a user callback that blocks. Teardown is
+        // the first cancel; it must return without waiting for that callback.
+        var wfc = new WorkflowCancellation(new TerminationManager());
+        using var release = new ManualResetEventSlim();
+        using var stepToken = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None, wfc.Token);
+        stepToken.Token.Register(() => release.Wait());
+
+        try
+        {
+            await Task.Run(wfc.BeginTeardown).NoHang();
+            // The token reports cancellation immediately; delivery is still pending.
+            Assert.True(wfc.Token.IsCancellationRequested);
+            Assert.False(wfc.CancellationDelivered.IsCompleted);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await wfc.CancellationDelivered.NoHang();
+        Assert.True(stepToken.IsCancellationRequested);
+        wfc.Dispose();
+    }
+
+    [Fact]
+    public async Task OnDemand_UnawaitedStepWithBlockingCallback_WrapperStillReturns()
+    {
+        // End to end, in on-demand mode: the workflow returns while an unawaited
+        // step has a blocking callback on its token. Teardown runs on every
+        // invocation and must not stall in that callback.
+        var client = new FakeServiceClient();
+        using var release = new ManualResetEventSlim();
+        var registered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        try
+        {
+            var output = await DurableFunction.WrapAsync<Payload, string>(
+                async (_, ctx) =>
+                {
+                    ctx.StepAsync<int>(async (_, ct) =>
+                    {
+                        ct.Register(() => release.Wait());
+                        registered.TrySetResult();
+                        await Task.Delay(Timeout.Infinite, ct);
+                        return 0;
+                    }, name: "slow").Observe();
+                    await registered.Task;
+                    return "done";
+                },
+                Input("arn:blocking-teardown"),
+                Context(TimeSpan.FromMinutes(5)),
+                client,
+                OnDemandOptions).NoHang();
+
+            Assert.Equal(InvocationStatus.Succeeded, output.Status);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    [Fact]
+    public void WorkflowCancellation_DeadlinePassedButTimerNotRun_IsReportedAndClosesAdmission()
+    {
+        var tm = new TerminationManager();
+        using var wfc = ExpiredWithTimerNotRun(tm);
+
+        // Nothing has fired the deadline, but the clock is past it.
+        Assert.False(wfc.DeadlineTask.IsCompleted);
+        Assert.True(wfc.IsTornDown);
+        Assert.Throws<OperationCanceledException>(wfc.ThrowIfTornDown);
+        Assert.True(wfc.IsDeadlineExceeded);
+
+        // Observing it fires the deadline, so every later observer agrees.
+        Assert.True(wfc.DeadlineTask.IsCompleted);
+        Assert.True(wfc.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task WorkflowCancellation_BlockingDeadlineTokenCallback_DoesNotBlockDeadline()
+    {
+        // The service client registers a callback on the deadline token that
+        // blocks. The SDK's own deadline work must still complete.
+        var tm = new TerminationManager();
+        using var release = new ManualResetEventSlim();
+        var wfc = new WorkflowCancellation(tm, ControlledDeadline);
+        wfc.DeadlineToken.Register(() => release.Wait());
+
+        try
+        {
+            await Task.Run(wfc.TriggerDeadline).NoHang();
+            await wfc.DeadlineTask.NoHang();
+            Assert.True(wfc.Token.IsCancellationRequested);
+            Assert.True(wfc.IsTornDown);
+        }
+        finally
+        {
+            release.Set();
+            wfc.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Hydration_BlockingClientDeadlineCallback_DoesNotBlockTheWait()
+    {
+        // The client registers a blocking callback on the deadline token and
+        // never completes its request. The wait must still end at the deadline.
+        var tm = new TerminationManager();
+        using var release = new ManualResetEventSlim();
+        var wfc = new WorkflowCancellation(tm, ControlledDeadline);
+        var never = new TaskCompletionSource<int>();
+
+        try
+        {
+            var wait = DurableFunction.WaitWithDeadlineAsync(never.Task, wfc);
+            // Registered after the wait started (as a client that registers once
+            // its request is under way), so it runs before anything the wait
+            // itself registered on this token.
+            wfc.DeadlineToken.Register(() => release.Wait());
+            wfc.TriggerDeadline();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait.NoHang());
+        }
+        finally
+        {
+            release.Set();
+            wfc.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WaitForCondition_DeadlinePassesDuringStateSerialization_RecordsNoOutcome(bool conditionMet)
+    {
+        // The state serializer runs after the deadline check that follows the
+        // condition check; the deadline passes while it runs (the serializer
+        // fires it, deterministically). No RETRY, SUCCEED or FAIL may be recorded.
+        var tm = new TerminationManager();
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
+        var recorder = new RecordingBatcher();
+        var ctx = new DurableContext(new ExecutionState(), tm, wfc, new OperationIdGenerator(),
+            "arn:test", Context(TimeSpan.FromMinutes(5)), recorder.Batcher);
+
+        var op = ctx.WaitForConditionAsync<int>(
+            (state, _, _) => Task.FromResult(state + 1),
+            new WaitForConditionConfig<int>
+            {
+                InitialState = 0,
+                WaitStrategy = conditionMet
+                    ? WaitStrategy.FromDelegate<int>((_, _) => WaitDecision.Stop())
+                    : WaitStrategy.Fixed<int>(TimeSpan.FromSeconds(1)),
+                Serializer = new DeadlineTriggeringSerializer(wfc),
+            },
+            name: "w");
+
+        await Task.WhenAny(op, tm.TerminationTask).NoHang();
+        await recorder.Batcher.DrainAsync();
+
+        Assert.True(op.IsCanceled || op.IsFaulted, "The outcome must not be accepted after the deadline.");
+        if (op.IsFaulted) Assert.NotNull(op.Exception);
+        Assert.DoesNotContain(recorder.Flushed,
+            u => u.Action == OperationAction.FAIL || u.Action == OperationAction.RETRY || u.Action == OperationAction.SUCCEED);
+    }
+
+    /// <summary>Default serializer whose Serialize fires the deadline first.</summary>
+    private sealed class DeadlineTriggeringSerializer : Amazon.Lambda.Core.ILambdaSerializer
+    {
+        private readonly DefaultLambdaJsonSerializer _inner = new();
+        private readonly WorkflowCancellation _wfc;
+        public DeadlineTriggeringSerializer(WorkflowCancellation wfc) => _wfc = wfc;
+        public T Deserialize<T>(Stream requestStream) => _inner.Deserialize<T>(requestStream);
+        public void Serialize<T>(T response, Stream responseStream)
+        {
+            _wfc.TriggerDeadline();
+            _inner.Serialize(response, responseStream);
+        }
+    }
+
     [Fact]
     public async Task RunAsync_WorkflowReturnsFallbackAfterDeadline_ReportsDeadline()
     {
-        // The workflow observes cancellation and returns a value. It can win the
-        // race against DeadlineTask; the deadline must still decide the outcome.
+        // The workflow returns a value after the deadline passed, before its timer
+        // ran. It wins the race against DeadlineTask; the deadline must still
+        // decide the outcome.
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        var (wfc, deadlinePassed) = DeadlineWithTimerNotRun(tm);
+        using var _ = wfc;
+        var workflowRan = false;
 
         var result = await DurableExecutionHandler.RunAsync<string>(
             new ExecutionState(),
             tm,
             async () =>
             {
-                // Completes inline in a deadline-token callback registered after
-                // WorkflowCancellation's own, so it runs first (callbacks run in
-                // reverse order): the workflow finishes while the deadline has
-                // passed but DeadlineTask is not yet signalled. The workflow wins
-                // the race; only the deadline check can catch it.
-                var done = new TaskCompletionSource<string>();
-                wfc.DeadlineToken.Register(() => done.TrySetResult("fallback"));
-                return await done.Task;
+                workflowRan = true;
+                await deadlinePassed();
+                return "fallback";
             },
             wfc).NoHang();
 
+        Assert.True(workflowRan);
         Assert.True(result.DeadlineExceeded);
         Assert.Null(result.Result);
     }
@@ -485,14 +675,16 @@ public class LambdaManagedInstancesTests
         // Drives the operation directly, with nothing tearing the batcher down,
         // so a FAIL/RETRY the operation enqueued would definitely be flushed.
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
         var recorder = new RecordingBatcher();
         var ctx = new DurableContext(new ExecutionState(), tm, wfc, new OperationIdGenerator(),
             "arn:test", Context(TimeSpan.FromMinutes(5)), recorder.Batcher);
         var retry = new StepConfig { RetryStrategy = RetryStrategy.Exponential(maxAttempts: 3) };
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         async Task<int> Body(CancellationToken ct)
         {
+            entered.TrySetResult();
             try { await Task.Delay(Timeout.Infinite, ct); }
             catch (OperationCanceledException) { throw new InvalidOperationException("gave up"); }
             return 0;
@@ -511,6 +703,9 @@ public class LambdaManagedInstancesTests
                 },
                 name: "w"),
         };
+
+        await entered.Task.NoHang();
+        wfc.TriggerDeadline();
 
         // The operation must surface the error without recording a failure. A
         // RETRY would suspend instead, so only wait for completion or suspension.
@@ -741,7 +936,7 @@ public class LambdaManagedInstancesTests
         // the control token is notified. The parent must not checkpoint an
         // outcome that contains those failures.
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
         var recorder = new RecordingBatcher();
         var ctx = new DurableContext(new ExecutionState(), tm, wfc, new OperationIdGenerator(),
             "arn:test", Context(TimeSpan.FromMinutes(5)), recorder.Batcher);
@@ -767,6 +962,7 @@ public class LambdaManagedInstancesTests
             Assert.True(entered.Wait(LambdaManagedInstancesTests.HangGuardTimeout));
             // Registered after the parallel's control token, so it runs before it.
             wfc.Token.Register(() => { deliveryStarted.TrySetResult(); releaseDelivery.Wait(); });
+            wfc.TriggerDeadline();
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.NoHang());
         }
@@ -785,15 +981,17 @@ public class LambdaManagedInstancesTests
     public async Task WaitForCondition_CheckReturnsStateAfterDeadline_RecordsNoRetryOrFail()
     {
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
         var recorder = new RecordingBatcher();
         var ctx = new DurableContext(new ExecutionState(), tm, wfc, new OperationIdGenerator(),
             "arn:test", Context(TimeSpan.FromMinutes(5)), recorder.Batcher);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // The check swallows the cancellation and returns a state.
         var op = ctx.WaitForConditionAsync<int>(
             async (state, _, ct) =>
             {
+                entered.TrySetResult();
                 try { await Task.Delay(Timeout.Infinite, ct); }
                 catch (OperationCanceledException) { }
                 return state + 1;
@@ -805,6 +1003,8 @@ public class LambdaManagedInstancesTests
             },
             name: "w");
 
+        await entered.Task.NoHang();
+        wfc.TriggerDeadline();
         await Task.WhenAny(op, tm.TerminationTask).NoHang();
         await recorder.Batcher.DrainAsync();
 
@@ -821,10 +1021,15 @@ public class LambdaManagedInstancesTests
         // registers that throws must not escape the deadline timer (which would
         // crash the test host process, as it would an LMI environment).
         var tm = new TerminationManager();
-        using var wfc = new WorkflowCancellation(tm, TimeSpan.FromMilliseconds(50));
+        using var wfc = new WorkflowCancellation(tm, ControlledDeadline);
+        var laterCallbackRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        wfc.DeadlineToken.Register(() => laterCallbackRan.TrySetResult());
         wfc.DeadlineToken.Register(() => throw new InvalidOperationException("client callback threw"));
 
+        // Firing must not throw here, on the caller's thread, either.
+        wfc.TriggerDeadline();
         await wfc.DeadlineTask.NoHang();
+        await laterCallbackRan.Task.NoHang();
         Assert.True(wfc.Token.IsCancellationRequested);
     }
 
@@ -1117,6 +1322,41 @@ public class LambdaManagedInstancesTests
 
     /// <summary>The configured hang guard, for <see cref="HangGuardExtensions"/>.</summary>
     internal static TimeSpan HangGuardTimeout => HangGuard;
+
+    /// <summary>
+    /// A deadline far enough away that its timer never fires during a test.
+    /// Tests fire it themselves with <see cref="WorkflowCancellation.TriggerDeadline"/>
+    /// once their setup is in place, so setup never races a real timer.
+    /// </summary>
+    private static readonly TimeSpan ControlledDeadline = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// A short deadline whose timer is never armed, plus a function that waits
+    /// until the clock has passed it: lets a workflow start, then finish after
+    /// the deadline, before anything fired it. Models the threadpool delaying
+    /// the timer callback. Only the outcome is asserted, never elapsed time.
+    /// </summary>
+    private static (WorkflowCancellation Wfc, Func<Task> DeadlinePassed) DeadlineWithTimerNotRun(TerminationManager tm)
+    {
+        var anchor = System.Diagnostics.Stopwatch.GetTimestamp();
+        var deadline = TimeSpan.FromMilliseconds(100);
+        var wfc = new WorkflowCancellation(tm, deadline, anchor, armTimer: false);
+        async Task DeadlinePassed()
+        {
+            while (System.Diagnostics.Stopwatch.GetElapsedTime(anchor) <= deadline)
+                await Task.Delay(10);
+        }
+        return (wfc, DeadlinePassed);
+    }
+
+    /// <summary>
+    /// A deadline the clock has already passed, whose timer has not run: models
+    /// the threadpool delaying the timer callback.
+    /// </summary>
+    private static WorkflowCancellation ExpiredWithTimerNotRun(TerminationManager tm) =>
+        new(tm, TimeSpan.FromSeconds(1),
+            anchorTimestamp: System.Diagnostics.Stopwatch.GetTimestamp() - 5 * System.Diagnostics.Stopwatch.Frequency,
+            armTimer: false);
 
     /// <summary>
     /// One handler instance shared by every concurrent invocation. Every step
