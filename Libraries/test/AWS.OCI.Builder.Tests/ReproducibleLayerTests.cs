@@ -68,7 +68,68 @@ public class ReproducibleLayerTests
     [InlineData("short/name.txt", (1L << 33) - 1, true)]   // largest ustar size
     [InlineData("short/name.txt", 1L << 33, false)]        // 8 GiB
     public void FitsUstar_checks_size(string name, long size, bool expected)
-        => Assert.Equal(expected, Layer.FitsUstar(TarEntryType.RegularFile, name, size));
+        => Assert.Equal(expected, Layer.FitsUstar(name, size));
+
+    public static TheoryData<string, bool> UstarNames => new()
+    {
+        { new string('n', 100), true },                                       // fills the name field
+        { new string('n', 101), false },                                      // no '/' to split at
+        { new string('p', 155) + "/" + new string('n', 100), true },          // 256 bytes: both fields full
+        { new string('p', 155) + "/" + new string('n', 101), false },         // name part too long
+        { new string('p', 156) + "/" + new string('n', 99), false },          // prefix part too long
+        { "/" + new string('n', 100), false },                                // splitting at the root isn't allowed
+        { new string('p', 101) + "/", false },                                // empty name part
+        { new string('ü', 60) + "/" + new string('ü', 50), true },            // 120 + 1 + 100 UTF-8 bytes
+        { new string('ü', 60) + "/" + new string('ü', 51), false },           // 102-byte name part
+        // Fits only when split at the first '/': .NET tries the last one, so this uses PAX.
+        { new string('p', 100) + "/" + new string('q', 60) + "/n", false },
+    };
+
+    [Theory]
+    [MemberData(nameof(UstarNames))]
+    public void FitsUstar_splits_long_names_at_the_last_slash(string name, bool expected)
+        => Assert.Equal(expected, Layer.FitsUstar(name, 1));
+
+    [Fact]
+    public void Names_up_to_255_bytes_round_trip_through_TarReader_as_ustar()
+    {
+        // Every name FitsUstar accepts must be written by .NET's ustar writer and read back unchanged. This catches a
+        // change in how .NET splits a name between the prefix and name fields.
+        var random = new Random(2603);
+        string[] parts = { "a", "ü", "lib", "Microsoft.PowerShell.Commands.Utility", new string('x', 40), new string('y', 99), new string('z', 120) };
+        var names = new List<string>
+        {
+            // Shaped like the longest entries in the pwsh 7.6 tarball (up to 132 bytes).
+            "var/runtime/powershell/Modules/Microsoft.PowerShell.Security/Microsoft.PowerShell.Security.psd1",
+            "var/runtime/powershell/runtimes/linux-musl-x64/lib/netstandard2.0/Microsoft.Management.Infrastructure.Native.dll",
+            "var/runtime/powershell/en-US/Microsoft.PowerShell.Commands.Utility.resources.dll/" + new string('r', 30),
+        };
+        for (int n = 0; n < 2000; n++)
+        {
+            names.Add(string.Join('/', Enumerable.Range(0, random.Next(1, 7)).Select(_ => parts[random.Next(parts.Length)])));
+        }
+
+        int split = 0;
+        foreach (string name in names.Where(name => Layer.FitsUstar(name, 0)))
+        {
+            using var buffer = new MemoryStream();
+            using (var writer = new TarWriter(buffer, TarEntryFormat.Ustar, leaveOpen: true))
+            {
+                writer.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, name));
+            }
+            buffer.Position = 0;
+            using var reader = new TarReader(buffer);
+            TarEntry? entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(TarEntryFormat.Ustar, entry.Format);
+            Assert.Equal(name, entry.Name);
+            if (Encoding.UTF8.GetByteCount(name) > 100)
+            {
+                split++;
+            }
+        }
+        Assert.True(split >= 100, $"only {split} names used the prefix field");
+    }
 
     [Fact]
     public async Task Layers_with_many_long_names_build_and_read_back()

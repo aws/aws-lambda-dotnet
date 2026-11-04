@@ -1,6 +1,7 @@
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace AWS.OCI.Builder.Images;
 
@@ -380,15 +381,15 @@ internal sealed class Layer
     /// <summary>Creates a ustar entry, or a PAX entry when ustar can't hold the name or size (see <see cref="FitsUstar"/>).</summary>
     internal static TarEntry CreateEntry(TarEntryType type, string name, UnixFileMode mode, long size)
     {
-        // A directory name longer than ustar's 100-byte name field loses its trailing '/'. Otherwise .NET splits it
-        // at that slash and leaves the name field empty, which tar itself never writes; the type flag already marks
-        // the entry as a directory.
-        if (type == TarEntryType.Directory && System.Text.Encoding.UTF8.GetByteCount(name) > 100)
+        // A directory name longer than ustar's name field loses its trailing '/'. Otherwise the last '/' is the
+        // trailing one and the name field would be left empty, which tar itself never writes; the type flag already
+        // marks the entry as a directory.
+        if (type == TarEntryType.Directory && Encoding.UTF8.GetByteCount(name) > UstarNameFieldLength)
         {
             name = name.TrimEnd('/');
         }
 
-        TarEntry entry = FitsUstar(type, name, size)
+        TarEntry entry = FitsUstar(name, size)
             ? new UstarTarEntry(type, name)
             : new PaxTarEntry(type, name, ReproducibleExtendedAttributes());
         entry.Mode = mode;
@@ -396,53 +397,48 @@ internal sealed class Layer
         return entry;
     }
 
+    // ustar header limits: a 100-byte name field, a 155-byte prefix field, and an 11-digit octal size field, so the
+    // largest size is 8^11 - 1 (one byte under 8 GiB).
+    private const int UstarNameFieldLength = 100;
+    private const int UstarPrefixFieldLength = 155;
+    private const long UstarMaxSize = (1L << 33) - 1;
+
     /// <summary>
-    /// Whether a ustar header can hold <paramref name="name"/> and <paramref name="size"/>. This asks .NET's own ustar
-    /// writer, against a throwaway stream, rather than re-implementing its rule for splitting a long name into the
-    /// prefix and name fields (it does not accept every split the format allows).
+    /// Whether an entry can be written as ustar: its size fits the size field, and its UTF-8 name either fits the
+    /// name field or splits at its last <c>/</c> into a prefix that fits the prefix field and a non-empty name that
+    /// fits the name field. Other names use PAX.
     /// </summary>
-    internal static bool FitsUstar(TarEntryType type, string name, long size)
+    /// <remarks>
+    /// .NET's ustar writer chooses the split itself. It always accepts a name that fits the name field, and a name
+    /// whose split at the last <c>/</c> fits, because it tries that split first. Some names that only fit when split at
+    /// an earlier <c>/</c> are rejected by .NET, so this predicate doesn't accept them, and they use PAX. Names up to
+    /// 255 bytes therefore stay ustar in the common case of a short file name under a long folder path; a PAX entry
+    /// would carry .NET's <c>PaxHeaders.&lt;process id&gt;</c> header and make the layer differ across processes.
+    /// </remarks>
+    internal static bool FitsUstar(string name, long size)
     {
-        using var writer = new TarWriter(Stream.Null, TarEntryFormat.Ustar, leaveOpen: true);
-        try
-        {
-            var probe = new UstarTarEntry(type, name);
-            if (size > 0)
-            {
-                probe.DataStream = new HeaderProbeStream(size);
-            }
-            writer.WriteEntry(probe);
-            return true;
-        }
-        catch (HeaderProbeStream.HeaderWrittenException)
-        {
-            return true; // the header was accepted; the writer had started on the data
-        }
-        catch (ArgumentException)
+        if (size > UstarMaxSize)
         {
             return false;
         }
-    }
 
-    /// <summary>
-    /// A stream that reports a length but throws as soon as it is read, so <see cref="FitsUstar"/> can test a header
-    /// without supplying the data.
-    /// </summary>
-    private sealed class HeaderProbeStream(long length) : Stream
-    {
-        internal sealed class HeaderWrittenException : Exception;
+        int length = Encoding.UTF8.GetByteCount(name);
+        if (length <= UstarNameFieldLength)
+        {
+            return true;
+        }
+        if (length > UstarPrefixFieldLength + 1 + UstarNameFieldLength)
+        {
+            return false;
+        }
 
-        public override bool CanRead => true;
-        public override bool CanSeek => true;
-        public override bool CanWrite => false;
-        public override long Length => length;
-        public override long Position { get => 0; set { } }
-        public override int Read(byte[] buffer, int offset, int count) => throw new HeaderWrittenException();
-        public override int Read(Span<byte> buffer) => throw new HeaderWrittenException();
-        public override long Seek(long offset, SeekOrigin origin) => 0;
-        public override void Flush() { }
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        // The prefix and name fields are joined with a '/' on read, so the '/' itself is in neither field. A split at
+        // index 0 would leave an empty prefix, which readers take as no prefix.
+        byte[] utf8 = Encoding.UTF8.GetBytes(name);
+        int slash = Array.LastIndexOf(utf8, (byte)'/');
+        return slash >= 1
+            && slash <= UstarPrefixFieldLength
+            && length - slash - 1 is > 0 and <= UstarNameFieldLength;
     }
 
     /// <summary>
