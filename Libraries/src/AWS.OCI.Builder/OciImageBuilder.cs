@@ -57,12 +57,16 @@ public sealed class OciImageBuilder : IDisposable
     /// push time and read by the default target-client factory.</summary>
     private TimeSpan _uploadTimeout = Timeout.InfiniteTimeSpan;
 
-    /// <summary>Creates the push-target registry client, honoring the resolved upload timeout. A test override
-    /// (<see cref="UseTargetClientFactoryForTest"/>) takes precedence when set.</summary>
+    /// <summary>The proxy for the push client, from <see cref="EcrPushOptions.Proxy"/>, read by the default
+    /// target-client factory.</summary>
+    private System.Net.IWebProxy? _pushProxy;
+
+    /// <summary>Creates the push-target registry client, honoring the resolved upload timeout and proxy. A test
+    /// override (<see cref="UseTargetClientFactoryForTest"/>) takes precedence when set.</summary>
     private RegistryClient CreateTargetClient(string host, IRegistryCredentialSource credentialSource)
         => _targetClientFactory is { } factory
             ? factory(host, credentialSource)
-            : RegistryClient.Create(host, credentialSource, _uploadTimeout);
+            : RegistryClient.Create(host, credentialSource, _uploadTimeout, _pushProxy);
 
     private OciImageBuilder(
         ImageReference baseReference,
@@ -140,11 +144,45 @@ public sealed class OciImageBuilder : IDisposable
         CancellationToken cancellationToken = default)
         // Public base images pull anonymously (the handshake still performs a Bearer-token exchange when the
         // registry demands one, e.g. Docker Hub; the token is obtained without credentials).
-        => FromBaseImageAsync(
+        => FromBaseImageAsync(baseImage, platform, options: null, cancellationToken);
+
+    /// <summary>
+    /// Fetches a base image and prepares a builder to overlay layers onto it, with the proxy and timeout in
+    /// <paramref name="options"/>.
+    /// </summary>
+    /// <param name="baseImage">The base image reference, as for <see cref="FromBaseImageAsync(string, string, CancellationToken)"/>.</param>
+    /// <param name="platform">The target platform as <c>os/architecture</c> (for example <c>linux/arm64</c>).</param>
+    /// <param name="options">
+    /// The proxy and timeout for requests to the base image's registry, or <see langword="null"/> for the defaults.
+    /// They also apply when <see cref="PushToEcrAsync"/> downloads base layers to copy them to ECR.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <exception cref="ArgumentException">
+    /// The base reference or platform string is malformed, or <see cref="BaseImagePullOptions.Timeout"/> is zero or
+    /// negative.
+    /// </exception>
+    /// <exception cref="RegistryException">The base image or the requested platform could not be fetched.</exception>
+    public static Task<OciImageBuilder> FromBaseImageAsync(
+        string baseImage,
+        string platform,
+        BaseImagePullOptions? options,
+        CancellationToken cancellationToken = default)
+    {
+        TimeSpan timeout = options?.Timeout ?? Timeout.InfiniteTimeSpan;
+        if (timeout != Timeout.InfiniteTimeSpan && timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentException(
+                $"{nameof(BaseImagePullOptions)}.{nameof(BaseImagePullOptions.Timeout)} must be positive or Timeout.InfiniteTimeSpan (was {timeout}).",
+                nameof(options));
+        }
+        System.Net.IWebProxy? proxy = options?.Proxy;
+
+        return FromBaseImageAsync(
             baseImage,
             platform,
-            registry => RegistryClient.Create(registry, new AnonymousRegistryCredentialSource()),
+            registry => RegistryClient.Create(registry, new AnonymousRegistryCredentialSource(), timeout, proxy),
             cancellationToken);
+    }
 
     /// <summary>
     /// <see cref="FromBaseImageAsync(string, string, CancellationToken)"/> with the source registry client supplied
@@ -359,6 +397,7 @@ public sealed class OciImageBuilder : IDisposable
                 nameof(options));
         }
         _uploadTimeout = uploadTimeout;
+        _pushProxy = options?.Proxy;
 
         // Decode the ECR authorization token into the Basic username/password the registry handshake expects.
         (string username, string password) = DecodeEcrAuthorizationToken(authorizationToken);

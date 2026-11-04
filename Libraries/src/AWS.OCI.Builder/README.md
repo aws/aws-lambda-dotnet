@@ -148,3 +148,21 @@ runnable in the container regardless of the build host:
 - `UnixPermissions.FromOctal("755")` / `FromOctal(755)` — express a mode in `chmod`-style octal (C# has no octal
   literal, so `FromOctal` is how you write `0755`). For a directory mapping, an explicit mode applies to every file
   it contains; directory entries themselves are always `0755`.
+
+### Proxy and timeouts
+
+By default requests use `HttpClient.DefaultProxy`, which reads `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and have
+no client timeout, so the cancellation token is the deadline. To set them per build:
+
+```csharp
+var proxy = new WebProxy("http://proxy.corp.example:8080");
+
+using var builder = await OciImageBuilder.FromBaseImageAsync(
+    "public.ecr.aws/lambda/provided:al2023", "linux/arm64",
+    new BaseImagePullOptions { Proxy = proxy, Timeout = TimeSpan.FromMinutes(5) });
+
+await builder.PushToEcrAsync(target, authorizationToken,
+    new EcrPushOptions { Proxy = proxy, UploadTimeout = TimeSpan.FromMinutes(30) });
+```
+
+`BaseImagePullOptions` also applies to the base layer downloads during the push, and `EcrPushOptions` only to ECR.

@@ -234,8 +234,8 @@ internal sealed class RegistryClient : IDisposable
     /// Sends a request, reporting a failure to send it or to receive the response headers (DNS, connection, TLS,
     /// proxy, or the connect guard) as a <see cref="RegistryException"/> with the <see cref="HttpRequestException"/>
     /// as its inner exception. Not covered: an <see cref="IOException"/> while a blob body is being read, and the
-    /// <see cref="TaskCanceledException"/> raised when <see cref="EcrPushOptions.UploadTimeout"/> or the caller's
-    /// token expires.
+    /// <see cref="TaskCanceledException"/> raised when <see cref="EcrPushOptions.UploadTimeout"/>,
+    /// <see cref="BaseImagePullOptions.Timeout"/> or the caller's token expires.
     /// </summary>
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
     {

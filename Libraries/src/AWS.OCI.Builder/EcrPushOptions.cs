@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AWS.OCI.Builder;
 
 /// <summary>
@@ -82,4 +84,15 @@ public sealed class EcrPushOptions
     /// (zero or negative) is rejected at push time.
     /// </remarks>
     public TimeSpan UploadTimeout { get; init; } = System.Threading.Timeout.InfiniteTimeSpan;
+
+    /// <summary>
+    /// The proxy for requests to the target ECR registry, or <see langword="null"/> (the default) for
+    /// <see cref="System.Net.Http.HttpClient.DefaultProxy"/>, which reads the <c>HTTPS_PROXY</c>, <c>HTTP_PROXY</c>
+    /// and <c>NO_PROXY</c> environment variables (and, on Windows, the system proxy settings).
+    /// </summary>
+    /// <remarks>
+    /// This proxy is used only for ECR. Base layers are downloaded from their source registry by the client that
+    /// pulled the base image; set <see cref="BaseImagePullOptions.Proxy"/> for those requests.
+    /// </remarks>
+    public IWebProxy? Proxy { get; init; }
 }
