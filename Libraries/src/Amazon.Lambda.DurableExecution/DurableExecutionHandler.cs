@@ -90,7 +90,15 @@ internal static class DurableExecutionHandler
         // the termination signal. When TerminationManager fires (e.g., WaitAsync),
         // we need the WhenAny race below to resolve immediately without waiting
         // for the user task to reach an await point.
-        var userTask = Task.Run(userHandler);
+        //
+        // The workflow is only queued here; under load it may start after the
+        // deadline passed or after this invocation already returned. Check again
+        // when it actually starts so a late start runs no workflow code.
+        var userTask = Task.Run(() =>
+        {
+            workflowCancellation?.ThrowIfTornDown();
+            return userHandler();
+        });
 
         // Race: user code completing vs. termination signal (wait/callback/retry)
         // vs. the invocation deadline. DeadlineTask never completes when there is
@@ -98,19 +106,23 @@ internal static class DurableExecutionHandler
         var deadlineTask = workflowCancellation?.DeadlineTask ?? NeverCompletes;
         var winner = await Task.WhenAny(userTask, terminationManager.TerminationTask, deadlineTask);
 
-        if (winner != userTask)
+        // Once the deadline has passed, it decides the outcome whichever task won.
+        // A workflow can catch the cancellation and return a fallback value, or a
+        // termination can race the deadline; neither is a real result, and the
+        // service must re-invoke the execution.
+        var deadlineExceeded = workflowCancellation?.IsDeadlineExceeded == true;
+
+        if (winner != userTask || deadlineExceeded)
         {
-            // userTask is abandoned. Observe its eventual fault so it never
-            // surfaces through TaskScheduler.UnobservedTaskException, which in a
-            // shared process (Lambda Managed Instances) would be reported against
-            // whichever invocation happens to be running when the GC finalizes it.
+            // userTask is abandoned or its outcome is ignored. Observe its fault so
+            // it never surfaces through TaskScheduler.UnobservedTaskException, which
+            // in a shared process (Lambda Managed Instances) would be reported
+            // against whichever invocation happens to be running when the GC
+            // finalizes it.
             ObserveAbandoned(userTask);
         }
 
-        // The deadline wins over a termination that raced it: the invocation has
-        // run out of time either way, and the service must re-invoke it.
-        if (winner == deadlineTask
-            || (winner == terminationManager.TerminationTask && workflowCancellation?.IsDeadlineExceeded == true))
+        if (deadlineExceeded)
         {
             return new HandlerResult<TResult>
             {

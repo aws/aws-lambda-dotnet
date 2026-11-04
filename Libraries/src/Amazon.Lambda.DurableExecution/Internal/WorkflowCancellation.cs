@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution.Internal;
 
 /// <summary>
@@ -71,8 +73,12 @@ internal sealed class WorkflowCancellation : IDisposable
     /// </summary>
     public WorkflowCancellationReason Reason => (WorkflowCancellationReason)Volatile.Read(ref _reason);
 
-    /// <summary>True once the invocation deadline passed.</summary>
-    public bool IsDeadlineExceeded => Reason == WorkflowCancellationReason.DeadlineExceeded;
+    /// <summary>
+    /// True once the invocation deadline passed. Read from the deadline token
+    /// itself, so it is accurate even when a suspension or teardown cancelled the
+    /// workflow first, and becomes true before any cancellation callback runs.
+    /// </summary>
+    public bool IsDeadlineExceeded => DeadlineToken.IsCancellationRequested;
 
     /// <summary>
     /// True once the invocation is being torn down (the wrapper finished or the
@@ -111,7 +117,12 @@ internal sealed class WorkflowCancellation : IDisposable
 
         if (deadline is { } remaining)
         {
-            _deadlineCts = new CancellationTokenSource(remaining);
+            // A zero deadline means the invocation was already out of time when
+            // it started: cancel at once rather than through the timer.
+            _deadlineCts = remaining > TimeSpan.Zero
+                ? new CancellationTokenSource(remaining)
+                : new CancellationTokenSource();
+            if (remaining <= TimeSpan.Zero) _deadlineCts.Cancel();
             DeadlineToken = _deadlineCts.Token;
             _deadlineRegistration = _deadlineCts.Token.Register(
                 static state => ((WorkflowCancellation)state!).OnDeadline(),
@@ -142,12 +153,15 @@ internal sealed class WorkflowCancellation : IDisposable
 
     private void OnDeadline()
     {
-        // Record the reason and stop admitting new operations before cancelling
-        // the token, so code that observes the cancellation also sees why.
+        // Stop admitting new operations and signal the deadline BEFORE cancelling
+        // the token. Cancel runs user cancellation callbacks synchronously; a
+        // callback that blocks must not stop DurableExecutionHandler from seeing
+        // the deadline. _deadlineTcs runs its continuations asynchronously, so
+        // signalling it never runs the handler on this timer thread.
         Interlocked.CompareExchange(ref _reason, (int)WorkflowCancellationReason.DeadlineExceeded, 0);
         Volatile.Write(ref _tornDown, 1);
-        Cancel(WorkflowCancellationReason.DeadlineExceeded);
         _deadlineTcs.TrySetResult();
+        Cancel(WorkflowCancellationReason.DeadlineExceeded);
     }
 
     private void Cancel(WorkflowCancellationReason reason)
@@ -160,6 +174,17 @@ internal sealed class WorkflowCancellation : IDisposable
             // timer. Dispose cancels before disposing, so the token is already
             // cancelled.
         }
+        catch (AggregateException ex)
+        {
+            // A user cancellation callback threw. Cancel still ran every other
+            // callback before throwing, so cancellation is fully delivered. Never
+            // let the exception escape: on the deadline timer it would crash the
+            // process (and every invocation sharing it), and during teardown it
+            // would replace the invocation's real outcome.
+            LambdaLogger.Log(
+                "Warning", ex,
+                "A cancellation callback registered by the durable workflow threw while the workflow was being cancelled.");
+        }
     }
 
     public void Dispose()
@@ -167,7 +192,11 @@ internal sealed class WorkflowCancellation : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
 
         BeginTeardown();
-        _deadlineRegistration.Dispose();
+
+        // Unregister rather than Dispose: Dispose waits for a deadline callback
+        // that is still running, and a user cancellation callback that blocks
+        // would then hang the invocation here.
+        _deadlineRegistration.Unregister();
         _deadlineCts?.Dispose();
         _cts.Dispose();
     }
@@ -196,18 +225,21 @@ internal static class InvocationDeadline
         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(MaxConcurrencyEnvironmentVariable));
 
     /// <summary>
-    /// Returns the time until the deadline, or <c>null</c> for no deadline.
+    /// Returns the time until the deadline, <see cref="TimeSpan.Zero"/> when the
+    /// deadline has already passed, or <c>null</c> for no deadline.
     /// </summary>
     /// <param name="remainingTime">The invocation's <c>ILambdaContext.RemainingTime</c>.</param>
     /// <param name="isMultiConcurrency">Whether the function runs on Lambda Managed Instances.</param>
     /// <remarks>
-    /// A zero or negative remaining time means no deadline. That is what an
-    /// unconfigured test context reports, and it must not cancel immediately.
+    /// On Lambda Managed Instances a zero or negative remaining time means the
+    /// invocation was already out of time when it started, so it times out
+    /// immediately. Tests that exercise this mode must set
+    /// <c>TestLambdaContext.RemainingTime</c>.
     /// </remarks>
     public static TimeSpan? Resolve(TimeSpan remainingTime, bool isMultiConcurrency)
     {
         if (!isMultiConcurrency) return null;
-        if (remainingTime <= TimeSpan.Zero) return null;
+        if (remainingTime <= TimeSpan.Zero) return TimeSpan.Zero;
 
         // CancellationTokenSource rejects delays above int.MaxValue milliseconds.
         // Lambda timeouts are far below that; treat anything larger as no deadline.

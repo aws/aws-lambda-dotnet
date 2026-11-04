@@ -29,6 +29,8 @@ When either trigger fires, the token transitions to `IsCancellationRequested = t
 On Lambda Managed Instances several invocations run in the same process, and Lambda does not stop an invocation that times out. The SDK therefore applies the invocation deadline (`ILambdaContext.RemainingTime`) itself:
 
 - At the deadline the token is cancelled, new durable operations are rejected, and state loading is cancelled.
+- An exception your code throws after the deadline (for example, after catching the cancellation) is not recorded as a step failure, and does not consume a retry.
+- An invocation that starts with its deadline already passed times out immediately. When testing in this mode, set `TestLambdaContext.RemainingTime`.
 - Checkpoint cleanup gets a short budget past the deadline, then is abandoned.
 - `WrapAsync` throws `TimeoutException`. Lambda treats this as an invocation error, the same outcome as a timeout in on-demand Lambda: the execution is not marked failed, and work that was not checkpointed runs again on replay.
 

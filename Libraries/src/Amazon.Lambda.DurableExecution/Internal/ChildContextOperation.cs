@@ -187,6 +187,9 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
         T result;
         try
         {
+            // The START checkpoint may have been awaited; the workflow can have
+            // been torn down meanwhile. Never start the child function then.
+            _workflowCancellation.Token.ThrowIfCancellationRequested();
             result = await _func(childContext, linked.Token);
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
@@ -194,6 +197,13 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             // Cancellation owned by the linked source — caller cancel or workflow
             // shutdown. Do NOT checkpoint CONTEXT FAIL: the termination signal
             // (or upstream cancel) owns the outcome.
+            throw;
+        }
+        catch (Exception) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The invocation deadline passed (Lambda Managed Instances only). An
+            // exception raised because work was cancelled is not a real failure:
+            // do NOT checkpoint CONTEXT FAIL. The invocation is retried.
             throw;
         }
         catch (NonDeterministicExecutionException)

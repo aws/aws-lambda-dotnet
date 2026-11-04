@@ -306,6 +306,13 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
 
         try
         {
+            // Never start a new request once the worker is shut down or abandoned.
+            // If an abandoned flush ignored cancellation and later returned, the
+            // worker would otherwise go on to send queued batches with this
+            // invocation's checkpoint token, racing the invocation that replays it.
+            // Throwing here routes through the catch below, which fails the batch.
+            cancellationToken.ThrowIfCancellationRequested();
+
             var newToken = await _flushAsync(_checkpointToken, updates, cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _checkpointToken, newToken);
 

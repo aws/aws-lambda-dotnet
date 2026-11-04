@@ -191,6 +191,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         try
         {
             var checkContext = new ConditionCheckContext(attemptNumber, _logger);
+            // Never start the check once the workflow has been torn down.
+            _workflowCancellation.Token.ThrowIfCancellationRequested();
             newState = await _check(currentState, checkContext, linked.Token);
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
@@ -198,6 +200,13 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             // Cancellation owned by the linked source — caller cancel or workflow
             // shutdown. Do NOT checkpoint FAIL: the termination signal (or
             // upstream cancel) owns the outcome.
+            throw;
+        }
+        catch (Exception) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The invocation deadline passed (Lambda Managed Instances only). An
+            // exception raised because the check was cancelled is not a real
+            // failure: do NOT checkpoint FAIL. The invocation is retried.
             throw;
         }
         catch (Exception ex)

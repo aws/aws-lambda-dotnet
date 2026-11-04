@@ -124,14 +124,21 @@ public static class DurableFunction
 
         var checkpointToken = invocationInput.CheckpointToken;
 
+        // Lambda Managed Instances: an invocation can reach the handler with its
+        // deadline already passed (dispatch or deserialization took too long).
+        if (workflowCancellation.IsDeadlineExceeded)
+            throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
+
         var nextMarker = invocationInput.InitialExecutionState?.NextMarker;
         try
         {
             while (!string.IsNullOrEmpty(nextMarker))
             {
-                var (operations, marker) = await serviceClient.GetExecutionStateAsync(
+                var page = serviceClient.GetExecutionStateAsync(
                     invocationInput.DurableExecutionArn, checkpointToken, nextMarker,
                     workflowCancellation.DeadlineToken);
+                // Bound the wait too, in case the call does not honor the token.
+                var (operations, marker) = await WaitWithDeadlineAsync(page, workflowCancellation.DeadlineToken);
                 state.AddOperations(operations);
                 nextMarker = marker;
             }
@@ -205,7 +212,9 @@ public static class DurableFunction
                     throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
             }
 
-            if (result.DeadlineExceeded)
+            // Check the deadline itself, not just the handler's result: it can
+            // pass during the drain, after the result was decided.
+            if (result.DeadlineExceeded || workflowCancellation.IsDeadlineExceeded)
                 throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
 
             if (batcher.IsCheckpointTokenMissing)
@@ -232,6 +241,31 @@ public static class DurableFunction
         }
 
         return MapToOutput(result, serializer);
+    }
+
+    /// <summary>
+    /// Awaits <paramref name="task"/>, but stops waiting when
+    /// <paramref name="deadlineToken"/> is cancelled. A task that is abandoned this
+    /// way has its eventual fault observed. With no deadline this is a plain await.
+    /// </summary>
+    private static async Task<T> WaitWithDeadlineAsync<T>(Task<T> task, CancellationToken deadlineToken)
+    {
+        if (!deadlineToken.CanBeCanceled)
+            return await task.ConfigureAwait(false);
+
+        try
+        {
+            return await task.WaitAsync(deadlineToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!task.IsCompleted)
+        {
+            _ = task.ContinueWith(
+                static t => _ = t.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            throw;
+        }
     }
 
     /// <summary>
