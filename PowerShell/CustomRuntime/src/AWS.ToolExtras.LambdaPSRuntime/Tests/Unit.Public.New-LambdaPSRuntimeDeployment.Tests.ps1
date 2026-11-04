@@ -300,6 +300,13 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    Context 'base image refresh' {
+        It 'passes -NoPull to both image builds' {
+            $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -NoPull
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 2 -Exactly -ParameterFilter { $NoPull }
+        }
+    }
+
     Context 'module repository' {
         It 'forwards -ModuleRepository to the scaffolder' {
             $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -ModuleRepository Internal
