@@ -21,9 +21,9 @@
     # The pwsh release each supported PowerShell line installs by default, when -PwshVersion is not
     # given. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
     DefaultPatch  = @{
-        '7.4' = '7.4.21'
-        '7.5' = '7.5.12'
-        '7.6' = '7.6.7'
+        '7.4' = '7.4.22'
+        '7.5' = '7.5.13'
+        '7.6' = '7.6.9'
     }
 
     # SHA256 of the official PowerShell Linux release tarballs
@@ -56,6 +56,18 @@
         '7.6.7'  = @{
             x64   = '6896f9e3a6b0a354bf470835a96da76d2f801cd50dcf047ad7c4563bf93bf431'
             arm64 = 'ba465efdfb0984c1c5dc5ed9eb0b79a7e91a1b52c45f99377058c0659b84d3f1'
+        }
+        '7.4.22' = @{
+            x64   = '9de443bef974f219c98a33b0f4096aace7f30b42188f37a1b14c5da7e82c8a6a'
+            arm64 = 'ef95973facf60cf735f6d8caef3383394b9e8200cbd078d6068f7e14ca6b9078'
+        }
+        '7.5.13' = @{
+            x64   = 'e9256bfc6ac98fcbec97270e8a986577a7346a587837cc80d30595eef3c2546b'
+            arm64 = '6a556353ccfb0a414b80322334eac29a540a398537d3cf8dcc3ecec9cd8abd66'
+        }
+        '7.6.9'  = @{
+            x64   = '1da6d6d6035d651f20e70ddee7c4c15ac6ab8b9fb40ee92240d91263f28a884b'
+            arm64 = '02eb9991af447c7e7fe881acde195961afd397c40b8eb1c2b3856b84ec2d85f2'
         }
     }
 }
