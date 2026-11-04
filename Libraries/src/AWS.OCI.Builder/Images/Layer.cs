@@ -119,7 +119,7 @@ internal sealed class Layer
         {
             throw new ArgumentException("The destination stream must be writable.", nameof(destination));
         }
-        if (manifest.Entries.Count == 0 && manifest.Directories.Count == 0)
+        if (manifest.Entries.Count == 0 && manifest.EmptyDirectories.Count == 0)
         {
             throw new ArgumentException("The file manifest is empty; a layer must contain at least one file or folder.", nameof(manifest));
         }
@@ -134,7 +134,7 @@ internal sealed class Layer
         {
             CollectEntry(entry, files, directories);
         }
-        foreach (string directory in manifest.Directories)
+        foreach (string directory in manifest.EmptyDirectories)
         {
             string containerPath = NormalizeContainerPath(directory);
             if (files.ContainsKey(containerPath))

@@ -28,7 +28,7 @@ public class ReproducibleLayerTests
             string tooLong = new string('t', 150) + ".txt";
             await File.WriteAllTextAsync(Path.Combine(dir, tooLong), "y");
             var manifest = new FileManifest { { dir, "/opt/app" } };
-            manifest.AddDirectory("/opt");
+            manifest.AddEmptyDirectory("/opt");
 
             using var blob = new MemoryStream();
             await Layer.CreateAsync(manifest, blob);
@@ -91,7 +91,7 @@ public class ReproducibleLayerTests
                 if (n % 3 == 0 && rel.Contains('/'))
                 {
                     string folder = rel[..rel.LastIndexOf('/')];
-                    manifest.AddDirectory("/" + folder);
+                    manifest.AddEmptyDirectory("/" + folder);
                     expected.Add(Encoding.UTF8.GetByteCount(folder) + 1 > 100 ? folder : folder + "/");
                 }
             }

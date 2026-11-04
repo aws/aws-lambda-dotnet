@@ -27,13 +27,13 @@ namespace AWS.OCI.Builder;
 public sealed class FileManifest : IEnumerable<FileManifestEntry>
 {
     private readonly List<FileManifestEntry> _entries = new();
-    private readonly List<string> _directories = new();
+    private readonly List<string> _emptyDirectories = new();
 
     /// <summary>The entries that make up this manifest.</summary>
     public IReadOnlyList<FileManifestEntry> Entries => _entries;
 
-    /// <summary>The container folders added with <see cref="AddDirectory"/>.</summary>
-    public IReadOnlyList<string> Directories => _directories;
+    /// <summary>The container folders added with <see cref="AddEmptyDirectory"/>, which have no local source.</summary>
+    public IReadOnlyList<string> EmptyDirectories => _emptyDirectories;
 
     /// <summary>
     /// Adds a local file or directory to be placed at <paramref name="containerPath"/> inside the container, with
@@ -66,7 +66,8 @@ public sealed class FileManifest : IEnumerable<FileManifestEntry>
         => _entries.Add(new FileManifestEntry(localPath, containerPath, FileManifestEntry.ExecutableMode));
 
     /// <summary>
-    /// Adds a folder entry (mode <c>0755</c>) at <paramref name="containerPath"/>, with no local source.
+    /// Adds an empty folder entry (mode <c>0755</c>) at <paramref name="containerPath"/>. Unlike the other
+    /// <c>Add</c> methods, it maps nothing from the local filesystem.
     /// </summary>
     /// <remarks>
     /// The layer has no entries for the parent folders of mapped files; tar extraction creates them implicitly, and
@@ -75,10 +76,10 @@ public sealed class FileManifest : IEnumerable<FileManifestEntry>
     /// folders the base image already has, or their mode is reset to <c>0755</c>.
     /// </remarks>
     /// <param name="containerPath">The absolute folder path inside the container (for example <c>/opt/app/lib</c>).</param>
-    public void AddDirectory(string containerPath)
+    public void AddEmptyDirectory(string containerPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(containerPath);
-        _directories.Add(containerPath);
+        _emptyDirectories.Add(containerPath);
     }
 
     /// <inheritdoc />

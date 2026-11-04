@@ -10,11 +10,11 @@ using Xunit;
 
 namespace AWS.OCI.Builder.Tests;
 
-/// <summary>Folder entries added with FileManifest.AddDirectory, and paths beneath a mapped file.</summary>
-public class AddDirectoryTests
+/// <summary>Folder entries added with FileManifest.AddEmptyDirectory, and paths beneath a mapped file.</summary>
+public class AddEmptyDirectoryTests
 {
     [Fact]
-    public async Task AddDirectory_emits_folder_entries()
+    public async Task AddEmptyDirectory_emits_folder_entries()
     {
         string dir = Directory.CreateTempSubdirectory("fix-dirs-").FullName;
         try
@@ -23,8 +23,8 @@ public class AddDirectoryTests
             await File.WriteAllTextAsync(file, "x");
             var manifest = new FileManifest();
             manifest.AddExecutable(file, "/opt/app/newdir/sub/bootstrap");
-            manifest.AddDirectory("/opt/app/newdir");
-            manifest.AddDirectory("/opt/app/newdir/sub/");
+            manifest.AddEmptyDirectory("/opt/app/newdir");
+            manifest.AddEmptyDirectory("/opt/app/newdir/sub/");
 
             var entries = await ReadEntriesAsync(manifest);
             Assert.Equal(
@@ -33,19 +33,19 @@ public class AddDirectoryTests
 
             var clash = new FileManifest();
             clash.Add(file, "/opt/app/x");
-            clash.AddDirectory("/opt/app/x");
+            clash.AddEmptyDirectory("/opt/app/x");
             await Assert.ThrowsAsync<ArgumentException>(() => ReadEntriesAsync(clash));
 
             var folderUnderFile = new FileManifest();
             folderUnderFile.Add(file, "/a/b");
-            folderUnderFile.AddDirectory("/a/b/c");
+            folderUnderFile.AddEmptyDirectory("/a/b/c");
             await Assert.ThrowsAsync<ArgumentException>(() => ReadEntriesAsync(folderUnderFile));
 
             var fileUnderFile = new FileManifest { { file, "/a/b" }, { file, "/a/b/c" } };
             await Assert.ThrowsAsync<ArgumentException>(() => ReadEntriesAsync(fileUnderFile));
 
             var onlyFolders = new FileManifest();
-            onlyFolders.AddDirectory("/opt/empty");
+            onlyFolders.AddEmptyDirectory("/opt/empty");
             Assert.Equal(new[] { "Directory opt/empty/ 755" }, await ReadEntriesAsync(onlyFolders));
         }
         finally { Directory.Delete(dir, true); }
