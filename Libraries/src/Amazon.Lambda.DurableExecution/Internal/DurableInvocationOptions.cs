@@ -23,4 +23,12 @@ internal sealed class DurableInvocationOptions
 
     /// <summary>See <see cref="DefaultCleanupTimeout"/>.</summary>
     public TimeSpan CleanupTimeout { get; init; } = DefaultCleanupTimeout;
+
+    /// <summary>
+    /// Test seam: receives the invocation's <see cref="WorkflowCancellation"/>
+    /// as soon as it is created, so a test can fire the deadline itself
+    /// (<see cref="WorkflowCancellation.TriggerDeadline"/>) at a chosen point
+    /// instead of racing a real timer.
+    /// </summary>
+    public Action<WorkflowCancellation>? OnWorkflowCancellationCreated { get; init; }
 }

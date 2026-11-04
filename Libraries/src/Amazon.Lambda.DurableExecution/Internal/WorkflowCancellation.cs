@@ -77,6 +77,7 @@ internal sealed class WorkflowCancellation : IDisposable
     private readonly Timer? _deadlineTimer;
     private readonly TaskCompletionSource _deadlineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _cancelLock = new();
+    private bool _sourcesReleased;
     private Task? _cancelDelivery;
     private Task? _deadlineDelivery;
     private int _reason;
@@ -230,19 +231,32 @@ internal sealed class WorkflowCancellation : IDisposable
         if (_deadlineCts is null) return;
         if (Interlocked.Exchange(ref _deadlineFired, 1) != 0) return;
 
-        // The SDK's own state first: record why, close admission, and signal the
-        // handler. _deadlineTcs runs its continuations asynchronously, so this
-        // never runs the handler on the calling thread.
+        // The SDK's own state first: record why and close admission.
         Interlocked.CompareExchange(ref _reason, (int)WorkflowCancellationReason.DeadlineExceeded, 0);
         Volatile.Write(ref _tornDown, 1);
-        _deadlineTcs.TrySetResult();
 
-        // Then the workflow token, then the client's deadline token. Both only
-        // queue their callbacks.
+        // Then start cancelling the workflow token and the client's deadline
+        // token. Both only queue their callbacks, so no foreign code runs here.
+        // This must happen BEFORE DeadlineTask is signalled: a waiter on
+        // DeadlineTask (the hydration wait) can end the invocation and reach
+        // Dispose at once, and Dispose must find the deadline cancel already
+        // under way, not dispose a source whose cancel has not started.
         Cancel(WorkflowCancellationReason.DeadlineExceeded);
         StartCancelOnce(ref _deadlineDelivery, _deadlineCts,
             "A cancellation callback registered on the durable invocation deadline threw.");
+
+        // Last, signal the handler. _deadlineTcs runs its continuations
+        // asynchronously, so this never runs the handler on the calling thread.
+        _deadlineTcs.TrySetResult();
+        AfterDeadlineSignalledForTest?.Invoke();
     }
+
+    /// <summary>
+    /// Test seam: runs right after <see cref="DeadlineTask"/> is signalled, on the
+    /// thread firing the deadline. Lets a test act (for example dispose) at the
+    /// earliest point a waiter on <see cref="DeadlineTask"/> could.
+    /// </summary>
+    internal Action? AfterDeadlineSignalledForTest { get; set; }
 
     private void Cancel(WorkflowCancellationReason reason)
     {
@@ -266,7 +280,9 @@ internal sealed class WorkflowCancellation : IDisposable
     {
         lock (_cancelLock)
         {
-            if (deliverySlot != null) return;
+            // Once Dispose has taken the delivery handles, the sources may be
+            // disposed; a cancel that had not started by then never starts.
+            if (deliverySlot != null || _sourcesReleased) return;
             Volatile.Write(ref deliverySlot, StartCancel(source, callbackFailureMessage));
         }
     }
@@ -312,12 +328,15 @@ internal sealed class WorkflowCancellation : IDisposable
         // Dispose each source only after its callbacks have all run. Disposing
         // earlier could skip callbacks that have not run yet, so linked tokens
         // (and the user code behind them) would never be cancelled. A callback
-        // that never returns just leaves its source undisposed. Read the delivery
-        // handles under the lock, so a cancel that is starting is never missed.
+        // that never returns just leaves its source undisposed. Taking the
+        // delivery handles and closing out new cancels happen together under the
+        // lock: a cancel is either already under way (and is waited for) or never
+        // starts, so a source is never disposed while its cancel is starting.
         Task workflowDelivery;
         Task? deadlineDelivery;
         lock (_cancelLock)
         {
+            _sourcesReleased = true;
             workflowDelivery = _cancelDelivery ?? Task.CompletedTask;
             deadlineDelivery = _deadlineDelivery;
         }
@@ -325,9 +344,9 @@ internal sealed class WorkflowCancellation : IDisposable
         DisposeAfter(_cts, workflowDelivery);
         if (_deadlineCts != null)
         {
-            // A deadline that never fired was never cancelled: dispose it now and
-            // the timer can no longer fire it (CancelAsync on a disposed source is
-            // tolerated by StartCancel).
+            // A deadline that never fired was never cancelled: dispose it now. A
+            // timer callback still in flight finds _sourcesReleased set and does
+            // not touch the source.
             DisposeAfter(_deadlineCts, deadlineDelivery ?? Task.CompletedTask);
         }
     }

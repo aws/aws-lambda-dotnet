@@ -209,6 +209,9 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             var checkContext = new ConditionCheckContext(attemptNumber, _logger);
             // Never start the check once the workflow has been torn down.
             _workflowCancellation.Token.ThrowIfCancellationRequested();
+            // Also against the clock: restoring the prior state on replay can
+            // cross the deadline while its timer has not run yet.
+            ThrowIfDeadlineExceeded();
             newState = await _check(currentState, checkContext, linked.Token);
         }
         catch (OperationCanceledException) when (

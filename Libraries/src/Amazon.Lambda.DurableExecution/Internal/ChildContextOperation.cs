@@ -190,6 +190,10 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             // The START checkpoint may have been awaited; the workflow can have
             // been torn down meanwhile. Never start the child function then.
             _workflowCancellation.Token.ThrowIfCancellationRequested();
+            // Also against the clock: the awaited CONTEXT START can finish after
+            // the deadline while its timer has not run yet.
+            _workflowCancellation.ThrowIfDeadlineExceeded(
+                "The invocation deadline passed before the child context started.");
             result = await _func(childContext, linked.Token);
         }
         catch (OperationCanceledException) when (

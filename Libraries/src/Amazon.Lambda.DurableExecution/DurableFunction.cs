@@ -119,6 +119,7 @@ public static class DurableFunction
         var terminationManager = new TerminationManager();
         // Anchor the deadline to when RemainingTime was read, so setup time is not added to it.
         using var workflowCancellation = new WorkflowCancellation(terminationManager, deadline, startTimestamp);
+        options?.OnWorkflowCancellationCreated?.Invoke(workflowCancellation);
 
         var state = new ExecutionState();
         state.LoadFromCheckpoint(invocationInput.InitialExecutionState);

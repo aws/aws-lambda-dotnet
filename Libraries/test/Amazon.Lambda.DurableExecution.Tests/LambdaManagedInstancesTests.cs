@@ -215,21 +215,36 @@ public class LambdaManagedInstancesTests
     [Fact]
     public async Task Lmi_DeadlinePassesDuringStep_ThrowsTimeout_WithoutFailCheckpoint()
     {
+        // A controllable deadline, fired only once the step body is running, so
+        // the test always exercises a deadline during the step. A real short
+        // deadline could expire before the queued workflow even starts, which the
+        // wrapper validly rejects without running the body.
         var client = new FakeServiceClient();
         CancellationToken stepToken = default;
+        var stepEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        WorkflowCancellation? wfc = null;
+        var options = new DurableInvocationOptions
+        {
+            IsMultiConcurrency = true,
+            OnWorkflowCancellationCreated = created => wfc = created,
+        };
 
-        var ex = await Assert.ThrowsAsync<TimeoutException>(() =>
-            DurableFunction.WrapAsync<Payload, string>(
-                async (_, ctx) => await ctx.StepAsync<string>(async (_, ct) =>
-                {
-                    stepToken = ct;
-                    await Task.Delay(Timeout.Infinite, ct);
-                    return "unreachable";
-                }, name: "slow"),
-                Input("arn:deadline-step"),
-                Context(TimeSpan.FromMilliseconds(100)),
-                client,
-                LmiOptions).NoHang());
+        var run = DurableFunction.WrapAsync<Payload, string>(
+            async (_, ctx) => await ctx.StepAsync<string>(async (_, ct) =>
+            {
+                stepToken = ct;
+                stepEntered.TrySetResult();
+                await Task.Delay(Timeout.Infinite, ct);
+                return "unreachable";
+            }, name: "slow"),
+            Input("arn:deadline-step"),
+            Context(ControlledDeadline),
+            client,
+            options);
+
+        await stepEntered.Task.NoHang();
+        wfc!.TriggerDeadline();
+        var ex = await Assert.ThrowsAsync<TimeoutException>(() => run.NoHang());
 
         Assert.Contains("arn:deadline-step", ex.Message);
         Assert.True(stepToken.IsCancellationRequested);
@@ -567,6 +582,114 @@ public class LambdaManagedInstancesTests
         if (op.IsFaulted) Assert.NotNull(op.Exception);
         Assert.DoesNotContain(recorder.Flushed,
             u => u.Action == OperationAction.FAIL || u.Action == OperationAction.RETRY || u.Action == OperationAction.SUCCEED);
+    }
+
+    // ── Copilot review round 4 ─────────────────────────────────────────
+
+    [Fact]
+    public async Task TriggerDeadline_DisposedAsSoonAsDeadlineTaskIsSignalled_StillCancelsDeadlineToken()
+    {
+        // A hydration wait ends on DeadlineTask, and the wrapper then disposes at
+        // once. Dispose at exactly that point (on the firing thread, right after
+        // DeadlineTask is signalled): the client's deadline token must still be
+        // cancelled, so a cooperative hydration request stops.
+        var wfc = new WorkflowCancellation(new TerminationManager(), ControlledDeadline);
+        var clientCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        wfc.DeadlineToken.Register(() => clientCancelled.TrySetResult());
+        wfc.AfterDeadlineSignalledForTest = wfc.Dispose;
+
+        wfc.TriggerDeadline();
+
+        await clientCancelled.Task.NoHang();
+    }
+
+    [Theory]
+    [InlineData("step")]
+    [InlineData("child")]
+    public async Task StartCheckpointFinishesAfterDeadlineBeforeTimerRuns_UserCodeDoesNotStart(string kind)
+    {
+        // The awaited START checkpoint completes only after the clock has passed
+        // the deadline; the deadline timer has not run (the threadpool delayed
+        // it), so the workflow token is not cancelled yet.
+        var tm = new TerminationManager();
+        var (wfc, deadlinePassed) = DeadlineWithTimerNotRun(tm);
+        using var _ = wfc;
+        await using var batcher = new CheckpointBatcher("t0", async (_, _, _) =>
+        {
+            await deadlinePassed();
+            return "t1";
+        });
+        var ctx = new DurableContext(new ExecutionState(), tm, wfc, new OperationIdGenerator(),
+            "arn:test", Context(TimeSpan.FromMinutes(5)), batcher);
+        var userCodeRan = false;
+
+        Task op = kind == "step"
+            ? ctx.StepAsync<int>(
+                async (_, _) => { userCodeRan = true; await Task.CompletedTask; return 1; },
+                name: "s",
+                config: new StepConfig { Semantics = StepSemantics.AtMostOncePerRetry })
+            : ctx.RunInChildContextAsync<int>(
+                (_, _) => { userCodeRan = true; return Task.FromResult(1); },
+                name: "c");
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => op.NoHang());
+        Assert.False(userCodeRan);
+    }
+
+    [Fact]
+    public async Task WaitForConditionReplay_StateRestoreCrossesDeadline_CheckDoesNotStart()
+    {
+        // READY replay: restoring the prior state runs the user serializer, which
+        // takes long enough to cross the deadline before its timer has run.
+        var tm = new TerminationManager();
+        var (wfc, deadlinePassed) = DeadlineWithTimerNotRun(tm);
+        using var _ = wfc;
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(new InitialExecutionState
+        {
+            Operations = new List<Operation>
+            {
+                new()
+                {
+                    Id = OperationIdGenerator.HashOperationId("1"),
+                    Type = OperationTypes.Step,
+                    SubType = OperationSubTypes.WaitForCondition,
+                    Status = OperationStatuses.Ready,
+                    Name = "w",
+                    StepDetails = new StepDetails { Result = "5", Attempt = 1 },
+                },
+            },
+        });
+        var ctx = new DurableContext(state, tm, wfc, new OperationIdGenerator(),
+            "arn:test", Context(TimeSpan.FromMinutes(5)));
+        var checkRan = false;
+
+        var op = ctx.WaitForConditionAsync<int>(
+            (s, _, _) => { checkRan = true; return Task.FromResult(s + 1); },
+            new WaitForConditionConfig<int>
+            {
+                InitialState = 0,
+                WaitStrategy = WaitStrategy.Fixed<int>(TimeSpan.FromSeconds(1)),
+                Serializer = new SlowDeserializer(() => deadlinePassed().GetAwaiter().GetResult()),
+            },
+            name: "w");
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => op.NoHang());
+        Assert.False(checkRan);
+    }
+
+    /// <summary>Default serializer whose Deserialize first runs a blocking wait.</summary>
+    private sealed class SlowDeserializer : Amazon.Lambda.Core.ILambdaSerializer
+    {
+        private readonly DefaultLambdaJsonSerializer _inner = new();
+        private readonly Action _beforeDeserialize;
+        public SlowDeserializer(Action beforeDeserialize) => _beforeDeserialize = beforeDeserialize;
+        public T Deserialize<T>(Stream requestStream)
+        {
+            _beforeDeserialize();
+            return _inner.Deserialize<T>(requestStream);
+        }
+        public void Serialize<T>(T response, Stream responseStream) => _inner.Serialize(response, responseStream);
     }
 
     /// <summary>Default serializer whose Serialize fires the deadline first.</summary>

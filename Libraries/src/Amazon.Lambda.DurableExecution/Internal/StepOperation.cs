@@ -236,6 +236,10 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 // The START checkpoint above may have been awaited; the workflow
                 // can have been torn down meanwhile. Never start the body then.
                 _workflowCancellation.Token.ThrowIfCancellationRequested();
+                // Also against the clock: the awaited START can finish after the
+                // deadline while its timer has not run yet.
+                _workflowCancellation.ThrowIfDeadlineExceeded(
+                    "The invocation deadline passed before the step body started.");
                 result = await _func(stepContext, linked.Token);
             }
         }
