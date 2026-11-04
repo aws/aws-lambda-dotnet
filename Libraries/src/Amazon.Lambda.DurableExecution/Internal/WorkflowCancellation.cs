@@ -61,6 +61,7 @@ internal sealed class WorkflowCancellation : IDisposable
     private readonly CancellationToken _token;
     private readonly CancellationTokenSource? _deadlineCts;
     private readonly CancellationTokenRegistration _deadlineRegistration;
+    private readonly Timer? _deadlineTimer;
     private readonly TaskCompletionSource _deadlineTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _reason;
     private int _tornDown;
@@ -117,16 +118,22 @@ internal sealed class WorkflowCancellation : IDisposable
 
         if (deadline is { } remaining)
         {
-            // A zero deadline means the invocation was already out of time when
-            // it started: cancel at once rather than through the timer.
-            _deadlineCts = remaining > TimeSpan.Zero
-                ? new CancellationTokenSource(remaining)
-                : new CancellationTokenSource();
-            if (remaining <= TimeSpan.Zero) _deadlineCts.Cancel();
+            _deadlineCts = new CancellationTokenSource();
             DeadlineToken = _deadlineCts.Token;
             _deadlineRegistration = _deadlineCts.Token.Register(
                 static state => ((WorkflowCancellation)state!).OnDeadline(),
                 this);
+
+            // Own the timer rather than using CancellationTokenSource(TimeSpan):
+            // the deadline token is also handed to the service client, and if one
+            // of its cancellation callbacks threw on the CTS's internal timer the
+            // exception would crash the process. FireDeadline contains it.
+            // A zero deadline means the invocation was already out of time when it
+            // started, so it fires at once.
+            if (remaining > TimeSpan.Zero)
+                _deadlineTimer = new Timer(static state => ((WorkflowCancellation)state!).FireDeadline(), this, remaining, Timeout.InfiniteTimeSpan);
+            else
+                FireDeadline();
         }
     }
 
@@ -149,6 +156,24 @@ internal sealed class WorkflowCancellation : IDisposable
         if (IsTornDown)
             throw new OperationCanceledException(
                 "The durable invocation has ended; no new durable operations can be started.", _token);
+    }
+
+    private void FireDeadline()
+    {
+        try { _deadlineCts!.Cancel(); }
+        catch (ObjectDisposedException)
+        {
+            // The timer fired while the invocation was being disposed.
+        }
+        catch (AggregateException ex)
+        {
+            // A callback registered on the deadline token (for example by the
+            // service client) threw. Cancel ran every other callback, including
+            // OnDeadline, before throwing.
+            LambdaLogger.Log(
+                "Warning", ex,
+                "A cancellation callback registered on the durable invocation deadline threw.");
+        }
     }
 
     private void OnDeadline()
@@ -197,6 +222,7 @@ internal sealed class WorkflowCancellation : IDisposable
         // that is still running, and a user cancellation callback that blocks
         // would then hang the invocation here.
         _deadlineRegistration.Unregister();
+        _deadlineTimer?.Dispose();
         _deadlineCts?.Dispose();
         _cts.Dispose();
     }

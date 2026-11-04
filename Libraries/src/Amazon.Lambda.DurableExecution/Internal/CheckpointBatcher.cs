@@ -31,6 +31,11 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     private readonly Task _worker;
     private readonly CancellationTokenSource _shutdownCts = new();
 
+    // Cancelled only when the worker is abandoned (Lambda Managed Instances
+    // cleanup budget exceeded). Never disposed: it is cheap, and abandoned
+    // awaiters may still be registered on it.
+    private readonly CancellationTokenSource _abandonCts = new();
+
     private string? _checkpointToken;
     private Exception? _terminalError;
     private int _disposed;
@@ -117,8 +122,30 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         }
 
         // After a missing token this never completes (the invocation is suspended).
-        await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // It is also released when the worker is abandoned: a stalled flush may
+        // never return, and the waiting workflow must still be able to unwind
+        // rather than being kept alive by that request.
+        var completion = tcs.Task.WaitAsync(cancellationToken);
+        try
+        {
+            await completion.WaitAsync(_abandonCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_abandonCts.IsCancellationRequested && !completion.IsCompleted)
+        {
+            // The worker may still fail this item later; observe that so it never
+            // reaches TaskScheduler.UnobservedTaskException.
+            ObserveFault(completion);
+            throw new OperationCanceledException(
+                "The checkpoint was not confirmed before the invocation's cleanup budget ran out.", _abandonCts.Token);
+        }
     }
+
+    private static void ObserveFault(Task task) =>
+        task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     /// <summary>
     /// Closes the channel and awaits the worker. Any items already enqueued are
@@ -176,14 +203,18 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     {
         if (Interlocked.Exchange(ref _abandoned, 1) != 0) return;
 
-        // Ask the in-flight flush to stop. A flush that ignores the token keeps
-        // running until it returns; its outcome is no longer awaited.
-        try { _shutdownCts.Cancel(); } catch (ObjectDisposedException) { }
-        _worker.ContinueWith(
-            static t => _ = t.Exception,
-            CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        // Release every EnqueueAsync awaiter, in flight or queued. Only the SDK's
+        // own WaitAsync promises are registered on this token, so cancelling it
+        // synchronously runs no foreign code.
+        _abandonCts.Cancel();
+
+        // Ask the in-flight flush to stop. CancelAsync runs the callbacks the
+        // service client registered on the threadpool, so a callback that blocks
+        // or throws cannot stall the drain past its budget. A flush that ignores
+        // the token keeps running until it returns; its outcome is not awaited.
+        // The source is never disposed once abandoned: the worker may still read it.
+        ObserveFault(_shutdownCts.CancelAsync());
+        ObserveFault(_worker);
     }
 
     public async ValueTask DisposeAsync()

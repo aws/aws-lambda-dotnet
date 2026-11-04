@@ -340,6 +340,12 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // Surfacing it here means a torn-down operation propagates an
         // OperationCanceledException instead of synthesizing a spurious
         // FailureToleranceExceeded verdict from units that merely unwound.
+        //
+        // Check the workflow token itself as well (as IncrementalParallelOperation
+        // does): controlToken is linked to it through a callback, so while
+        // cancellation is still being delivered it can lag behind. A unit that
+        // failed because of the cancellation must never reach the parent checkpoint.
+        _workflowCancellation.Token.ThrowIfCancellationRequested();
         controlToken.ThrowIfCancellationRequested();
 
         // Build BatchItems ONLY for units that were dispatched — matching the JS

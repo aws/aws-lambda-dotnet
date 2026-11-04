@@ -192,7 +192,8 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             _workflowCancellation.Token.ThrowIfCancellationRequested();
             result = await _func(childContext, linked.Token);
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (
+            linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)
         {
             // Cancellation owned by the linked source — caller cancel or workflow
             // shutdown. Do NOT checkpoint CONTEXT FAIL: the termination signal

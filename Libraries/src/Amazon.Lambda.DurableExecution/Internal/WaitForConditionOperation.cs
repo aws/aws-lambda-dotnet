@@ -148,6 +148,14 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         return ExecuteIteration(priorState, attemptNumber, existingStatus: ready.Status, cancellationToken);
     }
 
+    private void ThrowIfDeadlineExceeded()
+    {
+        if (_workflowCancellation.IsDeadlineExceeded)
+            throw new OperationCanceledException(
+                "The invocation deadline passed during the condition check; its outcome is not recorded.",
+                _workflowCancellation.Token);
+    }
+
     private async Task<TState> ExecuteIteration(TState currentState, int attemptNumber, string? existingStatus, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -195,7 +203,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             _workflowCancellation.Token.ThrowIfCancellationRequested();
             newState = await _check(currentState, checkContext, linked.Token);
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (
+            linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)
         {
             // Cancellation owned by the linked source — caller cancel or workflow
             // shutdown. Do NOT checkpoint FAIL: the termination signal (or
@@ -232,10 +241,22 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             };
         }
 
+        // The invocation deadline passed (Lambda Managed Instances only) while the
+        // check ran. A check that swallowed the cancellation and returned a state
+        // did not complete a real poll: record no RETRY (which would consume an
+        // attempt) and no FAIL. The poll runs again when the invocation is retried.
+        ThrowIfDeadlineExceeded();
+
         WaitDecision decision;
         try
         {
             decision = _config.WaitStrategy.Decide(newState, attemptNumber);
+        }
+        catch (WaitForConditionException) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The deadline passed while the strategy ran: never record FAIL for it.
+            ThrowIfDeadlineExceeded();
+            throw;
         }
         catch (WaitForConditionException maxEx)
         {
@@ -272,6 +293,9 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
 
             throw enriched;
         }
+
+        // Decide is user code too; the deadline can pass while it runs.
+        ThrowIfDeadlineExceeded();
 
         if (!decision.ShouldContinue)
         {

@@ -239,7 +239,8 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 result = await _func(stepContext, linked.Token);
             }
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (
+            linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)
         {
             // Cancellation owned by the linked source (caller-cancel or workflow
             // shutdown). Do NOT checkpoint FAIL and do NOT consult the retry

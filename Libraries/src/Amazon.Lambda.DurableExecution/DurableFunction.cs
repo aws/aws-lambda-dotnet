@@ -206,8 +206,7 @@ public static class DurableFunction
                 // this invocation (and one of the runtime's processing loops) open
                 // indefinitely. Allow time up to the deadline plus a fixed cleanup
                 // budget, then abandon the flush.
-                var untilDeadline = deadline.Value - Stopwatch.GetElapsedTime(startTimestamp);
-                var drainTimeout = (untilDeadline > TimeSpan.Zero ? untilDeadline : TimeSpan.Zero) + cleanupTimeout;
+                var drainTimeout = ComputeDrainTimeout(deadline.Value, cleanupTimeout, Stopwatch.GetElapsedTime(startTimestamp));
                 if (!await batcher.DrainAsync(drainTimeout))
                     throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
             }
@@ -240,7 +239,35 @@ public static class DurableFunction
             throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
         }
 
-        return MapToOutput(result, serializer);
+        // Serializing the output runs user serializer code, which can take long
+        // enough to cross the deadline. Report that as a timeout too; a serializer
+        // failure after the deadline is kept as the inner exception.
+        DurableExecutionInvocationOutput output;
+        try
+        {
+            output = MapToOutput(result, serializer);
+        }
+        catch (Exception ex) when (workflowCancellation.IsDeadlineExceeded)
+        {
+            throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
+        }
+
+        if (workflowCancellation.IsDeadlineExceeded)
+            throw CreateDeadlineException(invocationInput.DurableExecutionArn, innerException: null);
+
+        return output;
+    }
+
+    /// <summary>
+    /// How long the final checkpoint drain may run on Lambda Managed Instances:
+    /// what is left of one combined budget (the deadline plus the cleanup
+    /// budget), measured from invocation start. Time already spent past the
+    /// deadline comes out of the cleanup budget rather than restarting it.
+    /// </summary>
+    internal static TimeSpan ComputeDrainTimeout(TimeSpan deadline, TimeSpan cleanupTimeout, TimeSpan elapsed)
+    {
+        var remaining = deadline + cleanupTimeout - elapsed;
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 
     /// <summary>
@@ -257,8 +284,12 @@ public static class DurableFunction
         {
             return await task.WaitAsync(deadlineToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!task.IsCompleted)
+        catch (OperationCanceledException)
         {
+            // Observe the request in every case: it may fault after WaitAsync chose
+            // cancellation but before this handler runs, in which case nothing else
+            // ever awaits it. Only a fault is observed; a request that honored the
+            // token completes cancelled and needs nothing.
             _ = task.ContinueWith(
                 static t => _ = t.Exception,
                 CancellationToken.None,
