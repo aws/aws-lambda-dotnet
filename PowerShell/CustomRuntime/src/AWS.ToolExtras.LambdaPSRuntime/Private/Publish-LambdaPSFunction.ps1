@@ -32,8 +32,9 @@ function Publish-LambdaPSFunction {
 
         When the function already exists, this seam reads its configuration with
         Get-LMFunctionConfiguration, updates its code with Update-LMFunctionCode, and then applies
-        -Role, and each of -Handler, -Timeout, -MemorySize and -RuntimeAlias named in -UpdateSetting,
-        with Update-LMFunctionConfiguration. A setting not named keeps the function's existing value.
+        the settings named in -UpdateSetting, and -EnvironmentVariable when given, with
+        Update-LMFunctionConfiguration. Only settings that differ from the function's are sent, and
+        the configuration update is skipped when none does.
         The runtime binding (-RuntimeArn, -RuntimeAlias) is applied when RuntimeAlias is named or the
         function is bound to another runtime; otherwise the function keeps its binding. -Architecture is
         applied with the code only when the function ends up bound to the requested runtime and alias,
@@ -59,7 +60,8 @@ function Publish-LambdaPSFunction {
         The Lambda handler string, in any form the runtime supports ('script.ps1',
         'script.ps1::Function' or 'Module::Name::Function'), passed through as given.
     .PARAMETER Role
-        The Lambda execution role ARN.
+        The Lambda execution role ARN. Required to create the function; when omitted, the function is
+        expected to exist, and keeps its role.
     .PARAMETER RuntimeArn
         The customer-managed runtime ARN to bind to.
     .PARAMETER RuntimeAlias
@@ -79,8 +81,8 @@ function Publish-LambdaPSFunction {
         create and on update, and each value is sent as a string. When omitted, an update leaves the
         environment as it is.
     .PARAMETER UpdateSetting
-        Which of Handler, Timeout, MemorySize and RuntimeAlias an update of an existing function applies.
-        The rest keep the function's existing values. All four when omitted, as on a create.
+        Which of Role, Handler, Timeout, MemorySize and RuntimeAlias an update of an existing function
+        applies. The rest keep the function's existing values. All five when omitted, as on a create.
     .PARAMETER Region
         The AWS region the function lives in.
     .PARAMETER CredentialParameter
@@ -105,7 +107,7 @@ function Publish-LambdaPSFunction {
         [ValidateNotNullOrWhiteSpace()]
         [string]$Handler,
 
-        [Parameter(Mandatory)]
+        [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
         [string]$Role,
 
@@ -138,8 +140,8 @@ function Publish-LambdaPSFunction {
         [hashtable]$EnvironmentVariable,
 
         [Parameter()]
-        [ValidateSet('Handler', 'Timeout', 'MemorySize', 'RuntimeAlias')]
-        [string[]]$UpdateSetting = @('Handler', 'Timeout', 'MemorySize', 'RuntimeAlias'),
+        [ValidateSet('Role', 'Handler', 'Timeout', 'MemorySize', 'RuntimeAlias')]
+        [string[]]$UpdateSetting = @('Role', 'Handler', 'Timeout', 'MemorySize', 'RuntimeAlias'),
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
@@ -247,7 +249,9 @@ function Publish-LambdaPSFunction {
     # condition so re-runs are idempotent; any other error (auth, throttling, ...) must surface. On
     # already-exists, update the deployed code and configuration instead. Test-LambdaPSServiceError
     # matches ResourceConflictException by the service exception's identity rather than its message text.
-    try {
+    # A create needs a role, so without -Role the function is updated as the existing one the caller found.
+    $exists = -not $Role
+    if (-not $exists) {
         $publishParams = @{
             FunctionName             = $FunctionName
             Handler                  = $Handler
@@ -263,10 +267,13 @@ function Publish-LambdaPSFunction {
             ClientConfig             = $clientConfig
             ErrorAction              = 'Stop'
         }
-        $created = Publish-LMFunction @publishParams @environment @CredentialParameter
+        try { $created = Publish-LMFunction @publishParams @environment @CredentialParameter }
+        catch {
+            if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
+            $exists = $true
+        }
     }
-    catch {
-        if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
+    if ($exists) {
         Write-Verbose "Function '$FunctionName' already exists; updating its code."
 
         # Lambda refuses a code update while an earlier update or the create is still settling, so wait
@@ -304,7 +311,7 @@ function Publish-LambdaPSFunction {
             ClientConfig = $clientConfig
         }
         if ($applyArchitecture) { $updateParams.Architecture = $Architecture }
-        $null = Update-LMFunctionCode @updateParams @CredentialParameter -ErrorAction Stop
+        $created = Update-LMFunctionCode @updateParams @CredentialParameter -ErrorAction Stop
         $updated = $true
 
         # The function keeps its handler unless the caller gave one, or the kept handler names a script
@@ -346,34 +353,45 @@ function Publish-LambdaPSFunction {
         else { '' }
         $notAppliedState = "Function '$FunctionName' has its new code$architectureNote, but keeps its previous configuration and $bindingNote.$invokeNote"
 
-        # Lambda refuses a configuration update while the code update is InProgress.
-        # FunctionNotActive here means the code update itself failed: Lambda keeps the previous code.
-        $null = & $waitUntilReady -TimeoutNote " The configuration was not applied. $notAppliedState Run the deploy again once the function settles to apply it." `
-            -NotActiveNote ' The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
-        # Only what the caller asked for: a setting it did not give keeps the function's value.
-        $configurationParams = @{
-            FunctionName = $FunctionName
-            Role         = $Role
-            Region       = $Region
-            ClientConfig = $clientConfig
-        }
-        if ($sendHandler) { $configurationParams.Handler = $Handler }
-        if ($UpdateSetting -contains 'Timeout') { $configurationParams.Timeout = $Timeout }
-        if ($UpdateSetting -contains 'MemorySize') { $configurationParams.MemorySize = $MemorySize }
-        if ($rebind) {
+        # Only what the caller asked for, and only where it differs from the function: a setting it did
+        # not give keeps the function's value, and a redeploy that changes none skips the update.
+        $configurationParams = @{}
+        if ($UpdateSetting -contains 'Role' -and $Role -and $Role -cne [string]$current.Role) { $configurationParams.Role = $Role }
+        if ($sendHandler -and $Handler -cne [string]$current.Handler) { $configurationParams.Handler = $Handler }
+        if ($UpdateSetting -contains 'Timeout' -and $Timeout -ne $current.Timeout) { $configurationParams.Timeout = $Timeout }
+        if ($UpdateSetting -contains 'MemorySize' -and $MemorySize -ne $current.MemorySize) { $configurationParams.MemorySize = $MemorySize }
+        if ($rebind -and ($currentArn -ne $RuntimeArn -or $currentAlias -cne $RuntimeAlias)) {
             $configurationParams.RuntimeConfig_RuntimeArn = $RuntimeArn
             $configurationParams.RuntimeConfig_RuntimeAlias = $RuntimeAlias
         }
-        try {
-            $created = Update-LMFunctionConfiguration @configurationParams @environment @CredentialParameter -ErrorAction Stop
+        if ($environment.Count) {
+            $liveVariables = if ($null -ne $current.Environment -and $null -ne $current.Environment.Variables) { $current.Environment.Variables } else { @{} }
+            $environmentChanged = $liveVariables.get_Count() -ne $variables.get_Count() -or
+                @($variables.GetEnumerator() | Where-Object { -not $liveVariables.ContainsKey($_.Key) -or $liveVariables[$_.Key] -cne $_.Value }).Count
+            if ($environmentChanged) { $configurationParams += $environment }
         }
-        catch {
-            # The code is already updated, so say what state the function is left in.
-            throw [System.Management.Automation.ErrorRecord]::new(
-                [System.InvalidOperationException]::new(
-                    ("$notAppliedState The configuration update failed. Fix the cause the service reported, then run " +
-                     "the deploy again. The service reported: $($_.Exception.Message)"), $_.Exception),
-                'FunctionConfigurationNotApplied', [System.Management.Automation.ErrorCategory]::WriteError, $FunctionName)
+        $configure = $configurationParams.Count -gt 0
+
+        # Lambda refuses a configuration update while the code update is InProgress.
+        # FunctionNotActive here means the code update itself failed: Lambda keeps the previous code.
+        $timeoutNote = if ($configure) { " The configuration was not applied. $notAppliedState Run the deploy again once the function settles to apply it." } else { '' }
+        $null = & $waitUntilReady -TimeoutNote $timeoutNote `
+            -NotActiveNote ' The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
+        if (-not $configure) {
+            Write-Verbose "Function '$FunctionName' already has the configuration asked for; skipping the configuration update."
+        }
+        else {
+            try {
+                $created = Update-LMFunctionConfiguration -FunctionName $FunctionName -Region $Region -ClientConfig $clientConfig @configurationParams @CredentialParameter -ErrorAction Stop
+            }
+            catch {
+                # The code is already updated, so say what state the function is left in.
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("$notAppliedState The configuration update failed. Fix the cause the service reported, then run " +
+                         "the deploy again. The service reported: $($_.Exception.Message)"), $_.Exception),
+                    'FunctionConfigurationNotApplied', [System.Management.Automation.ErrorCategory]::WriteError, $FunctionName)
+            }
         }
     }
 
@@ -382,8 +400,8 @@ function Publish-LambdaPSFunction {
     # invoke is refused with ResourceConflictException.
     $null = & $waitUntilReady
 
-    # On the update path, report the configuration Lambda returns (UpdateFunctionConfiguration returns
-    # it) rather than echo the requested values back.
+    # On the update path, report the configuration Lambda returns (the code and configuration updates
+    # both return it) rather than echo the requested values back.
     $live = $updated -and $null -ne $created
     $liveArchitecture = if ($live) { @($created.Architectures | ForEach-Object { [string]$_ }) | Select-Object -First 1 } else { $null }
     $liveRuntime = if ($live) { $created.RuntimeConfig } else { $null }
@@ -396,7 +414,7 @@ function Publish-LambdaPSFunction {
         Architecture = if ($liveArchitecture) { $liveArchitecture } elseif ($updated -and -not $applyArchitecture) { @($current.Architectures | ForEach-Object { [string]$_ }) | Select-Object -First 1 } else { $Architecture }
         Timeout      = if ($live -and $created.Timeout) { [int]$created.Timeout } elseif ($updated -and $UpdateSetting -notcontains 'Timeout') { [int]$current.Timeout } else { $Timeout }
         MemorySize   = if ($live -and $created.MemorySize) { [int]$created.MemorySize } elseif ($updated -and $UpdateSetting -notcontains 'MemorySize') { [int]$current.MemorySize } else { $MemorySize }
-        Role         = if ($live -and $created.Role) { $created.Role } else { $Role }
+        Role         = if ($live -and $created.Role) { $created.Role } elseif ($updated -and -not $configurationParams.Role) { [string]$current.Role } else { $Role }
         Updated      = $updated
         Arn          = $created.FunctionArn
     }

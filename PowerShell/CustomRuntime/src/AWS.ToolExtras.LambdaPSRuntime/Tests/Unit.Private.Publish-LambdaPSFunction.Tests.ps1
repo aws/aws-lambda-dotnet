@@ -68,9 +68,9 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             }
             function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
-            # The existing function is bound to the requested runtime and alias unless a test says otherwise.
+            # The existing function is on another alias of the requested runtime, so the binding is sent too.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'staging' } } }
             Mock 'Publish-LMFunction' -MockWith {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists')
             }
@@ -504,13 +504,20 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
                 function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
                 function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = 'handler.ps1'; Environment = [PSCustomObject]@{ Variables = $liveEnvironment }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
                 Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
                 Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
                 Mock 'Update-LMFunctionConfiguration' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
 
+                $liveEnvironment = @{ STAGE = 'beta' }
                 $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ STAGE = 'prod' }
                 $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{}
+                # The environment the function already has is not sent again.
+                $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ STAGE = 'beta' } -UpdateSetting @()
+                # A variable named Count is not read as the table's count: dropping STAGE is still a change.
+                $liveEnvironment = @{ Count = '1'; STAGE = 'beta' }
+                $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ Count = '1' } -UpdateSetting @()
 
                 Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter {
                     $Environment_IsVariablesSet -eq $true -and @($Environment_Variable.GetEnumerator()).Count -eq 1 -and $Environment_Variable['STAGE'] -eq 'prod'
@@ -518,6 +525,8 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter {
                     $Environment_IsVariablesSet -eq $true -and @($Environment_Variable.GetEnumerator()).Count -eq 0
                 }
+                Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter { $Environment_Variable['Count'] -eq '1' }
+                Should -Invoke 'Update-LMFunctionConfiguration' -Times 3 -Exactly
             }
         }
     }

@@ -1017,6 +1017,18 @@ Describe 'New-LambdaPSFunctionDeployment -Role' -Tag 'Unit' {
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionDeployment' -ExpectedMessage '*is not an IAM role ARN*'
     }
 
+    It 'refuses to create a function without -Role, before anything is packaged, under -WhatIf too' -ForEach @(
+        @{ WhatIf = $false }, @{ WhatIf = $true }
+    ) {
+        Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' }
+        Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@('x86_64') }
+        Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { $null }
+        Mock 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -MockWith { throw 'must not package' }
+        $err = { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $script:handlerFile -RuntimeName rt -Region us-east-1 -WhatIf:$WhatIf } |
+            Should -Throw -ErrorId 'RoleRequired,New-LambdaPSFunctionDeployment' -PassThru
+        $err.Exception.Message | Should -BeLike "Function 'fn' does not exist yet*Pass -Role*"
+    }
+
     # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
     It 'refuses a role ARN whose account is in non-ASCII digits' {
         Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { throw 'must not read the runtime' }
@@ -1083,9 +1095,10 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
                 MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @($script:tuned.Architecture)
                 RuntimeConfig = [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } }
         }
+        # A redeploy needs no -Role: the function keeps its own.
         $script:redeploy = @{
             FunctionName = 'hello'; ProjectPath = $script:tunedSource; RuntimeName = 'my-ps'
-            Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'; PackagePath = (Join-Path $TestDrive 'tuned.zip')
+            Region = 'us-east-1'; PackagePath = (Join-Path $TestDrive 'tuned.zip')
         }
     }
 
@@ -1098,10 +1111,10 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.MemorySize | Should -Be 2048
         # handler.ps1 is in the package, so the function keeps its 'handler.ps1::Invoke-Handler'.
         $result.Handler | Should -Be 'handler.ps1::Invoke-Handler'
-        Should -Invoke 'Update-LMFunctionConfiguration' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
-            $Role -eq 'arn:aws:iam::111122223333:role/r' -and $null -eq $Handler -and $null -eq $Timeout -and
-            $null -eq $MemorySize -and $null -eq $RuntimeConfig_RuntimeAlias
-        }
+        $result.Role | Should -Be 'arn:aws:iam::111122223333:role/r'
+        # Nothing to change, so only the code is updated, with no create tried.
+        Should -Invoke 'Publish-LMFunction' -ModuleName $script:moduleName -Times 0 -Exactly
+        Should -Invoke 'Update-LMFunctionConfiguration' -ModuleName $script:moduleName -Times 0 -Exactly
         # Checked against the alias the function stays on, whose architecture it keeps.
         Should -Invoke 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $RuntimeAlias -eq 'staging' }
         Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'x86_64' }
@@ -1115,6 +1128,41 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         $result.Handler | Should -Be 'handler.ps1'
         $result.MemorySize | Should -Be 2048
         Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Architecture -eq 'x86_64' }
+    }
+
+    It 'changes the role to a -Role that differs from the function''s, and sends nothing else' {
+        $result = New-LambdaPSFunctionDeployment @script:redeploy -Role 'arn:aws:iam::111122223333:role/other'
+
+        $result.Role | Should -Be 'arn:aws:iam::111122223333:role/other'
+        Should -Invoke 'Update-LMFunctionConfiguration' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
+            $Role -eq 'arn:aws:iam::111122223333:role/other' -and $null -eq $Handler -and $null -eq $Timeout -and
+            $null -eq $MemorySize -and $null -eq $RuntimeConfig_RuntimeAlias -and $null -eq $Environment_IsVariablesSet
+        }
+    }
+
+    It 'skips the configuration update when the settings given match the function''s' {
+        $result = New-LambdaPSFunctionDeployment @script:redeploy -Role 'arn:aws:iam::111122223333:role/r' -Timeout 300 -MemorySize 2048 -RuntimeAlias staging
+
+        $result.Updated | Should -BeTrue
+        $result.FunctionArn | Should -Be 'arn:f'
+        $result.Timeout | Should -Be 300
+        Should -Invoke 'Update-LMFunctionCode' -ModuleName $script:moduleName -Times 1 -Exactly
+        Should -Invoke 'Update-LMFunctionConfiguration' -ModuleName $script:moduleName -Times 0 -Exactly
+    }
+
+    It 'sends only the setting that differs' {
+        $result = New-LambdaPSFunctionDeployment @script:redeploy -Timeout 60 -MemorySize 2048
+
+        $result.Timeout | Should -Be 60
+        Should -Invoke 'Update-LMFunctionConfiguration' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
+            $Timeout -eq 60 -and $null -eq $MemorySize -and $null -eq $Role
+        }
+    }
+
+    It 'reports the function''s role under -WhatIf when -Role is omitted' {
+        $result = New-LambdaPSFunctionDeployment @script:redeploy -WhatIf
+
+        $result.Role | Should -Be 'arn:aws:iam::111122223333:role/r'
     }
 
     It 'applies the script of a renamed single-file source, so the function never keeps a handler the package lacks' {
@@ -1361,6 +1409,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
         Set-Content -LiteralPath (Join-Path $project 'manifest.json') -Value '{"HandlerString":"entry.ps1","ScriptFile":"entry.ps1","RuntimeAlias":"canary"}'
         $splat = $script:redeploy.Clone()
         $splat.ProjectPath = $project
+        $splat.Role = 'arn:aws:iam::111122223333:role/r'
 
         $result = New-LambdaPSFunctionDeployment @splat
 
