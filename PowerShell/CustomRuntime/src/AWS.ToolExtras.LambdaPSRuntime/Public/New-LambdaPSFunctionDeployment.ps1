@@ -63,7 +63,8 @@ function New-LambdaPSFunctionDeployment {
 
         Each state-changing stage is guarded by ShouldProcess, so -WhatIf previews the plan (including
         the resolved runtime ARN) without packaging or creating anything, while still running the
-        packaging checks, and -Confirm asks once per stage: the steps inside a confirmed stage do not
+        packaging checks. The package size limits are the exception: they need the built package, so
+        only a real run checks them. -Confirm asks once per stage: the steps inside a confirmed stage do not
         ask again, and declining the packaging skips the create, which would deploy that package.
     .PARAMETER FunctionName
         The Lambda function name to create or update, or its full or partial ARN. When -Region is
