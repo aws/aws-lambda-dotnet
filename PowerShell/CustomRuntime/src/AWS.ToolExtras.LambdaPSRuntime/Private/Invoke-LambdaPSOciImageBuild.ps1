@@ -50,12 +50,12 @@ function Invoke-LambdaPSOciImageBuild {
         [string]$AuthorizationToken
     )
 
-    $sinkType = Import-LambdaPSOciBuilder
+    Import-LambdaPSOciBuilder
     $cancellation = [System.Threading.CancellationTokenSource]::new()
     $stage = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "lambdaps-oci-$([System.IO.Path]::GetRandomFileName())")
     $builder = $null
     $archive = $null
-    $sink = $sinkType::new()
+    $sink = [AWS.OCI.Builder.LayerPushProgressQueue]::new()
     $activity = "Building image $ImageUri"
     $layerProgress = @{}
     # Waits on a library task in short slices, so Ctrl+C stops the wait (and the finally block cancels the
@@ -69,7 +69,7 @@ function Invoke-LambdaPSOciImageBuild {
     }
     $drain = {
         $pushEvent = [AWS.OCI.Builder.LayerPushProgress]::new()
-        while ($sink.Items.TryDequeue([ref]$pushEvent)) {
+        while ($sink.TryDequeue([ref]$pushEvent)) {
             $layerProgress[$pushEvent.LayerIndex] = $pushEvent
             $done = @($layerProgress.Values | Where-Object { $_.Phase -eq 'Completed' }).Count
             $status = switch ($pushEvent.Phase) {
@@ -81,10 +81,8 @@ function Invoke-LambdaPSOciImageBuild {
         }
     }
 
-    # The library writes a tar entry only for a directory that is mapped, not for a file's parent folders,
-    # so that it keeps the base image's own folders (/tmp's 1777) as they are. Lambda does not accept a runtime
-    # image whose layer has files in a folder no layer creates (the version settles FAILED), so every folder
-    # the image adds below /var/runtime or /var/task gets its own entry (0755), from an empty staged folder.
+    # Lambda does not accept a runtime image whose layer has files in a folder no layer creates (the version
+    # settles FAILED), so every folder the image adds below /var/runtime or /var/task gets its own entry.
     $addFolders = {
         param([AWS.OCI.Builder.FileManifest]$Manifest)
         $folders = [System.Collections.Generic.SortedSet[string]]::new([System.StringComparer]::Ordinal)
@@ -95,13 +93,11 @@ function Invoke-LambdaPSOciImageBuild {
                 $folder = $folder.Substring(0, $folder.LastIndexOf('/'))
             }
         }
-        foreach ($folder in $folders) { $Manifest.Add($emptyFolder, $folder) }
+        foreach ($folder in $folders) { $Manifest.AddEmptyDirectory($folder) }
     }
 
     try {
         $null = New-Item -ItemType Directory -Path $stage -Force -WhatIf:$false -Confirm:$false
-        $emptyFolder = [System.IO.Path]::Combine($stage, 'empty')
-        $null = [System.IO.Directory]::CreateDirectory($emptyFolder)
 
         # 1. pwsh, with the tarball's own modes.
         Write-Progress -Activity $activity -Status "Downloading pwsh $($Plan.PwshVersion) ($($Plan.Architecture))"
@@ -180,8 +176,6 @@ function Invoke-LambdaPSOciImageBuild {
             $null = & $await ($builder.AddLayerAsync($functionFiles, 'LambdaPSRuntime: function', $cancellation.Token))
         }
         $builder.Config.SetEntrypoint([string[]]$Plan.Entrypoint)
-        # docker resets an inherited CMD when a Dockerfile sets ENTRYPOINT; SetEntrypoint does not, and SetCmd
-        # takes no empty list. The scaffolded base image sets no CMD, so a runtime image is left without one.
         if ($Plan.Cmd.Count -gt 0) { $builder.Config.SetCmd([string[]]$Plan.Cmd) }
         foreach ($variable in $Plan.Environment.GetEnumerator()) { $builder.Config.SetEnvironmentVariable($variable.Key, $variable.Value) }
         $process = [System.Diagnostics.Process]::GetCurrentProcess()
