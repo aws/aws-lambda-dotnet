@@ -32,7 +32,8 @@ foreach ($file in @(Get-ChildItem -LiteralPath $configPath -Filter '*.psd1' -Err
 # than failing or misbehaving later in a helper. A dotted name is a setting inside a table.
 $requiredSetting = [ordered]@{
     pwsh      = 'ReleaseUrl', 'Download.RetryCount', 'Download.RetryDelaySeconds', 'Download.ConnectTimeoutSeconds',
-                'Download.OperationTimeoutSeconds', 'DefaultPatch', 'ArchiveSha256'
+                'Download.OperationTimeoutSeconds', 'PackageRepository.Url', 'PackageRepository.OperationTimeoutSeconds',
+                'DefaultPatch', 'ArchiveSha256'
     wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds'
     function  = 'Timeout', 'MemorySize'
     installer = 'Version', 'FilesSha256'

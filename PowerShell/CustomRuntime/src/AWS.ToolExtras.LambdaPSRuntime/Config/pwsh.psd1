@@ -18,6 +18,15 @@
         OperationTimeoutSeconds = 600
     }
 
+    # Microsoft's RPM repository, which the CMR and Container images install pwsh from on amd64: the
+    # scaffolded Dockerfiles write Url as the baseurl of the dnf repo file, so the lookup and the
+    # install read the same repository. OperationTimeoutSeconds limits each read of that lookup; the retries and connect timeout are
+    # Download's.
+    PackageRepository = @{
+        Url                     = 'https://packages.microsoft.com/rhel/9/prod'
+        OperationTimeoutSeconds = 60
+    }
+
     # The pwsh release each supported PowerShell line installs by default, when -PwshVersion is not
     # given. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
     DefaultPatch  = @{

@@ -59,11 +59,13 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         $dockerfile | Should -Match "''\) echo `"TARGETARCH is not set, so this is not a BuildKit build"
         $dockerfile | Should -Match ([regex]::Escape("`"$($script:pwshConfig.ReleaseUrl)/v`${PWSH_VERSION}/powershell-`${PWSH_VERSION}-linux-arm64.tar.gz`""))
         $dockerfile | Should -Not -Match '__PWSH_RELEASE_URL__'
+        $dockerfile | Should -Not -Match '__PWSH_PACKAGE_REPOSITORY_URL__'
         # amd64 trusts Microsoft's signing key only with the pinned fingerprint. The repo file is written
         # in the Dockerfile, so the download host cannot turn its signature checks off or move baseurl.
         $dockerfile | Should -Match '(?m)^ARG MICROSOFT_GPG_FINGERPRINT=BC528686B50D79E339D3721CEB3E94ADBE1229CF$'
         $dockerfile | Should -Match ([regex]::Escape('if [ "$fingerprints" != "$MICROSOFT_GPG_FINGERPRINT" ]'))
-        foreach ($line in "'baseurl=https://packages.microsoft.com/rhel/9/prod/'", "'gpgcheck=1'", "'repo_gpgcheck=1'", "'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft'") {
+        $baseUrl = "'baseurl=$($script:pwshConfig.PackageRepository.Url)/'"
+        foreach ($line in $baseUrl, "'gpgcheck=1'", "'repo_gpgcheck=1'", "'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft'") {
             $dockerfile | Should -Match ([regex]::Escape($line))
         }
         $dockerfile | Should -Match ([regex]::Escape('> /etc/yum.repos.d/microsoft.repo'))
