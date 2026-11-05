@@ -660,7 +660,17 @@ internal sealed class RegistryClient : IDisposable
             return null;
         }
         // A registry may return a relative Location; resolve it against the registry base.
-        return location.IsAbsoluteUri ? location : new Uri(new Uri($"https://{_registryHost}"), location);
+        Uri resolved = location.IsAbsoluteUri ? location : new Uri(new Uri($"https://{_registryHost}"), location);
+
+        // The upload is sent with the registry's credentials, so never follow it onto plain http (blob download
+        // redirects have the same rule).
+        if (!resolved.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new RegistryRequestException(
+                (int)response.StatusCode,
+                $"the registry returned a non-https upload location '{OciNames.ForDisplay(resolved.GetLeftPart(UriPartial.Path))}'.");
+        }
+        return resolved;
     }
 
     private static Uri AppendQuery(Uri uri, string key, string value)

@@ -21,6 +21,23 @@ public class ImageReferenceTests
         Assert.Equal(isDigest, parsed.ReferenceIsDigest);
     }
 
+    [Theory]
+    [InlineData("docker.io/library/ubuntu:22.04", "library/ubuntu")]
+    [InlineData("docker.io/ubuntu:22.04", "library/ubuntu")]
+    [InlineData("index.docker.io/library/ubuntu:22.04", "library/ubuntu")]
+    [InlineData("index.docker.io/ubuntu:22.04", "library/ubuntu")]
+    [InlineData("DOCKER.IO/bitnami/redis:22.04", "bitnami/redis")]
+    public void Docker_hub_host_names_resolve_to_the_registry_api_host(string input, string repository)
+    {
+        // docker.io redirects /v2/ to the www.docker.com website, and index.docker.io needs the library/ prefix
+        // for official images, so both are normalized to the host Docker itself talks to.
+        ImageReference parsed = ImageReference.Parse(input);
+
+        Assert.Equal("registry-1.docker.io", parsed.Registry);
+        Assert.Equal(repository, parsed.Repository);
+        Assert.Equal("22.04", parsed.Reference);
+    }
+
     [Fact]
     public void Single_segment_hub_repo_gets_library_prefix_and_latest_tag()
     {

@@ -273,7 +273,7 @@ internal sealed class Layer
     }
 
     /// <summary>
-    /// Throws when <paramref name="path"/> is a symbolic link or other reparse point. The layer builder archives
+    /// Throws when <paramref name="path"/> is a symbolic link or junction. The layer builder archives
     /// entries as regular files/directories; silently following a link would let a link inside a mapped directory
     /// pull in files from outside it (an exfiltration vector) and cyclic links would loop. Rejecting is explicit
     /// and safe for this library's scope (overlay a known set of local files).
@@ -284,10 +284,12 @@ internal sealed class Layer
             : File.Exists(path) ? new FileInfo(path)
             : null;
 
-        if (info is not null && info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        // LinkTarget is set only for symbolic links and junctions. FileAttributes.ReparsePoint is broader: on Windows
+        // it also marks files that aren't links, such as cloud files (OneDrive) and deduplicated files.
+        if (info?.LinkTarget is not null)
         {
             throw new ArgumentException(
-                $"The manifest source '{reportedPath}' is a symbolic link or reparse point, which is not supported. " +
+                $"The manifest source '{reportedPath}' is a symbolic link or junction, which is not supported. " +
                 "Map the real target path explicitly instead.");
         }
     }

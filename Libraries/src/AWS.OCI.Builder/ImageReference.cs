@@ -90,6 +90,14 @@ internal sealed partial class ImageReference
         {
             registry = firstSegment;
             remainder = remainder[(firstSlash + 1)..];
+
+            // Docker's names for Docker Hub. Its registry API is served from registry-1.docker.io; docker.io itself
+            // redirects /v2/ requests to the www.docker.com website.
+            if (registry.Equals("docker.io", StringComparison.OrdinalIgnoreCase)
+                || registry.Equals("index.docker.io", StringComparison.OrdinalIgnoreCase))
+            {
+                registry = DockerHubHost;
+            }
         }
         else
         {

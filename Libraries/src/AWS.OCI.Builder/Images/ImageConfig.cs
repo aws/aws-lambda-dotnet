@@ -72,6 +72,23 @@ public sealed class ImageConfig
     /// <summary>The CPU architecture this image targets (the config's <c>architecture</c> field), for example <c>amd64</c>.</summary>
     public string? Architecture => _root["architecture"]?.GetValue<string>();
 
+    /// <summary>The container entrypoint (<c>config.Entrypoint</c>), or <see langword="null"/> when not set.</summary>
+    public IReadOnlyList<string>? Entrypoint => ReadConfigArray("Entrypoint");
+
+    /// <summary>The default command/arguments (<c>config.Cmd</c>), or <see langword="null"/> when not set.</summary>
+    public IReadOnlyList<string>? Cmd => ReadConfigArray("Cmd");
+
+    /// <summary>The environment (<c>config.Env</c>) as <c>KEY=value</c> strings, or <see langword="null"/> when not set.</summary>
+    public IReadOnlyList<string>? EnvironmentVariables => ReadConfigArray("Env");
+
+    /// <summary>The working directory (<c>config.WorkingDir</c>), or <see langword="null"/> when not set.</summary>
+    public string? WorkingDirectory
+        => (_root["config"] as JsonObject)?["WorkingDir"] is JsonValue value && value.TryGetValue(out string? dir) ? dir : null;
+
+    // Whether Cmd was set through SetCmd in this build, rather than inherited from the base image. SetEntrypoint
+    // keeps a Cmd set this way and clears an inherited one, as a Dockerfile ENTRYPOINT does.
+    private bool _cmdSet;
+
     /// <summary>
     /// Appends a new layer to the config: adds its <paramref name="diffId"/> to <c>rootfs.diff_ids</c> and records
     /// a matching <c>history</c> entry. This must be called for each layer added to the manifest, in the same order.
@@ -113,13 +130,28 @@ public sealed class ImageConfig
         history.Add(entry as JsonNode);
     }
 
-    /// <summary>Sets the container entrypoint (the config's <c>config.Entrypoint</c>).</summary>
+    /// <summary>
+    /// Sets the container entrypoint (the config's <c>config.Entrypoint</c>). Pass no arguments to clear it. Like a
+    /// Dockerfile <c>ENTRYPOINT</c>, this clears a <c>Cmd</c> inherited from the base image, but keeps one set with
+    /// <see cref="SetCmd"/>.
+    /// </summary>
     public void SetEntrypoint(params string[] entrypoint)
-        => SetConfigArray("Entrypoint", entrypoint);
+    {
+        SetOrClearConfigArray("Entrypoint", entrypoint);
+        if (!_cmdSet)
+        {
+            ConfigObject().Remove("Cmd");
+        }
+    }
 
-    /// <summary>Sets the container default command/arguments (the config's <c>config.Cmd</c>).</summary>
+    /// <summary>
+    /// Sets the container default command/arguments (the config's <c>config.Cmd</c>). Pass no arguments to clear it.
+    /// </summary>
     public void SetCmd(params string[] cmd)
-        => SetConfigArray("Cmd", cmd);
+    {
+        SetOrClearConfigArray("Cmd", cmd);
+        _cmdSet = true;
+    }
 
     /// <summary>Sets the working directory (the config's <c>config.WorkingDir</c>).</summary>
     public void SetWorkingDirectory(string workingDirectory)
@@ -155,7 +187,9 @@ public sealed class ImageConfig
         string entry = prefix + value;
         for (int i = 0; i < env.Count; i++)
         {
-            if (env[i]?.GetValue<string>() is { } existing && existing.StartsWith(prefix, StringComparison.Ordinal))
+            // The config comes from the base image, so skip any non-string element rather than throwing.
+            if (env[i] is JsonValue item && item.TryGetValue(out string? existing)
+                && existing.StartsWith(prefix, StringComparison.Ordinal))
             {
                 env[i] = entry;
                 return;
@@ -221,12 +255,32 @@ public sealed class ImageConfig
         return config;
     }
 
-    private void SetConfigArray(string key, string[] values)
+    /// <summary>Reads a string array from the <c>config</c> sub-object, skipping any non-string elements.</summary>
+    private IReadOnlyList<string>? ReadConfigArray(string key)
+    {
+        if ((_root["config"] as JsonObject)?[key] is not JsonArray array)
+        {
+            return null;
+        }
+        var values = new List<string>(array.Count);
+        foreach (JsonNode? node in array)
+        {
+            if (node is JsonValue value && value.TryGetValue(out string? s))
+            {
+                values.Add(s);
+            }
+        }
+        return values;
+    }
+
+    /// <summary>Sets a string array in the <c>config</c> sub-object, or removes the key when no values are given.</summary>
+    private void SetOrClearConfigArray(string key, string[] values)
     {
         ArgumentNullException.ThrowIfNull(values);
         if (values.Length == 0)
         {
-            throw new ArgumentException($"'{key}' must contain at least one element.", nameof(values));
+            ConfigObject().Remove(key);
+            return;
         }
 
         var array = new JsonArray();

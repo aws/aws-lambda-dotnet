@@ -209,6 +209,42 @@ public class LayerTests : IDisposable
     }
 
     [Fact]
+    public async Task Symlinked_source_directory_is_rejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        WriteFile("realdir/a.txt", "a");
+        string link = Path.Combine(_tempRoot, "dirlink");
+        Directory.CreateSymbolicLink(link, Path.Combine(_tempRoot, "realdir"));
+
+        var manifest = new FileManifest { { link, "/app" } };
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
+        Assert.Contains("symbolic link", ex.Message);
+    }
+
+    [Fact]
+    public async Task Symlinked_directory_inside_mapped_directory_is_rejected()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        WriteFile("tree2/ok.txt", "ok");
+        WriteFile("outsidedir/secret.txt", "host secret");
+        // A link to a folder outside the mapped tree must not pull that folder's files into the layer.
+        Directory.CreateSymbolicLink(Path.Combine(_tempRoot, "tree2", "escape"), Path.Combine(_tempRoot, "outsidedir"));
+
+        var manifest = new FileManifest { { Path.Combine(_tempRoot, "tree2"), "/app" } };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => BuildAsync(manifest));
+    }
+
+    [Fact]
     public async Task Empty_manifest_throws()
     {
         var manifest = new FileManifest();

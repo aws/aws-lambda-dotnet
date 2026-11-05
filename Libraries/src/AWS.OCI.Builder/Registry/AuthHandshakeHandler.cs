@@ -71,7 +71,11 @@ internal sealed partial class AuthHandshakeHandler : DelegatingHandler
         // such as object storage) are sent as-is: no cached header is attached and a 401 challenge is NOT
         // answered. Otherwise a malicious registry could redirect a blob GET to a host it controls, reply 401
         // with a challenge, and harvest the credentials this handler would send in response.
-        if (request.Options.TryGetValue(SkipAuthentication, out bool skip) && skip)
+        //
+        // Credentials are also only ever sent over https. The cache below is keyed by Authority, which ignores the
+        // scheme, so without this an http URL on the same host would pick up the cached header.
+        if ((request.Options.TryGetValue(SkipAuthentication, out bool skip) && skip)
+            || !request.RequestUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
         {
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
