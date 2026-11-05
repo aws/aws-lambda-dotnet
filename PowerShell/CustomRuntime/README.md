@@ -387,7 +387,9 @@ file.
   where the live ones are kept, a warning says when the manifest's differ. When the alias is kept, a
   stated `-Architecture` is checked against it: one it supports is applied, and one it doesn't is
   refused with `ArchitectureMismatch`. An existing function of the same name that is not
-  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched. If
+  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched.
+  Lambda sets a function's tenant isolation mode only when it creates the function, so a redeploy whose
+  `-TenantIsolationMode` the function doesn't have is refused with `TenantIsolationModeMismatch`. If
   the configuration update fails after the code update, `FunctionConfigurationNotApplied` says what the
   function now has; fix the cause the service reported, then run the deploy again.
 - **A function deploy returns once the function can be invoked.** Lambda creates a function in state

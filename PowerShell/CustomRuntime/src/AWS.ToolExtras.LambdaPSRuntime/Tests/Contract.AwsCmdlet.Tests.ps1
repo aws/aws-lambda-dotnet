@@ -61,7 +61,8 @@ BeforeDiscovery {
         @{ Cmdlet = 'Publish-LMFunction'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'Handler', 'Runtime', 'Role', 'Architecture', 'Code_ZipFile',
                           'Timeout', 'MemorySize', 'Environment_Variable', 'Environment_IsVariablesSet',
-                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'Region', 'ClientConfig')
+                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'TenancyConfig_TenantIsolationMode',
+                          'Region', 'ClientConfig')
            Types = @{ Code_ZipFile = 'System.Byte[]' } }
         @{ Cmdlet = 'Update-LMFunctionCode'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'ZipFile', 'Architecture', 'Region', 'ClientConfig')
@@ -72,7 +73,7 @@ BeforeDiscovery {
         # --- Invoke (Public/Invoke-LambdaPSFunction.ps1) ---
         # -Payload is sent as the JSON text the cmdlet serialized.
         @{ Cmdlet = 'Invoke-LMFunction'; Module = 'AWS.Tools.Lambda'
-           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'Region', 'ClientConfig')
+           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'TenantId', 'Region', 'ClientConfig')
            Types = @{ Payload = 'System.String' } }
 
         # --- Configuration update of an existing function (Private/Publish-LambdaPSFunction.ps1) ---

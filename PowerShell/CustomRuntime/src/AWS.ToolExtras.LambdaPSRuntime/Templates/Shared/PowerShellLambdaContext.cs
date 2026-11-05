@@ -85,6 +85,12 @@ namespace Amazon.Lambda.PowerShell.Internal
         public int MemoryLimitInMB { get; }
 
         /// <summary>
+        /// The tenant the invocation is for, from the Lambda-Runtime-Aws-Tenant-Id header, on a
+        /// function with tenant isolation. Null otherwise.
+        /// </summary>
+        public string TenantId { get; }
+
+        /// <summary>
         /// When the invocation times out, from the Lambda-Runtime-Deadline-Ms header.
         /// </summary>
         private DateTime _deadline { get; }
@@ -99,7 +105,8 @@ namespace Amazon.Lambda.PowerShell.Internal
             string LogStreamName,
             string Identity,
             string ClientContext,
-            double DeadlineMS
+            double DeadlineMS,
+            string TenantId
         )
         {
             this.FunctionName = FunctionName;
@@ -111,6 +118,7 @@ namespace Amazon.Lambda.PowerShell.Internal
             this.LogStreamName = LogStreamName;
             this.Identity = Identity;
             this.ClientContext = ClientContext;
+            this.TenantId = TenantId;
 
             this._deadline = DateTime.UnixEpoch.AddMilliseconds(DeadlineMS);
 

@@ -12,11 +12,12 @@ Describe 'Get-LambdaPSFunctionBinding' -Tag 'Unit' {
         Mock 'Get-LambdaPSClientConfig' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ ClientAppId = 'test' } }
     }
 
-    It 'returns the handler, runtime ARN, alias and architecture of an existing function' {
+    It 'returns the handler, runtime ARN, alias, architecture and tenant isolation mode of an existing function' {
         InModuleScope $script:moduleName {
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMFunctionConfiguration' -MockWith {
                 [PSCustomObject]@{ Handler = 'handler.ps1::Invoke'; Architectures = @('arm64'); Runtime = $null; PackageType = 'Zip'
+                    TenancyConfig = [PSCustomObject]@{ TenantIsolationMode = 'PER_TENANT' }
                     RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'staging' } }
             }
 
@@ -27,6 +28,7 @@ Describe 'Get-LambdaPSFunctionBinding' -Tag 'Unit' {
             $binding.Architecture | Should -Be 'arm64'
             $binding.Handler | Should -Be 'handler.ps1::Invoke'
             $binding.PackageType | Should -Be 'Zip'
+            $binding.TenantIsolationMode | Should -Be 'PER_TENANT'
             Should -Invoke 'Get-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $Region -eq 'us-east-1' }
         }
     }

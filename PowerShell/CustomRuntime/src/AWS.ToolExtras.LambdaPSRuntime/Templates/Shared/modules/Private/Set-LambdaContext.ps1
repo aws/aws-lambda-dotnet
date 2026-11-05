@@ -35,7 +35,9 @@ function private:Set-LambdaContext {
         $env:AWS_LAMBDA_LOG_STREAM_NAME,
         $env:AWS_LAMBDA_RUNTIME_COGNITO_IDENTITY,
         $env:AWS_LAMBDA_RUNTIME_CLIENT_CONTEXT,
-        $private:deadlineMs
+        $private:deadlineMs,
+        # [NullString], since PowerShell passes $null to a string parameter as ''.
+        $(if ($env:AWS_LAMBDA_RUNTIME_TENANT_ID) { $env:AWS_LAMBDA_RUNTIME_TENANT_ID } else { [NullString]::Value })
     )
     # ClientContext and Identity are the caller's data, so they stay out of the log.
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Set-LambdaContext]Return LambdaContext: $($private:LambdaContext | Microsoft.PowerShell.Utility\Select-Object -Property * -ExcludeProperty ClientContext, Identity | Microsoft.PowerShell.Utility\ConvertTo-Json -Compress)" }

@@ -123,11 +123,11 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $null -eq $Region }
         }
 
-        It 'threads -Region and -Qualifier through to Invoke-LMFunction' {
-            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod
+        It 'threads -Region, -Qualifier and -TenantId through to Invoke-LMFunction' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod -TenantId tenant-a
 
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' }
+                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' -and $TenantId -eq 'tenant-a' }
         }
     }
 

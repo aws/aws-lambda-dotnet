@@ -47,6 +47,9 @@ function Invoke-LambdaPSFunction {
         Request the tail of the execution log and write the decoded log to the Information stream.
     .PARAMETER Qualifier
         An optional function version or alias to invoke.
+    .PARAMETER TenantId
+        The tenant to invoke the function for. A multi-tenant function (New-LambdaPSFunctionDeployment
+        -TenantIsolationMode PER_TENANT) requires one, and the handler reads it as $LambdaContext.TenantId.
     .PARAMETER Region
         The AWS region the function lives in. Accepts pipeline input by property name. When omitted
         and -FunctionName is a function ARN, the region in the ARN is used; otherwise a region set with
@@ -109,6 +112,10 @@ function Invoke-LambdaPSFunction {
         [ValidateNotNullOrWhiteSpace()]
         [string]$Qualifier,
 
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$TenantId,
+
         [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateNotNullOrWhiteSpace()]
         [string]$Region,
@@ -164,6 +171,7 @@ function Invoke-LambdaPSFunction {
             # -LogType Tail returns the tail of the execution log as the base64 LogResult.
             if ($IncludeLog) { $invokeParams['LogType'] = 'Tail' }
             if (-not [string]::IsNullOrWhiteSpace($Qualifier)) { $invokeParams['Qualifier'] = $Qualifier }
+            if ($TenantId) { $invokeParams['TenantId'] = $TenantId }
             # A function ARN names its region; use it when -Region is not given, rather than send the
             # call to the ambient region, where the function cannot be found.
             $arnRegion = (Split-LambdaPSFunctionArn -FunctionName $FunctionName).Region
