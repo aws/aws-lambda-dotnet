@@ -32,6 +32,10 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
             throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist')
         }
+        # ... and the repository has no image tagged with it.
+        Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith {
+            throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist')
+        }
         Mock 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -MockWith { }
         Mock 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -MockWith { $RepositoryName }
         # The push build reports the pushed image's digest, as buildx does.
@@ -661,6 +665,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist')) }
                 function script:New-LambdaPSRuntimeProject { }
             }
@@ -689,6 +694,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
                 function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
                 function script:Get-LMCRuntimeAlias { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist')) }
@@ -714,6 +720,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist')) }
                 function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
                 function script:Get-LambdaPSStagedModule { }
@@ -744,6 +751,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
                 function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
                 function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
@@ -773,6 +781,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist')) }
                 function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
                 function script:Get-LambdaPSStagedModule { }
@@ -851,6 +860,41 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Name -eq 'v1' -and $Region -eq 'us-east-1' }
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'throws RuntimeImageTagExists and builds nothing when the repository already has the -RuntimeVersion tag' {
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ ImageTags = @('v1') } }
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeImageTagExists,New-LambdaPSRuntimeDeployment'
+            $err.Exception.Message | Should -BeLike "*'rt' in region 'us-east-1' already has an image tagged 'v1'*"
+            # Removing a version leaves its image, so the message names the command that frees the tag.
+            $err.Exception.Message | Should -BeLike "*Remove-ECRImageBatch -RepositoryName rt -ImageId @{ ImageTag = 'v1' } -Region us-east-1."
+            Should -Invoke 'Get-ECRImageMetadata' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $RepositoryName -eq 'rt' -and $ImageId[0].ImageTag -eq 'v1' -and $Region -eq 'us-east-1' }
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'deploys when the repository does not exist yet' {
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith {
+                throw [System.InvalidOperationException]::new('wrapped', [LambdaPSTests.Fakes.RepositoryNotFoundException]::new('no repository'))
+            }
+
+            $null = New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1
+
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 2 -Exactly
+        }
+
+        It 'throws RuntimeImageTagCheckFailed and builds nothing when the image tag cannot be read' {
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform: ecr:DescribeImages') }
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 } catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeImageTagCheckFailed,New-LambdaPSRuntimeDeployment'
+            $err.Exception.Message | Should -BeLike "*'rt' in region 'us-east-1' to check that it has no image tagged 'v1': not authorized to perform: ecr:DescribeImages. Nothing was built or pushed."
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
@@ -1286,6 +1330,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
                 function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
                 function script:Get-LMCRuntimeAlias { [PSCustomObject]@{ Name = 'default'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } } }

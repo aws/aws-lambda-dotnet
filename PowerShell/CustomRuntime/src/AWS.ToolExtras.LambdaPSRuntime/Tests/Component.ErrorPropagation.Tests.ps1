@@ -66,6 +66,7 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
                 }
                 [PSCustomObject]@{ State = 'FAILED' } }
             function script:Get-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig) [PSCustomObject]@{} }
+            function script:Get-ECRImageMetadata { [CmdletBinding()] param($RepositoryName, $ImageId, $Region, $ClientConfig) }
             function script:New-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeAlias') }
             function script:Update-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)

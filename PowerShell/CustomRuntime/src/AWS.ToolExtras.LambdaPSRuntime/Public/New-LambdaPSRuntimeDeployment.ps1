@@ -19,10 +19,11 @@ function New-LambdaPSRuntimeDeployment {
         container-free path (New-LambdaPSRuntimeProject -Target Layer, Build-LambdaPSRuntimePackage).
 
         The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-STSCallerIdentity,
-        Get-ECRRepository, Get-ECRRepositoryPolicy, Get-ECRLoginCommand, Get-LMCRuntime,
-        Get-LMCRuntimeVersion and Get-LMCRuntimeAlias. State-changing: New-ECRRepository (when the
-        repository does not exist), Set-ECRRepositoryPolicy (for the pull grant), New-LMCRuntime
-        (when the runtime does not exist), New-LMCRuntimeVersion, and New-LMCRuntimeAlias or
+        Get-ECRImageMetadata, Get-ECRRepository, Get-ECRRepositoryPolicy, Get-ECRLoginCommand,
+        Get-LMCRuntime, Get-LMCRuntimeVersion and Get-LMCRuntimeAlias. State-changing:
+        New-ECRRepository (when the repository does not exist, with immutable tags; an existing
+        repository's tag mutability is left as it is), Set-ECRRepositoryPolicy (for the pull grant),
+        New-LMCRuntime (when the runtime does not exist), New-LMCRuntimeVersion, and New-LMCRuntimeAlias or
         Update-LMCRuntimeAlias.
 
         -RepositoryName is optional and defaults to -RuntimeName. An ECR repository name is stricter
@@ -43,13 +44,14 @@ function New-LambdaPSRuntimeDeployment {
         runtime already has -RuntimeVersion, the deploy stops with RuntimeVersionExists: versions are
         immutable, and pushing first would move the <RuntimeVersion> tag off the image that version
         runs. (The version is published by digest, so it keeps running, but an ECR lifecycle rule
-        that expires untagged images could then delete its image.) Only this runtime's versions are
-        checked: when -RepositoryName is shared with another runtime, a -RuntimeVersion that runtime
-        already uses would still move its tag. A version that cannot be read for
-        any reason other than not existing stops the deploy with RuntimeVersionCheckFailed, rather than
-        being taken as new. For a new version it then reads -RuntimeAlias, to warn when the deploy
-        moves it off a version that supports an architecture the new version does not. A missing
-        alias is created by the deploy; any other failed read, such as a refused
+        that expires untagged images could then delete its image.) If the ECR repository already has
+        an image tagged <RuntimeVersion> (left by a run that pushed but did not publish, or used by
+        another runtime sharing -RepositoryName), the deploy stops with RuntimeImageTagExists, so no
+        tag is pushed over; a repository that cannot be read stops it with RuntimeImageTagCheckFailed.
+        A version that cannot be read for any reason other than not existing stops the deploy with
+        RuntimeVersionCheckFailed, rather than being taken as new. For a new version it then reads
+        -RuntimeAlias, to warn when the deploy moves it off a version that supports an architecture
+        the new version does not. A missing alias is created by the deploy; any other failed read, such as a refused
         lambda:GetRuntimeAlias, stops the deploy with RuntimeAliasCheckFailed. The image is built
         before the ECR repository is ensured, so a failed build leaves nothing in AWS; the push reuses
         the local build's cache. The local build leaves an image tagged
@@ -74,7 +76,8 @@ function New-LambdaPSRuntimeDeployment {
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
                                 RuntimeServiceAccessDenied, RuntimeVersionCheckFailed,
-                                RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
+                                RuntimeVersionExists, RuntimeImageTagExists, RuntimeImageTagCheckFailed,
+                                RuntimeAliasCheckFailed, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
@@ -547,6 +550,37 @@ function New-LambdaPSRuntimeDeployment {
                         "are redeployed with -Architecture $Architecture.")
                 }
             }
+        }
+
+        # Image tag: an immutable repository refuses a push over a tag only after the build, and a
+        # mutable one moves the tag off the image a version may run. A missing repository has no tags.
+        $existingImage = $null
+        try {
+            $existingImage = Get-ECRImageMetadata -RepositoryName $effectiveRepository -ImageId @{ ImageTag = $RuntimeVersion } -Region $Region -ClientConfig (Get-LambdaPSClientConfig -Service ECR) @credentialParameter -ErrorAction Stop
+        }
+        catch {
+            if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ImageNotFoundException', 'RepositoryNotFoundException')) {
+                $serviceText = $_.Exception.Message.Trim()
+                if ($serviceText -and $serviceText -notmatch '[.!?]["'')\]]*\z') { $serviceText += '.' }
+                $serviceDetail = if ($serviceText) { ": $serviceText" } else { '.' }
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Could not read ECR repository '$effectiveRepository' in region '$Region' to check that it has no " +
+                             "image tagged '$RuntimeVersion'$serviceDetail Nothing was built or pushed."), $_.Exception),
+                        'RuntimeImageTagCheckFailed', [System.Management.Automation.ErrorCategory]::ReadError, $effectiveRepository))
+            }
+        }
+        if ($existingImage) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("ECR repository '$effectiveRepository' in region '$Region' already has an image tagged '$RuntimeVersion'. " +
+                         'The deploy never pushes over a tag, so pass a new -RuntimeVersion. Nothing was built or pushed. ' +
+                         "If no runtime version runs that image, free the tag with Remove-ECRImageBatch -RepositoryName " +
+                         "$effectiveRepository -ImageId @{ ImageTag = '$RuntimeVersion' } -Region $Region" +
+                         "$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter).")),
+                    'RuntimeImageTagExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $RuntimeVersion))
         }
 
         # ModulesStaged is read from the scaffolded project's modules/ folder after Stage 1 -- what the

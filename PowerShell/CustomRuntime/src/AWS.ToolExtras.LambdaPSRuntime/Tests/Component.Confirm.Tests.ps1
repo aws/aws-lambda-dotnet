@@ -62,6 +62,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'rt' } }
             function script:Get-LMCRuntimeVersion { $null }
             function script:Get-LMCRuntimeAlias { $null }
+            function script:Get-ECRImageMetadata { $null }
             function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
             function script:Build-LambdaPSRuntimeImage { $script:LambdaPSCalls.Add('Build') }
             function script:Initialize-LambdaPSEcrRepository { $script:LambdaPSCalls.Add('Repository') }
@@ -84,6 +85,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'rt' } }
             function script:Get-LMCRuntimeVersion { $null }
             function script:Get-LMCRuntimeAlias { $null }
+            function script:Get-ECRImageMetadata { $null }
             function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
             function script:Build-LambdaPSRuntimeImage { $script:LambdaPSCalls.Add('Build') }
             function script:Initialize-LambdaPSEcrRepository { $script:LambdaPSCalls.Add('Repository') }
@@ -107,6 +109,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'rt' } }
             function script:Get-LMCRuntimeVersion { $null }
             function script:Get-LMCRuntimeAlias { $null }
+            function script:Get-ECRImageMetadata { $null }
             function script:New-LambdaPSRuntimeProject { $script:LambdaPSCalls.Add('Scaffold') }
             function script:Build-LambdaPSRuntimeImage { $script:LambdaPSCalls.Add('Build') }
             function script:Initialize-LambdaPSEcrRepository { $script:LambdaPSCalls.Add('Repository') }

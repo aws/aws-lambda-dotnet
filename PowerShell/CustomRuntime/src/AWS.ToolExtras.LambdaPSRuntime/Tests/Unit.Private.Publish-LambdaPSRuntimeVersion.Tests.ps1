@@ -84,7 +84,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'Schema 2'
                 # The version now exists, so a rerun needs another name; and the cause is something to check,
                 # not a rebuild with the tool that just built it.
-                $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.*"
+                $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, and its image tag stays in ECR, so publish under a new -RuntimeVersion.*"
                 $_.Exception.Message | Should -BeLike '*docker buildx imagetools inspect acct.dkr.ecr.us-east-1.amazonaws.com/rt:v1*'
                 $_.Exception.Message | Should -BeLike '*or Lambda could not pull it (check that the repository policy grants lambda.amazonaws.com pull for this runtime''s ARN)*'
                 $_.Exception.Message | Should -Not -BeLike '*Rebuild with*'
@@ -502,7 +502,7 @@ Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match '\[x86_64\]'
                 $_.Exception.Message | Should -Match 'buildx'
                 $_.Exception.Message | Should -Match 'NOT pointed'
-                $_.Exception.Message | Should -BeLike '*Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.'
+                $_.Exception.Message | Should -BeLike '*so rebuild and publish under a new -RuntimeVersion.'
             }
             $threw | Should -BeTrue
         }
