@@ -53,9 +53,19 @@ function private:Invoke-FunctionHandler {
     # result unreported. A labelled one whose label matches no loop, like exit in a handler function,
     # goes past this loop and ends the runtime; the finally in runtime.ps1's event loop reports that on
     # /error and exits 1. (exit in a <script>.ps1 handler ends only that script.)
+    #
+    # With AWS_LAMBDA_LOG_FORMAT=JSON, each stream's records are logged at their level, as
+    # Amazon.Lambda.PowerShellHost does. The handler's output is wrapped first, so a record it returns
+    # stays in the response.
     $private:handlerCompleted = $false
     do {
-        $private:functionInvocationResponse = & $private:handlerCommand $LambdaInput $LambdaContext
+        $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { & $private:handlerCommand $LambdaInput $LambdaContext }
+        else {
+            . { & $private:handlerCommand $LambdaInput $LambdaContext | Microsoft.PowerShell.Core\ForEach-Object { [ref]$_ } } *>&1 | Microsoft.PowerShell.Core\ForEach-Object {
+                if ($_ -is [ref]) { return , $_.Value }
+                & $script:__LambdaPSRuntimeWriteLambdaLog -Record $_
+            }
+        }
         $private:handlerCompleted = $true
     } while ($false)
     if (-not $private:handlerCompleted) {
@@ -77,7 +87,7 @@ function private:Invoke-FunctionHandler {
         }
         elseif ($script:LambdaPSRuntimeDepthWarnedFor -cne $private:depthValue) {
             $script:LambdaPSRuntimeDepthWarnedFor = $private:depthValue
-            Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
+            & $script:__LambdaPSRuntimeWriteLambdaLog WARN "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
         }
     }
 

@@ -118,7 +118,9 @@ try {
                 # the nearest one, so the stop is seen here and reported.
                 $private:__LambdaPSRuntimeScriptCompleted = $false
                 do {
-                    . $private:__LambdaPSRuntimeHandler.ScriptFilePath
+                    # With AWS_LAMBDA_LOG_FORMAT=JSON, the top-level code's records and output are logged as JSON.
+                    if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:__LambdaPSRuntimeHandler.ScriptFilePath }
+                    else { . $private:__LambdaPSRuntimeHandler.ScriptFilePath *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     $private:__LambdaPSRuntimeScriptCompleted = $true
                 } while ($false)
                 if (-not $private:__LambdaPSRuntimeScriptCompleted) {
@@ -132,7 +134,8 @@ try {
                 $private:__LambdaPSRuntimeImportCompleted = $false
                 do {
                     try {
-                        Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop
+                        if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop }
+                        else { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     }
                     catch {
                         # A module that is not found is named with where the runtime looked; any other import
@@ -237,7 +240,7 @@ do {
         $private:__LambdaPSRuntimeNextInvocation = pwsh-runtime\Get-LambdaNextInvocation $private:__LambdaPSRuntimeHttpClient
     }
     catch {
-        Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]$($_.Exception.Message)"
+        pwsh-runtime\Write-LambdaLog ERROR "[RUNTIME]$($_.Exception.Message)"
         exit 1
     }
 
@@ -286,6 +289,7 @@ do {
     $private:__LambdaPSRuntimeNextInvocation = $null
     $private:__LambdaPSRuntimeResponse = $null
     $env:_X_AMZN_TRACE_ID = ''
+    $env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID = ''
     # Remove the jobs and remoting sessions this invocation left, which would otherwise go on running into
     # later invocations, and restore $LASTEXITCODE and PSModulePath to their values after start-up. Jobs
     # and sessions that start-up created are kept. The commands are module-qualified, so a handler's
@@ -298,7 +302,7 @@ do {
             }
         }
     }
-    catch { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Could not remove the handler's jobs: $($_.Exception.Message)" }
+    catch { pwsh-runtime\Write-LambdaLog WARN "[RUNTIME]Could not remove the handler's jobs: $($_.Exception.Message)" }
     try {
         foreach ($private:__LambdaPSRuntimeSession in @(Microsoft.PowerShell.Core\Get-PSSession)) {
             if ($private:__LambdaPSRuntimeSession.Id -notin $private:__LambdaPSRuntimeStartupSessionIds) {
@@ -306,7 +310,7 @@ do {
             }
         }
     }
-    catch { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Could not remove the handler's remoting sessions: $($_.Exception.Message)" }
+    catch { pwsh-runtime\Write-LambdaLog WARN "[RUNTIME]Could not remove the handler's remoting sessions: $($_.Exception.Message)" }
     if ($null -eq $private:__LambdaPSRuntimeExitCode) { Microsoft.PowerShell.Utility\Remove-Variable -Name LASTEXITCODE -Scope Global -ErrorAction Ignore }
     else { $global:LASTEXITCODE = $private:__LambdaPSRuntimeExitCode }
     $env:PSModulePath = $private:__LambdaPSRuntimeModulePath
