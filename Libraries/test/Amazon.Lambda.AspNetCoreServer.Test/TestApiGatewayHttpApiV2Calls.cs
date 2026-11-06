@@ -216,6 +216,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
+        [Theory]
+        [InlineData("authtest-bare-httpapi-v2-lambda-authorizer-empty.json")]
+        [InlineData("authtest-bare-httpapi-v2-lambda-authorizer-context.json")]
+        [InlineData("authtest-bare-httpapi-v2-iam-authorizer.json")]
+        public async Task TestBareAuthorizeDeniedWhenAuthorizerHasNoJwtClaims(string fileName)
+        {
+            // An authorizer context without JWT claims must not produce an authenticated user.
+            var response = await InvokeAPIGatewayRequest(fileName);
+
+            Assert.NotEqual(200, response.StatusCode);
+        }
+
         [Fact]
         public async Task TestAuthMTls()
         {

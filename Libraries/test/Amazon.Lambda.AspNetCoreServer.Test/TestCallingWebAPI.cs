@@ -393,6 +393,24 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
+        [Fact]
+        public async Task TestBareAuthorizeDeniedWhenAuthorizerHasNoClaims()
+        {
+            // An authorizer context that is present but carries no claims must not produce an authenticated user.
+            var response = await InvokeAPIGatewayRequest("authtest-bare-request-empty-claims.json");
+
+            Assert.NotEqual(200, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task TestBareAuthorizeAllowedWithCustomLambdaAuthorizerClaims()
+        {
+            var response = await InvokeAPIGatewayRequest("authtest-bare-request-custom-lambda-authorizer.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("Claims=1", response.Body);
+        }
+
         // Covers the test case when using a custom proxy request, probably for testing, and doesn't specify the resource
         [Fact]
         public async Task TestMissingResourceInRequest()

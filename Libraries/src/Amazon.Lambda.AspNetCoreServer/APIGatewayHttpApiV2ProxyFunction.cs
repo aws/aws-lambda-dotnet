@@ -119,12 +119,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                     else
                     {
-                        // handling claims output from custom lambda authorizer
-                        var identity = new ClaimsIdentity(authorizer.Jwt?.Claims.Select(entry => new Claim(entry.Key, entry.Value)), "AuthorizerIdentity");
-
-                        _logger.LogDebug(
-                            $"Configuring HttpContext.User with {identity.Claims.Count()} claims coming from API Gateway's Request Context");
-                        authFeatures.User = new ClaimsPrincipal(identity);
+                        // No JWT claims were supplied (for example a Lambda or IAM authorizer). Do not create an authenticated
+                        // identity: a ClaimsIdentity with an authentication type reports IsAuthenticated == true even with zero claims.
+                        _logger.LogDebug("API Gateway's Request Context authorizer contained no JWT claims; HttpContext.User was not configured as authenticated");
                     }
                 }
 
