@@ -1,0 +1,44 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /api/authtestbare",
+  "rawPath": "/api/authtestbare",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "content-length": "0",
+    "host": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "postman-token": "94d77afd-073d-4e32-8529-8192f5750371",
+    "user-agent": "PostmanRuntime/7.20.1",
+    "x-amzn-trace-id": "Root=1-5e7aeb83-0b67e2a8010700549b3ca4a4",
+    "x-forwarded-for": "192.182.149.40",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "requestContext": {
+    "accountId": "626492997873",
+    "apiId": "uo9pe23ec6",
+    "authorizer": {
+      "lambda": {}
+    },
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "uo9pe23ec6",
+    "http": {
+      "method": "GET",
+      "path": "/api/authtestbare",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "192.182.149.40",
+      "userAgent": "PostmanRuntime/7.20.1"
+    },
+    "requestId": "J7m8fgZWoAMEJEA=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "25/Mar/2020:05:26:27 +0000",
+    "timeEpoch": 1585113987055
+  },
+  "pathParameters": {
+    "proxy": "api/authtestbare"
+  },
+  "isBase64Encoded": false
+}
