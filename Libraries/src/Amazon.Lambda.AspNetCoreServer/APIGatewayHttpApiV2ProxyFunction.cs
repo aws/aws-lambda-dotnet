@@ -119,9 +119,41 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                     else
                     {
-                        // No JWT claims were supplied (for example a Lambda or IAM authorizer). Do not create an authenticated
-                        // identity: a ClaimsIdentity with an authentication type reports IsAuthenticated == true even with zero claims.
-                        _logger.LogDebug("API Gateway's Request Context authorizer contained no JWT claims; HttpContext.User was not configured as authenticated");
+                        // handling claims output from custom lambda authorizer and IAM authorization
+                        var claims = new List<Claim>();
+
+                        if (authorizer.Lambda != null)
+                        {
+                            claims.AddRange(authorizer.Lambda
+                                .Where(x => x.Value != null)
+                                .Select(entry => new Claim(entry.Key, entry.Value.ToString())));
+                        }
+
+                        if (authorizer.IAM != null)
+                        {
+                            AddClaimIfNotEmpty(claims, "accountId", authorizer.IAM.AccountId);
+                            AddClaimIfNotEmpty(claims, "callerId", authorizer.IAM.CallerId);
+                            AddClaimIfNotEmpty(claims, "principalOrgId", authorizer.IAM.PrincipalOrgId);
+                            AddClaimIfNotEmpty(claims, "userArn", authorizer.IAM.UserARN);
+                            AddClaimIfNotEmpty(claims, "userId", authorizer.IAM.UserId);
+                            AddClaimIfNotEmpty(claims, "cognitoIdentityId", authorizer.IAM.CognitoIdentity?.IdentityId);
+                            AddClaimIfNotEmpty(claims, "cognitoIdentityPoolId", authorizer.IAM.CognitoIdentity?.IdentityPoolId);
+                        }
+
+                        // Only create an authenticated identity when the authorizer supplied at least one claim.
+                        // A ClaimsIdentity with an authentication type reports IsAuthenticated == true even with zero claims.
+                        if (claims.Count != 0)
+                        {
+                            var identity = new ClaimsIdentity(claims, "AuthorizerIdentity");
+
+                            _logger.LogDebug(
+                                $"Configuring HttpContext.User with {claims.Count} claims coming from API Gateway's Request Context");
+                            authFeatures.User = new ClaimsPrincipal(identity);
+                        }
+                        else
+                        {
+                            _logger.LogDebug("API Gateway's Request Context authorizer contained no claims; HttpContext.User was not configured as authenticated");
+                        }
                     }
                 }
 
@@ -302,6 +334,14 @@ namespace Amazon.Lambda.AspNetCoreServer
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             return response;
+        }
+
+        private static void AddClaimIfNotEmpty(List<Claim> claims, string type, string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                claims.Add(new Claim(type, value));
+            }
         }
     }
 }

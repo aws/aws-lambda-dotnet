@@ -40,7 +40,7 @@
     "timeEpoch": 1585113987055
   },
   "pathParameters": {
-    "proxy": "api/authtest"
+    "proxy": "api/authtestbare"
   },
   "isBase64Encoded": false
 }

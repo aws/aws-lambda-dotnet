@@ -4,7 +4,8 @@
       "Name": "Amazon.Lambda.AspNetCoreServer",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Only set an authenticated HttpContext.User from the API Gateway request context authorizer when the authorizer supplies at least one claim."
+        "Only set an authenticated HttpContext.User from the API Gateway request context authorizer when the authorizer supplies at least one claim.",
+        "For HTTP API payload format 2.0, marshal Lambda authorizer context and IAM caller details into claims."
       ]
     }
   ]

@@ -216,16 +216,25 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData("authtest-bare-httpapi-v2-lambda-authorizer-empty.json")]
-        [InlineData("authtest-bare-httpapi-v2-lambda-authorizer-context.json")]
-        [InlineData("authtest-bare-httpapi-v2-iam-authorizer.json")]
-        public async Task TestBareAuthorizeDeniedWhenAuthorizerHasNoJwtClaims(string fileName)
+        [Fact]
+        public async Task TestBareAuthorizeDeniedWhenLambdaAuthorizerHasNoContext()
         {
-            // An authorizer context without JWT claims must not produce an authenticated user.
-            var response = await InvokeAPIGatewayRequest(fileName);
+            // A Lambda authorizer that returns no context must not produce an authenticated user.
+            var response = await InvokeAPIGatewayRequest("authtest-bare-httpapi-v2-lambda-authorizer-empty.json");
 
             Assert.NotEqual(200, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData("authtest-bare-httpapi-v2-lambda-authorizer-context.json", "Claims=1")]
+        [InlineData("authtest-bare-httpapi-v2-iam-authorizer.json", "Claims=4")]
+        public async Task TestBareAuthorizeAllowedWithLambdaOrIamAuthorizerClaims(string fileName, string expectedBody)
+        {
+            // Lambda authorizer context and IAM caller details are marshalled into claims, matching payload 1.0.
+            var response = await InvokeAPIGatewayRequest(fileName);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal(expectedBody, response.Body);
         }
 
         [Fact]

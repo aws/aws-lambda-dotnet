@@ -393,11 +393,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
-        [Fact]
-        public async Task TestBareAuthorizeDeniedWhenAuthorizerHasNoClaims()
+        [Theory]
+        [InlineData("authtest-bare-request-empty-claims.json")]
+        // HTTP API with payload format 1.0 and no authorizer sends "authorizer": { "claims": null, "scopes": null }.
+        [InlineData("authtest-bare-httpapi-v1-no-authorizer.json")]
+        public async Task TestBareAuthorizeDeniedWhenAuthorizerHasNoClaims(string fileName)
         {
             // An authorizer context that is present but carries no claims must not produce an authenticated user.
-            var response = await InvokeAPIGatewayRequest("authtest-bare-request-empty-claims.json");
+            var response = await InvokeAPIGatewayRequest(fileName);
 
             Assert.NotEqual(200, response.StatusCode);
         }
