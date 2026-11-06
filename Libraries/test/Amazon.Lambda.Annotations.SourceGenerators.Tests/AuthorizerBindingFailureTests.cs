@@ -138,6 +138,30 @@ namespace TestApp
             new object[] { "" },
         };
 
+        [Fact]
+        public void FromServicesType_IsResolvedFromGlobalNamespaceWhenNestedNamespaceShadowsIt()
+        {
+            const string source = @"using Common.Lambda.Queue;
+using Amazon.Lambda.Annotations;
+using Microsoft.Extensions.DependencyInjection;
+[assembly: Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+
+namespace Common.Lambda.Queue { public class Processor { } }
+namespace Acme.Common { namespace Lambda { } }
+namespace Acme.EventDistributor.Trigger
+{
+    [LambdaStartup]
+    public class Startup { public void ConfigureServices(IServiceCollection services) { } }
+    public class Handler
+    {
+        [LambdaFunction]
+        public int Handle([FromServices] Processor processor) => 1;
+    }
+}";
+
+            CompileWithGenerator(source);
+        }
+
         [Theory]
         [MemberData(nameof(MalformedValues))]
         public async Task HttpApiSimple_IAuthorizerResult_DeniesOnMalformedHeader(string value)
@@ -328,7 +352,9 @@ namespace TestApp
             return result;
         }
 
-        private static Assembly CompileWithGenerator()
+        private static Assembly CompileWithGenerator() => CompileWithGenerator(UserSource);
+
+        private static Assembly CompileWithGenerator(string userSource)
         {
             // The generator only runs when the source file is inside a project directory and writes the
             // serverless.template there, so use an isolated temporary project directory.
@@ -336,12 +362,12 @@ namespace TestApp
             Directory.CreateDirectory(projectDirectory);
             File.WriteAllText(Path.Combine(projectDirectory, "TestApp.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"></Project>");
             var sourcePath = Path.Combine(projectDirectory, "Authorizers.cs");
-            File.WriteAllText(sourcePath, UserSource);
+            File.WriteAllText(sourcePath, userSource);
 
             var parseOptions = new CSharpParseOptions(LanguageVersion.Latest, preprocessorSymbols: new[] { "NET8_0_OR_GREATER" });
             var compilation = CSharpCompilation.Create(
                 "AuthorizerBindingFailureTests",
-                new[] { CSharpSyntaxTree.ParseText(UserSource, parseOptions, sourcePath) },
+                new[] { CSharpSyntaxTree.ParseText(userSource, parseOptions, sourcePath) },
                 BuildReferences(),
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
