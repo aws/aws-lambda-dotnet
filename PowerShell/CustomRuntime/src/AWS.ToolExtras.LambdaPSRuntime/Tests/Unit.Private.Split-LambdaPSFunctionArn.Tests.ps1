@@ -15,7 +15,8 @@ Describe 'Split-LambdaPSFunctionArn' -Tag 'Unit' {
         @{ Value = '111122223333:function:hello'; Name = 'hello'; Region = $null; Qualifier = $null }
         @{ Value = '111122223333:function:hello:live'; Name = 'hello'; Region = $null; Qualifier = 'live' }
         @{ Value = 'function:hello'; Name = 'hello'; Region = $null; Qualifier = $null }
-        @{ Value = 'eu-west-1:111122223333:function:hello:live'; Name = 'hello'; Region = $null; Qualifier = 'live' }
+        @{ Value = 'eu-west-1:111122223333:function:hello:live'; Name = 'hello'; Region = 'eu-west-1'; Qualifier = 'live' }
+        @{ Value = 'us-gov-west-1:function:hello'; Name = 'hello'; Region = 'us-gov-west-1'; Qualifier = $null }
         @{ Value = 'hello'; Name = 'hello'; Region = $null; Qualifier = $null }
         @{ Value = 'hello:prod'; Name = 'hello'; Region = $null; Qualifier = 'prod' }
         @{ Value = 'arn-hello'; Name = 'arn-hello'; Region = $null; Qualifier = $null }

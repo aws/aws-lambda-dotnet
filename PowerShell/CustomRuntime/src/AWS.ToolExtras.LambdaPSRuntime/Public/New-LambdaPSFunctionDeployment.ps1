@@ -66,7 +66,7 @@ function New-LambdaPSFunctionDeployment {
         ask again, and declining the packaging skips the create, which would deploy that package.
     .PARAMETER FunctionName
         The Lambda function name to create or update, or its full or partial ARN. When -Region is
-        omitted, the region in a full ARN is used (a -Region that differs from it fails with
+        omitted, the region in a full or partial ARN is used (a -Region that differs from it fails with
         FunctionRegionMismatch), and the default -PackagePath is named after the function name in either
         form of ARN. A name or ARN with a version or alias (hello:live) fails with FunctionNameQualified
         before anything is read or packaged: a deploy creates or updates the function itself.
