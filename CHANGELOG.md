@@ -1,3 +1,11 @@
+## Release 2026-11-06
+
+### Amazon.Lambda.AspNetCoreServer (10.3.1)
+* ** Breaking Change ** Only set an authenticated HttpContext.User from the API Gateway request context authorizer when the authorizer supplies at least one claim with a non-null value. Requests whose authorizer context has no such claims, for example an HTTP API route using payload format 1.0 with no authorizer, previously appeared authenticated (User.Identity.IsAuthenticated was true with zero claims) and will now appear anonymous, so a bare [Authorize] denies them.
+* For HTTP API payload format 2.0, marshal Lambda authorizer context and IAM caller details into claims.
+### Amazon.Lambda.RuntimeSupport (2.3.1)
+* Reduce the memory allocated and CPU time used to process each invocation.
+
 ## Release 2026-10-20
 
 ### Amazon.Lambda.PowerShellHost (4.1.1)
