@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "AWS.OCI.Builder",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Initial release of AWS library for programmatically building OCI images without a container runtime"
+      ]
+    }
+  ]
+}
