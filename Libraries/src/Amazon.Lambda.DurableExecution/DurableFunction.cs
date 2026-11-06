@@ -145,8 +145,11 @@ public static class DurableFunction
                 nextMarker = marker;
             }
         }
-        catch (OperationCanceledException ex) when (workflowCancellation.IsDeadlineExceeded)
+        catch (Exception ex) when (workflowCancellation.IsDeadlineExceeded)
         {
+            // Any hydration failure once the deadline has passed (a cancelled
+            // request, or one that faulted as it was cut off) is reported as the
+            // timeout, with the original kept as the inner exception.
             throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
         }
 

@@ -678,6 +678,39 @@ public class LambdaManagedInstancesTests
         Assert.False(checkRan);
     }
 
+    // ── Copilot review round 5 ─────────────────────────────────────────
+
+    [Fact]
+    public async Task Lmi_HydrationFaultsAfterDeadline_ThrowsTimeout()
+    {
+        // The request fires the deadline itself and then fails with a
+        // non-cancellation error, before the deadline wait can win the race.
+        WorkflowCancellation? wfc = null;
+        var client = new FakeServiceClient
+        {
+            OnGetExecutionState = _ =>
+            {
+                wfc!.TriggerDeadline();
+                throw new DurableExecutionException("request failed as it was cut off");
+            },
+        };
+        var options = new DurableInvocationOptions
+        {
+            IsMultiConcurrency = true,
+            OnWorkflowCancellationCreated = created => wfc = created,
+        };
+
+        var ex = await Assert.ThrowsAsync<TimeoutException>(() =>
+            DurableFunction.WrapAsync<Payload, string>(
+                (input, _) => Task.FromResult(input.Id!),
+                Input("arn:hydrate-fault-after-deadline", nextMarker: "page-2"),
+                Context(ControlledDeadline),
+                client,
+                options).NoHang());
+
+        Assert.IsType<DurableExecutionException>(ex.InnerException);
+    }
+
     /// <summary>Default serializer whose Deserialize first runs a blocking wait.</summary>
     private sealed class SlowDeserializer : Amazon.Lambda.Core.ILambdaSerializer
     {
