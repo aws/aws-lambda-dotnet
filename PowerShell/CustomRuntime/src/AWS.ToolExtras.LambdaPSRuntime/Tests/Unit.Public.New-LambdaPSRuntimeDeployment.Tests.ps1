@@ -40,7 +40,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
         # ... and the repository has no image tagged with it.
         Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith {
-            throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist')
+            if ($ImageId) { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') }
         }
         Mock 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -MockWith { }
         Mock 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -MockWith { $RepositoryName }
@@ -493,10 +493,48 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Name -eq $result.RuntimeVersion }
         }
 
+        It 'skips a suffix whose image tag is left in the repository, with one image list' {
+            $release = $script:pwshConfig.DefaultPatch['7.4']
+            Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = "$release-1" } }
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -ParameterFilter { -not $ImageId } -MockWith {
+                [PSCustomObject]@{ ImageTags = @("$release-1") }, [PSCustomObject]@{ ImageTags = @("$release-2", 'latest') }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be "$release-3"
+            Should -Invoke 'Get-ECRImageMetadata' -ModuleName $script:moduleName -Times 1 -Exactly `
+                -ParameterFilter { $RepositoryName -eq 'rt' -and $Filter_TagStatus -eq 'TAGGED' -and $Filter_ImageStatus -eq 'ANY' -and -not $ImageId }
+        }
+
+        It 'skips a tag left in the repository for the first version of a new runtime' {
+            Mock 'Get-LMCRuntime' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -ParameterFilter { -not $ImageId } -MockWith { [PSCustomObject]@{ ImageTags = @($script:defaultVersion) } }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be "$($script:pwshConfig.DefaultPatch['7.4'])-2"
+        }
+
+        It 'names the version from the runtime alone when the repository does not exist yet' {
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -ParameterFilter { -not $ImageId } -MockWith {
+                throw [System.InvalidOperationException]::new('wrapped', [LambdaPSTests.Fakes.RepositoryNotFoundException]::new('no repository'))
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be $script:defaultVersion
+        }
+
+        It 'throws RuntimeImageTagCheckFailed, before anything is built, when the image tags cannot be listed' {
+            Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -ParameterFilter { -not $ImageId } -MockWith {
+                throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform: ecr:DescribeImages')
+            }
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 } |
+                Should -Throw -ErrorId 'RuntimeImageTagCheckFailed,New-LambdaPSRuntimeDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike "*image tags of ECR repository 'rt'*ecr:DescribeImages. Nothing was built or pushed."
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
         It 'uses an explicit -RuntimeVersion as given, without listing versions' {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -RuntimeVersion v7
             $result.RuntimeVersion | Should -Be 'v7'
             Should -Invoke 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Get-ECRImageMetadata' -ModuleName $script:moduleName -Times 0 -Exactly -ParameterFilter { -not $ImageId }
         }
 
         It 'names the first version of a new runtime after the pwsh release with -1, without listing versions' {

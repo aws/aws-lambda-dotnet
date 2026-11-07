@@ -141,8 +141,8 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy.
+image, then `7.6.10-1`) and moves the alias. A removed version's name is not reused: its image tag
+stays in the repository, and the deploy never pushes over a tag.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
@@ -162,9 +162,10 @@ Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
 A deploy that can only install the module's pinned release (an unreadable repository on x86_64, or
 arm64) stops with `PwshReleaseOlderThanAlias` when the alias runs a newer release of the same line and
 architecture, rather than downgrade it. Pass `-PwshVersion` to choose the release.
-Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass
-`-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
-on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.
+Naming a version lists the runtime's versions and the repository's images, so the deploy needs
+`lambda:ListRuntimeVersions` and `ecr:DescribeImages`. Pass `-PwshVersion` or `-RuntimeVersion` to pin
+either choice; for example, to put x86_64 and arm64 runtimes on the same release, pass the arm64 one's
+`PwshVersion` to the x86_64 deploy.
 
 After a patch that changes the pwsh release, the first cold start of a bound function can take about
 15 seconds while Lambda loads the new image, and the request still succeeds.
