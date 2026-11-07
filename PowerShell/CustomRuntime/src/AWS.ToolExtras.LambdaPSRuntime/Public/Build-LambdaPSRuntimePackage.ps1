@@ -27,11 +27,12 @@ function Build-LambdaPSRuntimePackage {
              and macOS, where the file system does not tell them apart, one is left out with a warning. A required file (bootstrap, runtime.ps1,
              PowerShellLambdaContext.cs) that is a link leaving the project is not packaged, so the build
              stops with ProjectFileNotFound or ContextSourceNotFound.
-          3. Precompiles the staged PowerShellLambdaContext.cs to a DLL with the BUNDLED pwsh, so the DLL
-             targets the .NET that runs it on Lambda. That needs a Linux host of the target architecture
-             where the bundled pwsh can start (not a temp folder mounted noexec); elsewhere no DLL is
-             shipped, with a warning, and the runtime compiles the .cs at cold start (~1.7 s). A compile
-             that runs and fails is ContextCompileFailed.
+          3. Precompiles the staged PowerShellLambdaContext.cs to a DLL with a pwsh of the bundled release,
+             so the DLL targets the .NET that runs it on Lambda: the bundled pwsh, or on a host of another
+             architecture that release's host build, downloaded and SHA256-checked (not with
+             -PwshArchivePath). That needs a Linux host where pwsh can start (not a temp folder mounted
+             noexec); elsewhere no DLL is shipped, with a warning, and the runtime compiles the .cs at cold
+             start (~1.7 s). A compile that runs and fails is ContextCompileFailed.
           4. Zips it with forward-slash relative entry paths in ordinal order, each with the same
              timestamp, so an unchanged project built with the same PowerShell version on the same OS
              gives a byte-identical package (except for a precompiled
@@ -500,18 +501,31 @@ function Build-LambdaPSRuntimePackage {
             $bootstrapText = [System.IO.File]::ReadAllText($stagedBootstrap).Replace("`r`n", "`n")
             [System.IO.File]::WriteAllText($stagedBootstrap, $bootstrapText, [System.Text.UTF8Encoding]::new($false))
 
-            # 3. Precompile the LambdaContext assembly with the BUNDLED pwsh, not the host's (see
-            #    Invoke-LambdaPSContextPrecompile). It only runs on a Linux host of the same architecture,
-            #    and only if it can start there; otherwise no DLL is shipped and the runtime compiles the
-            #    staged PowerShellLambdaContext.cs on each cold start instead.
+            # 3. Precompile the LambdaContext assembly with a pwsh of the bundled release, not the host's (see
+            #    Invoke-LambdaPSContextPrecompile). Otherwise no DLL is shipped and the runtime compiles the
+            #    staged PowerShellLambdaContext.cs on each cold start.
             $hostArch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
-            $precompiled = $IsLinux -and $hostArch -eq $Architecture -and (Invoke-LambdaPSContextPrecompile -PwshPath $pwshBinary `
-                    -SourcePath ([System.IO.Path]::Combine($stage, 'PowerShellLambdaContext.cs')) -OutputPath ([System.IO.Path]::Combine($stage, 'PowerShellLambdaContext.dll')))
+            $contextPwsh = $pwshBinary
+            $cause = "This host cannot run pwsh $resolvedVersion. Build on a Linux host, with a temp folder that allows running programs, to avoid that."
+            if ($IsLinux -and $hostArch -ne $Architecture) {
+                $contextPwsh = $null
+                if (-not [string]::IsNullOrWhiteSpace($PwshArchivePath)) {
+                    $cause = "-PwshArchivePath was given, so no $hostArch build of pwsh $resolvedVersion was downloaded to compile it with. Omit -PwshArchivePath, or build on a Linux $Architecture host, to avoid that."
+                }
+                else {
+                    $contextPwsh = Get-LambdaPSHostPwsh -PwshVersion $resolvedVersion -Architecture $hostArch -Destination ([System.IO.Path]::Combine($downloadRoot, 'host-powershell'))
+                    if (-not $contextPwsh) { $cause = "The $hostArch build of pwsh $resolvedVersion could not be fetched or verified (see the warning above, or rerun with -Verbose)." }
+                }
+            }
+            $precompile = @{
+                PwshPath   = $contextPwsh
+                SourcePath = [System.IO.Path]::Combine($stage, 'PowerShellLambdaContext.cs')
+                OutputPath = [System.IO.Path]::Combine($stage, 'PowerShellLambdaContext.dll')
+            }
+            $precompiled = $IsLinux -and $contextPwsh -and (Invoke-LambdaPSContextPrecompile @precompile)
             if (-not $precompiled) {
-                Write-Warning ("This host cannot run the bundled $Architecture Linux pwsh, so PowerShellLambdaContext.dll " +
-                    'is not precompiled. The package still works: the runtime compiles PowerShellLambdaContext.cs on each ' +
-                    'cold start, which adds about 1.7 s. Build on a Linux host of the target architecture, with a temp ' +
-                    'folder that allows running programs, to avoid that.')
+                Write-Warning ('PowerShellLambdaContext.dll is not precompiled, so the runtime compiles PowerShellLambdaContext.cs ' +
+                    "on each cold start, which adds about 1.7 s. $cause")
             }
 
             # 4. Zip the stage. Lambda runs bootstrap and powershell/pwsh directly, so both are executable.
