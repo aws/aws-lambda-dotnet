@@ -377,10 +377,12 @@ file.
   modules lack those cmdlets or parameters imports fine and fails at the point of call.
 - **Re-deploying an existing function updates its code and only the configuration you give.**
   `New-LambdaPSFunctionDeployment` against a function that already exists updates its code with
-  `Update-LMFunctionCode`, then its configuration with `Update-LMFunctionConfiguration`: always its
-  role, and `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable` only when
-  you give them. Anything you don't give keeps the function's current value, so a redeploy doesn't
-  reset a tuned timeout, memory size or alias to the defaults. The live handler is kept unless you give
+  `Update-LMFunctionCode`, then its configuration with `Update-LMFunctionConfiguration`: `-Role`,
+  `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable`, only when you give
+  them and they differ from the function's. When none does, the configuration isn't updated. `-Role` is
+  needed only to create the function (without it, `RoleRequired`). Anything you don't give keeps the
+  function's current value, so a redeploy doesn't reset a tuned timeout, memory size or alias to the
+  defaults. The live handler is kept unless you give
   `-Handler`, its script is not in the package, or it is not a PowerShell handler, and the live alias is kept unless you give
   `-RuntimeAlias` or `-RuntimeName` names another runtime. The handler and alias a scaffolded project's
   `manifest.json` records apply to a new function (the alias also to one moving to another runtime);
