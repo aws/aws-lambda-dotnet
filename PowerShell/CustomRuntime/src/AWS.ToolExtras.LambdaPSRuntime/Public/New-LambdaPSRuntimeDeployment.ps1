@@ -17,7 +17,9 @@ function New-LambdaPSRuntimeDeployment {
         Running the same command again patches the runtime: it installs the newest pwsh release the build
         can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
-        it returns that version as PreviousRuntimeVersion.
+        it returns that version as PreviousRuntimeVersion. After a patch that changes the pwsh release,
+        the first cold start of a bound function can take about 15 seconds while Lambda loads the new
+        image, and the request still succeeds.
         Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit
         also patches the alias's functions. Deploy to a test alias first (-RuntimeAlias test), then point
         the production alias at the same version with Update-LMCRuntimeAlias (New-LMCRuntimeAlias the

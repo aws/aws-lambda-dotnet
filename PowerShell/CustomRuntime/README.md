@@ -153,6 +153,9 @@ Naming a version lists the runtime's versions, so the deploy needs `lambda:ListR
 `-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
 on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.
 
+After a patch that changes the pwsh release, the first cold start of a bound function can take about
+15 seconds while Lambda loads the new image, and the request still succeeds.
+
 Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit also
 patches every function bound to the alias. Deploy to a test alias first, and move production to the
 version you tested:
