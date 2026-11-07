@@ -12,7 +12,8 @@ function Invoke-LambdaPSOciImageBuild {
              and adds the ICU libraries (Get-LambdaPSIcuPackage) next to pwsh.
           2. Stages the executable scripts LF-only and without a BOM, and precompiles
              PowerShellLambdaContext.dll with the bundled pwsh when the host can run it.
-          3. Pulls the base image's manifest for the platform, adds one layer for pwsh, one for the runtime
+          3. Pulls the base image's manifest for the platform, stops with ReservedPathNotEmpty when the base
+             image has files in /opt, /var/task or /tmp, adds one layer for pwsh, one for the runtime
              and (Container) one for the function, so a rebuild that changes only the function re-pushes
              only that layer, and sets the entrypoint, CMD and environment.
           4. Pushes with the ECR authorization token, reporting each layer with Write-Progress.
@@ -173,6 +174,7 @@ function Invoke-LambdaPSOciImageBuild {
         # 3. Base image, layers and config.
         Write-Progress -Activity $activity -Status "Reading base image $($Plan.BaseImage) ($($Plan.Platform))"
         $builder = & $await ([AWS.OCI.Builder.OciImageBuilder]::FromBaseImageAsync($Plan.BaseImage, $Plan.Platform, $cancellation.Token))
+        Assert-LambdaPSOciBaseImageReservedPath -Plan $Plan -ManifestDigest $builder.BaseImageDigest
         & $addFolders $pwshFiles
         & $addFolders $runtimeFiles
         Write-Progress -Activity $activity -Status 'Building the pwsh layer'
