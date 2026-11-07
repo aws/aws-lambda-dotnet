@@ -17,7 +17,7 @@ function New-LambdaPSRuntimeDeployment {
         Running the same command again patches the runtime: it installs the newest pwsh release the build
         can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
-        it returns that version and prints the Update-LMCRuntimeAlias command that points the alias back.
+        it returns that version as PreviousRuntimeVersion.
         Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit
         also patches the alias's functions. Deploy to a test alias first (-RuntimeAlias test), then point
         the production alias at the same version with Update-LMCRuntimeAlias (New-LMCRuntimeAlias the
@@ -76,7 +76,7 @@ function New-LambdaPSRuntimeDeployment {
         Progress lines (the Docker toolchain found, the target image URI, and each stage as it
         completes) are written to the Information stream with the tag LambdaPSDeploy, so they are
         shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release
-        and the rollback command are shown unless -InformationAction is given.
+        is shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
@@ -208,8 +208,7 @@ function New-LambdaPSRuntimeDeployment {
         -Confirm; the object is still returned. RuntimeAlias is the alias requested: it was moved only
         when its stage ran, and declining that stage alone is warned about with the command that points it.
         PreviousRuntimeVersion is the version the alias pointed at before the deploy (empty when the
-        alias is new), and RollbackCommand the Update-LMCRuntimeAlias command that points it back there,
-        set only when the alias was moved.
+        alias is new).
     .EXAMPLE
         New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1 -InformationAction Continue
 
@@ -405,8 +404,8 @@ function New-LambdaPSRuntimeDeployment {
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
-        # The release and the rollback line are shown even without -InformationAction Continue, since
-        # an unchanged command can install a new release; an -InformationAction the caller gives still applies.
+        # The release is shown even without -InformationAction Continue, since an unchanged command can
+        # install a new release; an -InformationAction the caller gives still applies.
         $shownInformation = @{}
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
@@ -622,7 +621,6 @@ function New-LambdaPSRuntimeDeployment {
         Write-Information "Target image URI: $imageUri" -Tags 'LambdaPSDeploy'
         # Version names are case-sensitive, so it is kept as read.
         $previousRuntimeVersion = if ($null -ne $currentAlias) { [string]$currentAlias.RuntimeVersion }
-        $rollbackCommand = $null
 
         # ModulesStaged is read from the scaffolded project's modules/ folder after Stage 1 -- what the
         # image will actually contain, including transitive dependencies -- not from -IncludeModule. It
@@ -744,11 +742,6 @@ function New-LambdaPSRuntimeDeployment {
             }
             $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
-            if ($previousRuntimeVersion) {
-                $rollbackCommand = ("Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $previousRuntimeVersion " +
-                    "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)")
-                Write-Information "Alias '$RuntimeAlias' moved from '$previousRuntimeVersion'. To roll back: $rollbackCommand" -Tags 'LambdaPSDeploy' @shownInformation
-            }
         }
         elseif (-not $WhatIfPreference) {
             # The version is published, but functions bound to the alias stay where they are. The preflight
@@ -772,7 +765,6 @@ function New-LambdaPSRuntimeDeployment {
             RuntimeVersion         = $RuntimeVersion
             RuntimeAlias           = $RuntimeAlias
             PreviousRuntimeVersion = $previousRuntimeVersion
-            RollbackCommand        = $rollbackCommand
             Architecture           = $Architecture
             ModulesStaged          = $modulesStaged
             ProjectPath            = $ProjectPath

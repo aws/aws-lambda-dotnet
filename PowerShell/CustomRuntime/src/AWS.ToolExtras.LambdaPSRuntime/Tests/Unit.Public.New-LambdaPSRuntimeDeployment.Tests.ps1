@@ -461,26 +461,12 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
-        It 'returns the version the alias moved from and the command that points it back' {
+        It 'returns the version the alias moved from' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.20-2'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
             }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 6>$null
             $result.PreviousRuntimeVersion | Should -Be '7.4.20-2'
-            $result.RollbackCommand | Should -Be 'Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion 7.4.20-2 -Region us-east-1'
-        }
-
-        It 'returns no rollback when the alias is new' {
-            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
-            $result.PreviousRuntimeVersion | Should -BeNullOrEmpty
-            $result.RollbackCommand | Should -BeNullOrEmpty
-        }
-
-        It 'returns the version the alias would move from, and no rollback, under -WhatIf' {
-            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.20-2' } }
-            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WhatIf
-            $result.PreviousRuntimeVersion | Should -Be '7.4.20-2'
-            $result.RollbackCommand | Should -BeNullOrEmpty
         }
     }
 
@@ -788,8 +774,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.Output | Should -Not -BeLike '*arm64 tarball*'
         }
 
-        It 'prints the pwsh release and the rollback unless -InformationAction is given, and names the version the alias moves from under -WhatIf' -ForEach @(
-            @{ WhatIf = $false; Extra = ''; Expected = '*Alias ''default'' moved from ''v6''. To roll back: Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v6 -Region us-east-1*' }
+        It 'prints the pwsh release unless -InformationAction is given, and names the version the alias moves from under -WhatIf' -ForEach @(
             @{ WhatIf = $true; Extra = ''; Expected = '*What if: Performing the operation "Point alias at v7 (from v6)" on target "my-ps/default".*' }
             @{ WhatIf = $false; Extra = ' -InformationAction SilentlyContinue'; Expected = '*' }
         ) {
@@ -815,7 +800,6 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.Output | Should -BeLike $Expected
             if ($Extra) { $result.Output | Should -Not -BeLike '*installs pwsh*' }
             else { $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*' }
-            if ($WhatIf -or $Extra) { $result.Output | Should -Not -BeLike '*To roll back*' }
         }
 
         # The scaffold says "existing contents are deleted" only when there are contents; a runtime that
