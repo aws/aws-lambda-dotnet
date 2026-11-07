@@ -15,7 +15,7 @@ function New-LambdaPSRuntimeDeployment {
         reports success over a runtime that cannot be invoked.
 
         Running the same command again patches the runtime: it installs the newest pwsh release the build
-        can verify (see -PwshVersion), publishes it as the next version (see -RuntimeVersion) with the
+        can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
         it returns that version and prints the Update-LMCRuntimeAlias command that points the alias back.
         Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit
@@ -75,7 +75,8 @@ function New-LambdaPSRuntimeDeployment {
 
         Progress lines (the Docker toolchain found, the target image URI, and each stage as it
         completes) are written to the Information stream with the tag LambdaPSDeploy, so they are
-        shown only with -InformationAction Continue; -InformationVariable collects them.
+        shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release
+        and the rollback command are shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
@@ -404,7 +405,11 @@ function New-LambdaPSRuntimeDeployment {
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
-        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy'
+        # The release and the rollback line are shown even without -InformationAction Continue, since
+        # an unchanged command can install a new release; an -InformationAction the caller gives still applies.
+        $shownInformation = @{}
+        if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
+        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
         # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
         if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
@@ -742,11 +747,7 @@ function New-LambdaPSRuntimeDeployment {
             if ($previousRuntimeVersion) {
                 $rollbackCommand = ("Update-LMCRuntimeAlias -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $previousRuntimeVersion " +
                     "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)")
-                # Shown even without -InformationAction Continue, since it is the way back; an
-                # -InformationAction the caller gives still applies.
-                $rollbackInformation = @{}
-                if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $rollbackInformation.InformationAction = 'Continue' }
-                Write-Information "Alias '$RuntimeAlias' moved from '$previousRuntimeVersion'. To roll back: $rollbackCommand" -Tags 'LambdaPSDeploy' @rollbackInformation
+                Write-Information "Alias '$RuntimeAlias' moved from '$previousRuntimeVersion'. To roll back: $rollbackCommand" -Tags 'LambdaPSDeploy' @shownInformation
             }
         }
         elseif (-not $WhatIfPreference) {

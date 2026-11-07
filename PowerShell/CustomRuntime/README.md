@@ -146,7 +146,7 @@ deploy.
 | x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning |
 | arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
 
-The version's release note is `pwsh <release>`. When the alias already pointed at a version, the
+The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When the alias already pointed at a version, the
 result's `PreviousRuntimeVersion` and `RollbackCommand` say where it was, and the deploy prints the
 `Update-LMCRuntimeAlias` command that points it back, even without `-InformationAction Continue`.
 Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass

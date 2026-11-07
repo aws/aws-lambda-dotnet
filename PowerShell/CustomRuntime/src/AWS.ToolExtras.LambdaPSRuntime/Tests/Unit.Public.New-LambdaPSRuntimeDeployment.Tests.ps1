@@ -788,7 +788,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.Output | Should -Not -BeLike '*arm64 tarball*'
         }
 
-        It 'prints the rollback unless -InformationAction is given, and names the version the alias moves from under -WhatIf' -ForEach @(
+        It 'prints the pwsh release and the rollback unless -InformationAction is given, and names the version the alias moves from under -WhatIf' -ForEach @(
             @{ WhatIf = $false; Extra = ''; Expected = '*Alias ''default'' moved from ''v6''. To roll back: Update-LMCRuntimeAlias -RuntimeName my-ps -Name default -RuntimeVersion v6 -Region us-east-1*' }
             @{ WhatIf = $true; Extra = ''; Expected = '*What if: Performing the operation "Point alias at v7 (from v6)" on target "my-ps/default".*' }
             @{ WhatIf = $false; Extra = ' -InformationAction SilentlyContinue'; Expected = '*' }
@@ -813,6 +813,8 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
             $result.Output | Should -BeLike $Expected
+            if ($Extra) { $result.Output | Should -Not -BeLike '*installs pwsh*' }
+            else { $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*' }
             if ($WhatIf -or $Extra) { $result.Output | Should -Not -BeLike '*To roll back*' }
         }
 
