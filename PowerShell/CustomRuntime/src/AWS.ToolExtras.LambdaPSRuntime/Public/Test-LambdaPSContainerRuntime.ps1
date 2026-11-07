@@ -14,8 +14,9 @@ function Test-LambdaPSContainerRuntime {
         Schema 2 manifest that a customer-managed runtime requires, and neither the flags nor the
         single-step push behaviour carry over to podman, finch, or nerdctl. Probing for those would
         report a runtime the build then cannot use, so this cmdlet does not pretend to support them.
-        Customers who do not want Docker have a fully container-free path instead: the Layer and
-        self-contained .zip targets, built with Build-LambdaPSRuntimePackage.
+        Without Docker, -BuildMethod Auto (the default) or NoDocker on Build-LambdaPSRuntimeImage and
+        New-LambdaPSRuntimeDeployment builds and pushes a scaffolded project's image without it, and the
+        Layer and self-contained .zip targets (Build-LambdaPSRuntimePackage) need no container at all.
 
         The CLI is located with Get-Command docker -CommandType Application, so only a real
         executable on PATH matches (aliases and functions are ignored). buildx is probed by running
