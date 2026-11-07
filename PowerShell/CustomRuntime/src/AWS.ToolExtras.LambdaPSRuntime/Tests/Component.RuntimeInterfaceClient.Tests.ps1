@@ -972,9 +972,10 @@ public class InvokeBin : PSCmdlet {
         $posts[1].InvocationId | Should -BeNullOrEmpty
     }
 
+    # The template's pwsh-runtime.psd1 is unstamped, so the runtime client version is 0.0.0.
     It 'sets AWS_EXECUTION_ENV to <Expected> when it is <Case>' -ForEach @(
-        @{ Case = 'unset'; Preset = $null; Expected = 'AWS_Lambda_lambdapsruntime_<pwsh version>' }
-        @{ Case = 'already set'; Preset = 'AWS_Lambda_x'; Expected = 'AWS_Lambda_x_lambdapsruntime_<pwsh version>' }
+        @{ Case = 'unset'; Preset = $null; Expected = 'AWS_Lambda_lambdapsruntime_pwsh_<pwsh version>_ric_0.0.0' }
+        @{ Case = 'already set'; Preset = 'AWS_Lambda_x'; Expected = 'AWS_Lambda_x_lambdapsruntime_pwsh_<pwsh version>_ric_0.0.0' }
     ) {
         $env:AWS_EXECUTION_ENV = $Preset
         try { $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'execenv.ps1' -EventBody '{}') }

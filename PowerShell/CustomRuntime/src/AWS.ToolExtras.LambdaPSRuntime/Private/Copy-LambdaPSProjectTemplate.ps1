@@ -17,7 +17,8 @@ function Copy-LambdaPSProjectTemplate {
         arm64 build fails closed while amd64 still builds) and a warning is written. All other
         content is copied as text unchanged, except that the bootstrap and lambda-entrypoint.sh (the
         image's entrypoint) are written with LF line endings and as executable, and each -Token is
-        replaced with its value. Every placeholder is replaced in one pass, so a
+        replaced with its value. The runtime client's modules/pwsh-runtime.psd1 gets the runtime
+        client version as its ModuleVersion. Every placeholder is replaced in one pass, so a
         value written in is never read as a placeholder. Every file is rendered first and then written
         under ONE ShouldProcess for the whole project, so -WhatIf reports a single line (the file count
         and the destination) without touching disk, and -Confirm asks once. Returns the absolute paths
@@ -211,6 +212,10 @@ function Copy-LambdaPSProjectTemplate {
         # Longest first, so a placeholder that contains another is matched whole.
         $pattern = (@($values.Keys) | Sort-Object -Property Length -Descending | ForEach-Object { [regex]::Escape($_) }) -join '|'
         $text = [regex]::Replace($text, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) $values[$match.Value] })
+        # The runtime client version is the module's.
+        if ($relative -ceq [System.IO.Path]::Combine('modules', 'pwsh-runtime.psd1')) {
+            $text = $text.Replace("ModuleVersion = '0.0.0'", "ModuleVersion = '$script:LambdaPSModuleVersion'")
+        }
         # Everything else is copied unchanged.
 
         # The bootstrap and the image's lambda-entrypoint.sh are executed directly by the kernel on

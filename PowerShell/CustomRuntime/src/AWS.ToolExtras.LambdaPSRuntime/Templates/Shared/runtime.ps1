@@ -28,14 +28,15 @@ if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Wr
 
 # Set PowerShell version environment
 $env:POWERSHELL_VERSION = ($PSVersionTable).PSVersion.ToString()
-# The AWS SDK puts AWS_EXECUTION_ENV in the user agent of each call a function makes, so this marks them
-# as this runtime's, as AWSLambdaPSCore's host appends _powershell_<version>. OS-only runtimes leave it unset.
-$env:AWS_EXECUTION_ENV = "$(if ($env:AWS_EXECUTION_ENV) { "$($env:AWS_EXECUTION_ENV)_" } else { 'AWS_Lambda_' })lambdapsruntime_$env:POWERSHELL_VERSION"
 if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME]Running PowerShell: $($env:POWERSHELL_VERSION)"}
 
 # Importing runtime module helpers
 if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Importing runtime module helpers'}
-Import-Module ([System.IO.Path]::Combine($PSScriptRoot, 'modules', 'pwsh-runtime.psd1'))
+$private:__LambdaPSRuntimeClientVersion = (Import-Module ([System.IO.Path]::Combine($PSScriptRoot, 'modules', 'pwsh-runtime.psd1')) -PassThru).Version
+
+# The AWS SDK puts AWS_EXECUTION_ENV in the user agent of each call a function makes, so this marks them
+# as this runtime's, as AWSLambdaPSCore's host appends _powershell_<version>. OS-only runtimes leave it unset.
+$env:AWS_EXECUTION_ENV = "$(if ($env:AWS_EXECUTION_ENV) { "$($env:AWS_EXECUTION_ENV)_" } else { 'AWS_Lambda_' })lambdapsruntime_pwsh_$($env:POWERSHELL_VERSION)_ric_$private:__LambdaPSRuntimeClientVersion"
 
 # The Runtime API is on the sandbox's loopback. A function's HTTP_PROXY is for its own outbound calls:
 # through it, events and responses would reach the proxy, or never arrive.
