@@ -88,7 +88,7 @@ Describe 'Module import' -Tag 'Component' {
         }
 
         $result.Output | Should -BeLike "*FAILED: ConfigSettingMissing* | $([System.IO.Path]::Combine($result.Config, 'pwsh.psd1')) | *"
-        $result.Output | Should -BeLike "*Missing: Download.OperationTimeoutSeconds in Config/pwsh.psd1.*Reinstall the module*"
+        $result.Output | Should -BeLike "*Missing: Download.OperationTimeoutSeconds in Config/pwsh.psd1, PackageRepository.OperationTimeoutSeconds in Config/pwsh.psd1.*Reinstall the module*"
     }
 
     It 'ships download timeouts that are positive whole numbers, with the whole-download limit above the connect limit' {
@@ -99,6 +99,13 @@ Describe 'Module import' -Tag 'Component' {
             $download[$name] | Should -BeGreaterThan 0
         }
         $download.OperationTimeoutSeconds | Should -BeGreaterThan $download.ConnectTimeoutSeconds
+    }
+
+    # The Dockerfiles' pinned signing-key fingerprint and their arm64 tarball fallback are for this
+    # repository, so moving it is a reviewed change to this test too.
+    It 'ships Microsoft''s RHEL 9 repository as PackageRepository.Url' {
+        (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($script:moduleRoot, 'Config', 'pwsh.psd1'))).PackageRepository.Url |
+            Should -BeExactly 'https://packages.microsoft.com/rhel/9/prod'
     }
 
     It 'pins an x64 and an arm64 SHA256 for every pwsh release in Config/pwsh.psd1, including each default' {
