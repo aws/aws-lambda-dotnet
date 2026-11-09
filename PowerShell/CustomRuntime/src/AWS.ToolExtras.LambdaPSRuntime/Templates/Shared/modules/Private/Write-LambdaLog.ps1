@@ -51,7 +51,8 @@ function private:Write-LambdaLog {
     # Lambda makes each stdout line its own log event, so a record's newlines become carriage returns,
     # as the Node.js and Python runtimes do: text in a message cannot add lines such as 'END RequestId'.
     if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') {
-        # A JSON record carries the stack in stackTrace, as the .NET runtime client writes it.
+        # A handler's error says where it failed only in its stack. A JSON record carries the stack in
+        # stackTrace instead, as the .NET runtime client writes it.
         if ($ErrorRecord.ScriptStackTrace) { $Message += "`n" + $ErrorRecord.ScriptStackTrace }
         Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue ($Message -replace '\r?\n', "`r")
         return
