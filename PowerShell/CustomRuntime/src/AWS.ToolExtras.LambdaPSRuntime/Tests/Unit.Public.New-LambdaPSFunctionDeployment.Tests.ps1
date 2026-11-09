@@ -1026,7 +1026,7 @@ Describe 'New-LambdaPSFunctionDeployment -Role' -Tag 'Unit' {
         Mock 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -MockWith { throw 'must not package' }
         $err = { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $script:handlerFile -RuntimeName rt -Region us-east-1 -WhatIf:$WhatIf } |
             Should -Throw -ErrorId 'RoleRequired,New-LambdaPSFunctionDeployment' -PassThru
-        $err.Exception.Message | Should -BeLike "Function 'fn' does not exist yet*Pass -Role*"
+        $err.Exception.Message | Should -BeLike "Function 'fn' does not exist in region 'us-east-1'*Pass -Role*or -Region*"
     }
 
     # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
