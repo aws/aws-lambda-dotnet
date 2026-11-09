@@ -8,7 +8,8 @@ function Invoke-LambdaPSOciImageBuild {
         Get-LambdaPSOciImagePlan returns:
 
           1. Downloads and verifies the pwsh tarball (Get-LambdaPSPwshArchive) and unpacks it with
-             System.Formats.Tar, keeping each entry's Unix mode, which a Windows file system cannot hold.
+             System.Formats.Tar, keeping each entry's Unix mode, which a Windows file system cannot hold,
+             and adds the ICU libraries (Get-LambdaPSIcuPackage) next to pwsh.
           2. Stages the executable scripts LF-only and without a BOM, and precompiles
              PowerShellLambdaContext.dll with the bundled pwsh when the host can run it.
           3. Pulls the base image's manifest for the platform, adds one layer for pwsh, one for the runtime
@@ -55,6 +56,7 @@ function Invoke-LambdaPSOciImageBuild {
     $stage = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "lambdaps-oci-$([System.IO.Path]::GetRandomFileName())")
     $builder = $null
     $archive = $null
+    $icuPackage = $null
     $sink = [AWS.OCI.Builder.LayerPushProgressQueue]::new()
     $activity = "Building image $ImageUri"
     $layerProgress = @{}
@@ -128,6 +130,16 @@ function Invoke-LambdaPSOciImageBuild {
             }
         }
         finally { $stream.Dispose() }
+        $icuPackage = Get-LambdaPSIcuPackage -Architecture $Plan.Architecture
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($icuPackage)
+        try {
+            foreach ($entry in @($zip.Entries | Where-Object FullName -Like 'runtimes/linux-*/native/*')) {
+                $local = [System.IO.Path]::Combine($pwshRoot, $entry.Name)
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $local, $true)
+                $pwshFiles.Add($local, "/var/runtime/powershell/$($entry.Name)", [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
+            }
+        }
+        finally { $zip.Dispose() }
 
         # 2. Runtime files: executables staged LF-only without a BOM (the Dockerfile's sed), and the
         #    LambdaContext DLL when the bundled pwsh can run here.
@@ -199,7 +211,9 @@ function Invoke-LambdaPSOciImageBuild {
         if ($null -ne $builder) { $builder.Dispose() }
         $cancellation.Dispose()
         Write-Progress -Activity $activity -Completed
-        if ($archive) { Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false }
+        foreach ($download in @($archive, $icuPackage) | Where-Object { $_ }) {
+            Remove-Item -LiteralPath $download -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
+        }
         Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue -WhatIf:$false -Confirm:$false
     }
 }

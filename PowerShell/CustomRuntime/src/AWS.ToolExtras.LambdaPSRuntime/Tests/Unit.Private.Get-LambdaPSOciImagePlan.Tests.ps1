@@ -23,7 +23,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             [System.IO.File]::WriteAllText([System.IO.Path]::Combine($script:functionPath, '.git', 'HEAD'), 'ref')
         }
 
-        It 'describes a scaffolded runtime image: base, entrypoint, no CMD, invariant globalization and the runtime files' {
+        It 'describes a scaffolded runtime image: base, entrypoint, no CMD, app-local ICU and the runtime files' {
             $plan = Get-LambdaPSOciImagePlan -Path $script:runtimePath -Architecture arm64
 
             $plan.Target | Should -Be 'CMR'
@@ -32,7 +32,8 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             $plan.BaseImage | Should -Be 'public.ecr.aws/lambda/provided:al2023'
             $plan.Entrypoint | Should -Be @('/var/runtime/lambda-entrypoint.sh')
             $plan.Cmd.Count | Should -Be 0
-            $plan.Environment['DOTNET_SYSTEM_GLOBALIZATION_INVARIANT'] | Should -Be '1'
+            $plan.Environment['DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU'] | Should -Be $script:Config.pwsh.Icu.Version
+            $plan.Environment.Contains('DOTNET_SYSTEM_GLOBALIZATION_INVARIANT') | Should -BeFalse
             $plan.FunctionFiles.Count | Should -Be 0
             ($plan.RuntimeFiles | Where-Object Executable).ContainerPath | Should -Be @('/var/runtime/lambda-entrypoint.sh', '/var/runtime/bootstrap')
             ($plan.RuntimeFiles | Where-Object Normalize).Count | Should -Be 2

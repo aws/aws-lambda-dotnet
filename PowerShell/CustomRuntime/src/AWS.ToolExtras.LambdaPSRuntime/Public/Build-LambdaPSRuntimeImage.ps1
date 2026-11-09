@@ -40,14 +40,14 @@ function Build-LambdaPSRuntimeImage {
         of the Dockerfile the module scaffolds (see Get-LambdaPSOciImagePlan), so it refuses a project
         whose Dockerfile was edited, and it can only push (-ImageUri). It reads an ECR authorization
         token with Get-ECRAuthorizationToken, honouring -Region, -ProfileName, -ProfileLocation and
-        -Credential, instead of using docker login. The image runs with
-        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, since it has no libicu.
+        -Credential, instead of using docker login. It adds Microsoft's ICU libraries next to pwsh, so
+        cultures work as in the Docker image, which installs libicu.
 
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
         PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound and DockerBuildxNotFound (the preflight,
         Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code); for
         a no-Docker build NoDockerLocalBuild, DockerfileModified, PwshX64HashNotPinned (an x86_64 build of a
-        pwsh release with no pinned x64 hash), OciBuilderNotFound, OciBuilderConflict
+        pwsh release with no pinned x64 hash), IcuPackageHashMismatch, OciBuilderNotFound, OciBuilderConflict
         and OciImagePushFailed.
     .PARAMETER Path
         The project directory containing the Dockerfile. Alias: -ProjectPath.

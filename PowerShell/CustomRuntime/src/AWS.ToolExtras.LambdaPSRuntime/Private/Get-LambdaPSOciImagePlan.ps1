@@ -8,8 +8,8 @@ function Get-LambdaPSOciImagePlan {
 
           1. pwsh: the official release tarball, verified against the module's pinned SHA256, on both
              architectures, unpacked into /var/runtime/powershell (the Dockerfile uses the RPM on amd64).
-             The image has no libicu, so it runs with DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, as the
-             Layer and self-contained .zip targets do.
+             The base has no libicu, so Microsoft's ICU package goes next to pwsh and the image runs with
+             DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU, so cultures work as in the Docker image.
           2. PowerShellLambdaContext.dll: compiled with the bundled pwsh when the host can run it (a Linux
              host of the target architecture); otherwise the runtime compiles the .cs at cold start.
           3. lambda-entrypoint.sh and bootstrap (0755, BOM and CRLF stripped), runtime.ps1,
@@ -145,7 +145,7 @@ function Get-LambdaPSOciImagePlan {
         BaseImage     = $baseImage
         Entrypoint    = [string[]]@('/var/runtime/lambda-entrypoint.sh')
         Cmd           = if ($target -eq 'Container') { [string[]]@($handler) } else { [string[]]@() }
-        Environment   = [ordered]@{ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = '1' }
+        Environment   = [ordered]@{ DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU = $script:Config.pwsh.Icu.Version }
         RuntimeFiles  = $runtimeFiles.ToArray()
         FunctionFiles = $functionFiles.ToArray()
     }

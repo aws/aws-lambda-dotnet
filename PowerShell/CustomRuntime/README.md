@@ -59,7 +59,8 @@ PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
 the first module release after that date stops installing them by default, so
 `-PowerShellVersion 7.4` or `7.5` then also needs `-PwshVersion`. Use 7.6 for new projects. The
 container-free targets run in invariant-globalization mode (`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`)
-so no ICU libraries are needed.
+so no ICU libraries are needed. Runtime images have ICU, so cultures such as `de-DE` work: the Docker
+build installs libicu, and the no-Docker build adds Microsoft's ICU package next to pwsh.
 
 The Layer and self-contained `.zip` packages bundle pwsh, so they are large: for PowerShell 7.6, about
 70 MB zipped and 178 MB unzipped on x86_64 (194 MB on arm64), before any modules. That is over Lambda's direct-upload
