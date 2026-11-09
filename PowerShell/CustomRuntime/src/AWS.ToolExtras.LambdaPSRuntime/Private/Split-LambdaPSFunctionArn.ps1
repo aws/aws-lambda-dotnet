@@ -4,7 +4,7 @@ function Split-LambdaPSFunctionArn {
         Returns the function name, region and qualifier a -FunctionName value carries.
     .DESCRIPTION
         Lambda accepts a function as a name, a full ARN (arn:<partition>:lambda:<region>:<account>:
-        function:<name>[:<qualifier>]) or a partial ARN ([<region>:][<account>:]function:<name>[:<qualifier>]).
+        function:<name>[:<qualifier>]) or a partial ARN ([<region>:][<account>:][function:]<name>[:<qualifier>]).
         The function cmdlets need the bare name (for a default package file name, which must not
         contain ':') and, from a full or partial ARN, the region, which they use when -Region is omitted. A plain
         name (no ':') is returned as it is, with no region. The account is matched as [0-9]{12}, so non-ASCII
@@ -30,12 +30,15 @@ function Split-LambdaPSFunctionArn {
     if ($FunctionName -cmatch '^arn:aws[a-z-]*:lambda:(?<region>[a-zA-Z0-9-]+):[0-9]{12}:function:(?<name>[^:]+)(?::(?<qualifier>.+))?') {
         return [PSCustomObject]@{ Name = $Matches.name; Region = $Matches.region; Qualifier = $Matches.qualifier }
     }
-    if ($FunctionName -cmatch '^(?:(?<region>[a-z]+(?:-[a-z]+)*-[0-9]+):)?(?:[0-9]{12}:)?function:(?<name>[^:]+)(?::(?<qualifier>.+))?') {
-        return [PSCustomObject]@{ Name = $Matches.name; Region = $Matches.region; Qualifier = $Matches.qualifier }
-    }
-    # Only Lambda's own name and qualifier characters, so a malformed ARN stays a plain name.
-    if ($FunctionName -cmatch '^(?<name>[a-zA-Z0-9_-]+):(?<qualifier>[a-zA-Z0-9_$-]+)\z') {
-        return [PSCustomObject]@{ Name = $Matches.name; Region = $null; Qualifier = $Matches.qualifier }
+    # Lambda's FunctionName pattern, so a malformed ARN stays a plain name.
+    if ($FunctionName -cmatch '^(?:(?<region>(?:eusc-)?[a-z]{2}(?:-gov|-iso[a-z]?)?-[a-z]+-[0-9]):)?(?:[0-9]{12}:)?(?:function:)?(?<name>[a-zA-Z0-9_-]+)(?::(?<qualifier>[a-zA-Z0-9_$-]+))?\z') {
+        $parts = [PSCustomObject]@{ Name = $Matches.name; Region = $Matches.region; Qualifier = $Matches.qualifier }
+        # Like Lambda, read <region>:<name> as a name and qualifier when the region is not a known one (my-func-2:live).
+        $regionType = 'Amazon.RegionEndpoint' -as [type]
+        if ($regionType -and $FunctionName -ceq "$($parts.Region):$($parts.Name)" -and $parts.Region -notin $regionType::EnumerableAllRegions.SystemName) {
+            $parts = [PSCustomObject]@{ Name = $parts.Region; Region = $null; Qualifier = $parts.Name }
+        }
+        return $parts
     }
     [PSCustomObject]@{ Name = $FunctionName; Region = $null; Qualifier = $null }
 }
