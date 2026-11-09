@@ -270,6 +270,7 @@ PSScriptAnalyzer 1.21.0 or later:
 pwsh ./build.ps1            # Pester suite + code coverage
 pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
 pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+pwsh ./build.ps1 -Task Package     # stage the module to publish (no Tests/) in Deployment/LambdaPSRuntime
 ```
 
 The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory

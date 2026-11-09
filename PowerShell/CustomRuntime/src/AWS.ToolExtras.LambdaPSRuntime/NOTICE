@@ -1,0 +1,6 @@
+AWS.ToolExtras.LambdaPSRuntime
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+The runtime interface client in Templates/Shared is derived from the AWS Lambda PowerShell Runtime
+(https://github.com/awslabs/aws-lambda-powershell-runtime), Copyright Amazon.com, Inc. or its
+affiliates, licensed under the Apache License, Version 2.0.
