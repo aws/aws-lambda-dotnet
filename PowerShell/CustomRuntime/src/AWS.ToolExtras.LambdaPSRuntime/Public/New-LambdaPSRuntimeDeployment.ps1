@@ -82,7 +82,8 @@ function New-LambdaPSRuntimeDeployment {
         is shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
-          inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
+          inputs and preflight  RuntimeVersionNameTooLong, RuntimeAliasNameTooLong,
+                                InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
                                 UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
@@ -114,7 +115,8 @@ function New-LambdaPSRuntimeDeployment {
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
-        '-', 2 to 128 characters, starting and ending with a letter or digit.
+        '-', starting and ending with a letter or digit, and at most 63 characters together with the
+        version name (56 with a default name such as 7.6.9-1).
     .PARAMETER PowerShellVersion
         The PowerShell version the runtime image targets, in major.minor form (for example 7.4).
     .PARAMETER PwshVersion
@@ -173,8 +175,9 @@ function New-LambdaPSRuntimeDeployment {
         -RepositoryName rather than altering the name.
     .PARAMETER RuntimeAlias
         The runtime alias to create or repoint. Defaults to 'default', matching the alias
-        New-LambdaPSFunctionDeployment binds to. ASCII letters, digits, '_', '.' and '-', up to 128
-        characters, not starting or ending with '.' or '-'. Alias names are case-sensitive.
+        New-LambdaPSFunctionDeployment binds to. ASCII letters, digits, '_', '.' and '-', not starting
+        or ending with '.' or '-', and at most 147 characters together with -RuntimeName. Alias names
+        are case-sensitive.
     .PARAMETER RuntimeVersion
         The runtime version label / image tag to publish. Defaults to <pwsh release>-<n>, for example
         7.6.9-1, where n is one more than the highest n the runtime already has for that release (1 for
@@ -182,9 +185,9 @@ function New-LambdaPSRuntimeDeployment {
         name for the next deploy. Naming it lists the runtime's versions, which needs
         lambda:ListRuntimeVersions. A name you give is used as is, and one the runtime
         already has stops the deploy with RuntimeVersionExists. It must be valid as both a runtime
-        version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128 characters,
-        not starting or ending with '.' or '-'. Version names are case-sensitive: 'V1' and 'v1' are
-        different versions.
+        version name and an image tag: ASCII letters, digits, '_', '.' and '-', not starting or ending
+        with '.' or '-', and at most 63 characters together with -RuntimeName (the default name too).
+        Version names are case-sensitive: 'V1' and 'v1' are different versions.
     .PARAMETER Architecture
         The target architecture: x86_64 (default, mapped to linux/amd64) or arm64 (linux/arm64). The
         image is built for that platform, and after publishing, the architecture the service reads
@@ -323,6 +326,24 @@ function New-LambdaPSRuntimeDeployment {
         $Region = $Region.ToLowerInvariant()
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
+        # The API takes 128 characters for each name, but Lambda leaves a version or alias CREATING when
+        # it and the runtime name are longer than this together.
+        $assertNameLength = {
+            param([string]$Kind, [string]$Name, [int]$Max, [string]$Parameter, [string]$ErrorId)
+            $total = $RuntimeName.Length + $Name.Length
+            if ($total -gt $Max) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new(
+                            ("Runtime name '$RuntimeName' and $Kind name '$Name' total $total characters, and Lambda " +
+                             "can't create the $Kind when they total more than $Max. Use a shorter -RuntimeName or " +
+                             "-$Parameter. Nothing was created."), $Parameter),
+                        $ErrorId, [System.Management.Automation.ErrorCategory]::InvalidArgument, $Name))
+            }
+        }
+        & $assertNameLength 'alias' $RuntimeAlias 147 'RuntimeAlias' 'RuntimeAliasNameTooLong'
+        if ($PSBoundParameters.ContainsKey('RuntimeVersion')) { & $assertNameLength 'version' $RuntimeVersion 63 'RuntimeVersion' 'RuntimeVersionNameTooLong' }
+
         if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
             $ProjectPath = [System.IO.Path]::Combine((Get-Location).Path, "$RuntimeName-runtime")
         }
@@ -503,6 +524,7 @@ function New-LambdaPSRuntimeDeployment {
             }
             $RuntimeVersion = "$resolvedPwshVersion-$($highest + 1)"
         }
+        if ($runtimeVersionDefaulted) { & $assertNameLength 'version' $RuntimeVersion 63 'RuntimeVersion' 'RuntimeVersionNameTooLong' }
         if ($runtimeExists) {
             $existingVersion = $null
             # Fail closed: a version that could not be read is not proof the version is new, and
