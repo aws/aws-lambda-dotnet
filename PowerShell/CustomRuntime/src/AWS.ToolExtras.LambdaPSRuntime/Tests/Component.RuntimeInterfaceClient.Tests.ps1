@@ -1069,11 +1069,11 @@ public class InvokeBin : PSCmdlet {
     }
 
     It 'with AWS_LAMBDA_LOG_FORMAT=JSON and AWS_LAMBDA_LOG_LEVEL <Level>, logs the handler''s records at or above the level as JSON lines' -ForEach @(
-        @{ Level = 'unset'; Value = $null; Expected = 'host-line', 'info-line', 'warn-line', 'error-line' }
-        @{ Level = 'debug'; Value = 'debug'; Expected = 'host-line', 'info-line', 'warn-line', 'error-line', 'verbose-line' }
+        @{ Level = 'unset'; Value = $null; Expected = 'host-line', 'info-line', 'warn-line', 'error-line', 'native-line' }
+        @{ Level = 'debug'; Value = 'debug'; Expected = 'host-line', 'info-line', 'warn-line', 'error-line', 'native-line', 'verbose-line' }
         @{ Level = 'ERROR'; Value = 'ERROR'; Expected = @('error-line') }
     ) {
-        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'logging.ps1')) -Value 'function Handle { param($LambdaInput, $LambdaContext) Write-Host ''host-line''; Write-Information ''info-line''; Write-Warning ''warn-line''; Write-Error ''error-line''; $VerbosePreference = ''Continue''; Write-Verbose ''verbose-line''; , @(''ok'') }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'logging.ps1')) -Value 'function Handle { param($LambdaInput, $LambdaContext) Write-Host ''host-line''; Write-Information ''info-line''; Write-Warning ''warn-line''; Write-Error ''error-line''; sh -c ''echo native-line >&2''; $VerbosePreference = ''Continue''; Write-Verbose ''verbose-line''; , @(''ok'') }'
         $env:AWS_LAMBDA_LOG_FORMAT = 'JSON'
         $env:AWS_LAMBDA_LOG_LEVEL = $Value
         try {
@@ -1086,9 +1086,10 @@ public class InvokeBin : PSCmdlet {
         $lines | Should -Match '^\{"timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","level":"[A-Z]+","requestId":"req-1","traceId":"Root=1-abc","message":'
         $records = @($lines | ConvertFrom-Json)
         $records.message | Should -Be $Expected
-        $levels = @{ 'host-line' = 'INFO'; 'info-line' = 'INFO'; 'warn-line' = 'WARN'; 'error-line' = 'ERROR'; 'verbose-line' = 'DEBUG' }
+        $levels = @{ 'host-line' = 'INFO'; 'info-line' = 'INFO'; 'warn-line' = 'WARN'; 'error-line' = 'ERROR'; 'native-line' = 'INFO'; 'verbose-line' = 'DEBUG' }
         $records | ForEach-Object { $_.level | Should -Be $levels[$_.message] }
         ($records | Where-Object message -EQ 'error-line').errorType | Should -Be 'WriteErrorException'
+        ($records | Where-Object message -EQ 'native-line').errorType | Should -BeNullOrEmpty
     }
 
     It 'with AWS_LAMBDA_LOG_FORMAT=JSON, logs the start-up code''s records and keeps a record the handler returns in the response (<Handler>)' -ForEach @(

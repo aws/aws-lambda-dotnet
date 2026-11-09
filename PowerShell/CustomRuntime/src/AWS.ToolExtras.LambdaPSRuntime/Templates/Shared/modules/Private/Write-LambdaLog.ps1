@@ -38,11 +38,13 @@ function private:Write-LambdaLog {
 
     if ($PSCmdlet.ParameterSetName -eq 'Record') {
         $ErrorRecord = $Record -as [System.Management.Automation.ErrorRecord]
+        # A native command's stderr line arrives as an error record, but in text mode it is plain text, which Lambda counts as INFO.
+        if ($ErrorRecord.FullyQualifiedErrorId -like 'NativeCommandError*') { $ErrorRecord = $null }
         $Level = if ($ErrorRecord) { 'ERROR' }
         elseif ($Record -is [System.Management.Automation.WarningRecord]) { 'WARN' }
         elseif ($Record -is [System.Management.Automation.VerboseRecord] -or $Record -is [System.Management.Automation.DebugRecord]) { 'DEBUG' }
         else { 'INFO' }
-        $Message = if ($Record -is [System.Management.Automation.InformationalRecord] -or $Record -is [System.Management.Automation.InformationRecord] -or $ErrorRecord) { [string]$Record }
+        $Message = if ($Record -is [System.Management.Automation.InformationalRecord] -or $Record -is [System.Management.Automation.InformationRecord] -or $Record -is [System.Management.Automation.ErrorRecord]) { [string]$Record }
         else { (Microsoft.PowerShell.Utility\Out-String -InputObject $Record).Trim() }
     }
 
