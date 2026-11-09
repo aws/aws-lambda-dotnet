@@ -58,6 +58,14 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             { Get-LambdaPSOciImagePlan -Path $copy -Architecture x86_64 } | Should -Throw -ErrorId 'DockerfileModified' -ExpectedMessage '*-BuildMethod Docker*'
         }
 
+        It 'refuses an x86_64 build of a pwsh release with no pinned x64 hash with PwshX64HashNotPinned' {
+            $unpinned = [System.IO.Path]::Combine($TestDrive, 'rt-unpinned')
+            $null = New-LambdaPSRuntimeProject -Path $unpinned -PowerShellVersion '7.4' -PwshVersion '7.4.99' -WarningAction SilentlyContinue
+
+            { Get-LambdaPSOciImagePlan -Path $unpinned -Architecture x86_64 } |
+                Should -Throw -ErrorId 'PwshX64HashNotPinned' -ExpectedMessage '*pwsh 7.4.99 has no pinned SHA256*(7.4.*-BuildMethod Docker*'
+        }
+
         It 'refuses a project with no marker' {
             $copy = [System.IO.Path]::Combine($TestDrive, 'rt-nomarker')
             Copy-Item -LiteralPath $script:runtimePath -Destination $copy -Recurse

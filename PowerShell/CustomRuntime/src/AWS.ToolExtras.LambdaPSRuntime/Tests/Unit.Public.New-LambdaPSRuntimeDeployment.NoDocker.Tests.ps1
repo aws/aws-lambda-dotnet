@@ -25,7 +25,10 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Mock 'Get-STSCallerIdentity' -MockWith { [PSCustomObject]@{ Account = '111122223333' } }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{ Name = $RuntimeName } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist') }
+            Mock 'Get-LMCRuntimeVersionList' -MockWith { }
             Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { $script:Config.pwsh.DefaultPatch[$PowerShellVersion] }
+            Mock 'Get-ECRImageMetadata' -MockWith { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') }
             Mock 'New-LambdaPSRuntimeProject' -MockWith { }
             Mock 'Initialize-LambdaPSEcrRepository' -MockWith { $RepositoryName }
             Mock 'Build-LambdaPSRuntimeImage' -MockWith {
@@ -46,7 +49,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Mock 'Get-LambdaPSCredentialParameter' -MockWith { @{ ProfileName = 'dev' } }
             $result = New-LambdaPSRuntimeDeployment @script:splat -ProfileName dev
 
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.eu-west-1.amazonaws.com/rt:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.eu-west-1.amazonaws.com/rt:$($script:Config.pwsh.DefaultPatch['7.4'])-1"
             Should -Invoke 'Import-LambdaPSOciBuilder' -Times 1 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 1 -Exactly -ParameterFilter { $SkipDockerLogin }
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 1 -Exactly
@@ -58,14 +61,21 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             }
         }
 
-        It 'keeps the Docker flow (local build, login, push) when docker is installed' {
+        It 'keeps the Docker flow (local build, login, push) when docker is installed, for an unpinned x86_64 pwsh too' {
             Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
 
-            $null = New-LambdaPSRuntimeDeployment @script:splat
+            $null = New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99'
 
             Should -Invoke 'Import-LambdaPSOciBuilder' -Times 0 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 1 -Exactly -ParameterFilter { -not $SkipDockerLogin }
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 2 -Exactly -ParameterFilter { $BuildMethod -ne 'NoDocker' }
+        }
+
+        It 'refuses an x86_64 pwsh release with no pinned x64 hash in preflight, under -WhatIf too, before anything is created' {
+            { New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99' -WhatIf } |
+                Should -Throw -ErrorId 'PwshX64HashNotPinned,New-LambdaPSRuntimeDeployment'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -Times 0 -Exactly
+            Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 0 -Exactly
         }
 
         It 'fails in preflight under -BuildMethod Docker when docker is missing, before anything is created' {

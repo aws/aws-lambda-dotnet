@@ -46,7 +46,8 @@ function Build-LambdaPSRuntimeImage {
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
         PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound and DockerBuildxNotFound (the preflight,
         Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code); for
-        a no-Docker build NoDockerLocalBuild, DockerfileModified, OciBuilderNotFound, OciBuilderConflict
+        a no-Docker build NoDockerLocalBuild, DockerfileModified, PwshX64HashNotPinned (an x86_64 build of a
+        pwsh release with no pinned x64 hash), OciBuilderNotFound, OciBuilderConflict
         and OciImagePushFailed.
     .PARAMETER Path
         The project directory containing the Dockerfile. Alias: -ProjectPath.

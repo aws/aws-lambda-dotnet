@@ -95,8 +95,10 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeImageTagExists,
                                 RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
-                                PwshReleaseOlderThanAlias (the pinned release is older than the
-                                one the alias runs, on the same line and architecture)
+                                PwshX64HashNotPinned (a no-Docker x86_64 build of a pwsh version
+                                with no pinned x64 hash), PwshReleaseOlderThanAlias (the pinned
+                                release is older than the one the alias runs, on the same line
+                                and architecture)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
@@ -452,6 +454,9 @@ function New-LambdaPSRuntimeDeployment {
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
         $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod
         $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
+        if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture x86_64))) {
+            $PSCmdlet.ThrowTerminatingError((New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $resolvedPwshVersion))
+        }
         if ($noDocker) {
             Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy'
             # Load the library now, so a missing or conflicting copy fails before anything is created.

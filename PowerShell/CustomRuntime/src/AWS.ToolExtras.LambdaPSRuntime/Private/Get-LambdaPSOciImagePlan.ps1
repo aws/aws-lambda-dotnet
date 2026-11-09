@@ -64,6 +64,9 @@ function Get-LambdaPSOciImagePlan {
         throw (& $newModified 'it has no lambdaps-runtime.json naming a CMR or Container target and its pwsh version.')
     }
     $target = if ($marker.Target -eq 'Container') { 'Container' } else { 'CMR' }
+    if ($Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $marker.PwshVersion -Architecture x86_64))) {
+        throw (New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $marker.PwshVersion)
+    }
 
     # The Dockerfile must be the rendered template. A Container project's CMD may name another handler,
     # so the template is rendered for the handler the CMD names.
