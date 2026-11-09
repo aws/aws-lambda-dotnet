@@ -89,7 +89,9 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
-                                (-Architecture arm64 for a pwsh version with no pinned arm64 hash)
+                                (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
+                                PwshReleaseOlderThanAlias (the pinned release is older than the
+                                one the alias runs)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
@@ -103,7 +105,9 @@ function New-LambdaPSRuntimeDeployment {
                                 -IncludeModule names),
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
           build and push        ExternalToolFailed, EcrDockerLoginFailed
-          publish               RuntimeVersionNotActive, RuntimeVersionTimeout, RuntimeVersionWaitFailed
+          publish               RuntimeVersionExists (a concurrent deploy published the same
+                                version name), RuntimeVersionNotActive, RuntimeVersionTimeout,
+                                RuntimeVersionWaitFailed
                                 (the new version's state could not be read),
                                 RuntimeImageArchitectureMismatch
         A call the service refuses at another point surfaces the AWS.Tools error.
@@ -520,10 +524,10 @@ function New-LambdaPSRuntimeDeployment {
             }
             if ($existingVersion) {
                 $state = [string]$existingVersion.State
-                # A run that published the version but failed at the alias stage cannot be finished by
-                # running again, so for an ACTIVE version name the alias command that completes it --
-                # unless its image is another architecture, which is why a run stops before the alias
-                # (RuntimeImageArchitectureMismatch). A version reporting none is treated as publish does.
+                # A run that published the version but failed at the alias stage is not finished by
+                # running again, which publishes another version, so for an ACTIVE version name the
+                # alias command that completes it -- unless its image is another architecture, which is
+                # why a run stops before the alias (RuntimeImageArchitectureMismatch). A version reporting none is treated as publish does.
                 [string[]]$existingArchitecture = Get-LambdaPSReportedArchitecture -Compatibility $existingVersion.Compatibility
                 $aliasAdvice = if ($state -eq 'ACTIVE' -and $existingArchitecture.Count -gt 0 -and $existingArchitecture -notcontains $Architecture) {
                     " Its image is [$($existingArchitecture -join ', ')], not '$Architecture'."
@@ -564,7 +568,7 @@ function New-LambdaPSRuntimeDeployment {
                 }
                 elseif ($state -eq 'CREATING') {
                     # An earlier run may have stopped while the version was still being created (for example
-                    # RuntimeVersionTimeout); running again is refused, so give the commands that finish it.
+                    # RuntimeVersionTimeout); running again publishes another version, so give the commands that finish this one.
                     $commandArguments = "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)"
                     (" It is still being created; check with Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments. " +
                      "Once it is ACTIVE and its Compatibility.Architectures is '$Architecture', point the alias at it with " +
@@ -615,6 +619,18 @@ function New-LambdaPSRuntimeDeployment {
                         "'$Architecture'. Functions bound to the alias that were built for " +
                         "[$($droppedArchitecture -join ', ')] fail to invoke from their next cold start until they " +
                         "are redeployed with -Architecture $Architecture.")
+                }
+                # A pinned release is a fallback (or arm64's newest hash), so it must not downgrade an
+                # alias that an earlier run moved to a newer release.
+                $aliasRelease = if ([string]$currentAlias.RuntimeVersion -cmatch '\A([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+\z') { $Matches[1] }
+                if ($pwshRelease.Source -eq 'Pinned' -and $aliasRelease -and [version]$aliasRelease -gt [version]$resolvedPwshVersion) {
+                    $PSCmdlet.ThrowTerminatingError(
+                        [System.Management.Automation.ErrorRecord]::new(
+                            [System.InvalidOperationException]::new(
+                                ("Alias '$RuntimeAlias' of runtime '$RuntimeName' runs pwsh $aliasRelease, newer than the " +
+                                 "pinned release $resolvedPwshVersion this deploy would install. Pass -PwshVersion $aliasRelease " +
+                                 "to keep it, or -PwshVersion $resolvedPwshVersion to move back. Nothing was built or pushed.")),
+                            'PwshReleaseOlderThanAlias', [System.Management.Automation.ErrorCategory]::InvalidOperation, $resolvedPwshVersion))
                 }
             }
         }

@@ -430,6 +430,23 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             "$warnings" | Should -BeLike '*pinned release*offline*'
         }
 
+        It 'throws PwshReleaseOlderThanAlias, before anything is built, when the pinned fallback is older than the alias''s release' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike '*Pass -PwshVersion 7.4.999 to keep it*Nothing was built or pushed.'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'moves the alias back to an older release given with -PwshVersion' {
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
+            $pin = $script:pwshConfig.DefaultPatch['7.4']
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion $pin -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be "$pin-1"
+            $result.PreviousRuntimeVersion | Should -Be '7.4.999-1'
+        }
+
         It 'names the version one past the highest suffix the runtime has for the release' {
             Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith {
                 $release = $script:pwshConfig.DefaultPatch['7.4']
@@ -774,9 +791,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.Output | Should -Not -BeLike '*arm64 tarball*'
         }
 
-        It 'prints the pwsh release unless -InformationAction is given, and names the version the alias moves from under -WhatIf' -ForEach @(
-            @{ WhatIf = $true; Extra = ''; Expected = '*What if: Performing the operation "Point alias at v7 (from v6)" on target "my-ps/default".*' }
-            @{ WhatIf = $false; Extra = ' -InformationAction SilentlyContinue'; Expected = '*' }
+        It '<Case>' -ForEach @(
+            @{ Case = 'prints the pwsh release, and names the version the alias moves from under -WhatIf'; WhatIf = $true; Extra = '' }
+            @{ Case = 'does not print the pwsh release when -InformationAction SilentlyContinue is given'; WhatIf = $false; Extra = ' -InformationAction SilentlyContinue' }
         ) {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
@@ -792,14 +809,16 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 function script:Set-LambdaPSRuntimeAlias { }
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
-            $project = [System.IO.Path]::Combine($TestDrive, "rollback-$WhatIf")
+            $project = [System.IO.Path]::Combine($TestDrive, "information-$WhatIf")
             $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WarningAction SilentlyContinue -WhatIf:`$$WhatIf$Extra"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
-            $result.Output | Should -BeLike $Expected
             if ($Extra) { $result.Output | Should -Not -BeLike '*installs pwsh*' }
-            else { $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*' }
+            else {
+                $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*'
+                $result.Output | Should -BeLike '*What if: Performing the operation "Point alias at v7 (from v6)" on target "my-ps/default".*'
+            }
         }
 
         # The scaffold says "existing contents are deleted" only when there are contents; a runtime that

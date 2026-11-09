@@ -242,7 +242,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
     }
 
     # The runtime and the version exist by then, so the error says so and how to finish, rather than
-    # surfacing the service's error alone (a rerun would be refused: the version exists).
+    # surfacing the service's error alone (a rerun publishes another version instead).
     It 'wraps a failed read during the wait as RuntimeVersionWaitFailed, naming the created version' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
@@ -301,6 +301,26 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             $err.Exception.Message | Should -Not -Match 'New-LambdaPSRuntimeDeployment'
             # The architecture check never ran, so the alias advice asks for it.
             $err.Exception.Message | Should -BeLike "*ACTIVE and its Compatibility.Architectures is 'x86_64'*"
+        }
+    }
+
+    It 'throws RuntimeVersionExists, without waiting, when a concurrent deploy published the version name first' {
+        InModuleScope $script:moduleName {
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'New-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Could not create version! Version already exists.') }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { }
+
+            $err = $null
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:7.6.9-9' -RuntimeVersion '7.6.9-9' -Architecture x86_64 -Region 'us-east-1' }
+            catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists'
+            $err.Exception.InnerException.GetType().Name | Should -Be 'ResourceConflictException'
+            $err.Exception.Message | Should -BeLike "Runtime 'my-ps' already has version '7.6.9-9': another deploy published it*"
+            Should -Invoke 'Get-LMCRuntimeVersion' -Times 0 -Exactly
         }
     }
 
