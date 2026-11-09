@@ -186,11 +186,12 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
     # Lambda's quotas: 50 MB zipped for a direct upload, 250 MB unzipped for code and layers together.
     Context 'Lambda''s package size limits' {
         It 'warns about the <Case>' -ForEach @(
-            @{ Case = 'direct-upload limit for a zip over 50 MB'; Random = $true; Bytes = 51MB; Expected = "*is 51* MB, over the 50 MB Lambda accepts in a direct upload*-Code_S3Bucket*" }
-            @{ Case = 'unzipped limit for files of exactly 250 MB, with the largest module'; Random = $false; Bytes = 250MB; Folder = 'modules/Big/1.0.0'
+            @{ Case = 'direct-upload limit for a zip over 50 MB'; Random = $true; Bytes = 51MB; Layer = $false; Expected = "*is 51* MB, over the 50 MB Lambda accepts in a direct upload*-Code_S3Key to Publish-LMFunction, or -S3Bucket and -S3Key to Update-LMFunctionCode." }
+            @{ Case = 'direct-upload limit for a layer zip over 50 MB'; Random = $true; Bytes = 51MB; Layer = $true; Expected = '*direct upload*-Content_S3Key to Publish-LMLayerVersion.' }
+            @{ Case = 'unzipped limit for files of exactly 250 MB, with the largest module'; Random = $false; Bytes = 250MB; Layer = $false; Folder = 'modules/Big/1.0.0'
                 Expected = "*unzips to 250 MB, close to the 250 MB*leaves 0 MB for the code or layers deployed with it. The largest modules: Big (250 MB).*" }
         ) {
-            $stage = Join-Path $TestDrive "size-$Bytes"
+            $stage = Join-Path $TestDrive "size-$Bytes-$Layer"
             $null = New-Item -ItemType Directory -Path (Join-Path $stage "$Folder") -Force
             $file = [System.IO.File]::Create((Join-Path $stage "$Folder/payload.bin"))
             try {
@@ -205,11 +206,11 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
                 else { $file.SetLength($Bytes) }
             }
             finally { $file.Dispose() }
-            $zip = Join-Path $TestDrive "size-$Bytes.zip"
+            $zip = Join-Path $TestDrive "size-$Bytes-$Layer.zip"
 
-            $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip } {
-                param($Stage, $Zip)
-                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -WarningVariable w -WarningAction SilentlyContinue
+            $warnings = InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = $zip; Layer = $Layer } {
+                param($Stage, $Zip, $Layer)
+                Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip -Layer:$Layer -WarningVariable w -WarningAction SilentlyContinue
                 $w
             }
 
