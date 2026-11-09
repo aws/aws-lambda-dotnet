@@ -24,8 +24,9 @@
 #     and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
 #     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
-# AfterAll removes all of it, and fails listing anything it could not remove. Nothing whose name does
-# not start with this run's prefix is changed.
+# AfterAll removes all of it, removes the log groups again after 30 seconds in case a late log delivery
+# created one again, and fails listing anything it could not remove. Nothing whose name does not start
+# with this run's prefix is changed.
 #
 # What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
 # AfterAll, with the requests to upload and remove it. At on-demand prices that is under
@@ -151,6 +152,13 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             $pending = @($failed | ForEach-Object Resource)
             if (-not $pending -or $attempt -eq 2) { break }
             Start-Sleep -Seconds 15
+        }
+        # A late log delivery from Lambda creates a removed log group again. A delivery later than the
+        # fixed wait still leaves one behind.
+        $logGroups = @($script:Created | Where-Object { $_.Kind -like 'log group *' -and $failed.Resource -notcontains $_ })
+        if ($logGroups) {
+            Start-Sleep -Seconds 30
+            $failed += @(Remove-IntegrationResourceSet -Resource $logGroups -Prefix $script:Prefix)
         }
         foreach ($registry in $script:DockerRegistries) { $null = & docker logout $registry 2>&1 }
         if (Get-Command Remove-LambdaPSTestModule -ErrorAction SilentlyContinue) { Remove-LambdaPSTestModule }
