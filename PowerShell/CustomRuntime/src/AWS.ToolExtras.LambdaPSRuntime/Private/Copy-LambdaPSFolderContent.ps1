@@ -44,7 +44,7 @@ function Copy-LambdaPSFolderContent {
     .PARAMETER ExcludePath
         Full paths to leave out.
     .PARAMETER ExcludeExtension
-        File extensions to leave out, with the dot, for example '.pdb', matched case-insensitively
+        File extensions to leave out, with the dot, for example '.xml', matched case-insensitively
         against file names at any depth. '.xml' does not match '.ps1xml'.
     .OUTPUTS
         None.

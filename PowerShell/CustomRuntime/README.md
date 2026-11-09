@@ -56,10 +56,10 @@ the first module release after that date stops installing them by default, so
 container-free targets run in invariant-globalization mode (`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`)
 so no ICU libraries are needed.
 
-The Layer and self-contained `.zip` packages bundle pwsh, so they are large: about 72 MB zipped and
-174 MB unzipped for PowerShell 7.4 on x86_64, before any modules. That is over Lambda's direct-upload
+The Layer and self-contained `.zip` packages bundle pwsh, so they are large: for PowerShell 7.6, about
+70 MB zipped and 178 MB unzipped on x86_64 (194 MB on arm64), before any modules. That is over Lambda's direct-upload
 limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Content_S3Bucket`/
-`-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 75 MB for modules and code.
+`-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
 
@@ -166,7 +166,8 @@ either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
 
 `-WhatIf` runs the same local checks as a real run — module pins and availability, the pwsh version,
 the handler, the architecture — and the deploy cmdlets also run their read-only AWS checks, so a
-preview that succeeds is one the real run would get past those checks too.
+preview that succeeds is one the real run would get past those checks too. The package size limits
+are the exception: they need the built package, so only a real run checks them.
 
 Every cmdlet has full comment-based help (`Get-Help <Name> -Full`).
 

@@ -11,9 +11,8 @@ function Copy-LambdaPSModuleSet {
         Save-LambdaPSMissingModule's job, which the callers run first unless -MissingModuleAction is
         Stop. It binds no AWS SDK assembly and makes no network call.
 
-        AWS.Tools.* modules are staged without their *.xml (cmdlet help) and any *.pdb (debug symbols)
-        files, about half of a service module's size, which a Lambda function never reads; their *.ps1xml format
-        and type data is kept. Other modules are copied in full, since a module may read its own
+        AWS.Tools.* modules are staged without their *.xml (cmdlet help) files, about half of a service
+        module's size, which a Lambda function never reads; their *.ps1xml format and type data is kept. Other modules are copied in full, since a module may read its own
         .xml files at run time.
 
         Every specification must pin an exact RequiredVersion (Get-LambdaPSModuleClosure enforces
@@ -105,7 +104,7 @@ function Copy-LambdaPSModuleSet {
         }
         elseif ($copyAll) {
             # The set was confirmed above; the copy itself does not ask again.
-            $strip = @(if ($found.Name -like 'AWS.Tools.*') { '.xml', '.pdb' })
+            $strip = @(if ($found.Name -like 'AWS.Tools.*') { '.xml' })
             Copy-LambdaPSModuleFolder -Path $found.ModuleBase -Destination $destination -ExcludeExtension $strip
         }
         else {

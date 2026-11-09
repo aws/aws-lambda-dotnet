@@ -30,14 +30,14 @@ Describe 'Copy-LambdaPSFolderContent' -Tag 'Unit' {
     }
 
     It 'leaves out files with an -ExcludeExtension at any depth, in any case, but not a longer extension or a folder' {
-        foreach ($name in 'a.xml', 'b.PDB', 'c.ps1xml', [System.IO.Path]::Combine('sub', 'd.xml')) {
+        foreach ($name in 'a.xml', 'b.XML', 'c.ps1xml', [System.IO.Path]::Combine('sub', 'd.xml')) {
             Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, $name)) -Value 'x'
         }
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:source, 'en.xml')) -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, 'en.xml', 'e.txt')) -Value 'x'
         InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination } {
             param($Source, $Destination)
-            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludeExtension '.xml', '.pdb'
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludeExtension '.xml'
         }
 
         @(Get-ChildItem -LiteralPath $script:destination -Recurse -Force -File | ForEach-Object { $_.FullName.Substring($script:destination.Length + 1) }) |

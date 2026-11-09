@@ -43,11 +43,11 @@ Describe 'Module staging across commands' -Tag 'Component' {
     }
 
     # AWS.Tools service modules ship cmdlet help, about half their size, which Lambda never reads.
-    It 'stages an AWS.Tools module without *.xml and *.pdb, keeps *.ps1xml, and the staged copy imports; other modules stay whole' {
-        $source = Join-Path $TestDrive 'help-symbols-src'
-        $null = New-FakeModule -Root $source -Name 'AWS.Tools.LambdaPSFake' -Version '9.0.1' -WithHelpAndSymbols
-        $other = New-FakeModule -Root $source -Name 'LambdaPSFake.Other' -Version '1.0.0' -WithHelpAndSymbols
-        $modules = Join-Path $TestDrive 'help-symbols-modules'
+    It 'stages an AWS.Tools module without *.xml, keeps *.ps1xml, and the staged copy imports; other modules stay whole' {
+        $source = Join-Path $TestDrive 'help-src'
+        $null = New-FakeModule -Root $source -Name 'AWS.Tools.LambdaPSFake' -Version '9.0.1' -WithHelp
+        $other = New-FakeModule -Root $source -Name 'LambdaPSFake.Other' -Version '1.0.0' -WithHelp
+        $modules = Join-Path $TestDrive 'help-modules'
 
         InModuleScope $script:moduleName -Parameters @{ Source = $source; Modules = $modules } {
             param($Source, $Modules)

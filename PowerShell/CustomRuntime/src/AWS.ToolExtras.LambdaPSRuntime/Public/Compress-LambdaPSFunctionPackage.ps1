@@ -18,13 +18,14 @@ function Compress-LambdaPSFunctionPackage {
         example) is part of every pwsh, so it needs no pin and is not staged. A module that is not available locally is handled according to
         -MissingModuleAction: by default it is downloaded into a temporary folder that is deleted
         afterwards. Staging happens in a temporary tree, so your source directory is never modified.
-        AWS.Tools modules are staged without their *.xml help and *.pdb symbols; *.ps1xml is kept.
+        AWS.Tools modules are staged without their *.xml help; *.ps1xml is kept.
 
         The high-level New-LambdaPSFunctionDeployment calls this cmdlet, so both the one-command and
         the manual (scaffold, package, create) paths stage modules the same way.
 
         Over Lambda's 50 MB direct-upload limit, it warns to upload the package through S3; over its
-        250 MB unzipped limit, it writes nothing (UnzippedPackageTooLarge), and over 225 MB it warns.
+        250 MB unzipped limit, it writes nothing (UnzippedPackageTooLarge), and over 225 MB it warns
+        (not under -WhatIf, which builds no package).
 
         For a project New-LambdaPSFunctionProject scaffolded (its top-level manifest.json has the
         scaffolder's HandlerString and ScriptFile), the scaffolding-only 'manifest.json' and

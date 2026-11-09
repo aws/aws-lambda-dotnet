@@ -39,8 +39,8 @@ function Build-LambdaPSRuntimePackage {
              bit set on bootstrap and powershell/pwsh, and on any file that is executable on a Linux or
              macOS build host; everything else is mode 0644. The package bundles pwsh, so it is over
              Lambda's 50 MB direct-upload limit, and is written with a warning to upload it through S3.
-             Over Lambda's 250 MB unzipped limit it is not written (UnzippedPackageTooLarge); over 225 MB
-             it warns. Both name the three largest modules; pwsh alone takes about 174 MB.
+             Over Lambda's 250 MB unzipped limit it is not written (UnzippedPackageTooLarge); over 225 MB it
+             warns (not under -WhatIf). pwsh alone takes about 178 MB on x86_64 and 194 MB on arm64.
 
         The target is read from the project's lambdaps-runtime.json marker; -Target names it for a
         project with no marker.

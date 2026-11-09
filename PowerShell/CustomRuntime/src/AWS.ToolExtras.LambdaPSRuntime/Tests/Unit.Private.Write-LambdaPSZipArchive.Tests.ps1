@@ -239,6 +239,24 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
             @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
         }
 
+        # One decimal place would print 250 MB for a package just over the limit.
+        It 'rounds the size up when it stops a package just over 250 MB' {
+            # Arrange
+            $stage = Join-Path $TestDrive 'size-one-over'
+            $null = New-Item -ItemType Directory -Path $stage
+            $file = [System.IO.File]::Create((Join-Path $stage 'payload.bin'))
+            try { $file.SetLength(250MB + 1) } finally { $file.Dispose() }
+
+            # Act
+            $err = { InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = (Join-Path $TestDrive 'size-one-over.zip') } {
+                    param($Stage, $Zip)
+                    Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+                } } | Should -Throw -ErrorId 'UnzippedPackageTooLarge' -PassThru
+
+            # Assert
+            $err.Exception.Message | Should -BeLike "*would unzip to 250.1 MB, over the 250 MB*"
+        }
+
         It 'does not warn for a package within both limits' {
             $stage = Join-Path $TestDrive 'size-small'
             $null = New-Item -ItemType Directory -Path $stage

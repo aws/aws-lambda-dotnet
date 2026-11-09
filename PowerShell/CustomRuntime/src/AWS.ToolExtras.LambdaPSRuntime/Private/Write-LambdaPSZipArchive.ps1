@@ -155,7 +155,7 @@ function Write-LambdaPSZipArchive {
                     # Raised with `throw`: the public cmdlet that called this rethrows it with its own $PSCmdlet.
                     throw [System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new(
-                            ("'$name' would unzip to $unzippedMb MB, over the 250 MB Lambda allows for a function's code and layers " +
+                            ("'$name' would unzip to $([math]::Ceiling($unzippedBytes / $mb * 10) / 10) MB, over the 250 MB Lambda allows for a function's code and layers " +
                              "together, so Lambda would reject it, and it was not written.$detail Remove modules or files from the " +
                              'package, or use a container image.')),
                         'UnzippedPackageTooLarge', [System.Management.Automation.ErrorCategory]::LimitsExceeded, $destination)
