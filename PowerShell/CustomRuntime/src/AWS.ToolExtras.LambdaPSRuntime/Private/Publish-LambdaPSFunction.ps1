@@ -212,9 +212,11 @@ function Publish-LambdaPSFunction {
                     throw [System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new(
                             ("Lambda could not assume role '$Role' in $($roleWait.Attempts) attempts, $($roleWait.IntervalSeconds) seconds apart. " +
-                             "Check that its trust policy allows lambda.amazonaws.com. The service reported: $($_.Exception.Message)"), $_.Exception),
+                             "Check that the role exists and that its trust policy allows lambda.amazonaws.com. The service reported: $($_.Exception.Message)"), $_.Exception),
                         'RoleNotAssumable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Role)
                 }
+                # The wait can take a minute, so it is said once.
+                if ($attempt -eq 1) { Write-Information "Lambda cannot assume role '$Role' yet; retrying for up to $(($roleWait.Attempts - 1) * $roleWait.IntervalSeconds) seconds." -Tags 'LambdaPSDeploy' }
                 Write-Verbose "Lambda cannot assume role '$Role' yet; retrying (attempt $attempt/$($roleWait.Attempts))."
                 Start-Sleep -Seconds $roleWait.IntervalSeconds
             }

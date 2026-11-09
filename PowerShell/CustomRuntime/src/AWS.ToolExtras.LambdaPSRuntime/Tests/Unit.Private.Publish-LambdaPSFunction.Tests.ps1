@@ -578,9 +578,10 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
             }
 
-            $result = Publish-LambdaPSFunction @splat
+            $result = Publish-LambdaPSFunction @splat -InformationVariable information
 
             $result.Arn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function:hello'
+            @($information | Where-Object { "$_" -like "Lambda cannot assume role 'arn:role' yet; retrying for up to 55 seconds." }).Count | Should -Be 1
             Should -Invoke 'Publish-LMFunction' -Times 3 -Exactly
             Should -Invoke 'Start-Sleep' -Times 2 -Exactly -ParameterFilter { $Seconds -eq $script:Config.wait.Role.IntervalSeconds }
         }
@@ -623,7 +624,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
 
     It 'throws the create error after <Attempts> attempt(s) for <Case>' -ForEach @(
         @{ Case = 'a role Lambda never can assume'; Message = 'The role defined for the function cannot be assumed by Lambda.'; Attempts = 12
-            Expected = "Lambda could not assume role 'arn:role' in 12 attempts, 5 seconds apart. Check that its trust policy allows lambda.amazonaws.com.*cannot be assumed by Lambda." }
+            Expected = "Lambda could not assume role 'arn:role' in 12 attempts, 5 seconds apart. Check that the role exists and that its trust policy allows lambda.amazonaws.com.*cannot be assumed by Lambda." }
         @{ Case = 'another InvalidParameterValueException'; Message = 'Unzipped size must be smaller than 262144000 bytes'; Attempts = 1; Expected = 'Unzipped size*' }
     ) {
         InModuleScope $script:moduleName -Parameters @{ Message = $Message; Attempts = $Attempts; Expected = $Expected } {
