@@ -155,14 +155,27 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $result.Count | Should -Be $Count
         }
 
+        It 'returns a response nested more than 64 levels deep as an object' {
+            $script:deepBody = ('{"n":' * 70) + '1' + ('}' * 70)
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream $script:deepBody); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello
+
+            $result.n.n | Should -Not -BeNullOrEmpty
+        }
+
         It 'returns the raw string when the payload is not JSON' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream 'plain text'); LogResult = $null; FunctionError = $null }
             }
 
+            $Error.Clear()
             $result = Invoke-LambdaPSFunction -FunctionName hello
 
             $result | Should -Be 'plain text'
+            $Error.Count | Should -Be 0
         }
 
         # A caller that checks -ErrorVariable must not see a successful invoke as a failed one.
@@ -236,6 +249,17 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $LogType -eq 'Tail' }
             ($info | ForEach-Object { $_.MessageData }) -join "`n" | Should -Match 'START RequestId'
+        }
+
+        It 'shows the lines of an error record the runtime joined with CR on their own lines' {
+            $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("boom`rAt /var/task/handler.ps1:10 char:19`r`nEND RequestId: abc`n"))
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $encoded; FunctionError = $null }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -IncludeLog -InformationVariable info
+
+            $info[0].MessageData | Should -BeExactly "boom`nAt /var/task/handler.ps1:10 char:19`r`nEND RequestId: abc`n"
         }
 
         It 'does not request the log by default' {

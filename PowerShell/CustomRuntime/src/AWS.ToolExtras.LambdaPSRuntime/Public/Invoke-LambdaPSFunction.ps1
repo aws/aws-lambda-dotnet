@@ -210,10 +210,20 @@ function Invoke-LambdaPSFunction {
                 $responseText = $responsePayload
             }
 
-            # Whether the payload is JSON. Test-Json with -ErrorAction Ignore records nothing; a parse that
-            # fails, even inside try/catch, would reach the caller's -ErrorVariable.
-            $isJson = -not [string]::IsNullOrEmpty($responseText) -and
-                (Test-Json -Json $responseText -Options IgnoreComments, AllowTrailingCommas -ErrorAction Ignore)
+            # Not Test-Json, which stops at 64 levels. A failed parse, even caught, reaches -ErrorVariable
+            # unless it runs in a nested pipeline, and $Error unless removed.
+            $isJson = $false
+            if (-not [string]::IsNullOrEmpty($responseText)) {
+                $jsonCheck = [powershell]::Create([System.Management.Automation.RunspaceMode]::CurrentRunspace)
+                try {
+                    $isJson = [bool]@($jsonCheck.AddScript({
+                                param([string]$Text)
+                                $options = [System.Text.Json.JsonDocumentOptions]@{ MaxDepth = 1024; CommentHandling = 'Skip'; AllowTrailingCommas = $true }
+                                try { [System.Text.Json.JsonDocument]::Parse($Text, $options).Dispose(); $true } catch { $global:Error.RemoveAt(0); $false }
+                            }).AddArgument($responseText).Invoke())[0]
+                }
+                finally { $jsonCheck.Dispose() }
+            }
 
             # Parses JSON with no error record: ConvertFrom-Json refuses an empty key (as in {"":1}) and
             # keys that differ only in case (as in {"a":1,"A":2}) with an error that reaches the caller's
@@ -245,7 +255,9 @@ function Invoke-LambdaPSFunction {
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
             if ($IncludeLog -and -not [string]::IsNullOrEmpty($response.LogResult)) {
                 $log = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response.LogResult))
-                Write-Information $log -Tags 'LambdaPSInvokeLog'
+                # The runtime joins an error record's lines with a bare CR, keeping it one CloudWatch event; in
+                # a terminal each CR would return to column 0 and the next line would overwrite the last.
+                Write-Information ($log -replace '\r(?!\n)', "`n") -Tags 'LambdaPSInvokeLog'
             }
 
             # A function error comes back as HTTP 200 with FunctionError set and the error in the payload.
