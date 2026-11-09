@@ -80,7 +80,7 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 Should -Throw -ErrorId 'DockerNotFound,Test-LambdaPSContainerRuntime'
         }
 
-        It 'points at the container-free alternative and the Docker install docs' {
+        It 'points at the no-Docker build, the container-free alternative and the Docker install docs' {
             $threw = $false
             try {
                 Test-LambdaPSContainerRuntime
@@ -90,6 +90,7 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'Build-LambdaPSRuntimePackage'
                 $_.Exception.Message | Should -Match 'https://docs\.docker\.com/engine/install/'
                 $_.Exception.Message | Should -Match 'Layer or self-contained \.zip target'
+                $_.Exception.Message | Should -Match '-BuildMethod Auto \(the default\) or NoDocker'
                 $_.CategoryInfo.Category | Should -Be 'NotInstalled'
             }
             $threw | Should -BeTrue

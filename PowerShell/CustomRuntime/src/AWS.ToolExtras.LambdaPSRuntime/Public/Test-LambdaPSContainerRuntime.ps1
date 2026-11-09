@@ -49,8 +49,9 @@ function Test-LambdaPSContainerRuntime {
             Select-Object -First 1
         if (-not $command) {
             $message = 'The docker CLI was not found on PATH. Docker (with buildx) is required to build ' +
-                'runtime and container-function images. For a container-free path use the Layer or ' +
-                'self-contained .zip target with Build-LambdaPSRuntimePackage instead. To install Docker, see ' +
+                'runtime and container-function images with -BuildMethod Docker or locally (-Tag). Without ' +
+                'Docker, push the image with -BuildMethod Auto (the default) or NoDocker, or use the Layer or ' +
+                'self-contained .zip target with Build-LambdaPSRuntimePackage. To install Docker, see ' +
                 'https://docs.docker.com/engine/install/.'
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
