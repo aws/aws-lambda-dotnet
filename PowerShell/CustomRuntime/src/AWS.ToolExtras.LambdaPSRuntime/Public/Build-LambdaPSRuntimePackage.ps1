@@ -31,8 +31,9 @@ function Build-LambdaPSRuntimePackage {
              so the DLL targets the .NET that runs it on Lambda: the bundled pwsh, or on a host of another
              architecture that release's host build, downloaded and SHA256-checked (not with
              -PwshArchivePath). That needs a Linux host where pwsh can start (not a temp folder mounted
-             noexec); elsewhere no DLL is shipped, with a warning, and the runtime compiles the .cs at cold
-             start (~1.7 s). A compile that runs and fails is ContextCompileFailed.
+             noexec); elsewhere, or when the host build can't be fetched, unpacked or run, no DLL is
+             shipped, with a warning, and the runtime compiles the .cs at cold start (~1.7 s). A compile that
+             runs and fails is ContextCompileFailed.
           4. Zips it with forward-slash relative entry paths in ordinal order, each with the same
              timestamp, so an unchanged project built with the same PowerShell version on the same OS
              gives a byte-identical package (except for a precompiled
@@ -514,7 +515,7 @@ function Build-LambdaPSRuntimePackage {
                 }
                 else {
                     $contextPwsh = Get-LambdaPSHostPwsh -PwshVersion $resolvedVersion -Architecture $hostArch -Destination ([System.IO.Path]::Combine($downloadRoot, 'host-powershell'))
-                    if (-not $contextPwsh) { $cause = "The $hostArch build of pwsh $resolvedVersion could not be fetched or verified (see the warning above, or rerun with -Verbose)." }
+                    if (-not $contextPwsh) { $cause = "The $hostArch build of pwsh $resolvedVersion could not be fetched, verified, unpacked or run here (see the warning above, or rerun with -Verbose)." }
                 }
             }
             $precompile = @{

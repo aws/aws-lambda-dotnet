@@ -1211,6 +1211,29 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         Should -Invoke 'Get-LambdaPSPwshArchive' @once -ParameterFilter { -not $ValidateOnly }
         Should -Invoke 'Get-LambdaPSHostPwsh' @once -ParameterFilter { $Architecture -eq $hostArch -and $PwshVersion -eq $zip.PwshVersion }
     }
+
+    It 'Should throw ContextCompileFailed when the host build starts but PowerShellLambdaContext.cs does not compile' -Skip:(-not $IsLinux) {
+        # Arrange
+        $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-host-badsource')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'PowerShellLambdaContext.cs')) -Value 'not C#'
+        $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
+        $bundled = [System.IO.Path]::Combine($TestDrive, 'bundled-badsource.tar.gz')
+        Copy-Item -LiteralPath $script:fakeTarball -Destination $bundled
+        Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $Architecture -eq $other } -MockWith { $bundled }
+        $hostPwsh = [System.IO.Path]::Combine($TestDrive, 'host-pwsh-badsource')
+        Set-Content -LiteralPath $hostPwsh -Value "#!/bin/sh`nexec '$([System.Environment]::ProcessPath)' `"`$@`""
+        Mock 'Get-LambdaPSHostPwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { $hostPwsh }
+        $build = @{
+            Path          = $proj
+            OutFile       = [System.IO.Path]::Combine($TestDrive, 'ctx-host-badsource.zip')
+            Architecture  = $other
+            WarningAction = 'SilentlyContinue'
+        }
+
+        # Act and Assert
+        { Build-LambdaPSRuntimePackage @build 6>$null } | Should -Throw -ErrorId 'ContextCompileFailed,Build-LambdaPSRuntimePackage'
+    }
 }
 
 Describe 'Build-LambdaPSRuntimePackage -HandlerScript help' -Tag 'Unit' {
