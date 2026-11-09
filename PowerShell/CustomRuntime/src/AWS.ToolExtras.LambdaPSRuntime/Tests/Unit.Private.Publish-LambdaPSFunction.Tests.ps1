@@ -622,6 +622,36 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
+    It 'throws RoleNotAssumable with the not-applied state when Lambda never can assume the new role on update' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
+            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' } }
+            Mock 'Update-LMFunctionConfiguration' -MockWith {
+                throw [LambdaPSTests.Fakes.ServiceException]::new('The role defined for the function cannot be assumed by Lambda.', 'InvalidParameterValueException')
+            }
+            Mock 'Start-Sleep' -MockWith { }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:new-role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            $err = { Publish-LambdaPSFunction @splat } | Should -Throw -ErrorId 'RoleNotAssumable' -PassThru
+
+            $err.Exception.Message | Should -BeLike "Function 'hello' has its new code*Lambda could not assume role 'arn:new-role' in 12 attempts*"
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 12 -Exactly
+        }
+    }
+
     It 'throws the create error after <Attempts> attempt(s) for <Case>' -ForEach @(
         @{ Case = 'a role Lambda never can assume'; Message = 'The role defined for the function cannot be assumed by Lambda.'; Attempts = 12
             Expected = "Lambda could not assume role 'arn:role' in 12 attempts, 5 seconds apart. Check that the role exists and that its trust policy allows lambda.amazonaws.com.*cannot be assumed by Lambda." }

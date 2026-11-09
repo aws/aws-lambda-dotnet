@@ -50,7 +50,8 @@ function Publish-LambdaPSFunction {
         would not run on it.
 
         A create or configuration update that Lambda refuses because it cannot assume the role, as while
-        IAM propagates a new role, is retried for up to a minute, then fails with RoleNotAssumable.
+        IAM propagates a new role, is retried for up to a minute, then fails with RoleNotAssumable. On an
+        update, its message starts with the state FunctionConfigurationNotApplied would report.
 
         The package is sent in the request (-Code_ZipFile, -ZipFile), so a .zip over the 50 MB Lambda
         accepts in a direct upload is refused with PackageTooLarge before any AWS call. This module has
@@ -397,6 +398,11 @@ function Publish-LambdaPSFunction {
         }
         catch {
             # The code is already updated, so say what state the function is left in.
+            if ($_.FullyQualifiedErrorId -eq 'RoleNotAssumable') {
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new("$notAppliedState $($_.Exception.Message)", $_.Exception.InnerException),
+                    'RoleNotAssumable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Role)
+            }
             throw [System.Management.Automation.ErrorRecord]::new(
                 [System.InvalidOperationException]::new(
                     ("$notAppliedState The configuration update failed. Fix the cause the service reported, then run " +
