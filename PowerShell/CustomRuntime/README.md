@@ -144,11 +144,22 @@ deploy.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
-| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning |
+| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
 | arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
 
 The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When
-the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which.
+the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which, so a patch
+can be rolled back:
+
+```powershell
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
+    -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
+```
+
+A deploy that can only install the module's pinned release (an unreadable repository on x86_64, or
+arm64) stops with `PwshReleaseOlderThanAlias` when the alias runs a newer release of the same line and
+architecture, rather than downgrade it. Pass `-PwshVersion` to choose the release.
 Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass
 `-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
 on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.

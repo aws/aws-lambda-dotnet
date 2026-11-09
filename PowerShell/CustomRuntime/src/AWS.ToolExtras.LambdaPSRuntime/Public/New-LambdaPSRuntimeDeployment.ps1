@@ -17,7 +17,8 @@ function New-LambdaPSRuntimeDeployment {
         Running the same command again patches the runtime: it installs the newest pwsh release the build
         can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
-        it returns that version as PreviousRuntimeVersion. After a patch that changes the pwsh release,
+        it returns that version as PreviousRuntimeVersion, which Update-LMCRuntimeAlias
+        -RuntimeVersion takes to roll the patch back. After a patch that changes the pwsh release,
         the first cold start of a bound function can take about 15 seconds while Lambda loads the new
         image, and the request still succeeds.
         Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit
@@ -121,6 +122,8 @@ function New-LambdaPSRuntimeDeployment {
         New-LambdaPSRuntimeProject. When omitted, the newest release of -PowerShellVersion the build
         can verify is used: on x86_64 the newest in Microsoft's RPM repository (the module's pinned
         release if the repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
+        If that pinned release is older than the one the alias runs, on the same line and
+        architecture, the deploy stops with PwshReleaseOlderThanAlias.
         Give it to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release.
     .PARAMETER IncludeModule
         Modules to bake into the runtime, forwarded to New-LambdaPSRuntimeProject (with transitive
@@ -410,11 +413,6 @@ function New-LambdaPSRuntimeDeployment {
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
-        # The release is shown even without -InformationAction Continue, since an unchanged command can
-        # install a new release; an -InformationAction the caller gives still applies.
-        $shownInformation = @{}
-        if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
-        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
         # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
         if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
@@ -432,6 +430,11 @@ function New-LambdaPSRuntimeDeployment {
                          "arm64 hash$pinnedList. Nothing was created.")),
                     'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
         }
+        # The release is shown even without -InformationAction Continue, since an unchanged command can
+        # install a new release; an -InformationAction the caller gives still applies.
+        $shownInformation = @{}
+        if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
+        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
         $runtimeProbe = Test-LambdaPSContainerRuntime
         Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'

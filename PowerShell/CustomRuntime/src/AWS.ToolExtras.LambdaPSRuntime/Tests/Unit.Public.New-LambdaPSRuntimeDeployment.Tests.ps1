@@ -460,6 +460,17 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
         }
 
+        It 'publishes the pinned release''s -2 on an arm64 rerun when the alias is on its -1' {
+            $pin = $script:pwshConfig.DefaultPatch['7.4']
+            Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = "$pin-1" } }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = "$pin-1"; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Architecture arm64 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue
+            $result.RuntimeVersion | Should -Be "$pin-2"
+            Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
         It 'moves the alias back to an older release given with -PwshVersion' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
             $pin = $script:pwshConfig.DefaultPatch['7.4']
@@ -511,7 +522,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
     # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the build
     # can only fail, and the deploy would have replaced -ProjectPath first; so the preflight refuses it.
     Context 'arm64 pwsh hash' {
-        It 'refuses arm64 for a pwsh version with no pinned arm64 hash, under -WhatIf too, leaving -ProjectPath untouched' -ForEach @(
+        It 'refuses arm64 for a pwsh version with no pinned arm64 hash, under -WhatIf too, leaving -ProjectPath untouched and printing no release' -ForEach @(
             @{ WhatIf = $true }, @{ WhatIf = $false }
         ) {
             $project = [System.IO.Path]::Combine($TestDrive, "arm64-$WhatIf")
@@ -519,8 +530,11 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR"}'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) -Value 'mine'
 
-            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf } |
-                Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment' -PassThru
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf -InformationVariable info }
+            catch { $err = $_ }
+            $err.FullyQualifiedErrorId | Should -Be 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment'
+            "$info" | Should -Not -BeLike '*installs pwsh*'
             $err.Exception.Message | Should -BeLike '*7.4.13*-Architecture x86_64*-PwshVersion*Nothing was created.'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
             Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
@@ -840,6 +854,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
+            $result.Output | Should -Not -BeLike '*ERROR:*'
             if ($Extra) { $result.Output | Should -Not -BeLike '*installs pwsh*' }
             else {
                 $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*'
