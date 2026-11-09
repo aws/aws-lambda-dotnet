@@ -61,7 +61,12 @@ function private:Invoke-FunctionHandler {
     do {
         $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { & $private:handlerCommand $LambdaInput $LambdaContext }
         else {
-            . { & $private:handlerCommand $LambdaInput $LambdaContext | Microsoft.PowerShell.Core\ForEach-Object { [ref]$_ } } *>&1 | Microsoft.PowerShell.Core\ForEach-Object {
+            # ForEach-Object wraps each value in a PSObject, which ConvertTo-Json writes with its type's extended
+            # properties ([guid] gains Guid); the wrapper is kept only for members the handler added.
+            . { & $private:handlerCommand $LambdaInput $LambdaContext | Microsoft.PowerShell.Core\ForEach-Object {
+                    if ($null -ne $_ -and -not @($_.PSObject.Properties | Microsoft.PowerShell.Core\Where-Object { $_.IsInstance -and $_.MemberType -ne 'Property' }).Count) { [ref]($_.PSObject.BaseObject) }
+                    else { [ref]$_ }
+                } } *>&1 | Microsoft.PowerShell.Core\ForEach-Object {
                 if ($_ -is [ref]) { return , $_.Value }
                 & $script:__LambdaPSRuntimeWriteLambdaLog -Record $_
             }

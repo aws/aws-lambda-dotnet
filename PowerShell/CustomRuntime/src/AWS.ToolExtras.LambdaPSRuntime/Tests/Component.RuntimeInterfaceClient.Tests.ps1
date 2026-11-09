@@ -1096,7 +1096,7 @@ public class InvokeBin : PSCmdlet {
         @{ Handler = 'records.ps1::Handle' }
         @{ Handler = 'Module::RecMod::Handle' }
     ) {
-        $code = 'Write-Warning ''startup-line''', 'function Handle { param($LambdaInput, $LambdaContext) [System.Management.Automation.WarningRecord]::new(''returned'') }'
+        $code = 'Write-Warning ''startup-line''', 'Write-Error ''startup-error''', 'function Handle { param($LambdaInput, $LambdaContext) [System.Management.Automation.WarningRecord]::new(''returned'') }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'records.ps1')) -Value $code
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'RecMod')) -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'RecMod', 'RecMod.psm1')) -Value $code
@@ -1108,8 +1108,25 @@ public class InvokeBin : PSCmdlet {
 
         ($posts[0].Body | ConvertFrom-Json).Message | Should -Be 'returned'
         $records = @($log -split '\r?\n' | Where-Object { $_ -like '{*' } | ConvertFrom-Json)
-        $records.message | Should -Be 'startup-line'
-        $records[0].level | Should -Be 'WARN'
+        $records.message | Should -Be 'startup-line', 'startup-error'
+        $records.level | Should -Be 'WARN', 'ERROR'
+    }
+
+    It 'sends <Handler> as the text log format does, with AWS_LAMBDA_LOG_FORMAT=JSON' -ForEach @(
+        @{ Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
+        @{ Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+    ) {
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'values.ps1')) -Value @(
+            'function Guid { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' }'
+            'function Tagged { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' | Add-Member -NotePropertyName Tag -NotePropertyValue t -PassThru }'
+        )
+        $env:AWS_LAMBDA_LOG_FORMAT = 'JSON'
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "values.ps1::$Handler" -EventBody '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts[0].Body | Should -BeExactly $Expected
     }
 
     It 'with AWS_LAMBDA_LOG_FORMAT=JSON, logs a handler''s exception as an ERROR record, even at AWS_LAMBDA_LOG_LEVEL ERROR' {

@@ -135,7 +135,8 @@ try {
                 do {
                     try {
                         if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop }
-                        else { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
+                        # In a script block: redirected directly, Import-Module drops the error records the module's code writes.
+                        else { . { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop } *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     }
                     catch {
                         # A module that is not found is named with where the runtime looked; any other import
