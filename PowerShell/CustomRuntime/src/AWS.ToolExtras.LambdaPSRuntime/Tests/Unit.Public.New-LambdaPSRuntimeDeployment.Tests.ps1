@@ -439,6 +439,27 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
+        It 'throws PwshReleaseOlderThanAlias when the alias''s version, named with -RuntimeVersion, has a newer release in its release note' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'prod-2' } }
+            Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -ParameterFilter { $Name -eq 'prod-2' } -MockWith { [PSCustomObject]@{ Name = 'prod-2'; ReleaseNotes = 'pwsh 7.4.999' } }
+            { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment'
+        }
+
+        It 'deploys the pinned release when the alias runs a newer release <Case>' -ForEach @(
+            @{ Case = 'of another PowerShell line'; Release = '7.6.99'; Architectures = @('x86_64') }
+            @{ Case = 'on another architecture'; Release = '7.4.999'; Architectures = @('arm64') }
+        ) {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = "$Release-1"; Compatibility = [PSCustomObject]@{ Architectures = $Architectures } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue
+            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
         It 'moves the alias back to an older release given with -PwshVersion' {
             Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
             $pin = $script:pwshConfig.DefaultPatch['7.4']
@@ -768,7 +789,10 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $whatIf | Should -Contain 'What if: Performing the operation "Point alias at v7" on target "my-ps/default".'
         }
 
-        It 'drops the scaffold advice to pin an arm64 hash, and passes on its other warnings' {
+        It 'drops the scaffold advice to pin an arm64 hash, and passes on its other warnings <Case>' -ForEach @(
+            @{ Case = 'when the scaffold succeeds'; Fail = '' }
+            @{ Case = 'when the scaffold then fails'; Fail = "throw 'scaffold failed'" }
+        ) {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
@@ -779,15 +803,17 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                     param($Path, $PowerShellVersion, $PwshVersion, $IncludeModule, $MissingModuleAction, [switch]$Force)
                     Write-Warning 'No SHA256 is pinned for the pwsh 7.4.99 arm64 tarball, so the scaffolded ''Dockerfile'' can build linux/amd64 only.'
                     Write-Warning 'other scaffold warning'
+                    #FAIL
                 }
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
-            $project = [System.IO.Path]::Combine($TestDrive, 'scaffold-warnings')
+            $project = [System.IO.Path]::Combine($TestDrive, "scaffold-warnings-$([bool]$Fail)")
             $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -ProjectPath '$project' -WhatIf"
 
-            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString().Replace('#FAIL', $Fail)) -Command $command
 
             $result.Output | Should -BeLike '*other scaffold warning*'
+            if ($Fail) { $result.Output | Should -BeLike '*ERROR: scaffold failed*' }
             $result.Output | Should -Not -BeLike '*arm64 tarball*'
         }
 

@@ -91,7 +91,7 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
                                 PwshReleaseOlderThanAlias (the pinned release is older than the
-                                one the alias runs)
+                                one the alias runs, on the same line and architecture)
           scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
@@ -621,9 +621,21 @@ function New-LambdaPSRuntimeDeployment {
                         "are redeployed with -Architecture $Architecture.")
                 }
                 # A pinned release is a fallback (or arm64's newest hash), so it must not downgrade an
-                # alias that an earlier run moved to a newer release.
-                $aliasRelease = if ([string]$currentAlias.RuntimeVersion -cmatch '\A([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+\z') { $Matches[1] }
-                if ($pwshRelease.Source -eq 'Pinned' -and $aliasRelease -and [version]$aliasRelease -gt [version]$resolvedPwshVersion) {
+                # alias that an earlier run moved to a newer release of the same line and architecture.
+                # The release is read from the version's release note, which the deploy writes, or else
+                # from a default <release>-<n> name.
+                $aliasRelease = $null
+                if ($pwshRelease.Source -eq 'Pinned' -and $droppedArchitecture.Count -eq 0) {
+                    $aliasVersionName = [string]$currentAlias.RuntimeVersion
+                    try {
+                        $aliasVersion = Get-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $aliasVersionName -Region $Region -ClientConfig $lambdaCoreConfig @credentialParameter -ErrorAction Stop
+                        if ([string]$aliasVersion.ReleaseNotes -cmatch '\Apwsh ([0-9]+\.[0-9]+\.[0-9]+)\z') { $aliasRelease = $Matches[1] }
+                    }
+                    catch { Write-Verbose "Could not read the release note of version '$aliasVersionName': $($_.Exception.Message)" }
+                    if (-not $aliasRelease -and $aliasVersionName -cmatch '\A([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+\z') { $aliasRelease = $Matches[1] }
+                    if ($aliasRelease -and -not $aliasRelease.StartsWith("$PowerShellVersion.", [System.StringComparison]::Ordinal)) { $aliasRelease = $null }
+                }
+                if ($aliasRelease -and [version]$aliasRelease -gt [version]$resolvedPwshVersion) {
                     $PSCmdlet.ThrowTerminatingError(
                         [System.Management.Automation.ErrorRecord]::new(
                             [System.InvalidOperationException]::new(
@@ -681,21 +693,26 @@ function New-LambdaPSRuntimeDeployment {
         # are skipped, with a warning, rather than run against output this run never produced (a stale
         # project, an image tag left by an earlier run, a version that was not published).
         $declinedStage = $null
-        if ($PSCmdlet.ShouldProcess($ProjectPath, $scaffoldAction)) {
-            $null = New-LambdaPSRuntimeProject @scaffoldParams -Confirm:$false
-            $modulesStaged = Get-LambdaPSStagedModule -Path ([System.IO.Path]::Combine($ProjectPath, 'modules'))
-            Write-Information "Scaffolded runtime project at '$ProjectPath'." -Tags 'LambdaPSDeploy'
+        try {
+            if ($PSCmdlet.ShouldProcess($ProjectPath, $scaffoldAction)) {
+                $null = New-LambdaPSRuntimeProject @scaffoldParams -Confirm:$false
+                $modulesStaged = Get-LambdaPSStagedModule -Path ([System.IO.Path]::Combine($ProjectPath, 'modules'))
+                Write-Information "Scaffolded runtime project at '$ProjectPath'." -Tags 'LambdaPSDeploy'
+            }
+            elseif ($WhatIfPreference) {
+                # Preview the scaffold too: it runs every local check a real run makes (pwsh version,
+                # module pins, dependencies, availability) and fails the preview the same way.
+                $null = New-LambdaPSRuntimeProject @scaffoldParams -WhatIf
+            }
+            else { $declinedStage = 'scaffold' }
         }
-        elseif ($WhatIfPreference) {
-            # Preview the scaffold too: it runs every local check a real run makes (pwsh version,
-            # module pins, dependencies, availability) and fails the preview the same way.
-            $null = New-LambdaPSRuntimeProject @scaffoldParams -WhatIf
-        }
-        else { $declinedStage = 'scaffold' }
-        # The scaffold's advice to pin an arm64 hash by hand doesn't apply: an arm64 deploy without one
-        # was refused in preflight, and the amd64 image doesn't use it.
-        foreach ($warning in $scaffoldWarnings) {
-            if ($warning.Message -notlike 'No SHA256 is pinned for the pwsh * arm64 tarball*') { Write-Warning $warning.Message }
+        finally {
+            # Shown even when the scaffold fails, since they may explain it. The advice to pin an arm64
+            # hash by hand doesn't apply: an arm64 deploy without one was refused in preflight, and the
+            # amd64 image doesn't use it.
+            foreach ($warning in $scaffoldWarnings) {
+                if ($warning.Message -notlike 'No SHA256 is pinned for the pwsh * arm64 tarball*') { Write-Warning $warning.Message }
+            }
         }
 
         # Stage 2: Build the image locally, then ensure the ECR repo, then push. Building first means a
