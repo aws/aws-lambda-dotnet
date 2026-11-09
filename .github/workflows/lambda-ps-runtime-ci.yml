@@ -1,0 +1,50 @@
+name: LambdaPSRuntime CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+      - dev
+      - "feature/**"
+      - feature-lambda-ps-custom-runtime
+    paths:
+      - "PowerShell/CustomRuntime/**"
+      - ".github/workflows/lambda-ps-runtime-ci.yml"
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build.ps1 -Task All (${{ matrix.os }})
+    # The suite needs the Lambda customer-managed runtime cmdlets (New-LMCRuntime, ...), which aren't in
+    # AWS.Tools on the PowerShell Gallery yet. Set the repository variable LAMBDAPS_PR_CI to 'true' once they are.
+    if: github.event_name == 'workflow_dispatch' || vars.LAMBDAPS_PR_CI == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read # to check out the repository
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install modules
+        shell: pwsh
+        run: |
+          Install-PSResource -Name Pester -Version 5.7.1 -Scope CurrentUser -TrustRepository
+          Install-PSResource -Name PSScriptAnalyzer -Version 1.25.0 -Scope CurrentUser -TrustRepository
+          Install-PSResource -Name AWS.Tools.Lambda, AWS.Tools.LambdaCore, AWS.Tools.ECR, AWS.Tools.SecurityToken -Scope CurrentUser -TrustRepository
+      - name: Run build.ps1 -Task All
+        shell: pwsh
+        working-directory: PowerShell/CustomRuntime
+        env:
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: ./build.ps1 -Task All
