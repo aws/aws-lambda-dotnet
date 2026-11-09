@@ -43,6 +43,9 @@ function Copy-LambdaPSFolderContent {
         The folder to copy into. It must exist.
     .PARAMETER ExcludePath
         Full paths to leave out.
+    .PARAMETER ExcludeExtension
+        File extensions to leave out, with the dot, for example '.xml', matched case-insensitively
+        against file names at any depth. '.xml' does not match '.ps1xml'.
     .OUTPUTS
         None.
     .EXAMPLE
@@ -63,7 +66,11 @@ function Copy-LambdaPSFolderContent {
 
         [Parameter()]
         [AllowEmptyCollection()]
-        [string[]]$ExcludePath = @()
+        [string[]]$ExcludePath = @(),
+
+        [Parameter()]
+        [AllowEmptyCollection()]
+        [string[]]$ExcludeExtension = @()
     )
 
     $separator = [System.IO.Path]::DirectorySeparatorChar
@@ -113,6 +120,7 @@ function Copy-LambdaPSFolderContent {
                 continue
             }
             if ($item.PSIsContainer -and $item.Name -eq '.git') { continue }
+            if (-not $item.PSIsContainer -and @($ExcludeExtension | Where-Object { $item.Name.EndsWith($_, [System.StringComparison]::OrdinalIgnoreCase) }).Count -gt 0) { continue }
             $walkFrom = $item.FullName
             $copyFrom = $item.FullName
             if ($item.LinkType) {

@@ -29,6 +29,21 @@ Describe 'Copy-LambdaPSFolderContent' -Tag 'Unit' {
             Sort-Object | Should -Be @('.hidden', [System.IO.Path]::Combine('sub', 'b.ps1'))
     }
 
+    It 'leaves out files with an -ExcludeExtension at any depth, in any case, but not a longer extension or a folder' {
+        foreach ($name in 'a.xml', 'b.XML', 'c.ps1xml', [System.IO.Path]::Combine('sub', 'd.xml')) {
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, $name)) -Value 'x'
+        }
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:source, 'en.xml')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:source, 'en.xml', 'e.txt')) -Value 'x'
+        InModuleScope $script:moduleName -Parameters @{ Source = $script:source; Destination = $script:destination } {
+            param($Source, $Destination)
+            Copy-LambdaPSFolderContent -Path $Source -Destination $Destination -ExcludeExtension '.xml'
+        }
+
+        @(Get-ChildItem -LiteralPath $script:destination -Recurse -Force -File | ForEach-Object { $_.FullName.Substring($script:destination.Length + 1) }) |
+            Sort-Object | Should -Be (@('.hidden', 'a.ps1', 'c.ps1xml', [System.IO.Path]::Combine('en.xml', 'e.txt'), [System.IO.Path]::Combine('sub', 'b.ps1')) | Sort-Object)
+    }
+
     # Lambda's paths are case-sensitive. On Linux 'README.md' and 'readme.md' are two files, so only the
     # excluded one is left out.
     It 'copies an item whose name differs from an excluded path only in case, on Linux' -Skip:(-not $IsLinux) {

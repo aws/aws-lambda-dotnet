@@ -51,7 +51,8 @@ function New-LambdaPSFunctionDeployment {
         then deploy again.
 
         The package is uploaded directly, not through S3, so one over the 50 MB Lambda accepts in a
-        direct upload stops the deploy with PackageTooLarge before the function is created or updated.
+        direct upload stops the deploy with PackageTooLarge, and one over 250 MB unzipped with
+        UnzippedPackageTooLarge (over 225 MB it warns), before the function is created or updated.
 
         The cmdlet returns once the function can be invoked: it waits while Lambda reports the
         function Pending or its last update InProgress (up to 120 seconds, before the code update,
