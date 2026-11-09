@@ -125,6 +125,16 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
                 (Assert-LambdaPSScaffoldPath -Path $Path).Count | Should -Be 0
             }
         }
+
+        It 'throws IdCommandNotFound when id is not on PATH' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'no-id')
+            $null = New-Item -ItemType Directory -Path $dir
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                Mock Get-Command { } -ParameterFilter { $Name -eq 'id' }
+                { Assert-LambdaPSScaffoldPath -Path $Path } | Should -Throw -ErrorId 'IdCommandNotFound'
+            }
+        }
     }
 
     # Without the listing, a folder you can enter but not read would look empty, and the scaffold would

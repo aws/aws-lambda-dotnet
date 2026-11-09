@@ -69,10 +69,6 @@ function Write-LambdaPSZipArchive {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
 
     $destination = Resolve-LambdaPSPath -Path $DestinationPath
-    $parent = [System.IO.Path]::GetDirectoryName($destination)
-    if (-not [string]::IsNullOrEmpty($parent) -and -not (Test-Path -LiteralPath $parent)) {
-        $null = New-Item -ItemType Directory -Path $parent -Force -Confirm:$false -WhatIf:$false
-    }
 
     $comparer = if ($IsLinux) { [System.StringComparer]::Ordinal } else { [System.StringComparer]::OrdinalIgnoreCase }
     $excluded = [System.Collections.Generic.HashSet[string]]::new([string[]]@($ExcludeTopLevel | Where-Object { $_ }), $comparer)
@@ -164,7 +160,16 @@ function Write-LambdaPSZipArchive {
                     "together, which leaves $([math]::Round((250 * $mb - $unzippedBytes) / $mb, 1)) MB for the code or layers deployed with it.$detail")
             }
 
-            $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+            try {
+                $null = [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($destination))
+                $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+            }
+            catch [System.UnauthorizedAccessException], [System.IO.IOException] {
+                $reason = $_.Exception.Message.Replace($partial, $destination)
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.IOException]::new("Could not write the package to '$destination': $reason Write it to a folder you can write to.", $_.Exception),
+                    'PackageWriteFailed', [System.Management.Automation.ErrorCategory]::WriteError, $destination)
+            }
             $entryTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
             foreach ($pair in $files.GetEnumerator()) {
                 $entryName = $pair.Key

@@ -56,9 +56,9 @@ function Compress-LambdaPSFunctionPackage {
           - The source: ProjectNotFound, SourceNotPowerShell, NotAFunctionProject, InvalidProjectMarker,
             InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath, BackslashInFileName (off Windows,
             a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, PackageWriteFailed, OutFileIsSource (-OutFile
             is the single-file -Path).
-          - Modules (-IncludeModule and the handler's #Requires): ModuleNameInvalid (-IncludeModule or a
+          - Modules (-IncludeModule and the handler's #Requires): InvalidRequiresStatement, ModuleNameInvalid (-IncludeModule or a
             #Requires naming a wildcard or a path), ModuleVersionRequired (a #Requires that does not pin
             an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires
             that names the AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
