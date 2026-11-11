@@ -26,8 +26,8 @@ function New-LambdaPSFunctionDeployment {
 
         Before packaging, the runtime and its alias are read to check the function's architecture
         against the runtime's (see -Architecture). A missing runtime (RuntimeArnNotFound) or alias
-        (RuntimeAliasNotFound) is also caught here, rather than producing a function that fails on
-        every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
+        (RuntimeAliasNotFound), or an alias scheduled for deletion (RuntimeAliasPendingDeletion), is also
+        caught here, rather than producing a function that fails on every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
         RuntimeAliasCheckFailed, which wraps the service's error.
 

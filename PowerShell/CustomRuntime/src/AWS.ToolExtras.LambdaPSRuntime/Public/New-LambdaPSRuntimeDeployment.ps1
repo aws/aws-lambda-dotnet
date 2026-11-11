@@ -63,7 +63,8 @@ function New-LambdaPSRuntimeDeployment {
         A version that cannot be read for any reason other than not existing stops the deploy with
         RuntimeVersionCheckFailed, rather than being taken as new. For a new version it then reads
         -RuntimeAlias, to warn when the deploy moves it off a version that supports an architecture
-        the new version does not. A missing alias is created by the deploy; any other failed read, such as a refused
+        the new version does not. A missing alias is created by the deploy, and one scheduled for
+        deletion stops it with RuntimeAliasPendingDeletion; any other failed read, such as a refused
         lambda:GetRuntimeAlias, stops the deploy with RuntimeAliasCheckFailed. The image is built
         before the ECR repository is ensured, so a failed build leaves nothing in AWS; the push reuses
         the local build's cache. The local build leaves an image tagged
@@ -91,7 +92,8 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeImageTagExists,
-                                RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
+                                RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed,
+                                RuntimeAliasPendingDeletion, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
                                 PwshReleaseOlderThanAlias (the pinned release is older than the
                                 one the alias runs, on the same line and architecture)
@@ -180,8 +182,8 @@ function New-LambdaPSRuntimeDeployment {
     .PARAMETER RuntimeVersion
         The runtime version label / image tag to publish. Defaults to <pwsh release>-<n>, for example
         7.6.9-1, where n is one more than the highest n the runtime already has for that release (1 for
-        a new runtime), so every run publishes a new version; deleting the newest version frees its
-        name for the next deploy. Naming it lists the runtime's versions, which needs
+        a new runtime), so every run publishes a new version. A deleted version keeps its name until
+        Lambda purges it, days later. Naming it lists the runtime's versions, which needs
         lambda:ListRuntimeVersions. A name you give is used as is, and one the runtime
         already has stops the deploy with RuntimeVersionExists. It must be valid as both a runtime
         version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128 characters,
@@ -611,6 +613,15 @@ function New-LambdaPSRuntimeDeployment {
                                  "its architecture$serviceDetail Nothing was built or pushed."), $_.Exception),
                             'RuntimeAliasCheckFailed', [System.Management.Automation.ErrorCategory]::ReadError, "$RuntimeName/$RuntimeAlias"))
                 }
+            }
+            # Lambda resolves an alias scheduled for deletion as if it were missing, for days.
+            if ([string]$currentAlias.State -eq 'PENDING_DELETION') {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Alias '$RuntimeAlias' of runtime '$RuntimeName' is scheduled for deletion. Pass another " +
+                             '-RuntimeAlias, or run again once Lambda has purged it. Nothing was built or pushed.')),
+                        'RuntimeAliasPendingDeletion', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, "$RuntimeName/$RuntimeAlias"))
             }
             if ($null -ne $currentAlias) {
                 [string[]]$aliasArchitecture = Get-LambdaPSReportedArchitecture -Compatibility $currentAlias.Compatibility

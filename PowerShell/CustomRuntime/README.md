@@ -141,8 +141,8 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy.
+image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
+days later.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
