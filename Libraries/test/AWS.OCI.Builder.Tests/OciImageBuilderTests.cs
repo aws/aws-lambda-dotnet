@@ -361,6 +361,31 @@ public class OciImageBuilderTests
     }
 
     [Fact]
+    public async Task PushAsync_accepts_a_dual_stack_ecr_target()
+    {
+        var registry = new FakeRegistry();
+        const string sourceRepo = "dotnet/aspnet";
+        const string dualStackHost = "123456789012.dkr-ecr.us-west-2.on.aws";
+
+        (ImageBuilder imageBuilder, IReadOnlyList<Descriptor> baseLayers) = BuildBaseImage(registry, sourceRepo);
+        var sourceClient = new RegistryClient(SourceHost, new HttpClient(registry));
+        var baseRef = ImageReference.Parse($"{SourceHost}/{sourceRepo}:8.0");
+
+        using OciImageBuilder builder = OciImageBuilder.CreateForTest(baseRef, sourceClient, imageBuilder, baseLayers);
+        string? targetHost = null;
+        builder.UseTargetClientFactoryForTest((host, _) =>
+        {
+            targetHost = host;
+            return new RegistryClient(host, new HttpClient(registry));
+        });
+
+        await builder.PushToEcrAsync($"{dualStackHost}/myapp:latest", FakeEcrToken);
+
+        Assert.Equal(dualStackHost, targetHost);
+        Assert.NotNull(registry.PutManifest);
+    }
+
+    [Fact]
     public async Task PushAsync_rejects_non_ecr_target()
     {
         var registry = new FakeRegistry();

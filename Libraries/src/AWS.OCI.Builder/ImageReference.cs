@@ -186,9 +186,12 @@ internal sealed partial class ImageReference
     public override string ToString()
         => ReferenceIsDigest ? $"{Registry}/{Repository}@{Reference}" : $"{Registry}/{Repository}:{Reference}";
 
-    // Matches an ECR host and captures the region: <account>.dkr.ecr.<region>.amazonaws.com
-    // (also supports the FIPS and China/GovCloud partitions' domains).
+    // Matches an ECR registry host and captures the region, in either form:
+    //   <account>.dkr.ecr[-fips].<region>.amazonaws.com[.cn]   (IPv4)
+    //   <account>.dkr-ecr[-fips].<region>.on.aws               (dual-stack)
     // Anchored with \z, not $, so a trailing newline can't pass (the host decides which registry is trusted).
-    [GeneratedRegex(@"^\d{12}\.dkr\.ecr(-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(\.cn)?\z", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(
+        @"^\d{12}\.(?:dkr\.ecr(?:-fips)?\.(?<region>[a-z0-9-]+)\.amazonaws\.com(?:\.cn)?|dkr-ecr(?:-fips)?\.(?<region>[a-z0-9-]+)\.on\.aws)\z",
+        RegexOptions.IgnoreCase)]
     private static partial Regex EcrHostRegex();
 }

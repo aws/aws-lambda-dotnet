@@ -8,11 +8,9 @@ namespace AWS.OCI.Builder.Registry;
 /// challenge before the client sends credentials to it.
 /// </summary>
 /// <remarks>
-/// A compromised or malicious registry could return a <c>realm</c> that points at an internal or loopback
-/// address in order to exfiltrate credentials or probe the host's private network (an SSRF vector). This
-/// validator rejects any realm that is not HTTPS or whose host resolves to a loopback, link-local, private,
-/// or unspecified address. The approach mirrors <c>Microsoft.NET.Build.Containers</c>. Because we only
-/// target public registries (ECR, MCR, Docker Hub), there is no insecure/on-prem exception.
+/// A malicious registry could return a <c>realm</c> pointing at an internal service. This validator requires
+/// https and rejects a realm whose host is a loopback name or a loopback/private/link-local IP literal. It checks
+/// the spelling only and does not resolve DNS names.
 /// </remarks>
 internal static class RealmValidator
 {
@@ -40,7 +38,7 @@ internal static class RealmValidator
                 registryName, $"The authentication realm '{realm}' is relative or could not be parsed.");
         }
 
-        // Only HTTPS is permitted (we target public registries exclusively).
+        // Only HTTPS is permitted.
         if (!realmUri.Scheme.Equals("https", StringComparison.Ordinal))
         {
             throw new InvalidAuthResponseException(
@@ -64,12 +62,6 @@ internal static class RealmValidator
                 registryName, $"The authentication realm '{realm}' uses a loopback host name '{realmHost}'.");
         }
 
-        // NOTE: a DNS-name realm is not resolved here. Resolving in this method would (a) be a different lookup
-        // from the one the socket later performs, so it would not actually defend against DNS rebinding, and
-        // (b) make the spelling check depend on live DNS. Instead, the ACTUAL connection IP is validated at the
-        // socket layer by GuardedConnectCallback (see RegistryClient.Create), which refuses to connect to any
-        // blocked (loopback/private/link-local) address for realm requests, the registry itself, and blob
-        // redirects alike — defeating rebinding because it checks the address the connection truly uses.
         return realmUri;
     }
 
@@ -79,8 +71,7 @@ internal static class RealmValidator
 
     /// <summary>
     /// Returns <see langword="true"/> when <paramref name="uri"/>'s host is a loopback name or a blocked IP
-    /// literal. This is a cheap pre-connect spelling check used for blob-download redirect hops; the authoritative
-    /// defense is <see cref="IsBlockedAddress"/> applied to the real resolved connection IP at the socket layer.
+    /// literal. Used for blob-download redirect hops.
     /// </summary>
     internal static bool IsBlockedHost(Uri uri)
     {
@@ -91,13 +82,6 @@ internal static class RealmValidator
         }
         return IPAddress.TryParse(host, out IPAddress? literal) && IsBlockedIpLiteral(literal);
     }
-
-    /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="address"/> is a blocked loopback/private/link-local
-    /// address. Applied by the registry client's connect callback to the ACTUAL address a socket is about to
-    /// connect to, so it defends against DNS rebinding (the check sees the real IP, not a separately-resolved one).
-    /// </summary>
-    internal static bool IsBlockedAddress(IPAddress address) => IsBlockedIpLiteral(address);
 
     private static string TrimTrailingDot(string host)
         => host.Length > 1 && host[^1] == '.' ? host[..^1] : host;

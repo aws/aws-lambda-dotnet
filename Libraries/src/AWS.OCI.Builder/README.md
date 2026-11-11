@@ -1,5 +1,8 @@
 # AWS.OCI.Builder
 
+> **Warning:** This library is intended for use by AWS tools and libraries. It is not intended for general use
+> yet, and its API may change in any release, including in ways that break existing code.
+
 A .NET library for building [OCI](https://opencontainers.org/) container images
 **programmatically**, without a Docker daemon. It pulls a base image's manifest over the
 registry HTTP API, overlays a new layer containing local files at specified container paths,
@@ -7,11 +10,12 @@ and pushes the resulting image to **Amazon ECR**.
 
 ## Status
 
-This library is designed and supported for use by other AWS libraries and tools.
-The version of the library is kept below 1.0.0 to indicate that the API is subject to change based on the needs of AWS libraries and tools.
-If you are using this library in a non-AWS context, please be aware that the API may change in future releases.
+The version is kept below 1.0.0 while the API changes to meet the needs of AWS tools and libraries.
 
 ## Authentication
+
+Base images are pulled anonymously, so the base image must be publicly pullable. Pulling a base image that
+requires authentication, including one in a private ECR repository, is not supported yet.
 
 This library has **no AWS SDK dependency**. Instead of resolving AWS credentials itself, it takes an ECR
 authorization token that you obtain and pass to `PushToEcrAsync`. This keeps the library free of

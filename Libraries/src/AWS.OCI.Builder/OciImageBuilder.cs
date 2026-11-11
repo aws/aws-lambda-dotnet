@@ -126,9 +126,14 @@ public sealed class OciImageBuilder : IDisposable
     /// <summary>
     /// Fetches a base image and prepares a builder to overlay layers onto it.
     /// </summary>
+    /// <remarks>
+    /// The base image is pulled anonymously, without credentials. A base image that requires authentication,
+    /// including one in a private Amazon ECR repository, is not supported: the pull fails with
+    /// <see cref="RegistryAuthenticationException"/>.
+    /// </remarks>
     /// <param name="baseImage">
-    /// The base image reference, for example <c>mcr.microsoft.com/dotnet/aspnet:8.0</c> or
-    /// <c>ubuntu:22.04</c>. Public registries (anonymous or Bearer-token pull) are supported.
+    /// The base image reference, for example <c>public.ecr.aws/lambda/provided:al2023</c>,
+    /// <c>mcr.microsoft.com/dotnet/aspnet:8.0</c> or <c>ubuntu:22.04</c>. It must be publicly pullable.
     /// </param>
     /// <param name="platform">
     /// The target platform as <c>os/architecture</c> (for example <c>linux/amd64</c> or <c>linux/arm64</c>), used
@@ -150,6 +155,10 @@ public sealed class OciImageBuilder : IDisposable
     /// Fetches a base image and prepares a builder to overlay layers onto it, with the proxy and timeout in
     /// <paramref name="options"/>.
     /// </summary>
+    /// <remarks>
+    /// As with <see cref="FromBaseImageAsync(string, string, CancellationToken)"/>, the base image is pulled
+    /// anonymously, so it must be publicly pullable.
+    /// </remarks>
     /// <param name="baseImage">The base image reference, as for <see cref="FromBaseImageAsync(string, string, CancellationToken)"/>.</param>
     /// <param name="platform">The target platform as <c>os/architecture</c> (for example <c>linux/arm64</c>).</param>
     /// <param name="options">
@@ -350,7 +359,8 @@ public sealed class OciImageBuilder : IDisposable
     /// </remarks>
     /// <param name="targetImage">
     /// The destination ECR reference, for example
-    /// <c>123456789012.dkr.ecr.us-west-2.amazonaws.com/myapp:latest</c>.
+    /// <c>123456789012.dkr.ecr.us-west-2.amazonaws.com/myapp:latest</c>, or with the dual-stack endpoint
+    /// <c>123456789012.dkr-ecr.us-west-2.on.aws/myapp:latest</c>.
     /// </param>
     /// <param name="authorizationToken">
     /// The ECR authorization token — the base64-encoded <c>AWS:&lt;password&gt;</c> string from the ECR
@@ -377,7 +387,7 @@ public sealed class OciImageBuilder : IDisposable
         {
             throw new ArgumentException(
                 $"The push target '{targetImage}' is not an Amazon ECR reference. This library only pushes to ECR " +
-                "(e.g. 123456789012.dkr.ecr.us-west-2.amazonaws.com/repo:tag).",
+                "(e.g. 123456789012.dkr.ecr.us-west-2.amazonaws.com/repo:tag or 123456789012.dkr-ecr.us-west-2.on.aws/repo:tag).",
                 nameof(targetImage));
         }
 

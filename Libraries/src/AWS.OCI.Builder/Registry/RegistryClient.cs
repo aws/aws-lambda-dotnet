@@ -70,29 +70,20 @@ internal sealed class RegistryClient : IDisposable
     /// client default. Must be positive or <see cref="Timeout.InfiniteTimeSpan"/>.
     /// </param>
     /// <param name="proxy">An explicit proxy, or <see langword="null"/> for the system default proxy.</param>
-    /// <param name="resolveHost">Test-only: replaces DNS resolution in the connect guard.</param>
     public static RegistryClient Create(
         string registryHost,
         IRegistryCredentialSource credentialSource,
         TimeSpan? timeout = null,
-        IWebProxy? proxy = null,
-        Func<string, CancellationToken, Task<IPAddress[]>>? resolveHost = null)
+        IWebProxy? proxy = null)
     {
         // Automatic redirects are DISABLED: the same transport also carries the token requests issued by
-        // AuthHandshakeHandler, and an auto-followed redirect from a validated public realm to a private/loopback
-        // endpoint would bypass RealmValidator (an SSRF vector). Blob downloads — which legitimately redirect to
-        // object storage — follow redirects explicitly in GetBlobAsync, validating each hop.
+        // AuthHandshakeHandler, so an auto-followed redirect would skip RealmValidator's checks. Blob downloads,
+        // which legitimately redirect to object storage, follow redirects explicitly in GetBlobAsync, checking
+        // each hop.
         var inner = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.None,
             AllowAutoRedirect = false,
-            // SSRF defense at the socket layer: resolve the target, reject any blocked (loopback/private/link-local)
-            // address, and connect to the SAME address we validated — so a DNS name that resolves to a private
-            // address is refused, and DNS rebinding cannot swap in a different address between check and connect.
-            // An Amazon ECR registry is trusted even on a private address, which is how ECR resolves through an
-            // interface VPC endpoint. Any other host, including a caller-supplied base registry, is checked.
-            ConnectCallback = (context, cancellationToken) =>
-                GuardedConnectAsync(context, TrustedHostOf(registryHost), proxy ?? HttpClient.DefaultProxy, resolveHost, cancellationToken),
         };
         if (proxy is not null)
         {
@@ -109,131 +100,9 @@ internal sealed class RegistryClient : IDisposable
     }
 
     /// <summary>
-    /// A <see cref="SocketsHttpHandler.ConnectCallback"/> that resolves the target host, refuses to connect to any
-    /// blocked (loopback/private/link-local) address, and connects to the exact address it validated. Because the
-    /// check and the connect use the same resolved address, this is robust against DNS rebinding — unlike a
-    /// separate pre-resolution that the socket could override with a second lookup.
-    /// </summary>
-    private static async ValueTask<Stream> GuardedConnectAsync(
-        SocketsHttpConnectionContext context,
-        string? trustedHost,
-        IWebProxy? proxy,
-        Func<string, CancellationToken, Task<IPAddress[]>>? resolveHost,
-        CancellationToken cancellationToken)
-    {
-        string host = context.DnsEndPoint.Host;
-        int port = context.DnsEndPoint.Port;
-
-        // When a proxy is configured the handler connects to the proxy, not to the request's host. The proxy is
-        // the caller's own configuration and is often on a loopback or private address, and the target's address
-        // is resolved by the proxy, out of this callback's sight. So the address check applies only to direct
-        // connections, and not to the trusted ECR registry.
-        bool checkAddress = IsAddressCheckRequired(context.InitialRequestMessage, host, trustedHost, proxy);
-
-        IPAddress[] addresses = IPAddress.TryParse(host, out IPAddress? literal)
-            ? [literal]
-            : await (resolveHost ?? System.Net.Dns.GetHostAddressesAsync)(host, cancellationToken).ConfigureAwait(false);
-
-        // Try each resolved address in order, skipping blocked ones, connecting to the first that is allowed AND
-        // reachable. A blocked address is never dialed.
-        System.Net.Sockets.Socket? socket = null;
-        Exception? lastError = null;
-        foreach (IPAddress address in addresses)
-        {
-            if (checkAddress && RealmValidator.IsBlockedAddress(address))
-            {
-                lastError = new RegistryException(
-                    $"Refusing to connect to '{host}': it resolves to a blocked (loopback/private/link-local) address '{address}'.");
-                continue;
-            }
-
-            var attempt = new System.Net.Sockets.Socket(address.AddressFamily, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp)
-            {
-                NoDelay = true,
-            };
-            try
-            {
-                await attempt.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
-                socket = attempt;
-                break;
-            }
-            catch (Exception ex)
-            {
-                lastError = ex;
-                attempt.Dispose();
-            }
-        }
-
-        if (socket is null)
-        {
-            throw lastError ?? new RegistryException($"Could not connect to '{host}:{port}'.");
-        }
-
-        return new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
-    }
-
-    /// <summary>
-    /// Whether a connection to <paramref name="connectHost"/> must pass the blocked-address check. It is skipped
-    /// for the trusted ECR registry (<paramref name="trustedHost"/>, or <see langword="null"/> when the client's
-    /// registry is not ECR) and for a proxy: the target of the handler's CONNECT tunnel request, or the proxy that
-    /// <paramref name="proxy"/> selects for <paramref name="request"/>. It is required for every other host.
-    /// </summary>
-    internal static bool IsAddressCheckRequired(HttpRequestMessage request, string connectHost, string? trustedHost, IWebProxy? proxy)
-    {
-        string host = NormalizeHost(connectHost);
-        if (trustedHost is not null && string.Equals(host, trustedHost, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        Uri? requestUri = request.RequestUri;
-
-        // An https request through a proxy opens its connection with the handler's own CONNECT request, which is
-        // addressed to the proxy. Only the handler sends CONNECT, and only to a proxy it was configured with.
-        if (request.Method == HttpMethod.Connect && requestUri is not null
-            && string.Equals(host, NormalizeHost(requestUri.IdnHost), StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (requestUri is not null && proxy is not null && !proxy.IsBypassed(requestUri)
-            && proxy.GetProxy(requestUri) is { } proxyUri
-            // Some IWebProxy implementations return the destination itself to mean "connect directly".
-            && !string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(requestUri.IdnHost), StringComparison.OrdinalIgnoreCase)
-            && string.Equals(host, NormalizeHost(proxyUri.IdnHost), StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>Strips IPv6 brackets and a trailing dot so host spellings compare equal.</summary>
-    private static string NormalizeHost(string host)
-        => TrimTrailingDot(host.Length > 1 && host[0] == '[' && host[^1] == ']' ? host[1..^1] : host);
-
-    /// <summary>
-    /// The host name (no port, no trailing dot) of the registry this client was created for, when it is an Amazon
-    /// ECR registry; otherwise <see langword="null"/>, so no host is exempt from the address check.
-    /// </summary>
-    internal static string? TrustedHostOf(string registryHost)
-    {
-        // Match the ECR pattern against the host alone, so an explicit port (for example ':443') doesn't hide it.
-        if (!Uri.TryCreate($"https://{registryHost}", UriKind.Absolute, out Uri? uri))
-        {
-            return null;
-        }
-        string host = NormalizeHost(uri.IdnHost);
-        return ImageReference.IsEcrHost(host) ? host : null;
-    }
-
-    private static string TrimTrailingDot(string host)
-        => host.Length > 1 && host[^1] == '.' ? host[..^1] : host;
-
-    /// <summary>
-    /// Sends a request, reporting a failure to send it or to receive the response headers (DNS, connection, TLS,
-    /// proxy, or the connect guard) as a <see cref="RegistryException"/> with the <see cref="HttpRequestException"/>
-    /// as its inner exception. Not covered: an <see cref="IOException"/> while a blob body is being read, and the
+    /// Sends a request, reporting a failure to send it or to receive the response headers (DNS, connection, TLS or
+    /// proxy) as a <see cref="RegistryException"/> with the <see cref="HttpRequestException"/> as its inner
+    /// exception. Not covered: an <see cref="IOException"/> while a blob body is being read, and the
     /// <see cref="TaskCanceledException"/> raised when <see cref="EcrPushOptions.UploadTimeout"/>,
     /// <see cref="BaseImagePullOptions.Timeout"/> or the caller's token expires.
     /// </summary>
@@ -245,10 +114,8 @@ internal sealed class RegistryClient : IDisposable
         }
         catch (HttpRequestException ex)
         {
-            string message = ex.InnerException is RegistryException inner
-                ? inner.Message
-                : $"{request.Method} {request.RequestUri?.GetLeftPart(UriPartial.Path)} failed: {ex.Message}";
-            throw new RegistryException(message, ex);
+            throw new RegistryException(
+                $"{request.Method} {request.RequestUri?.GetLeftPart(UriPartial.Path)} failed: {ex.Message}", ex);
         }
     }
 
@@ -371,9 +238,9 @@ internal sealed class RegistryClient : IDisposable
     /// <summary>Downloads a blob by digest as a stream. Disposing the returned stream also disposes the underlying HTTP response.</summary>
     /// <remarks>
     /// Auto-redirect is disabled on the transport (see <see cref="Create"/>), so redirects to object storage are
-    /// followed here explicitly, up to <see cref="MaxBlobRedirects"/> hops. Each hop's target is validated against
-    /// the blocked (loopback/private/link-local) networks so a redirect cannot bounce the download onto the host's
-    /// private network, and the Authorization header is not carried to a different host.
+    /// followed here explicitly, up to <see cref="MaxBlobRedirects"/> hops. Each hop must be https, a hop to a
+    /// loopback name or a loopback/private/link-local IP literal is refused, and a hop to a different host is sent
+    /// without credentials.
     /// </remarks>
     public async Task<Stream> GetBlobAsync(string repository, string digest, CancellationToken cancellationToken = default)
     {
@@ -420,7 +287,7 @@ internal sealed class RegistryClient : IDisposable
                 {
                     throw new RegistryRequestException(302, $"blob download for {repository} {digest} redirected to a non-https URL.");
                 }
-                // SSRF guard: never follow a redirect onto a blocked (loopback/private/link-local) address.
+                // Refuse a redirect to a loopback name or a loopback/private/link-local IP literal.
                 if (RealmValidator.IsBlockedHost(next))
                 {
                     throw new RegistryRequestException(302, $"blob download for {repository} {digest} redirected to a blocked (loopback/private/link-local) host '{next.Host}'.");

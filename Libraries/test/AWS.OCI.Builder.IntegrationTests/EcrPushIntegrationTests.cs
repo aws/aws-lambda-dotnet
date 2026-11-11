@@ -25,7 +25,7 @@ namespace AWS.OCI.Builder.IntegrationTests;
 /// <para>
 /// Overridable via environment variables: <c>OCI_ECR_REPOSITORY</c> (default <c>aws-oci-builder-itest</c>),
 /// <c>OCI_ECR_REGION</c> (default <c>us-west-2</c>), <c>OCI_ECR_BASE_IMAGE</c>
-/// (default <c>mcr.microsoft.com/dotnet/runtime-deps:8.0</c>).
+/// (default <c>public.ecr.aws/lambda/provided:al2023</c>).
 /// </para>
 /// </remarks>
 [Trait("Category", "Integration")]
@@ -33,7 +33,9 @@ public class EcrPushIntegrationTests
 {
     private const string DefaultRepository = "aws-oci-builder-itest";
     private const string DefaultRegion = "us-west-2";
-    private const string DefaultBaseImage = "mcr.microsoft.com/dotnet/runtime-deps:8.0";
+    // An AWS-owned public base image, so CI doesn't depend on a third-party registry. It is pulled anonymously
+    // through a Bearer token exchange.
+    private const string DefaultBaseImage = "public.ecr.aws/lambda/provided:al2023";
     private const string Platform = "linux/amd64";
 
     private readonly ITestOutputHelper _output;
@@ -185,7 +187,7 @@ public class EcrPushIntegrationTests
                 builder.Config.SetWorkingDirectory("/app");
 
                 // Force the spill-to-disk copy path: a 1 MiB threshold is well below the base image's real layer
-                // sizes (its largest runtime-deps layer is tens of MiB), so those layers are streamed through a
+                // sizes (its largest layer is tens of MiB), so those layers are streamed through a
                 // temp file, re-verified from disk, and uploaded from the file rather than buffered in memory.
                 var options = new EcrPushOptions { MaxInMemoryLayerBytes = 1L * 1024 * 1024 };
                 string authToken = await GetAuthorizationTokenStringAsync(ecr);

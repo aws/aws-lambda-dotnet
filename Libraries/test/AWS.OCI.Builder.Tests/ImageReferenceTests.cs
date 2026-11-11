@@ -85,6 +85,10 @@ public class ImageReferenceTests
     [InlineData("123456789012.dkr.ecr.us-west-2.amazonaws.com/app:latest", "us-west-2")]
     [InlineData("123456789012.dkr.ecr.eu-central-1.amazonaws.com/app:latest", "eu-central-1")]
     [InlineData("210987654321.dkr.ecr-fips.us-east-1.amazonaws.com/app:latest", "us-east-1")]
+    [InlineData("123456789012.dkr.ecr.cn-north-1.amazonaws.com.cn/app:latest", "cn-north-1")]
+    [InlineData("123456789012.dkr-ecr.us-west-2.on.aws/app:latest", "us-west-2")]          // dual-stack
+    [InlineData("123456789012.dkr-ecr-fips.us-gov-west-1.on.aws/app:latest", "us-gov-west-1")] // dual-stack FIPS
+    [InlineData("123456789012.DKR-ECR.US-WEST-2.ON.AWS/app:latest", "US-WEST-2")]
     public void Detects_ecr_and_extracts_region(string input, string expectedRegion)
     {
         ImageReference parsed = ImageReference.Parse(input);
@@ -92,6 +96,19 @@ public class ImageReferenceTests
         Assert.True(parsed.IsEcr);
         Assert.Equal(expectedRegion, parsed.EcrRegion);
     }
+
+    [Theory]
+    [InlineData("123456789012.dkr-ecr.us-west-2.on.aws", true)]
+    [InlineData("123456789012.dkr-ecr-fips.us-east-1.on.aws", true)]
+    [InlineData("123456789012.dkr.ecr.us-west-2.on.aws", false)]         // IPv4 label with the dual-stack domain
+    [InlineData("123456789012.dkr-ecr.us-west-2.amazonaws.com", false)]  // dual-stack label with the IPv4 domain
+    [InlineData("dkr-ecr.us-west-2.on.aws", false)]                      // no registry id
+    [InlineData("12345.dkr-ecr.us-west-2.on.aws", false)]                // short registry id
+    [InlineData("123456789012.dkr-ecr.us-west-2.on.aws.evil.example", false)]
+    [InlineData("123456789012.dkr-ecr.us-west-2.on.aws\n", false)]
+    [InlineData("evil.example.123456789012.dkr-ecr.us-west-2.on.aws", false)]
+    public void Recognizes_dual_stack_ecr_hosts_exactly(string host, bool expected)
+        => Assert.Equal(expected, ImageReference.IsEcrHost(host));
 
     [Theory]
     [InlineData("mcr.microsoft.com/dotnet/aspnet:8.0")]
