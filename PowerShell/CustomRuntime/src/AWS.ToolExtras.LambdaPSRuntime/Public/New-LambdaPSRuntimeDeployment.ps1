@@ -84,8 +84,10 @@ function New-LambdaPSRuntimeDeployment {
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  RuntimeVersionNameTooLong, RuntimeAliasNameTooLong,
                                 InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
-                                UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
-                                PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
+                                UnknownPwshVersion, PwshVersionNotFound (an x86_64 -PwshVersion
+                                the package repository does not list), PwshVersionMismatch,
+                                DriveNotFound and PathNotFileSystem (for -ProjectPath),
+                                TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
