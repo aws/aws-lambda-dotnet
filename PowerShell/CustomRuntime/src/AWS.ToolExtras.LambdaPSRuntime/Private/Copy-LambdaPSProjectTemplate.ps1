@@ -25,8 +25,8 @@ function Copy-LambdaPSProjectTemplate {
 
         Each target's tree carries its own README.md, and Templates/Shared adds the runtime settings
         to it through README.md.append, for every target. Every target except RuntimeBound also gets a
-        lambdaps-runtime.json marker recording the deployment target and PowerShell version, so the
-        validator and future tooling can identify the project shape.
+        lambdaps-runtime.json marker recording the deployment target, PowerShell, pwsh and module
+        versions, so the validator and future tooling can identify the project shape.
     .PARAMETER Path
         The template directories to copy from, in order, as returned by
         Get-LambdaPSProjectTemplateRoot: the module's Templates/Shared tree (the runtime interface
@@ -227,11 +227,13 @@ function Copy-LambdaPSProjectTemplate {
     # Marker recording the deployment target, PowerShell version and pwsh version. The validator
     # reads it to apply target-specific rules (absence defaults to CMR), and
     # Build-LambdaPSRuntimePackage bundles the recorded pwsh version unless told otherwise.
+    # ModuleVersion lets later module versions tell which template generation created the project.
     if ($carriesRuntime) {
         $rendered[[System.IO.Path]::Combine($projectRoot, 'lambdaps-runtime.json')] = [ordered]@{
             Target            = $Target
             PowerShellVersion = $PowerShellVersion
             PwshVersion       = $PwshVersion
+            ModuleVersion     = $script:LambdaPSModuleVersion
         } | ConvertTo-Json
     }
 

@@ -114,6 +114,20 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         Join-Path $destination 'lambdaps-runtime.json' | Should -Not -Exist
     }
 
+    It 'records the module version in the lambdaps-runtime.json marker' {
+        $source = Join-Path $TestDrive 'marker-src'
+        $null = New-Item -ItemType Directory -Path $source -Force
+        $destination = Join-Path $TestDrive 'marker-out'
+
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination } {
+            param($Source, $Destination)
+            $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
+        }
+
+        (Get-Content -LiteralPath (Join-Path $destination 'lambdaps-runtime.json') -Raw | ConvertFrom-Json).ModuleVersion |
+            Should -Be (Import-PowerShellDataFile -LiteralPath $script:modulePath).ModuleVersion
+    }
+
     It 'throws PwshVersionRequired for a runtime-carrying target without the versions' {
         InModuleScope $script:moduleName -Parameters @{ Destination = (Join-Path $TestDrive 'noversion') } {
             param($Destination)
