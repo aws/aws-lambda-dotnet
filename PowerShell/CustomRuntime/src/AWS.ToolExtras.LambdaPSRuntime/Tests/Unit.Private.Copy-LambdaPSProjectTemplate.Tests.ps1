@@ -114,18 +114,25 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         Join-Path $destination 'lambdaps-runtime.json' | Should -Not -Exist
     }
 
-    It 'records the module version in the lambdaps-runtime.json marker' {
-        $source = Join-Path $TestDrive 'marker-src'
+    It 'records the module version in the lambdaps-runtime.json marker, prerelease label <Prerelease>' -ForEach @(
+        @{ Prerelease = ''; Suffix = '' }, @{ Prerelease = 'preview1'; Suffix = '-preview1' }
+    ) {
+        $source = Join-Path $TestDrive "marker-src-$Prerelease"
         $null = New-Item -ItemType Directory -Path $source -Force
-        $destination = Join-Path $TestDrive 'marker-out'
+        $destination = Join-Path $TestDrive "marker-out-$Prerelease"
 
-        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination } {
-            param($Source, $Destination)
-            $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination; Prerelease = $Prerelease } {
+            param($Source, $Destination, $Prerelease)
+            $psData = $ExecutionContext.SessionState.Module.PrivateData.PSData
+            if ($Prerelease) { $psData['Prerelease'] = $Prerelease }
+            try {
+                $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
+            }
+            finally { $psData.Remove('Prerelease') }
         }
 
         (Get-Content -LiteralPath (Join-Path $destination 'lambdaps-runtime.json') -Raw | ConvertFrom-Json).ModuleVersion |
-            Should -Be (Import-PowerShellDataFile -LiteralPath $script:modulePath).ModuleVersion
+            Should -Be ((Import-PowerShellDataFile -LiteralPath $script:modulePath).ModuleVersion + $Suffix)
     }
 
     It 'throws PwshVersionRequired for a runtime-carrying target without the versions' {

@@ -21,8 +21,8 @@ function New-LambdaPSRuntimeProject {
         Build-LambdaPSRuntimePackage, which adds pwsh; no Docker is needed.
 
         Every scaffolded project is the customer's to edit. A lambdaps-runtime.json marker recording
-        the target, PowerShell version and module version is written into the output so the
-        validator and future tooling can identify the project shape. A template tree missing from the module (an
+        the deployment target, PowerShell version, pwsh version and module version is written into
+        the output so the validator and future tooling can identify the project shape. A template tree missing from the module (an
         incomplete install) is a TemplateNotFound error. A write that fails part-way, on a full disk for example, is a
         ProjectWriteFailed error; when -Path was new or empty, what the run wrote is removed first.
 
