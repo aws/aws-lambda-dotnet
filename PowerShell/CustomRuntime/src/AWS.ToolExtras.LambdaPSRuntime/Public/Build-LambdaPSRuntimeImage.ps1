@@ -238,11 +238,11 @@ function Build-LambdaPSRuntimeImage {
         $marker = try { Get-LambdaPSProjectMarker -Path $root } catch { $null }
         $isFunctionImage = $marker -and $marker.Target -eq 'Container'
         if (-not $isFunctionImage) {
-            $imageRef = if ($push) { $ImageUri } else { $Tag }
-            $listScript = 'command -v ls >/dev/null || exit 4; rc=0; for d in /opt /var/task /tmp; do n=$(ls -A "$d" 2>/dev/null | wc -l); ' +
+            $imageRef = if (-not $push) { $Tag } elseif ($digest) { "$ImageUri@$digest" } else { $ImageUri }
+            $listScript = 'command -v ls >/dev/null || { echo "ls not found in the image"; exit 4; }; rc=0; for d in /opt /var/task /tmp; do n=$(ls -A "$d" 2>/dev/null | wc -l); ' +
                 'if [ "$n" -gt 0 ]; then echo "LAMBDAPS_RESERVED $d ($n entries): $(ls -A "$d" | head -n 5 | tr "\n" " ")"; rc=3; fi; done; exit $rc'
             # As root, so an image's USER can't hide a folder it can't read. A push is checked from the
-            # registry, so an older local copy of the same tag can't stand in for it.
+            # registry by the digest it returns, so neither a local copy nor a moved tag stands in for it.
             $pullPolicy = if ($push) { 'always' } else { 'never' }
             $listArgs = @('run', '--rm', '--pull', $pullPolicy, '--network', 'none', '--user', '0', '--platform', $platform, '--entrypoint', '/bin/sh', $imageRef, '-c', $listScript)
             try { Invoke-LambdaPSExternalTool -Executable $containerRuntime.Path -ArgumentList $listArgs }

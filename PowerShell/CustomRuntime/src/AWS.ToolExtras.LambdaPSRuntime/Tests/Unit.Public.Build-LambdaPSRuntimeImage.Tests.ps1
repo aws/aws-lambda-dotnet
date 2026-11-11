@@ -206,6 +206,9 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
             $result.ImageDigest | Should -Be 'sha256:abc123'
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList[0] -eq 'run' -and $ArgumentList -contains "$uri@sha256:abc123"
+            }
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
                 $index = [array]::IndexOf($ArgumentList, '--metadata-file')
                 $index -ge 0 -and -not (Test-Path -LiteralPath $ArgumentList[$index + 1])
             }
