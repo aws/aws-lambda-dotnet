@@ -13,7 +13,9 @@
 #
 # $Stub runs inside the module's scope, so the functions it defines shadow the module's seams and
 # the AWS.Tools cmdlets (a function is resolved before a cmdlet of the same name). Stubs record
-# what ran by adding to the module-scope list $script:LambdaPSCalls.
+# what ran by adding to the module-scope list $script:LambdaPSCalls. Before the stub runs, Microsoft's
+# package repository is stubbed to list only the pinned releases and the runtime to have no versions,
+# so no child reaches the network; a stub can redefine either.
 function Invoke-InFreshRunspace {
     param(
         [Parameter()] [string]$Stub = '',
@@ -29,6 +31,8 @@ function Invoke-InFreshRunspace {
 Import-Module '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($script:modulePath))' -Force
 & (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
     `$script:LambdaPSCalls = [System.Collections.Generic.List[string]]::new()
+    function script:Get-LambdaPSPwshRepositoryRelease { param(`$PowerShellVersion) `$script:Config.pwsh.DefaultPatch[`$PowerShellVersion] }
+    function script:Get-LMCRuntimeVersionList { }
     $Stub
 }
 $Command
@@ -80,6 +84,8 @@ function Invoke-InChildPwsh {
 Import-Module '$([System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($script:modulePath))' -Force
 & (Get-Module AWS.ToolExtras.LambdaPSRuntime) {
     `$script:LambdaPSCalls = [System.Collections.Generic.List[string]]::new()
+    function script:Get-LambdaPSPwshRepositoryRelease { param(`$PowerShellVersion) `$script:Config.pwsh.DefaultPatch[`$PowerShellVersion] }
+    function script:Get-LMCRuntimeVersionList { }
     $Stub
 }
 try { $Command } catch { "ERROR: `$(`$_.FullyQualifiedErrorId)" }

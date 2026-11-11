@@ -45,10 +45,13 @@ A function bound to a customer-managed runtime needs only its handler code: `New
 
 CMR (customer-managed runtime) is the default: publish the runtime once as a container image,
 reference it by alias, and roll the whole fleet forward by moving the alias — no per-function
-redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by default; the
-releases and their tarball SHA256s are listed in `Config/pwsh.psd1`, and `-PwshVersion` picks
-another release listed there. A module release moves each line to its newest servicing release and
-keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
+redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by default, unless
+`New-LambdaPSRuntimeDeployment` finds a newer one it can verify (see
+[Patching a runtime](#patching-a-runtime)); the
+releases and their tarball SHA256s are listed in `Config/pwsh.psd1`. `-PwshVersion` picks another
+release: an x86_64 image installs any x.y.z from Microsoft's signed RPM repository, while an arm64
+image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
+each line to its newest servicing release and keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
 PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
 ([lifecycle](https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle)):
 the first module release after that date stops installing them by default, so
@@ -132,10 +135,57 @@ than inheriting Lambda's 3 s / 128 MB, which a PowerShell function cannot reliab
 invoke can take about 2 seconds at 128 MB, and pwsh uses about 115–130 MB of memory on startup. Memory
 also scales CPU, so at 512 MB the same warm invoke takes about half a second.
 
+### Patching a runtime
+
+Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime. Without
+`-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
+image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
+`<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
+image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
+deploy.
+
+| Architecture | Installs | Release chosen |
+| --- | --- | --- |
+| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
+| arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
+
+The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When
+the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which, so a patch
+can be rolled back:
+
+```powershell
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
+    -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
+```
+
+A deploy that can only install the module's pinned release (an unreadable repository on x86_64, or
+arm64) stops with `PwshReleaseOlderThanAlias` when the alias runs a newer release of the same line and
+architecture, rather than downgrade it. Pass `-PwshVersion` to choose the release.
+Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass
+`-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
+on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.
+
+After a patch that changes the pwsh release, the first cold start of a bound function can take about
+15 seconds while Lambda loads the new image, and the request still succeeds.
+
+Because an unchanged command picks up new pwsh releases, a pipeline that runs it on every commit also
+patches every function bound to the alias. Deploy to a test alias first, and move production to the
+version you tested:
+
+```powershell
+$test = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+    -RuntimeAlias test -Region us-east-1
+# ... run the functions bound to the 'test' alias ...
+# New-LMCRuntimeAlias the first time, when 'default' does not exist yet.
+Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
+    -RuntimeVersion $test.RuntimeVersion -Region us-east-1
+```
+
 ## Low-level cmdlets
 
 Reach for these to override any of the four decisions the one-command deploy makes for you (packaging
-approach, stock image, one ECR repository per runtime, single version behind one alias):
+approach, stock image, one ECR repository per runtime, a new version per deploy behind one alias):
 
 - Scaffold: `New-LambdaPSRuntimeProject`, `New-LambdaPSFunctionProject` (`-Target` selects the approach)
 - Validate: `Test-LambdaPSRuntimeProject`, `Test-LambdaPSContainerRuntime`

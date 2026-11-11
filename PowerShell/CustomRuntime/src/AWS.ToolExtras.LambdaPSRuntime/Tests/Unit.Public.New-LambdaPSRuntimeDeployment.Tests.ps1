@@ -5,6 +5,9 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PwshConfig.ps1'))
+    # The version a deploy of PowerShell 7.4 to a runtime with no versions is named.
+    $script:defaultVersion = "$($script:pwshConfig.DefaultPatch['7.4'])-1"
 }
 
 AfterAll {
@@ -28,6 +31,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
             throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')
         }
+        Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { }
+        # Microsoft's package repository has nothing newer than the module's pin.
+        Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { $script:pwshConfig.DefaultPatch[$PowerShellVersion] }
         # ... and has no alias yet.
         Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
             throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist')
@@ -59,13 +65,13 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = New-LambdaPSRuntimeDeployment @splat
 
             $result.PSTypeNames | Should -Contain 'AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment'
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.us-east-1.amazonaws.com/powershell-runtime:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.us-east-1.amazonaws.com/powershell-runtime:$script:defaultVersion"
             $result.RuntimeArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
             $result.RuntimeName | Should -Be 'my-ps'
             $result.PowerShellVersion | Should -Be '7.4'
             $result.Region | Should -Be 'us-east-1'
             $result.RepositoryName | Should -Be 'powershell-runtime'
-            $result.RuntimeVersion | Should -Be 'v1'
+            $result.RuntimeVersion | Should -Be $script:defaultVersion
             $result.RuntimeAlias | Should -Be 'default'
             $result.Architecture | Should -Be 'x86_64'
             $result.PSObject.Properties.Name | Should -Not -Contain 'ContainerRuntime'
@@ -172,7 +178,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = New-LambdaPSRuntimeDeployment @splat
 
             $result.RepositoryName | Should -Be 'my-powershell-runtime'
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.us-east-1.amazonaws.com/my-powershell-runtime:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.us-east-1.amazonaws.com/my-powershell-runtime:$script:defaultVersion"
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $RepositoryName -eq 'my-powershell-runtime' }
         }
@@ -193,6 +199,8 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName 'a..b' } |
                 Should -Throw -ErrorId 'InvalidRepositoryName,New-LambdaPSRuntimeDeployment' -PassThru
             $err.Exception.Message | Should -BeLike "Repository 'a..b' *(lowercase letters and digits, 2-256 characters, in '/'-separated parts where letters or digits are joined by one '.', one '_', two '_', or any number of '-')*"
+            # Refused before the pwsh lookup reads Microsoft's package repository.
+            Should -Invoke 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
         # The closest valid names: ECR joins letters or digits with any number of '-', or two '_'.
@@ -282,9 +290,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $RepositoryName -eq 'rt' }
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $Tag -eq 'rt:v1' -and -not $ImageUri }
+                -ParameterFilter { $Tag -eq "rt:$script:defaultVersion" -and -not $ImageUri }
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { -not $Tag -and $ImageUri -like '*/rt:v1' }
+                -ParameterFilter { -not $Tag -and $ImageUri -like "*/rt:$script:defaultVersion" }
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $RuntimeName -eq 'my-ps' -and $Architecture -eq 'x86_64' -and $RuntimeAlias -eq 'default' }
             Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -396,10 +404,125 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    Context 'one-step patching' {
+        It 'installs the newest release in the package repository on x86_64, and names the version after it' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.21', '7.4.99' }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.PwshVersion | Should -Be '7.4.99'
+            $result.RuntimeVersion | Should -Be '7.4.99-1'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $PwshVersion -eq '7.4.99' }
+            Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
+                $RuntimeVersion -eq '7.4.99-1' -and $ReleaseNote -eq 'pwsh 7.4.99'
+            }
+        }
+
+        It 'installs a pinned release on arm64, and warns that a newer one exists' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.99' }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Architecture arm64 -RepositoryName rt -Region us-east-1 -WarningVariable warnings -WarningAction SilentlyContinue
+            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            "$warnings" | Should -BeLike '*pwsh 7.4.99 is the newest*'
+        }
+
+        It 'falls back to the pinned release, with a warning, when the package repository cannot be read' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningVariable warnings -WarningAction SilentlyContinue
+            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            "$warnings" | Should -BeLike '*pinned release*offline*'
+        }
+
+        It 'throws PwshReleaseOlderThanAlias, before anything is built, when the pinned fallback is older than the alias''s release' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike '*Pass -PwshVersion 7.4.999 to keep it*Nothing was built or pushed.'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'throws PwshReleaseOlderThanAlias when the alias''s version, named with -RuntimeVersion, has a newer release in its release note' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'prod-2' } }
+            Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -ParameterFilter { $Name -eq 'prod-2' } -MockWith { [PSCustomObject]@{ Name = 'prod-2'; ReleaseNotes = 'pwsh 7.4.999' } }
+            { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment'
+        }
+
+        It 'deploys the pinned release when the alias runs a newer release <Case>' -ForEach @(
+            @{ Case = 'of another PowerShell line'; Release = '7.6.99'; Architectures = @('x86_64') }
+            @{ Case = 'on another architecture'; Release = '7.4.999'; Architectures = @('arm64') }
+        ) {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = "$Release-1"; Compatibility = [PSCustomObject]@{ Architectures = $Architectures } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue
+            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        It 'publishes the pinned release''s -2 on an arm64 rerun when the alias is on its -1' {
+            $pin = $script:pwshConfig.DefaultPatch['7.4']
+            Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = "$pin-1" } }
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = "$pin-1"; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Architecture arm64 -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue
+            $result.RuntimeVersion | Should -Be "$pin-2"
+            Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        It 'moves the alias back to an older release given with -PwshVersion' {
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.999-1' } }
+            $pin = $script:pwshConfig.DefaultPatch['7.4']
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion $pin -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be "$pin-1"
+            $result.PreviousRuntimeVersion | Should -Be '7.4.999-1'
+        }
+
+        It 'names the version one past the highest suffix the runtime has for the release' {
+            Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith {
+                $release = $script:pwshConfig.DefaultPatch['7.4']
+                "$release-1", "$release-3", '7.4.1-9', "$release-x", 'v1' | ForEach-Object { [PSCustomObject]@{ Name = $_ } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be "$($script:pwshConfig.DefaultPatch['7.4'])-4"
+            Should -Invoke 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Name -eq $result.RuntimeVersion }
+        }
+
+        It 'uses an explicit -RuntimeVersion as given, without listing versions' {
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -RuntimeVersion v7
+            $result.RuntimeVersion | Should -Be 'v7'
+            Should -Invoke 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'names the first version of a new runtime after the pwsh release with -1, without listing versions' {
+            Mock 'Get-LMCRuntime' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            $result.RuntimeVersion | Should -Be $script:defaultVersion
+            Should -Invoke 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'throws RuntimeVersionListFailed, before anything is built, when the versions cannot be listed' {
+            Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:ListRuntimeVersions') }
+            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 } |
+                Should -Throw -ErrorId 'RuntimeVersionListFailed,New-LambdaPSRuntimeDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike '*lambda:ListRuntimeVersions. Pass -RuntimeVersion*Nothing was built or pushed.'
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'returns the version the alias moved from' {
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.20-2'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+            }
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 6>$null
+            $result.PreviousRuntimeVersion | Should -Be '7.4.20-2'
+        }
+    }
+
     # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the build
     # can only fail, and the deploy would have replaced -ProjectPath first; so the preflight refuses it.
     Context 'arm64 pwsh hash' {
-        It 'refuses arm64 for a pwsh version with no pinned arm64 hash, under -WhatIf too, leaving -ProjectPath untouched' -ForEach @(
+        It 'refuses arm64 for a pwsh version with no pinned arm64 hash, under -WhatIf too, leaving -ProjectPath untouched and printing no release' -ForEach @(
             @{ WhatIf = $true }, @{ WhatIf = $false }
         ) {
             $project = [System.IO.Path]::Combine($TestDrive, "arm64-$WhatIf")
@@ -407,8 +530,11 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR"}'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'keep.txt')) -Value 'mine'
 
-            $err = { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf } |
-                Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment' -PassThru
+            $err = $null
+            try { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -PwshVersion 7.4.13 -Architecture arm64 -Region us-east-1 -RepositoryName rt -ProjectPath $project -WhatIf:$WhatIf -InformationVariable info }
+            catch { $err = $_ }
+            $err.FullyQualifiedErrorId | Should -Be 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment'
+            "$info" | Should -Not -BeLike '*installs pwsh*'
             $err.Exception.Message | Should -BeLike '*7.4.13*-Architecture x86_64*-PwshVersion*Nothing was created.'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
             Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
@@ -452,7 +578,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt
 
             $result.Region | Should -Be 'ap-southeast-2'
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.ap-southeast-2.amazonaws.com/rt:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.ap-southeast-2.amazonaws.com/rt:$script:defaultVersion"
             Should -Invoke 'Get-LMCRuntime' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $Region -eq 'ap-southeast-2' }
         }
 
@@ -464,7 +590,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region $Given
 
             $result.Region | Should -BeExactly 'eu-west-1'
-            $result.ImageUri | Should -BeExactly '111122223333.dkr.ecr.eu-west-1.amazonaws.com/rt:v1'
+            $result.ImageUri | Should -BeExactly "111122223333.dkr.ecr.eu-west-1.amazonaws.com/rt:$script:defaultVersion"
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
                 $RuntimeArn -ceq 'arn:aws:lambda:eu-west-1:111122223333:runtime/my-ps' -and $Region -ceq 'eu-west-1'
             }
@@ -506,7 +632,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         It 'composes the image URI with the partition''s DNS suffix' {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region cn-north-1
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.cn-north-1.amazonaws.com.cn/rt:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.cn-north-1.amazonaws.com.cn/rt:$script:defaultVersion"
         }
 
         It 'does not resolve a region when -Region is given' {
@@ -523,7 +649,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
                 $ImageUri -eq '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt@sha256:abc123'
             }
-            $result.ImageUri | Should -Be '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1'
+            $result.ImageUri | Should -Be "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:$script:defaultVersion"
             $result.ImageDigest | Should -Be 'sha256:abc123'
         }
 
@@ -534,7 +660,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -WarningVariable warnings -WarningAction SilentlyContinue
 
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
-                $ImageUri -eq '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1'
+                $ImageUri -eq "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:$script:defaultVersion"
             }
             $result.ImageDigest | Should -BeNullOrEmpty
             ($warnings -join ' ') | Should -BeLike '*did not report the pushed image''s digest*'
@@ -675,6 +801,65 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $whatIf | Should -Contain 'What if: Performing the operation "Build image, ensure ECR repository ''rt'' and its Lambda pull grant, and push image" on target "111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7".'
             $whatIf | Should -Contain 'What if: Performing the operation "Create runtime ''my-ps'' and publish Lambda runtime version ''v7'' from image ''111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v7''" on target "my-ps".'
             $whatIf | Should -Contain 'What if: Performing the operation "Point alias at v7" on target "my-ps/default".'
+        }
+
+        It 'drops the scaffold advice to pin an arm64 hash, and passes on its other warnings <Case>' -ForEach @(
+            @{ Case = 'when the scaffold succeeds'; Fail = '' }
+            @{ Case = 'when the scaffold then fails'; Fail = "throw 'scaffold failed'" }
+        ) {
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
+                # An advanced function, so -WarningAction and -WarningVariable apply as they do to the real scaffold.
+                function script:New-LambdaPSRuntimeProject {
+                    [CmdletBinding(SupportsShouldProcess)]
+                    param($Path, $PowerShellVersion, $PwshVersion, $IncludeModule, $MissingModuleAction, [switch]$Force)
+                    Write-Warning 'No SHA256 is pinned for the pwsh 7.4.99 arm64 tarball, so the scaffolded ''Dockerfile'' can build linux/amd64 only.'
+                    Write-Warning 'other scaffold warning'
+                    #FAIL
+                }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $project = [System.IO.Path]::Combine($TestDrive, "scaffold-warnings-$([bool]$Fail)")
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -ProjectPath '$project' -WhatIf"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString().Replace('#FAIL', $Fail)) -Command $command
+
+            $result.Output | Should -BeLike '*other scaffold warning*'
+            if ($Fail) { $result.Output | Should -BeLike '*ERROR: scaffold failed*' }
+            $result.Output | Should -Not -BeLike '*arm64 tarball*'
+        }
+
+        It '<Case>' -ForEach @(
+            @{ Case = 'prints the pwsh release, and names the version the alias moves from under -WhatIf'; WhatIf = $true; Extra = '' }
+            @{ Case = 'does not print the pwsh release when -InformationAction SilentlyContinue is given'; WhatIf = $false; Extra = ' -InformationAction SilentlyContinue' }
+        ) {
+            $stub = {
+                function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+                function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
+                function script:Get-LMCRuntimeVersion { throw [System.InvalidOperationException]::new('not found', [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime version does not exist')) }
+                function script:Get-LMCRuntimeAlias { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v6' } }
+                function script:New-LambdaPSRuntimeProject { }
+                function script:Get-LambdaPSStagedModule { }
+                function script:Build-LambdaPSRuntimeImage { }
+                function script:Initialize-LambdaPSEcrRepository { }
+                function script:Publish-LambdaPSRuntimeVersion { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v7' } }
+                function script:Set-LambdaPSRuntimeAlias { }
+            }
+            $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
+            $project = [System.IO.Path]::Combine($TestDrive, "information-$WhatIf")
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WarningAction SilentlyContinue -WhatIf:`$$WhatIf$Extra"
+
+            $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
+
+            $result.Output | Should -Not -BeLike '*ERROR:*'
+            if ($Extra) { $result.Output | Should -Not -BeLike '*installs pwsh*' }
+            else {
+                $result.Output | Should -BeLike '*Preflight: the image installs pwsh 7.4.*'
+                $result.Output | Should -BeLike '*What if: Performing the operation "Point alias at v7 (from v6)" on target "my-ps/default".*'
+            }
         }
 
         # The scaffold says "existing contents are deleted" only when there are contents; a runtime that
@@ -1062,7 +1247,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             $labels | Should -Be @('Preflight', 'Stage 1', 'Stage 2', 'Stage 3', 'Stage 4')
             $verbose | Should -Contain "Stage 1: Scaffold runtime project at '$((Get-Location).Path)$([System.IO.Path]::DirectorySeparatorChar)my-ps-runtime'."
-            $verbose | Should -Contain "Stage 4: Point alias 'default' at 'v1'."
+            $verbose | Should -Contain "Stage 4: Point alias 'default' at '$script:defaultVersion'."
         }
 
         It 'creates no ECR repository when the local build fails' {
