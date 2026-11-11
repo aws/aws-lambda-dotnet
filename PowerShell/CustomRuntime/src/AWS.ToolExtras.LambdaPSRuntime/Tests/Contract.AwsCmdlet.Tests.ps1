@@ -84,13 +84,17 @@ BeforeDiscovery {
         @{ Cmdlet = 'Get-ECRRepository'; Module = 'AWS.Tools.ECR'
            Parameters = @('RepositoryName', 'Region', 'ClientConfig') }
         @{ Cmdlet = 'New-ECRRepository'; Module = 'AWS.Tools.ECR'
-           Parameters = @('RepositoryName', 'ImageScanningConfiguration_ScanOnPush', 'Region', 'ClientConfig') }
+           Parameters = @('RepositoryName', 'ImageScanningConfiguration_ScanOnPush', 'ImageTagMutability', 'Region', 'ClientConfig') }
         @{ Cmdlet = 'Get-ECRRepositoryPolicy'; Module = 'AWS.Tools.ECR'
            Parameters = @('RepositoryName', 'Region', 'ClientConfig') }
         @{ Cmdlet = 'Set-ECRRepositoryPolicy'; Module = 'AWS.Tools.ECR'
            Parameters = @('RepositoryName', 'PolicyText', 'Region', 'ClientConfig') }
         @{ Cmdlet = 'Get-ECRLoginCommand'; Module = 'AWS.Tools.ECR'
            Parameters = @('Region', 'ClientConfig') }
+
+        # --- ECR image tag preflight (Public/New-LambdaPSRuntimeDeployment.ps1) ---
+        @{ Cmdlet = 'Get-ECRImageMetadata'; Module = 'AWS.Tools.ECR'
+           Parameters = @('RepositoryName', 'ImageId', 'Region', 'ClientConfig') }
 
         # --- STS (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-STSCallerIdentity'; Module = 'AWS.Tools.SecurityToken'

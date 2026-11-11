@@ -24,6 +24,7 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
         Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
         Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { }
         Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { $script:pwshConfig.DefaultPatch[$PowerShellVersion] }
+        Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') }
         # A preview must not reach AWS: every AWS write the deploy makes throws if it is called.
         foreach ($command in 'New-LMCRuntime', 'New-LMCRuntimeVersion', 'New-LMCRuntimeAlias', 'Update-LMCRuntimeAlias',
             'New-ECRRepository', 'Set-ECRRepositoryPolicy', 'Get-ECRLoginCommand') {

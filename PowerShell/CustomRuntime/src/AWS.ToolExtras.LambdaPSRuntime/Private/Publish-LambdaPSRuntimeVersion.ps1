@@ -203,8 +203,7 @@ function Publish-LambdaPSRuntimeVersion {
             (" Check that the image is a Docker v2 Schema 2 manifest: Lambda pulls by digest and rejects OCI " +
              "('docker buildx imagetools inspect $ImageUri' shows its media type), or Lambda could not pull it " +
              "(check that the repository policy grants lambda.amazonaws.com pull for this runtime's ARN). Version '$RuntimeVersion' " +
-             'already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with ' +
-             "Remove-LMCRuntimeVersion -RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments.")
+             'already exists and is immutable, and its image tag stays in ECR, so publish under a new -RuntimeVersion.')
         }
         else { '' }
         throw [System.Management.Automation.ErrorRecord]::new(
@@ -233,9 +232,8 @@ function Publish-LambdaPSRuntimeVersion {
                  "image '$ImageUri' is [$($reported -join ', ')]. The alias was NOT pointed at it. The " +
                  'image was built for the wrong platform -- check that the docker buildx builder ' +
                  "supports the target ('docker buildx ls'; arm64 on an amd64 host needs QEMU/binfmt or " +
-                 "a multi-platform builder). Version '$RuntimeVersion' already exists and is immutable, so " +
-                 "rebuild and publish under a new -RuntimeVersion, or remove it with Remove-LMCRuntimeVersion " +
-                 "-RuntimeName $RuntimeName -Name $RuntimeVersion $commandArguments.")),
+                 "a multi-platform builder). Version '$RuntimeVersion' already exists and is immutable, and its " +
+                 'image tag stays in ECR, so rebuild and publish under a new -RuntimeVersion.')),
             'RuntimeImageArchitectureMismatch', [System.Management.Automation.ErrorCategory]::InvalidResult, $RuntimeVersion)
     }
 
