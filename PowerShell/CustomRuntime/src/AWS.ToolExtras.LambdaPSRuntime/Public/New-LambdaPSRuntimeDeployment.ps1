@@ -105,7 +105,7 @@ function New-LambdaPSRuntimeDeployment {
                                 module's name and version exist only with another GUID than the one
                                 -IncludeModule names),
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
-          build and push        ExternalToolFailed, EcrDockerLoginFailed
+          build and push        ExternalToolFailed, EcrDockerLoginFailed, ReservedPathNotEmpty
           publish               RuntimeVersionExists (a concurrent deploy published the same
                                 version name), RuntimeVersionNotActive, RuntimeVersionTimeout,
                                 RuntimeVersionWaitFailed
