@@ -299,9 +299,9 @@ on this runtime with these differences:
 - **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
   CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
 - **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
-  them. When the caller sent none, `ClientContext` is `{}` from AWS.Tools (`Invoke-LMFunction` and
-  `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so test its fields, not the
-  string. Parse them with `ConvertFrom-Json`, for example
+  them. When the caller sent none, `Identity` is empty, and `ClientContext` is `{}` from AWS.Tools
+  (`Invoke-LMFunction` and `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so
+  test its fields, not the string. Parse them with `ConvertFrom-Json`, for example
   `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
 
 ## Attribution
