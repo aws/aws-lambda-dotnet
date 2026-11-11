@@ -135,6 +135,9 @@ than inheriting Lambda's 3 s / 128 MB, which a PowerShell function cannot reliab
 invoke can take about 2 seconds at 128 MB, and pwsh uses about 115–130 MB of memory on startup. Memory
 also scales CPU, so at 512 MB the same warm invoke takes about half a second.
 
+`New-LambdaPSFunctionDeployment -TenantIsolationMode PER_TENANT` creates a multi-tenant function. Invoke it
+with `Invoke-LambdaPSFunction -TenantId`, and the handler reads the tenant as `$LambdaContext.TenantId`.
+
 ### Patching a runtime
 
 Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime. Without
