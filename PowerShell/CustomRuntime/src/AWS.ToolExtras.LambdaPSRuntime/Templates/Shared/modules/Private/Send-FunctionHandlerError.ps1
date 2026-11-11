@@ -32,11 +32,10 @@ function private:Send-FunctionHandlerError {
     )
 
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
-    # The message alone does not say where the handler failed, so log the script position and stack.
+    # The message alone does not say where the handler failed, so log the script position; Write-LambdaLog adds the stack.
     $private:logText = @(
         [string]$private:Exception
         if ($private:Exception.InvocationInfo) { $private:Exception.InvocationInfo.PositionMessage }
-        if ($private:Exception.ScriptStackTrace) { $private:Exception.ScriptStackTrace }
     ) -join "`n"
     & $script:__LambdaPSRuntimeWriteLambdaLog ERROR $private:logText -ErrorRecord $private:Exception
 

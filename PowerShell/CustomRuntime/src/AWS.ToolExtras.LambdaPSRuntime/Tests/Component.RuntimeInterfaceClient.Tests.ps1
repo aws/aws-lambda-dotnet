@@ -1144,6 +1144,7 @@ public class InvokeBin : PSCmdlet {
         $record[0].errorType | Should -Be 'RuntimeException'
         $record[0].errorMessage | Should -Be 'boom'
         $record[0].stackTrace[0] | Should -BeLike 'at Fail, *fn.ps1: line *'
+        $record[0].message | Should -Not -BeLike '*at Fail, *'
     }
 }
 
