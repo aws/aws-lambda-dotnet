@@ -275,16 +275,19 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
                 Start-Sleep -Seconds 5
             }
             if ($left) {
-                Write-Warning "Runtime '$runtimeName' in $region is left, since its alias and versions are scheduled for deletion. Remove it once Lambda has purged them."
+                Write-Warning "Runtime '$runtimeName' in $region and its versions are left, since its alias is scheduled for deletion. Remove them once Lambda has purged it."
                 return
             }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         # The deploy names the version after the pwsh release it installs, so every version the run's
-        # own runtime lists is removed, except one already scheduled for deletion.
+        # own runtime lists is removed, except one already scheduled for deletion or one an alias scheduled
+        # for deletion points at: Lambda refuses that delete, and the runtime is left with it either way.
         Add-IntegrationResource -Kind 'runtime versions of' -Name $runtimeName -Remove {
+            $pendingAliasVersions = @(Get-LMCRuntimeAliasList -RuntimeName $runtimeName -Region $region -ErrorAction Stop |
+                    Where-Object { [string]$_.State -eq 'PENDING_DELETION' } | ForEach-Object { [string]$_.RuntimeVersion })
             foreach ($version in @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)) {
-                if ([string]$version.State -eq 'PENDING_DELETION') { continue }
+                if ([string]$version.State -eq 'PENDING_DELETION' -or $pendingAliasVersions -ccontains $version.Name) { continue }
                 Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name $version.Name -Region $region -Force -ErrorAction Stop
             }
         }.GetNewClosure()
