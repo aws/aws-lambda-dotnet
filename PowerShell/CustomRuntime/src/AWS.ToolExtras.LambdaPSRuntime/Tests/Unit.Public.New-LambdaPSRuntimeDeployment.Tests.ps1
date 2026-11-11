@@ -612,9 +612,9 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $err = { New-LambdaPSRuntimeDeployment @script:aliasSplat } | Should -Throw -ErrorId 'RuntimeAliasUpdateFailed,New-LambdaPSRuntimeDeployment' -PassThru
 
             $err.Exception.Message | Should -Be ("Runtime 'my-ps' version 'v7' is published and ACTIVE, but alias 'default' could not be " +
-                "pointed at it: User is not authorized to perform lambda:UpdateRuntimeAlias. The version exists, so running the " +
-                "deploy again is refused; point the alias with $Command -RuntimeName my-ps -Name default -RuntimeVersion v7 " +
-                "-Region us-east-1.")
+                "pointed at it. The version exists, so running the deploy again is refused; point the alias with $Command " +
+                "-RuntimeName my-ps -Name default -RuntimeVersion v7 -Region us-east-1. User is not authorized to perform " +
+                "lambda:UpdateRuntimeAlias")
             $err.Exception.InnerException | Should -BeOfType ([LambdaPSTests.Fakes.AccessDeniedException])
             $err.CategoryInfo.Category | Should -Be 'WriteError'
             $err.TargetObject | Should -Be 'my-ps/default'

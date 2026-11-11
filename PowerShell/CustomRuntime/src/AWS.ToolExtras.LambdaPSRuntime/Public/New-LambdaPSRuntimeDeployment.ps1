@@ -671,15 +671,12 @@ function New-LambdaPSRuntimeDeployment {
                 $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
             }
             catch {
-                $serviceText = $_.Exception.Message.Trim()
-                if ($serviceText -and $serviceText -notmatch '[.!?]["'')\]]*\z') { $serviceText += '.' }
-                $serviceDetail = if ($serviceText) { ": $serviceText" } else { '.' }
                 $PSCmdlet.ThrowTerminatingError(
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new(
                             ("Runtime '$RuntimeName' version '$RuntimeVersion' is published and ACTIVE, but alias '$RuntimeAlias' " +
-                             "could not be pointed at it$serviceDetail The version exists, so running the deploy again is refused; " +
-                             "point the alias with $aliasCommandLine."),
+                             "could not be pointed at it. The version exists, so running the deploy again is refused; " +
+                             "point the alias with $aliasCommandLine. $($_.Exception.Message)"),
                             $_.Exception),
                         'RuntimeAliasUpdateFailed', [System.Management.Automation.ErrorCategory]::WriteError, "$RuntimeName/$RuntimeAlias"))
             }
