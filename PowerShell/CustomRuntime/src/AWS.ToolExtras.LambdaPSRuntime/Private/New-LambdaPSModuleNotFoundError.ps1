@@ -48,7 +48,12 @@ function New-LambdaPSModuleNotFoundError {
         })
     foreach ($entry in $Missing) {
         foreach ($folder in @($shipped | Where-Object Name -EQ $entry.Name)) {
-            if (Test-Path -LiteralPath ([System.IO.Path]::Combine($folder.FullName, $entry.Version))) {
+            # A module can also be kept without a version folder, as <Name>/<Name>.psd1.
+            $manifest = [System.IO.Path]::Combine($folder.FullName, "$($folder.Name).psd1")
+            $flatVersion = if (Test-Path -LiteralPath $manifest -PathType Leaf) {
+                (Import-PowerShellDataFile -LiteralPath $manifest -ErrorAction SilentlyContinue).ModuleVersion
+            }
+            if ((Test-Path -LiteralPath ([System.IO.Path]::Combine($folder.FullName, $entry.Version))) -or "$flatVersion" -eq $entry.Version) {
                 $message += " '$($entry.Name)' $($entry.Version) is in '$($folder.FullName)', which is packaged as it is " +
                     'but not searched for the modules to stage.'
             }

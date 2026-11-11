@@ -201,7 +201,7 @@ cmdlets:
 
 A source's own `modules/` folder is packaged as it is, but not searched for the modules to stage. When the folder also holds a
 `#Requires` module, the packagers warn, since the staged copy is written over the folder's or ships beside its other
-version, and under `Stop` the error names the folder when it holds the missing version.
+copy, and under `Stop` the error names the folder when it holds the missing version.
 
 Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the AWS.Tools.zip from
 CloudFront, one download per version; the Installer checks it against the SHA512 published beside it, which detects a

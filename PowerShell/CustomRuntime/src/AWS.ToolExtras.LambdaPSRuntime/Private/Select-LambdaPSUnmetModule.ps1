@@ -10,7 +10,7 @@ function Select-LambdaPSUnmetModule {
         its own modules/ folder: the walk finds a module on the PSModulePath or downloads it.
 
         A pinned requirement whose module is also in -ModulesPath is warned about: the staged copy is
-        written over the folder's copy of that version, or ships beside the folder's other version.
+        written over the folder's copy of that version, or ships beside the folder's other copy.
     .PARAMETER Module
         The requirements, as Get-LambdaPSRequiredModule returns them.
     .PARAMETER ModulesPath
@@ -49,7 +49,7 @@ function Select-LambdaPSUnmetModule {
                 "and in '$copy'. The package stages it from the PSModulePath or a download, written over the folder's copy, so it can ship a mix of the two."
             }
             else {
-                "and '$($folder.FullName)' holds another version. The package ships both."
+                "and '$($folder.FullName)' holds another copy. The package ships both."
             }
             Write-Warning ("'$($spec.Name)' $($spec.RequiredVersion) is in the handler's '#Requires -Modules' $result " +
                 "Remove it from the folder, or from the '#Requires'.")

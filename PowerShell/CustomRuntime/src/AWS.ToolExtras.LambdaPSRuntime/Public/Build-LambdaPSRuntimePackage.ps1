@@ -419,7 +419,7 @@ function Build-LambdaPSRuntimePackage {
                 if ($MissingModuleAction -ne 'Stop') {
                     $pending = @((Save-LambdaPSMissingModule -Module $requiredModules -Path $downloadRoot -MissingModuleAction $MissingModuleAction -ModuleRepository $ModuleRepository).Pending)
                 }
-                $null = Copy-LambdaPSModuleSet -Module $requiredModules -Path ([System.IO.Path]::Combine($destination, 'modules')) -SearchPath $downloadRoot -Pending $pending
+                $null = Copy-LambdaPSModuleSet -Module $requiredModules -Path ([System.IO.Path]::Combine($destination, 'modules')) -SearchPath $downloadRoot -Pending $pending -SourceModulesPath $shippedModules
             }
             return
         }
@@ -491,7 +491,7 @@ function Build-LambdaPSRuntimePackage {
                 if ($MissingModuleAction -ne 'Stop') {
                     $null = Save-LambdaPSMissingModule -Module $requiredModules -Path $downloadRoot -MissingModuleAction $MissingModuleAction -ModuleRepository $ModuleRepository
                 }
-                $null = Copy-LambdaPSModuleSet -Module $requiredModules -Path ([System.IO.Path]::Combine($stage, 'modules')) -SearchPath $downloadRoot
+                $null = Copy-LambdaPSModuleSet -Module $requiredModules -Path ([System.IO.Path]::Combine($stage, 'modules')) -SearchPath $downloadRoot -SourceModulesPath $shippedModules
             }
             # What the package will contain, read from the staged tree.
             $modulesStaged = Get-LambdaPSStagedModule -Path ([System.IO.Path]::Combine($stage, 'modules'))

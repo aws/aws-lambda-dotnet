@@ -58,7 +58,7 @@ Describe 'Select-LambdaPSUnmetModule' -Tag 'Unit' {
     It 'warns, naming the folder, about a pinned version when the source keeps another version in modules/' {
         $warnings = @(Get-UnmetWarning -Module @(@{ ModuleName = 'LambdaPSFake.Vendored'; RequiredVersion = '1.3.0' }))
         $warnings.Count | Should -Be 1
-        "$($warnings[0])" | Should -BeLike "*'#Requires -Modules' and '$([System.IO.Path]::Combine($script:modules, 'LambdaPSFake.Vendored'))' holds another version. The package ships both.*"
+        "$($warnings[0])" | Should -BeLike "*'#Requires -Modules' and '$([System.IO.Path]::Combine($script:modules, 'LambdaPSFake.Vendored'))' holds another copy. The package ships both.*"
     }
 
     It 'does not warn about <Case>' -ForEach @(
