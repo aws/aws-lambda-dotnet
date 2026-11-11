@@ -20,12 +20,13 @@
 #   - LayerRuntime: a layer (<prefix>layer) and a provided.al2023 function (<prefix>layer) that uses it;
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
-#   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with version v1
-#     and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
+#   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with a version named
+#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
 #     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
-# AfterAll removes all of it, and fails listing anything it could not remove. Nothing whose name does
-# not start with this run's prefix is changed.
+# AfterAll removes all of it, removes the log groups again after 30 seconds in case a late log delivery
+# created one again, and fails listing anything it could not remove. Nothing whose name does not start
+# with this run's prefix is changed.
 #
 # What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
 # AfterAll, with the requests to upload and remove it. At on-demand prices that is under
@@ -152,6 +153,13 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             if (-not $pending -or $attempt -eq 2) { break }
             Start-Sleep -Seconds 15
         }
+        # A late log delivery from Lambda creates a removed log group again. A delivery later than the
+        # fixed wait still leaves one behind.
+        $logGroups = @($script:Created | Where-Object { $_.Kind -like 'log group *' -and $failed.Resource -notcontains $_ })
+        if ($logGroups) {
+            Start-Sleep -Seconds 30
+            $failed += @(Remove-IntegrationResourceSet -Resource $logGroups -Prefix $script:Prefix)
+        }
         foreach ($registry in $script:DockerRegistries) { $null = & docker logout $registry 2>&1 }
         if (Get-Command Remove-LambdaPSTestModule -ErrorAction SilentlyContinue) { Remove-LambdaPSTestModule }
         if ($failed) {
@@ -265,8 +273,12 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        Add-IntegrationResource -Kind 'runtime version v1 of' -Name $runtimeName -Remove {
-            Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name 'v1' -Region $region -Force -ErrorAction Stop
+        # The deploy names the version after the pwsh release it installs, so every version the run's
+        # own runtime lists is removed.
+        Add-IntegrationResource -Kind 'runtime versions of' -Name $runtimeName -Remove {
+            foreach ($version in @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)) {
+                Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name $version.Name -Region $region -Force -ErrorAction Stop
+            }
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop

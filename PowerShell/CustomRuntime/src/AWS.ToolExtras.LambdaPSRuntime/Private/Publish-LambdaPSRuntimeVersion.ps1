@@ -35,6 +35,8 @@ function Publish-LambdaPSRuntimeVersion {
     .PARAMETER RuntimeAlias
         The alias the caller points at the version once it is ACTIVE. Optional; it only fills in the
         alias command the timeout error suggests, which otherwise shows <alias>.
+    .PARAMETER ReleaseNote
+        The version's release note (for example 'pwsh 7.6.9'). Optional; not sent when omitted.
     .PARAMETER Region
         The AWS region the runtime is in.
     .PARAMETER CredentialParameter
@@ -69,6 +71,10 @@ function Publish-LambdaPSRuntimeVersion {
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
         [string]$RuntimeAlias,
+
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ReleaseNote,
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
@@ -122,7 +128,20 @@ function Publish-LambdaPSRuntimeVersion {
         Region                     = $Region
         ClientConfig               = $clientConfig
     }
-    $published = New-LMCRuntimeVersion @publishParams @CredentialParameter -ErrorAction Stop
+    if ($ReleaseNote) { $publishParams.ReleaseNote = $ReleaseNote }
+    try {
+        $published = New-LMCRuntimeVersion @publishParams @CredentialParameter -ErrorAction Stop
+    }
+    catch {
+        # The deploy checked the name in preflight, so a conflict here means a concurrent deploy took it.
+        if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.InvalidOperationException]::new(
+                ("Runtime '$RuntimeName' already has version '$RuntimeVersion': another deploy published it while " +
+                 'this one ran. Run the deploy again without -RuntimeVersion to name the next version, or pass a ' +
+                 'new -RuntimeVersion. No version was published and the alias was not moved.'), $_.Exception),
+            'RuntimeVersionExists', [System.Management.Automation.ErrorCategory]::ResourceExists, $RuntimeVersion)
+    }
 
     # A freshly published version is CREATING; wait for it to settle so an alias can point at it. A
     # version that is not readable yet counts as still being created; any other error stops the wait
@@ -148,7 +167,7 @@ function Publish-LambdaPSRuntimeVersion {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new(
                         ("Runtime '$RuntimeName' version '$RuntimeVersion' was created, but its state could not be " +
-                         "read$serviceDetail The version exists, so running the deploy again is refused; " + $finishCommands),
+                         "read$serviceDetail The version exists; " + $finishCommands),
                         $_.Exception),
                     'RuntimeVersionWaitFailed', [System.Management.Automation.ErrorCategory]::ReadError, $RuntimeVersion)
             }
@@ -164,8 +183,8 @@ function Publish-LambdaPSRuntimeVersion {
     # reach the caller's -ErrorVariable naming this internal helper.
 
     # Still CREATING after the wait budget: report the timeout rather than letting the caller alias a
-    # version that may never become usable. Running the deploy again would be refused, because the
-    # version now exists, so the message gives the alias commands to run once it is ACTIVE.
+    # version that may never become usable. Running the deploy again publishes another version rather
+    # than finishing this one, so the message gives the alias commands to run once it is ACTIVE.
     if ($null -eq $rv -or $rv.State -eq 'CREATING') {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.TimeoutException]::new(

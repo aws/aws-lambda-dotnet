@@ -36,9 +36,9 @@ ARG TARGETARCH
 #    is removed: Lambda reserves /tmp, so a runtime image must leave it empty.
 #    amd64: Microsoft's GPG-signed RPM repo; dnf resolves the system deps. The signing key is
 #    imported only when its fingerprint is the pinned one. The repo file is written here, not
-#    downloaded, so its baseurl and its package and metadata signature checks are fixed, and it
-#    names that copy of the key, so dnf never fetches another.
-#    arm64: Microsoft publishes no aarch64 RPM in rhel/9/prod, so use the official
+#    downloaded, so its baseurl (the module's PackageRepository.Url) and its package and metadata
+#    signature checks are fixed, and it names that copy of the key, so dnf never fetches another.
+#    arm64: Microsoft publishes no aarch64 RPM in that repository, so use the official
 #    release tarball, verified against the SHA256 pinned in the module, and install
 #    libicu (the base image already has openssl via openssl-snapsafe-libs, plus
 #    krb5-libs, zlib and libstdc++). It is unpacked where the RPM would put it,
@@ -70,7 +70,7 @@ RUN set -eu; \
         fi; \
         rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft; \
         printf '%s\n' '[packages-microsoft-com-prod]' 'name=Microsoft Production' \
-            'baseurl=https://packages.microsoft.com/rhel/9/prod/' 'enabled=1' 'gpgcheck=1' \
+            'baseurl=__PWSH_PACKAGE_REPOSITORY_URL__/' 'enabled=1' 'gpgcheck=1' \
             'repo_gpgcheck=1' 'gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Microsoft' 'sslverify=1' \
             > /etc/yum.repos.d/microsoft.repo; \
         dnf install -y "powershell-${PWSH_VERSION}"; \

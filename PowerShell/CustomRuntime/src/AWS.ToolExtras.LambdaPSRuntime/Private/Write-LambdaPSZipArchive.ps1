@@ -26,10 +26,9 @@ function Write-LambdaPSZipArchive {
           - The archive is written to a temporary file beside -DestinationPath and moved into place
             only when it is complete, so an existing .zip is replaced only by a complete one and a
             failure never leaves a partial .zip behind.
-          - A .zip over Lambda's 50 MB direct-upload limit, or whose files add up to more than its
-            250 MB unzipped limit, is written with a warning: the first must be uploaded through S3,
-            and Lambda rejects the second. A Layer or self-contained .zip bundles pwsh, so it is always
-            over 50 MB.
+          - Files over Lambda's 250 MB unzipped limit fail with UnzippedPackageTooLarge before anything
+            is written, and over 225 MB warn, naming pwsh's size and the three largest modules. A .zip
+            over Lambda's 50 MB direct-upload limit is written with a warning to upload it through S3.
 
         The caller has already confirmed the write; this helper does not ask again.
     .PARAMETER Path
@@ -89,7 +88,8 @@ function Write-LambdaPSZipArchive {
     $sourceFull = Resolve-LambdaPSPath -Path $Path
     $partial = "$destination.$([System.IO.Path]::GetRandomFileName()).partial"
     try {
-        $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+        # Opened once the files are listed and their size checked, so a package Lambda would reject is not written.
+        $archive = $null
         try {
             # Entries are written in ordinal order of their names, each with the same timestamp, so the same
             # files give the same bytes whatever the file system's listing order and the files' modification
@@ -127,8 +127,45 @@ function Write-LambdaPSZipArchive {
                 # Add, not the indexer: two files can never share one entry name silently.
                 $files.Add($entryName, $file)
             }
-            $entryTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
+            # Lambda's deployment package quotas, which do not change per account: 50 MB zipped for a direct
+            # upload (the zip in the API request), and 250 MB unzipped for a function's code and layers together.
+            $mb = 1MB
+            $name = [System.IO.Path]::GetFileName($destination)
             $unzippedBytes = [long]0
+            $moduleBytes = @{}
+            $pwshBytes = [long]0
+            foreach ($pair in $files.GetEnumerator()) {
+                $unzippedBytes += $pair.Value.Length
+                $parts = $pair.Key -split '/'
+                # modules/Private/ holds the runtime's own helper scripts, not a module.
+                if ($parts.Count -gt 2 -and $parts[0] -ceq 'modules' -and $parts[1] -cne 'Private') {
+                    $moduleBytes[$parts[1]] = [long]$moduleBytes[$parts[1]] + $pair.Value.Length
+                }
+                elseif ($parts.Count -gt 1 -and $parts[0] -ceq 'powershell') { $pwshBytes += $pair.Value.Length }
+            }
+            if ($unzippedBytes -gt 225 * $mb) {
+                $breakdown = @()
+                if ($pwshBytes -gt 0) { $breakdown += "The bundled pwsh takes $([math]::Round($pwshBytes / $mb, 1)) MB." }
+                $largest = @($moduleBytes.GetEnumerator() | Sort-Object -Property @{ Expression = 'Value'; Descending = $true }, @{ Expression = 'Key' } |
+                        Select-Object -First 3 | ForEach-Object { "$($_.Key) ($([math]::Round($_.Value / $mb, 1)) MB)" })
+                if ($largest.Count -gt 0) { $breakdown += "The largest modules: $($largest -join ', ')." }
+                $detail = if ($breakdown.Count -gt 0) { ' ' + ($breakdown -join ' ') } else { '' }
+                $unzippedMb = [math]::Round($unzippedBytes / $mb, 1)
+                if ($unzippedBytes -gt 250 * $mb) {
+                    # Raised with `throw`: the public cmdlet that called this rethrows it with its own $PSCmdlet.
+                    throw [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("'$name' would unzip to $([math]::Ceiling($unzippedBytes / $mb * 10) / 10) MB, over the 250 MB Lambda allows for a function's code and layers " +
+                             "together, so Lambda would reject it, and it was not written.$detail Remove modules or files from the " +
+                             'package, or use a container image.')),
+                        'UnzippedPackageTooLarge', [System.Management.Automation.ErrorCategory]::LimitsExceeded, $destination)
+                }
+                Write-Warning ("'$name' unzips to $unzippedMb MB, close to the 250 MB Lambda allows for a function's code and layers " +
+                    "together, which leaves $([math]::Round((250 * $mb - $unzippedBytes) / $mb, 1)) MB for the code or layers deployed with it.$detail")
+            }
+
+            $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+            $entryTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
             foreach ($pair in $files.GetEnumerator()) {
                 $entryName = $pair.Key
                 $file = $pair.Value
@@ -144,27 +181,18 @@ function Write-LambdaPSZipArchive {
                     try { $source.CopyTo($target) } finally { $target.Dispose() }
                 }
                 finally { $source.Dispose() }
-                $unzippedBytes += $file.Length
             }
         }
         finally {
-            $archive.Dispose()
+            if ($null -ne $archive) { $archive.Dispose() }
         }
         Set-LambdaPSZipUnixHost -Path $partial
         Move-Item -LiteralPath $partial -Destination $destination -Force -Confirm:$false -WhatIf:$false
 
-        # Lambda's deployment package quotas, which do not change per account: 50 MB zipped for a direct
-        # upload (the zip in the API request), and 250 MB unzipped for a function's code and layers together.
-        $mb = 1MB
         $zippedBytes = ([System.IO.FileInfo]::new($destination)).Length
-        $name = [System.IO.Path]::GetFileName($destination)
         if ($zippedBytes -gt 50 * $mb) {
             Write-Warning ("'$name' is $([math]::Round($zippedBytes / $mb, 1)) MB, over the 50 MB Lambda accepts in a direct upload. " +
                 'Upload it to S3 and pass -Code_S3Bucket and -Code_S3Key (-Content_S3Bucket and -Content_S3Key for Publish-LMLayerVersion).')
-        }
-        if ($unzippedBytes -gt 250 * $mb) {
-            Write-Warning ("'$name' unzips to $([math]::Round($unzippedBytes / $mb, 1)) MB, over the 250 MB Lambda allows for a " +
-                "function's code and layers together, so Lambda rejects it. Remove modules or files from the package, or use a container image.")
         }
     }
     finally {

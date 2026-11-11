@@ -6,7 +6,7 @@ function Copy-LambdaPSProjectTemplate {
         Walks every file under each source template root in turn, recreates the relative layout
         beneath the target root, and writes each file as UTF-8 without BOM. The __PWSH_VERSION__ token is
         replaced with the resolved full pwsh version, __PWSH_RELEASE_URL__ with the pwsh release
-        download URL, and __DOWNLOAD_RETRY_COUNT__, __DOWNLOAD_RETRY_DELAY__,
+        download URL, __PWSH_PACKAGE_REPOSITORY_URL__ with the RPM repository URL, and __DOWNLOAD_RETRY_COUNT__, __DOWNLOAD_RETRY_DELAY__,
         __DOWNLOAD_CONNECT_TIMEOUT__ and __DOWNLOAD_OPERATION_TIMEOUT__ with the download limits (all
         from Config/pwsh.psd1), in ANY file that contains them (the CMR and Container Dockerfiles carry
         them). For every target,
@@ -168,8 +168,8 @@ function Copy-LambdaPSProjectTemplate {
         }
         $outputPath = [System.IO.Path]::Combine($projectRoot, $relative)
 
-        # Substitute the concrete pwsh version, the release download URL and the download retry
-        # limits into ANY file carrying the token (the CMR and Container Dockerfiles).
+        # Substitute the concrete pwsh version, the release download URL, the RPM repository URL and
+        # the download retry limits into ANY file carrying the token (the CMR and Container Dockerfiles).
         # Every placeholder is replaced in one pass, so a value written in (a -RuntimeAlias of
         # '__ARCHITECTURE__', say) is not itself read as a placeholder.
         $values = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::Ordinal)
@@ -177,6 +177,7 @@ function Copy-LambdaPSProjectTemplate {
             $download = $script:Config.pwsh.Download
             $values['__PWSH_VERSION__'] = $PwshVersion
             $values['__PWSH_RELEASE_URL__'] = $script:Config.pwsh.ReleaseUrl
+            $values['__PWSH_PACKAGE_REPOSITORY_URL__'] = $script:Config.pwsh.PackageRepository.Url
             $values['__DOWNLOAD_RETRY_COUNT__'] = [string]$download.RetryCount
             $values['__DOWNLOAD_RETRY_DELAY__'] = [string]$download.RetryDelaySeconds
             $values['__DOWNLOAD_CONNECT_TIMEOUT__'] = [string]$download.ConnectTimeoutSeconds

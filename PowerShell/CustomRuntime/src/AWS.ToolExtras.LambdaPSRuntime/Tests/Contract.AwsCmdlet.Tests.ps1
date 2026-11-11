@@ -33,10 +33,13 @@ BeforeDiscovery {
            Parameters = @('Name', 'Region', 'ClientConfig') }
         # -Name is the version label; the runtime is -RuntimeName.
         @{ Cmdlet = 'New-LMCRuntimeVersion'; Module = 'AWS.Tools.LambdaCore'
-           Parameters = @('RuntimeName', 'Name', 'ImageUri', 'Compatibility_Architecture', 'Region', 'ClientConfig') }
+           Parameters = @('RuntimeName', 'Name', 'ImageUri', 'Compatibility_Architecture', 'ReleaseNote', 'Region', 'ClientConfig') }
         # Also the version preflight (Public/New-LambdaPSRuntimeDeployment.ps1).
         @{ Cmdlet = 'Get-LMCRuntimeVersion'; Module = 'AWS.Tools.LambdaCore'
            Parameters = @('RuntimeName', 'Name', 'Region', 'ClientConfig') }
+        # Naming the next default version (Public/New-LambdaPSRuntimeDeployment.ps1).
+        @{ Cmdlet = 'Get-LMCRuntimeVersionList'; Module = 'AWS.Tools.LambdaCore'
+           Parameters = @('RuntimeName', 'Region', 'ClientConfig') }
 
         # --- Runtime alias (Private/Set-LambdaPSRuntimeAlias.ps1) ---
         @{ Cmdlet = 'New-LMCRuntimeAlias'; Module = 'AWS.Tools.LambdaCore'

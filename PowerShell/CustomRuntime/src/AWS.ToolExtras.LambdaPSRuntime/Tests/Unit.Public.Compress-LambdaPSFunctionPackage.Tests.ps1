@@ -341,6 +341,19 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
                 Should -Throw -ErrorId 'ProjectNotFound,Compress-LambdaPSFunctionPackage'
         }
 
+        It 'throws UnzippedPackageTooLarge for code over 250 MB unzipped and writes no .zip' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'too-large')
+            $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($dir, 'modules', 'Huge', '1.0.0')) -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'handler.ps1')) -Value 'param($LambdaInput, $LambdaContext)'
+            $file = [System.IO.File]::Create([System.IO.Path]::Combine($dir, 'modules', 'Huge', '1.0.0', 'huge.bin'))
+            try { $file.SetLength(251MB) } finally { $file.Dispose() }
+            $out = [System.IO.Path]::Combine($TestDrive, 'too-large.zip')
+
+            { Compress-LambdaPSFunctionPackage -Path $dir -OutFile $out } |
+                Should -Throw -ErrorId 'UnzippedPackageTooLarge,Compress-LambdaPSFunctionPackage'
+            Test-Path -LiteralPath $out | Should -BeFalse
+        }
+
         # Zipped as handler code, such a project would have no pwsh and a bootstrap that is not executable.
         It 'throws NotAFunctionProject for a <Target> project' -ForEach @(
             @{ Target = 'Layer'; Scaffold = { param($p) New-LambdaPSRuntimeProject -Path $p -PowerShellVersion '7.4' -Target Layer } }

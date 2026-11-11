@@ -5,6 +5,9 @@
 BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PwshConfig.ps1'))
+    # The version a deploy of PowerShell 7.4 to a runtime with no versions is named.
+    $script:defaultVersion = "$($script:pwshConfig.DefaultPatch['7.4'])-1"
 }
 
 AfterAll {
@@ -98,7 +101,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
 
         $result.Calls | Should -Be @('Scaffold')
         $result.Output | Should -BeLike '*Skipped publishing the runtime version, because the build and push stage was declined*'
-        $result.Output | Should -BeLike '*Skipped pointing alias ''default'' at ''v1''*'
+        $result.Output | Should -BeLike "*Skipped pointing alias 'default' at '$script:defaultVersion'*"
     }
 
     It 'skips the alias when the runtime version publish is declined' {
@@ -122,7 +125,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
 
         $result.Calls | Should -Not -Contain 'Publish'
         $result.Calls | Should -Not -Contain 'Alias'
-        $result.Output | Should -BeLike '*Skipped pointing alias ''default'' at ''v1'', because the publish stage was declined*'
+        $result.Output | Should -BeLike "*Skipped pointing alias 'default' at '$script:defaultVersion', because the publish stage was declined*"
     }
 }
 
