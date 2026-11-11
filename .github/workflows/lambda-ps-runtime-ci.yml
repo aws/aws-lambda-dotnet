@@ -22,7 +22,8 @@ jobs:
   build:
     name: build.ps1 -Task All (${{ matrix.os }})
     # The suite needs the Lambda customer-managed runtime cmdlets (New-LMCRuntime, ...), which aren't in
-    # AWS.Tools on the PowerShell Gallery yet. Set the repository variable LAMBDAPS_PR_CI to 'true' once they are.
+    # AWS.Tools on the PowerShell Gallery yet. Set the repository variable LAMBDAPS_PR_CI to 'true' once they are
+    # and the module's AWS.Tools minimum is lowered to that release; until then a manual run fails too.
     if: github.event_name == 'workflow_dispatch' || vars.LAMBDAPS_PR_CI == 'true'
     strategy:
       fail-fast: false
@@ -41,10 +42,21 @@ jobs:
         run: |
           Install-PSResource -Name Pester -Version 5.7.1 -Scope CurrentUser -TrustRepository
           Install-PSResource -Name PSScriptAnalyzer -Version 1.25.0 -Scope CurrentUser -TrustRepository
-          Install-PSResource -Name AWS.Tools.Lambda, AWS.Tools.LambdaCore, AWS.Tools.ECR, AWS.Tools.SecurityToken -Scope CurrentUser -TrustRepository
+          # Each AWS.Tools module requires its exact AWS.Tools.Common, and a release publishes them minutes apart.
+          $version = (Find-PSResource -Name AWS.Tools.Lambda).Version.ToString()
+          Install-PSResource -Name AWS.Tools.Lambda, AWS.Tools.LambdaCore, AWS.Tools.ECR, AWS.Tools.SecurityToken -Version $version -Scope CurrentUser -TrustRepository
       - name: Run build.ps1 -Task All
         shell: pwsh
         working-directory: PowerShell/CustomRuntime
         env:
           AWS_EC2_METADATA_DISABLED: "true"
         run: ./build.ps1 -Task All
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            PowerShell/CustomRuntime/testResults.xml
+            PowerShell/CustomRuntime/coverage.xml
+          if-no-files-found: warn
