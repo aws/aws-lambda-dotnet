@@ -52,21 +52,27 @@ function private:Invoke-FunctionHandler {
     # and reported as an error, rather than ending some loop of the runtime's and losing the handler's
     # result unreported. A labelled one whose label matches no loop, like exit in a handler function,
     # goes past this loop and ends the runtime; the finally in runtime.ps1's event loop reports that on
-    # /error and exits 1. (exit in a <script>.ps1 handler ends only that script.)
+    # /error and exits 1. exit in a <script>.ps1 handler ends only that script, and a non-zero code fails
+    # the invocation, as pwsh -File does. $? is false after the script only then, so a native command's
+    # code left in $LASTEXITCODE does not count.
     #
     # With AWS_LAMBDA_LOG_FORMAT=JSON, each stream's records are logged at their level, as
     # Amazon.Lambda.PowerShellHost does. The handler's output is wrapped first, so a record it returns
     # stays in the response.
     $private:handlerCompleted = $false
     do {
-        $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { & $private:handlerCommand $LambdaInput $LambdaContext }
+        $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') {
+            & $private:handlerCommand $LambdaInput $LambdaContext
+            $private:handlerSucceeded = $?
+        }
         else {
             # ForEach-Object wraps each value in a PSObject, which ConvertTo-Json writes with its type's extended
             # properties ([guid] gains Guid); the wrapper is kept only for members the handler added.
             . { & $private:handlerCommand $LambdaInput $LambdaContext | Microsoft.PowerShell.Core\ForEach-Object {
                     if ($null -ne $_ -and -not @($_.PSObject.Properties | Microsoft.PowerShell.Core\Where-Object { $_.IsInstance -and $_.MemberType -ne 'Property' }).Count) { [ref]($_.PSObject.BaseObject) }
                     else { [ref]$_ }
-                } } *>&1 | Microsoft.PowerShell.Core\ForEach-Object {
+                }
+                $private:handlerSucceeded = $? } *>&1 | Microsoft.PowerShell.Core\ForEach-Object {
                 if ($_ -is [ref]) { return , $_.Value }
                 & $script:__LambdaPSRuntimeWriteLambdaLog -Record $_
             }
@@ -76,6 +82,9 @@ function private:Invoke-FunctionHandler {
     if (-not $private:handlerCompleted) {
         throw [System.InvalidOperationException]::new(
             'The handler used break or continue outside a loop of its own, so it stopped before returning. Use return to leave the handler early.')
+    }
+    if (-not $private:handlerSucceeded -and $private:HandlerArray.handlerType -eq 'Script' -and $global:LASTEXITCODE) {
+        throw [System.InvalidOperationException]::new("The handler script exited with code $global:LASTEXITCODE.")
     }
 
     # The serialization depth: POWERSHELL_RUNTIME_JSON_DEPTH (1-100) lowers it from 100. A value that is
