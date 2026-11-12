@@ -10,8 +10,8 @@ function Get-LambdaPSOciImagePlan {
              architectures, unpacked into /var/runtime/powershell (the Dockerfile uses the RPM on amd64).
              The base has no libicu, so Microsoft's ICU package goes next to pwsh and the image runs with
              DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU, so cultures work as in the Docker image.
-          2. PowerShellLambdaContext.dll: compiled on a Linux host with the bundled pwsh, or with the same
-             pwsh release for the host's architecture; otherwise the runtime compiles the .cs at cold start.
+          2. PowerShellLambdaContext.dll: precompiled when a pwsh of the bundled line can run here
+             (Invoke-LambdaPSOciContextPrecompile); otherwise the runtime compiles the .cs at cold start.
           3. lambda-entrypoint.sh and bootstrap (0755, BOM and CRLF stripped), runtime.ps1,
              PowerShellLambdaContext.cs and modules/ under /var/runtime.
           4. ENTRYPOINT /var/runtime/lambda-entrypoint.sh.

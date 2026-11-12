@@ -3,8 +3,9 @@ function Invoke-LambdaPSOciContextPrecompile {
     .SYNOPSIS
         Precompiles a no-Docker image's PowerShellLambdaContext.dll, returning $false when the runtime must compile it at cold start.
     .DESCRIPTION
-        Compiles on Linux only, with the bundled pwsh when the host has the image's architecture, otherwise with
-        the same pwsh release for the host's architecture (Get-LambdaPSHostPwsh).
+        On Linux, compiles with the bundled pwsh when the host has the image's architecture, otherwise with the
+        same pwsh release for the host's architecture (Get-LambdaPSHostPwsh). Elsewhere, or when that pwsh can't be
+        fetched or started, it compiles with the running pwsh if it is of the same line (Get-LambdaPSSameLinePwsh).
     .PARAMETER BundledPwshPath
         The image's unpacked pwsh binary.
     .PARAMETER PwshVersion
@@ -47,12 +48,10 @@ function Invoke-LambdaPSOciContextPrecompile {
         [string]$StagePath
     )
 
-    if (-not $IsLinux) { return $false }
     $hostArchitecture = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
-    $pwsh = $BundledPwshPath
-    if ($hostArchitecture -ne $Architecture) {
-        $pwsh = Get-LambdaPSHostPwsh -PwshVersion $PwshVersion -Architecture $hostArchitecture -Destination ([System.IO.Path]::Combine($StagePath, 'host-powershell'))
-        if (-not $pwsh) { return $false }
-    }
-    Invoke-LambdaPSContextPrecompile -PwshPath $pwsh -SourcePath $SourcePath -OutputPath $OutputPath
+    $pwsh = if ($IsLinux -and $hostArchitecture -eq $Architecture) { $BundledPwshPath }
+    elseif ($IsLinux) { Get-LambdaPSHostPwsh -PwshVersion $PwshVersion -Architecture $hostArchitecture -Destination ([System.IO.Path]::Combine($StagePath, 'host-powershell')) }
+    if ($pwsh -and (Invoke-LambdaPSContextPrecompile -PwshPath $pwsh -SourcePath $SourcePath -OutputPath $OutputPath)) { return $true }
+    $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $PwshVersion
+    [bool]($sameLine -and (Invoke-LambdaPSContextPrecompile -PwshPath $sameLine -SourcePath $SourcePath -OutputPath $OutputPath))
 }

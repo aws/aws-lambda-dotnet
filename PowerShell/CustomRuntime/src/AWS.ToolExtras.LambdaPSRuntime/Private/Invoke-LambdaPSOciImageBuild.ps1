@@ -10,8 +10,8 @@ function Invoke-LambdaPSOciImageBuild {
           1. Downloads and verifies the pwsh tarball (Get-LambdaPSPwshArchive) and unpacks it with
              System.Formats.Tar, keeping each entry's Unix mode, which a Windows file system cannot hold,
              and adds the ICU libraries (Get-LambdaPSIcuPackage) next to pwsh.
-          2. Stages the executable scripts LF-only and without a BOM, and on Linux precompiles
-             PowerShellLambdaContext.dll (Invoke-LambdaPSOciContextPrecompile).
+          2. Stages the executable scripts LF-only and without a BOM, and precompiles
+             PowerShellLambdaContext.dll when it can (Invoke-LambdaPSOciContextPrecompile).
           3. Pulls the base image's manifest for the platform, adds one layer for pwsh, one for the runtime
              and (Container) one for the function, so a rebuild that changes only the function re-pushes
              only that layer, and sets the entrypoint, CMD and environment.

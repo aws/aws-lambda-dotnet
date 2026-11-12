@@ -32,41 +32,41 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'Should compile with the bundled pwsh when the host has the image architecture' -Skip:(-not $IsLinux) {
-            # Arrange
             Mock 'Get-LambdaPSHostPwsh' -MockWith { }
-
-            # Act
             $result = Invoke-LambdaPSOciContextPrecompile @precompile -Architecture $hostArch
-
-            # Assert
             $result | Should -BeTrue
             Should -Invoke 'Invoke-LambdaPSContextPrecompile' @once -ParameterFilter { $PwshPath -eq $precompile.BundledPwshPath }
             Should -Not -Invoke 'Get-LambdaPSHostPwsh'
         }
 
         It 'Should compile with the host build of the bundled release when the image has another architecture' -Skip:(-not $IsLinux) {
-            # Arrange
             Mock 'Get-LambdaPSHostPwsh' -ParameterFilter { $PwshVersion -eq '7.6.9' -and $Architecture -eq $hostArch } -MockWith { $hostPwsh }
-
-            # Act
             $result = Invoke-LambdaPSOciContextPrecompile @precompile -Architecture $otherArch
-
-            # Assert
             $result | Should -BeTrue
-            Should -Invoke 'Get-LambdaPSHostPwsh' @once -ParameterFilter { $PwshVersion -eq '7.6.9' -and $Architecture -eq $hostArch }
             Should -Invoke 'Invoke-LambdaPSContextPrecompile' @once -ParameterFilter { $PwshPath -eq $hostPwsh }
         }
 
-        It 'Should return $false, leaving the compile to cold start, when the host build cannot be fetched' -Skip:(-not $IsLinux) {
-            # Arrange
+        It 'Should compile with the running pwsh of the same line when the host build cannot be fetched' -Skip:(-not $IsLinux) {
             Mock 'Get-LambdaPSHostPwsh' -MockWith { $null }
-
-            # Act
+            Mock 'Get-LambdaPSSameLinePwsh' -ParameterFilter { $PwshVersion -eq '7.6.9' } -MockWith { '/opt/pwsh76/pwsh' }
             $result = Invoke-LambdaPSOciContextPrecompile @precompile -Architecture $otherArch
+            $result | Should -BeTrue
+            Should -Invoke 'Invoke-LambdaPSContextPrecompile' @once -ParameterFilter { $PwshPath -eq '/opt/pwsh76/pwsh' }
+        }
 
-            # Assert
+        It 'Should retry with the running pwsh of the same line when the bundled pwsh cannot start' -Skip:(-not $IsLinux) {
+            Mock 'Invoke-LambdaPSContextPrecompile' -ParameterFilter { $PwshPath -eq $precompile.BundledPwshPath } -MockWith { $false }
+            Mock 'Get-LambdaPSSameLinePwsh' -MockWith { '/opt/pwsh76/pwsh' }
+            $result = Invoke-LambdaPSOciContextPrecompile @precompile -Architecture $hostArch
+            $result | Should -BeTrue
+            Should -Invoke 'Invoke-LambdaPSContextPrecompile' @once -ParameterFilter { $PwshPath -eq '/opt/pwsh76/pwsh' }
+        }
+
+        It 'Should return $false, leaving the compile to cold start, when the host build cannot be fetched' -Skip:(-not $IsLinux) {
+            Mock 'Get-LambdaPSHostPwsh' -MockWith { $null }
+            Mock 'Get-LambdaPSSameLinePwsh' -MockWith { }
+            $result = Invoke-LambdaPSOciContextPrecompile @precompile -Architecture $otherArch
             $result | Should -BeFalse
-            Should -Invoke 'Get-LambdaPSHostPwsh' @once
             Should -Not -Invoke 'Invoke-LambdaPSContextPrecompile'
         }
     }
