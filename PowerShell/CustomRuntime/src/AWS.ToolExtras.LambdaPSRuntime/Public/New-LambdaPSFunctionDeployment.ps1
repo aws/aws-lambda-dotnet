@@ -105,7 +105,8 @@ function New-LambdaPSFunctionDeployment {
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
         The Lambda execution role ARN for the function (arn:aws:iam::<account>:role/<name>). A role
-        name alone is refused before anything is packaged.
+        name alone is refused before anything is packaged. A role Lambda cannot assume yet, as while IAM
+        propagates a new role, is retried for up to a minute, then the deploy fails with RoleNotAssumable.
     .PARAMETER Region
         The AWS region to deploy into. When omitted and -FunctionName is a function ARN, the region in
         the ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's

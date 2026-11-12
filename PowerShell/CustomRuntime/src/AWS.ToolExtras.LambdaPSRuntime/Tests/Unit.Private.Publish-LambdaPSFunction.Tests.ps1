@@ -599,6 +599,129 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
+    It 'retries a create Lambda refuses because it cannot assume the role yet, until it succeeds' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful' } }
+            $script:createCalls = 0
+            Mock 'Publish-LMFunction' -MockWith {
+                $script:createCalls++
+                if ($script:createCalls -lt 3) {
+                    throw [LambdaPSTests.Fakes.ServiceException]::new('The role defined for the function cannot be assumed by Lambda.', 'InvalidParameterValueException')
+                }
+                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' }
+            }
+            Mock 'Start-Sleep' -MockWith { }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            $result = Publish-LambdaPSFunction @splat -InformationVariable information
+
+            $result.Arn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:function:hello'
+            @($information | Where-Object { "$_" -like "Lambda cannot assume role 'arn:role' yet; retrying for up to 55 seconds." }).Count | Should -Be 1
+            Should -Invoke 'Publish-LMFunction' -Times 3 -Exactly
+            Should -Invoke 'Start-Sleep' -Times 2 -Exactly -ParameterFilter { $Seconds -eq $script:Config.wait.Role.IntervalSeconds }
+        }
+    }
+
+    It 'retries a configuration update Lambda refuses because it cannot assume the new role yet' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
+            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' } }
+            $script:updateCalls = 0
+            Mock 'Update-LMFunctionConfiguration' -MockWith {
+                $script:updateCalls++
+                if ($script:updateCalls -lt 2) {
+                    throw [LambdaPSTests.Fakes.ServiceException]::new('The role defined for the function cannot be assumed by Lambda.', 'InvalidParameterValueException')
+                }
+                [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' }
+            }
+            Mock 'Start-Sleep' -MockWith { }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:new-role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            $result = Publish-LambdaPSFunction @splat
+
+            $result.Updated | Should -BeTrue
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 2 -Exactly -ParameterFilter { $Role -eq 'arn:new-role' }
+        }
+    }
+
+    It 'throws RoleNotAssumable with the not-applied state when Lambda never can assume the new role on update' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
+            Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' } }
+            Mock 'Update-LMFunctionConfiguration' -MockWith {
+                throw [LambdaPSTests.Fakes.ServiceException]::new('The role defined for the function cannot be assumed by Lambda.', 'InvalidParameterValueException')
+            }
+            Mock 'Start-Sleep' -MockWith { }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:new-role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            $err = { Publish-LambdaPSFunction @splat } | Should -Throw -ErrorId 'RoleNotAssumable' -PassThru
+
+            $err.Exception.Message | Should -BeLike "Function 'hello' has its new code*Lambda could not assume role 'arn:new-role' in 12 attempts*"
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 12 -Exactly
+        }
+    }
+
+    It 'throws the create error after <Attempts> attempt(s) for <Case>' -ForEach @(
+        @{ Case = 'a role Lambda never can assume'; Message = 'The role defined for the function cannot be assumed by Lambda.'; Attempts = 12
+            Expected = "Lambda could not assume role 'arn:role' in 12 attempts, 5 seconds apart. Check that the role exists and that its trust policy allows lambda.amazonaws.com.*cannot be assumed by Lambda." }
+        @{ Case = 'another InvalidParameterValueException'; Message = 'Unzipped size must be smaller than 262144000 bytes'; Attempts = 1; Expected = 'Unzipped size*' }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Message = $Message; Attempts = $Attempts; Expected = $Expected } {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
+            }
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ServiceException]::new($Message, 'InvalidParameterValueException') }
+            Mock 'Start-Sleep' -MockWith { }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            { Publish-LambdaPSFunction @splat } | Should -Throw -ExpectedMessage $Expected
+
+            Should -Invoke 'Publish-LMFunction' -Times $Attempts -Exactly
+        }
+    }
+
     # Lambda creates a function in State Pending (and runs a code update InProgress); an invoke in that
     # window is refused with ResourceConflictException, so the seam must not return until it settles.
     Context 'waiting for the function to be ready' {

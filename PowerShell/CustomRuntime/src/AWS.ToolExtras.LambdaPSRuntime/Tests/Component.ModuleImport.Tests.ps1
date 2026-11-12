@@ -72,7 +72,7 @@ Describe 'Module import' -Tag 'Component' {
     It 'refuses to import, naming every missing setting, when a nested setting is absent' {
         $result = Invoke-ImportWithConfig -Name 'missing-nested' -Change {
             param($config)
-            Set-Content -LiteralPath ([System.IO.Path]::Combine($config, 'wait.psd1')) -Value '@{ Function = @{ IntervalSeconds = 2 }; RuntimeVersion = @{ Attempts = 60; IntervalSeconds = 3 } }'
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($config, 'wait.psd1')) -Value '@{ Function = @{ IntervalSeconds = 2 }; RuntimeVersion = @{ Attempts = 60; IntervalSeconds = 3 }; Role = @{ Attempts = 12; IntervalSeconds = 5 } }'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($config, 'function.psd1')) -Value '@{ Timeout = 30 }'
         }
 
