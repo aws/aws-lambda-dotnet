@@ -1,0 +1,10 @@
+{
+  "solution": {
+    "path": "Libraries.sln",
+    "projects": [
+      "src\\AWS.OCI.Builder\\AWS.OCI.Builder.csproj",
+      "test\\AWS.OCI.Builder.IntegrationTests\\AWS.OCI.Builder.IntegrationTests.csproj",
+      "test\\AWS.OCI.Builder.Tests\\AWS.OCI.Builder.Tests.csproj"
+    ]
+  }
+}
