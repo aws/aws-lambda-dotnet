@@ -25,8 +25,9 @@ function Copy-LambdaPSProjectTemplate {
 
         Each target's tree carries its own README.md, and Templates/Shared adds the runtime settings
         to it through README.md.append, for every target. Every target except RuntimeBound also gets a
-        lambdaps-runtime.json marker recording the deployment target and PowerShell version, so the
-        validator and future tooling can identify the project shape.
+        lambdaps-runtime.json marker recording the deployment target, PowerShell version, pwsh version
+        and module version, so the validator and future tooling can identify the project shape.
+        A template file named '_<name>' is written as '.<name>'.
     .PARAMETER Path
         The template directories to copy from, in order, as returned by
         Get-LambdaPSProjectTemplateRoot: the module's Templates/Shared tree (the runtime interface
@@ -140,6 +141,10 @@ function Copy-LambdaPSProjectTemplate {
         foreach ($file in @(Get-ChildItem @childItemParams)) {
             $relative = $file.FullName.Substring($source.Length).TrimStart(
                 [System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+            # Publish-Module, which releases this module, leaves dot-files out of the package.
+            if ($file.Name.StartsWith('_')) {
+                $relative = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($relative), '.' + $file.Name.Substring(1))
+            }
             if ($relative.EndsWith('.append', [System.StringComparison]::Ordinal)) {
                 $appends[$relative.Substring(0, $relative.Length - '.append'.Length)] += [System.IO.File]::ReadAllText($file.FullName)
             }
@@ -227,11 +232,15 @@ function Copy-LambdaPSProjectTemplate {
     # Marker recording the deployment target, PowerShell version and pwsh version. The validator
     # reads it to apply target-specific rules (absence defaults to CMR), and
     # Build-LambdaPSRuntimePackage bundles the recorded pwsh version unless told otherwise.
+    # ModuleVersion lets later module versions tell which template generation created the project.
+    # It keeps a prerelease label, so a preview project isn't recorded as its GA release.
     if ($carriesRuntime) {
+        $prerelease = $ExecutionContext.SessionState.Module.PrivateData.PSData['Prerelease']
         $rendered[[System.IO.Path]::Combine($projectRoot, 'lambdaps-runtime.json')] = [ordered]@{
             Target            = $Target
             PowerShellVersion = $PowerShellVersion
             PwshVersion       = $PwshVersion
+            ModuleVersion     = if ($prerelease) { "$script:LambdaPSModuleVersion-$prerelease" } else { $script:LambdaPSModuleVersion }
         } | ConvertTo-Json
     }
 

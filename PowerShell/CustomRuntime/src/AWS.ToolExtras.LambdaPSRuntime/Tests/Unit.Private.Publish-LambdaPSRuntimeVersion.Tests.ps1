@@ -37,6 +37,23 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         }
     }
 
+    It 'sends -ReleaseNote only when it is given' -ForEach @(@{ Note = 'pwsh 7.6.9' }, @{ Note = $null }) {
+        InModuleScope $script:moduleName -Parameters @{ Note = $Note } {
+            param($Note)
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { }
+            Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v1' } }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } } }
+            $splat = if ($Note) { @{ ReleaseNote = $Note } } else { @{} }
+
+            $null = Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture x86_64 -Region 'us-east-1' @splat
+
+            Should -Invoke 'New-LMCRuntimeVersion' -Times 1 -Exactly -ParameterFilter { $ReleaseNote -eq $Note }
+        }
+    }
+
     # The orchestrator discards the seam's result with '$null =', so a version that settled to FAILED
     # must THROW: returning it would let the alias be pointed at it and the deploy reported as a
     # success, and every invoke of the resulting function would fail. FAILED is
@@ -84,7 +101,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'Schema 2'
                 # The version now exists, so a rerun needs another name; and the cause is something to check,
                 # not a rebuild with the tool that just built it.
-                $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, so publish under a new -RuntimeVersion, or remove it with Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.*"
+                $_.Exception.Message | Should -BeLike "*Version 'v1' already exists and is immutable, and its image tag stays in ECR, so publish under a new -RuntimeVersion.*"
                 $_.Exception.Message | Should -BeLike '*docker buildx imagetools inspect acct.dkr.ecr.us-east-1.amazonaws.com/rt:v1*'
                 $_.Exception.Message | Should -BeLike '*or Lambda could not pull it (check that the repository policy grants lambda.amazonaws.com pull for this runtime''s ARN)*'
                 $_.Exception.Message | Should -Not -BeLike '*Rebuild with*'
@@ -225,7 +242,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
     }
 
     # The runtime and the version exist by then, so the error says so and how to finish, rather than
-    # surfacing the service's error alone (a rerun would be refused: the version exists).
+    # surfacing the service's error alone (a rerun publishes another version instead).
     It 'wraps a failed read during the wait as RuntimeVersionWaitFailed, naming the created version' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
@@ -284,6 +301,26 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             $err.Exception.Message | Should -Not -Match 'New-LambdaPSRuntimeDeployment'
             # The architecture check never ran, so the alias advice asks for it.
             $err.Exception.Message | Should -BeLike "*ACTIVE and its Compatibility.Architectures is 'x86_64'*"
+        }
+    }
+
+    It 'throws RuntimeVersionExists, without waiting, when a concurrent deploy published the version name first' {
+        InModuleScope $script:moduleName {
+            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'New-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Could not create version! Version already exists.') }
+            Mock 'Get-LMCRuntimeVersion' -MockWith { }
+
+            $err = $null
+            try { Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:7.6.9-9' -RuntimeVersion '7.6.9-9' -Architecture x86_64 -Region 'us-east-1' }
+            catch { $err = $_ }
+
+            $err.FullyQualifiedErrorId | Should -Be 'RuntimeVersionExists'
+            $err.Exception.InnerException.GetType().Name | Should -Be 'ResourceConflictException'
+            $err.Exception.Message | Should -BeLike "Runtime 'my-ps' already has version '7.6.9-9': another deploy published it*"
+            Should -Invoke 'Get-LMCRuntimeVersion' -Times 0 -Exactly
         }
     }
 
@@ -502,7 +539,7 @@ Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match '\[x86_64\]'
                 $_.Exception.Message | Should -Match 'buildx'
                 $_.Exception.Message | Should -Match 'NOT pointed'
-                $_.Exception.Message | Should -BeLike '*Remove-LMCRuntimeVersion -RuntimeName my-ps -Name v1 -Region us-east-1.'
+                $_.Exception.Message | Should -BeLike '*so rebuild and publish under a new -RuntimeVersion.'
             }
             $threw | Should -BeTrue
         }

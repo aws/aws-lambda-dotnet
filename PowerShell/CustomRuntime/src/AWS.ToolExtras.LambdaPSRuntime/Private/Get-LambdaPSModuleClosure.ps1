@@ -85,6 +85,8 @@ function Get-LambdaPSModuleClosure {
     .PARAMETER RequireAll
         Return a ModuleNotFoundLocally Error when any module is Missing, for callers that need the
         whole set on disk now rather than a list of what to download.
+    .PARAMETER SourceModulesPath
+        The source's modules/ folder, passed to New-LambdaPSModuleNotFoundError.
     .PARAMETER SkipInstalled
         Resolve modules other than AWS.Tools.* from -SearchPath only, not from the PSModulePath, so
         they are downloaded from the named repositories rather than copied from this machine.
@@ -115,7 +117,10 @@ function Get-LambdaPSModuleClosure {
         [switch]$RequireAll,
 
         [Parameter()]
-        [switch]$SkipInstalled
+        [switch]$SkipInstalled,
+
+        [Parameter()]
+        [string]$SourceModulesPath
     )
 
     # A -Module name must name one module. Get-Module -FullyQualifiedName would also take a wildcard
@@ -489,7 +494,7 @@ function Get-LambdaPSModuleClosure {
     }
 
     if ($null -eq $walkError -and $RequireAll -and $missing.Count -gt 0) {
-        $walkError = New-LambdaPSModuleNotFoundError -Missing $missing.ToArray()
+        $walkError = New-LambdaPSModuleNotFoundError -Missing $missing.ToArray() -SourceModulesPath $SourceModulesPath
     }
 
     # A module that only minimums ask for may be needed higher once a missing module's manifest is on

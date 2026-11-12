@@ -57,7 +57,7 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
             function script:Initialize-LambdaPSEcrRepository { [CmdletBinding(SupportsShouldProcess)] param($RepositoryName, $AccountId, $RuntimeArn, $Region, $CredentialParameter) }
             function script:Get-LMCRuntime { [CmdletBinding()] param($RuntimeName, $Region, $ClientConfig) [PSCustomObject]@{} }
             # The version does not exist until it is created (so the preflight passes), then settles to FAILED.
-            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $Compatibility_Architecture, $Region, $ClientConfig)
+            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeVersion')
                 [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' } }
             function script:Get-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig)
@@ -66,6 +66,7 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
                 }
                 [PSCustomObject]@{ State = 'FAILED' } }
             function script:Get-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig) [PSCustomObject]@{} }
+            function script:Get-ECRImageMetadata { [CmdletBinding()] param($RepositoryName, $ImageId, $Region, $ClientConfig) }
             function script:New-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeAlias') }
             function script:Update-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)
