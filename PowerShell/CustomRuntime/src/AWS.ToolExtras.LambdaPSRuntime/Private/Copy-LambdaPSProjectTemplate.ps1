@@ -27,6 +27,7 @@ function Copy-LambdaPSProjectTemplate {
         to it through README.md.append, for every target. Every target except RuntimeBound also gets a
         lambdaps-runtime.json marker recording the deployment target, PowerShell version, pwsh version
         and module version, so the validator and future tooling can identify the project shape.
+        A template file named '_<name>' is written as '.<name>'.
     .PARAMETER Path
         The template directories to copy from, in order, as returned by
         Get-LambdaPSProjectTemplateRoot: the module's Templates/Shared tree (the runtime interface
@@ -140,6 +141,10 @@ function Copy-LambdaPSProjectTemplate {
         foreach ($file in @(Get-ChildItem @childItemParams)) {
             $relative = $file.FullName.Substring($source.Length).TrimStart(
                 [System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+            # Publish-Module, which releases this module, leaves dot-files out of the package.
+            if ($file.Name.StartsWith('_')) {
+                $relative = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($relative), '.' + $file.Name.Substring(1))
+            }
             if ($relative.EndsWith('.append', [System.StringComparison]::Ordinal)) {
                 $appends[$relative.Substring(0, $relative.Length - '.append'.Length)] += [System.IO.File]::ReadAllText($file.FullName)
             }
