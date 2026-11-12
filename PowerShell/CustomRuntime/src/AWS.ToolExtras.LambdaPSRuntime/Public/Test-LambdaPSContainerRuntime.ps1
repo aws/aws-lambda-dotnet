@@ -22,18 +22,18 @@ function Test-LambdaPSContainerRuntime {
         executable on PATH matches (aliases and functions are ignored). buildx is probed by running
         'buildx version' with that executable, and Build-LambdaPSRuntimeImage builds with the same one.
 
-        When Docker or buildx is missing this is a hard failure: the cmdlet raises a terminating
-        error saying which of the two is absent and pointing at the setup documentation, so the
-        caller can fix it before a deploy gets as far as creating an ECR repository.
+        It then runs 'docker version' to check that the Docker daemon answers.
 
-        It returns the CLI's name, path and buildx version, and fails rather than returning when
-        either is missing. This cmdlet changes no state.
+        Each failure is terminating: DockerNotFound, DockerBuildxNotFound or DockerDaemonNotRunning,
+        so the caller can fix it before a deploy gets as far as creating an ECR repository.
+
+        It returns the CLI's name, path and buildx version. This cmdlet changes no state.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.ContainerRuntime
     .EXAMPLE
         Test-LambdaPSContainerRuntime
 
-        Confirms docker and docker buildx are installed and returns the CLI path. The docker daemon is not checked.
+        Confirms docker and docker buildx are installed and the Docker daemon answers, and returns the CLI path.
     .EXAMPLE
         (Test-LambdaPSContainerRuntime).BuildxVersion
 
@@ -77,6 +77,19 @@ function Test-LambdaPSContainerRuntime {
                     'DockerBuildxNotFound', [System.Management.Automation.ErrorCategory]::NotInstalled, 'docker buildx'))
         }
         Write-Verbose "docker buildx available: $($buildxVersion -join ' ')."
+
+        # An installed but stopped Docker Desktop passes the checks above and fails only at the build.
+        # docker version, not docker info: info --format exits 0 when the daemon can't be reached.
+        $daemon = & $command.Source version --format '{{.Server.Version}}' 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $message = "The docker CLI at '$($command.Source)' cannot reach the Docker daemon (docker version exited with " +
+                "$LASTEXITCODE`: $(@($daemon) -match '\S' | Select-Object -First 1)). Start Docker, or build without it: " +
+                '-BuildMethod Auto (the default) does so when the daemon cannot be reached.'
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new($message),
+                    'DockerDaemonNotRunning', [System.Management.Automation.ErrorCategory]::ConnectionError, 'docker'))
+        }
 
         [PSCustomObject]@{
             PSTypeName    = 'AWS.ToolExtras.LambdaPSRuntime.ContainerRuntime'

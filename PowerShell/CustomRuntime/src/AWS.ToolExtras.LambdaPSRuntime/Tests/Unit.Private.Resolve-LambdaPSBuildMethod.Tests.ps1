@@ -32,7 +32,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             $resolved.ContainerRuntime.Path | Should -Be '/usr/bin/docker'
         }
 
-        It 'falls back to NoDocker under Auto on <ErrorId>' -ForEach @(@{ ErrorId = 'DockerNotFound' }, @{ ErrorId = 'DockerBuildxNotFound' }) {
+        It 'falls back to NoDocker under Auto on <ErrorId>' -ForEach @(@{ ErrorId = 'DockerNotFound' }, @{ ErrorId = 'DockerBuildxNotFound' }, @{ ErrorId = 'DockerDaemonNotRunning' }) {
             & $script:missing $ErrorId
 
             (Resolve-LambdaPSBuildMethod -BuildMethod Auto).Method | Should -Be 'NoDocker'

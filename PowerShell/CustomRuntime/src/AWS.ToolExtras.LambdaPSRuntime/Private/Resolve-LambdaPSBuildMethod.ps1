@@ -4,8 +4,8 @@ function Resolve-LambdaPSBuildMethod {
         Decides whether an image build runs docker or the no-Docker builder.
     .DESCRIPTION
         -BuildMethod on the image cmdlets: Docker and NoDocker are taken as given; Auto picks Docker when
-        Test-LambdaPSContainerRuntime finds docker with buildx, and NoDocker when it reports DockerNotFound
-        or DockerBuildxNotFound. Auto never changes what happens where Docker works: it turns only the
+        Test-LambdaPSContainerRuntime finds docker with buildx, and NoDocker when it reports DockerNotFound,
+        DockerBuildxNotFound or DockerDaemonNotRunning. Auto never changes what happens where Docker works: it turns only the
         missing-Docker error into a build. Docker is required, whatever the method, for a local build
         (-Tag), since the no-Docker builder only pushes to ECR.
     .PARAMETER BuildMethod
@@ -46,7 +46,7 @@ function Resolve-LambdaPSBuildMethod {
         $containerRuntime = Test-LambdaPSContainerRuntime
     }
     catch {
-        if ($BuildMethod -eq 'Auto' -and -not $LocalBuild -and ($_.FullyQualifiedErrorId -like 'DockerNotFound*' -or $_.FullyQualifiedErrorId -like 'DockerBuildxNotFound*')) {
+        if ($BuildMethod -eq 'Auto' -and -not $LocalBuild -and ($_.FullyQualifiedErrorId -split ',')[0] -in 'DockerNotFound', 'DockerBuildxNotFound', 'DockerDaemonNotRunning') {
             Write-Verbose "Docker is not available ($($_.Exception.Message)); building without it."
             return [PSCustomObject]@{ Method = 'NoDocker'; ContainerRuntime = $null }
         }

@@ -90,6 +90,7 @@ function New-LambdaPSRuntimeDeployment {
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
+                                DockerDaemonNotRunning,
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeImageTagExists,
@@ -208,8 +209,8 @@ function New-LambdaPSRuntimeDeployment {
         confirmed, and under -WhatIf: functions bound to it that were built for that architecture fail
         to invoke from their next cold start until they are redeployed.
     .PARAMETER BuildMethod
-        Auto (default): Docker when docker and buildx are installed, else the no-Docker builder. Docker or
-        NoDocker: that one only.
+        Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
+        no-Docker builder. Docker or NoDocker: that one only.
     .PARAMETER ProjectPath
         Where to scaffold the runtime-image project (alias -Path). Defaults to ./<RuntimeName>-runtime
         under the current location. NOTE: this directory is REPLACED. If it is a project this cmdlet

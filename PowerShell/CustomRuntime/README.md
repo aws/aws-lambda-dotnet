@@ -15,7 +15,8 @@ image. This module automates building and deploying it. It lives deliberately ou
 
 - PowerShell 7.4+
 - For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
-  `PATH`, or no container CLI at all. Where Docker or buildx is missing, the image build
+  `PATH`, or no container CLI at all. Where Docker or buildx is missing, or the Docker daemon isn't
+  running, the image build
   (`-BuildMethod Auto`, the default) builds and pushes the image of a project as scaffolded, without
   Docker. A local build (`-Tag`) or an edited Dockerfile still needs Docker. Docker is the only
   container CLI this module supports. A customer-managed runtime needs a

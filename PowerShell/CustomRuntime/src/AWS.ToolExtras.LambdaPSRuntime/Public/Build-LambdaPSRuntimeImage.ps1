@@ -44,8 +44,8 @@ function Build-LambdaPSRuntimeImage {
         cultures work as in the Docker image, which installs libicu.
 
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
-        PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound and DockerBuildxNotFound (the preflight,
-        Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code); for
+        PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound, DockerBuildxNotFound and
+        DockerDaemonNotRunning (the preflight, Test-LambdaPSContainerRuntime), and ExternalToolFailed (docker exited with a non-zero code); for
         a no-Docker build NoDockerLocalBuild, DockerfileModified, PwshX64HashNotPinned (an x86_64 build of a
         pwsh release with no pinned x64 hash), IcuPackageHashMismatch, OciBuilderNotFound, OciBuilderConflict
         and OciImagePushFailed.
@@ -62,8 +62,8 @@ function Build-LambdaPSRuntimeImage {
         The fully-qualified image reference to push the image to (for example an ECR URI). Use
         -ImageUri or -Tag.
     .PARAMETER BuildMethod
-        Auto (default): Docker when docker and buildx are installed, else the no-Docker builder (-ImageUri
-        only). Docker: always docker buildx. NoDocker: always the no-Docker builder.
+        Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
+        no-Docker builder (-ImageUri only). Docker: always docker buildx. NoDocker: always the no-Docker builder.
     .PARAMETER Region
         No-Docker push only: the region of the ECR token. Defaults to the region in -ImageUri's host.
     .PARAMETER ProfileName
