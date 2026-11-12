@@ -34,7 +34,7 @@ $requiredSetting = [ordered]@{
     pwsh      = 'ReleaseUrl', 'Download.RetryCount', 'Download.RetryDelaySeconds', 'Download.ConnectTimeoutSeconds',
                 'Download.OperationTimeoutSeconds', 'PackageRepository.Url', 'PackageRepository.OperationTimeoutSeconds',
                 'DefaultPatch', 'ArchiveSha256'
-    wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds'
+    wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds', 'Role.Attempts', 'Role.IntervalSeconds'
     function  = 'Timeout', 'MemorySize'
     installer = 'Version', 'FilesSha256'
 }

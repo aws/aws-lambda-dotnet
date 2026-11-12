@@ -50,6 +50,10 @@ function Publish-LambdaPSFunction {
         function) is refused with FunctionNotRuntimeBound, before its code is touched: PowerShell code
         would not run on it.
 
+        A create or configuration update that Lambda refuses because it cannot assume the role, as while
+        IAM propagates a new role, is retried for up to a minute, then fails with RoleNotAssumable. On an
+        update, its message starts with the state FunctionConfigurationNotApplied would report.
+
         The package is sent in the request (-Code_ZipFile, -ZipFile), so a .zip over the 50 MB Lambda
         accepts in a direct upload is refused with PackageTooLarge before any AWS call. This module has
         no S3 upload path.
@@ -196,6 +200,31 @@ function Publish-LambdaPSFunction {
     # every call; the supported parameters are -Code_ZipFile (create) and -ZipFile (update), both byte[].
     $zipBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $ZipPath).ProviderPath)
 
+    # Until IAM propagates a new role, Lambda refuses it as it refuses one that does not trust Lambda:
+    # InvalidParameterValueException, told apart only by its message. Chalice retries the create and the
+    # configuration update on this message.
+    $withRoleRetry = {
+        param([scriptblock]$Call)
+        $roleWait = $script:Config.wait.Role
+        for ($attempt = 1; ; $attempt++) {
+            try { return & $Call }
+            catch {
+                if ($_.Exception.Message -notmatch 'role.*cannot be assumed' -or
+                    -not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'InvalidParameterValueException')) { throw }
+                if ($attempt -ge $roleWait.Attempts) {
+                    throw [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Lambda could not assume role '$Role' in $($roleWait.Attempts) attempts, $($roleWait.IntervalSeconds) seconds apart. " +
+                             "Check that the role exists and that its trust policy allows lambda.amazonaws.com. The service reported: $($_.Exception.Message)"), $_.Exception),
+                        'RoleNotAssumable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Role)
+                }
+                # The wait can take a minute, so it is said once.
+                if ($attempt -eq 1) { Write-Information "Lambda cannot assume role '$Role' yet; retrying for up to $(($roleWait.Attempts - 1) * $roleWait.IntervalSeconds) seconds." -Tags 'LambdaPSDeploy' }
+                Write-Verbose "Lambda cannot assume role '$Role' yet; retrying (attempt $attempt/$($roleWait.Attempts))."
+                Start-Sleep -Seconds $roleWait.IntervalSeconds
+            }
+        }
+    }
     # Polls Get-LMFunctionConfiguration until State is Active and no update is InProgress, and returns
     # the last configuration read. Failed, Deleting, Deactivating and Deactivated never become ready, so
     # they stop at once; any other state (Pending, Inactive, ...) is waited on. -BeforeUpdate is for the
@@ -267,7 +296,7 @@ function Publish-LambdaPSFunction {
             ClientConfig             = $clientConfig
             ErrorAction              = 'Stop'
         }
-        try { $created = Publish-LMFunction @publishParams @environment @CredentialParameter }
+        try { $created = & $withRoleRetry { Publish-LMFunction @publishParams @environment @CredentialParameter } }
         catch {
             if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
             $exists = $true
@@ -382,10 +411,15 @@ function Publish-LambdaPSFunction {
         }
         else {
             try {
-                $created = Update-LMFunctionConfiguration -FunctionName $FunctionName -Region $Region -ClientConfig $clientConfig @configurationParams @CredentialParameter -ErrorAction Stop
+                $created = & $withRoleRetry { Update-LMFunctionConfiguration -FunctionName $FunctionName -Region $Region -ClientConfig $clientConfig @configurationParams @CredentialParameter -ErrorAction Stop }
             }
             catch {
                 # The code is already updated, so say what state the function is left in.
+                if ($_.FullyQualifiedErrorId -eq 'RoleNotAssumable') {
+                    throw [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new("$notAppliedState $($_.Exception.Message)", $_.Exception.InnerException),
+                        'RoleNotAssumable', [System.Management.Automation.ErrorCategory]::PermissionDenied, $Role)
+                }
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new(
                         ("$notAppliedState The configuration update failed. Fix the cause the service reported, then run " +

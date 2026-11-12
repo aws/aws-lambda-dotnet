@@ -724,6 +724,33 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    Context 'alias failure' {
+        BeforeEach {
+            $script:aliasSplat = @{ RuntimeName = 'my-ps'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'rt'; RuntimeVersion = 'v7' }
+            Mock 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('User is not authorized to perform lambda:UpdateRuntimeAlias') }
+        }
+
+        It 'fails with RuntimeAliasUpdateFailed naming <Command> when the alias <Case>' -TestCases @(
+            @{ Case = 'does not exist'; Exists = $false; Command = 'New-LMCRuntimeAlias' }
+            @{ Case = 'exists'; Exists = $true; Command = 'Update-LMCRuntimeAlias' }
+        ) {
+            if ($Exists) {
+                Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                    [PSCustomObject]@{ RuntimeVersion = 'v6'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                }
+            }
+            $err = { New-LambdaPSRuntimeDeployment @script:aliasSplat } | Should -Throw -ErrorId 'RuntimeAliasUpdateFailed,New-LambdaPSRuntimeDeployment' -PassThru
+
+            $err.Exception.Message | Should -Be ("Runtime 'my-ps' version 'v7' is published and ACTIVE, but alias 'default' could not be " +
+                "pointed at it. The version exists, so running the deploy again is refused; point the alias with $Command " +
+                "-RuntimeName my-ps -Name default -RuntimeVersion v7 -Region us-east-1. User is not authorized to perform " +
+                "lambda:UpdateRuntimeAlias")
+            $err.Exception.InnerException | Should -BeOfType ([LambdaPSTests.Fakes.AccessDeniedException])
+            $err.CategoryInfo.Category | Should -Be 'WriteError'
+            $err.TargetObject | Should -Be 'my-ps/default'
+        }
+    }
+
     Context 'architecture mapping' {
         It 'maps arm64 to linux/arm64 for the build' {
             $splat = @{

@@ -4,7 +4,7 @@ function Get-LambdaPSProjectMarker {
         Reads a scaffolded project's lambdaps-runtime.json marker.
     .DESCRIPTION
         The scaffolders write lambdaps-runtime.json at a project's root, recording its deployment
-        target, PowerShell version and pwsh version. This is the one reader of that file, shared by
+        target, PowerShell version, pwsh version and module version. This is the one reader of that file, shared by
         Build-LambdaPSRuntimePackage, Compress-LambdaPSFunctionPackage, Test-LambdaPSRuntimeProject,
         New-LambdaPSFunctionDeployment and New-LambdaPSRuntimeDeployment.
 
