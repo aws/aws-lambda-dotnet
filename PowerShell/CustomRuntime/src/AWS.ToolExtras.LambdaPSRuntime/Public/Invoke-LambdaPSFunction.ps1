@@ -24,7 +24,8 @@ function Invoke-LambdaPSFunction {
         payload and whose TargetObject is the payload (parsed when it is JSON), rather than returning
         the error payload as if it were a normal result. It is non-terminating, so functions piped in
         after it are still invoked; pass -ErrorAction Stop to stop at the first one. A request that
-        fails (permissions, a missing function) is still a terminating error.
+        fails (permissions, a missing function) is still a terminating error. A multi-tenant function
+        invoked without -TenantId fails with TenantIdRequired.
 
         Each invocation is guarded by ShouldProcess with ConfirmImpact Low, as Invoke-LMFunction is:
         it does not ask by default, -Confirm asks once per function, and -WhatIf names the function
@@ -203,7 +204,16 @@ function Invoke-LambdaPSFunction {
             # Confirmed once: Invoke-LMFunction must not ask again under -Confirm.
             $ConfirmPreference = 'None'
 
-            $response = Invoke-LMFunction @invokeParams @credentialParameter
+            try { $response = Invoke-LMFunction @invokeParams @credentialParameter }
+            catch {
+                # Lambda's only sign of a PER_TENANT function invoked without a tenant is this message.
+                if ($TenantId -or $_.Exception.Message -notlike '*enabled with tenancy configuration*' -or
+                    -not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'InvalidParameterValueException')) { throw }
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Function '$FunctionName' isolates tenants (PER_TENANT), so each invoke needs -TenantId. Pass -TenantId <tenant>.", $_.Exception),
+                    'TenantIdRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName)
+            }
 
             # Read the response payload. The SDK returns it as a MemoryStream; tolerate a plain string too.
             $responseText = $null
