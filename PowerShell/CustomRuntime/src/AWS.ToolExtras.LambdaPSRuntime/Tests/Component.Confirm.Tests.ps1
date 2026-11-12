@@ -104,6 +104,28 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
         $result.Output | Should -BeLike "*Skipped pointing alias 'default' at '$script:defaultVersion'*"
     }
 
+    It 'removes the temp project without asking again, without -ProjectPath' {
+        $stub = {
+            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
+            function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
+            function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'rt' } }
+            function script:Get-LMCRuntimeVersion { $null }
+            function script:Get-LMCRuntimeAlias { $null }
+            function script:Get-ECRImageMetadata { $null }
+            function script:New-LambdaPSRuntimeProject { param($Path) $null = New-Item -ItemType Directory -Path $Path; $script:LambdaPSCalls.Add($Path) }
+            function script:Build-LambdaPSRuntimeImage { }
+            function script:Initialize-LambdaPSEcrRepository { }
+            function script:Publish-LambdaPSRuntimeVersion { }
+            function script:Set-LambdaPSRuntimeAlias { }
+        }
+        $command = 'New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -Confirm'
+
+        $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'Y', 'Y', 'Y'
+
+        $result.Output | Should -Not -BeLike '*Remove Directory*'
+        Test-Path -LiteralPath @($result.Calls)[0] | Should -BeFalse
+    }
+
     It 'skips the alias when the runtime version publish is declined' {
         $project = [System.IO.Path]::Combine($TestDrive, 'rt-runtime-publish')
         $stub = {
