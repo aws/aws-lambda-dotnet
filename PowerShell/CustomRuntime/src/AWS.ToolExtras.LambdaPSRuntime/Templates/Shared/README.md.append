@@ -12,6 +12,13 @@ Set these as environment variables on the function:
   serializing it that deep can exhaust the function's memory or time. Lower the depth if a handler must
   return one; values nested deeper than the depth are sent as their type name (for example
   `System.Collections.Hashtable`).
+- The function's log format and application log level (Lambda sets `AWS_LAMBDA_LOG_FORMAT` and
+  `AWS_LAMBDA_LOG_LEVEL` from them). With the JSON format, each record the handler or its start-up code
+  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId` and `message`, plus
+  `errorType`, `errorMessage` and `stackTrace` for an error: `Write-Error` is `ERROR`, `Write-Warning`
+  `WARN`, `Write-Host`, `Write-Information` (unless `$InformationPreference` is `Ignore`) and start-up output
+  `INFO`, and `Write-Verbose` and `Write-Debug` `DEBUG` (when `$VerbosePreference` or `$DebugPreference`
+  lets them through). Records below the log level (default `INFO`) are dropped.
 
 Everything the handler writes to the pipeline is its response. A string is sent as it is; anything else
 is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)` to send a JSON array of

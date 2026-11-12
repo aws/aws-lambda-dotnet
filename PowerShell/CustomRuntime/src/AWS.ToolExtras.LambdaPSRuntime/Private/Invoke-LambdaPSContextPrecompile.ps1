@@ -1,20 +1,20 @@
 function Invoke-LambdaPSContextPrecompile {
     <#
     .SYNOPSIS
-        Compiles PowerShellLambdaContext.cs to a DLL with the bundled pwsh.
+        Compiles PowerShellLambdaContext.cs to a DLL with a pwsh of the target's release.
     .DESCRIPTION
         Build-LambdaPSRuntimePackage's precompile step. The DLL references the System.Runtime of the .NET
         it was compiled on: built with a newer host (pwsh 7.6 = .NET 10) it cannot load on a bundled 7.4
         (.NET 8), and every invoke fails with the LambdaContext type missing. So it is compiled with the
-        bundled pwsh, which the caller only runs on a Linux host of the target architecture.
+        bundled pwsh on a Linux host of the target architecture, or with the same pwsh release for the host's.
 
-          - The bundled pwsh's output goes to the host, not to the caller's pipeline.
-          - A bundled pwsh that cannot start (a temp folder mounted noexec, or a musl host for the glibc
+          - The pwsh's output goes to the host, not to the caller's pipeline.
+          - A pwsh that cannot start (a temp folder mounted noexec, or a musl host for the glibc
             build) returns $false, so the caller ships the .cs alone and the runtime compiles it at cold
             start.
           - A pwsh that starts and then fails, or writes no assembly, is a terminating ContextCompileFailed.
     .PARAMETER PwshPath
-        The bundled pwsh binary. Its execute bit is set first: a caller-supplied tarball, or one
+        The pwsh binary to compile with. Its execute bit is set first: a caller-supplied tarball, or one
         extracted onto a file system without Unix modes, may lack it.
     .PARAMETER SourcePath
         The PowerShellLambdaContext.cs to compile.
@@ -23,7 +23,7 @@ function Invoke-LambdaPSContextPrecompile {
     .OUTPUTS
         System.Boolean
 
-        $true when the DLL was written, $false when the bundled pwsh could not start.
+        $true when the DLL was written, $false when the pwsh could not start.
     .EXAMPLE
         Invoke-LambdaPSContextPrecompile -PwshPath $stage/powershell/pwsh -SourcePath $stage/PowerShellLambdaContext.cs -OutputPath $stage/PowerShellLambdaContext.dll
 
@@ -59,7 +59,7 @@ function Invoke-LambdaPSContextPrecompile {
         $exitCode = $LASTEXITCODE
     }
     catch [System.Management.Automation.ApplicationFailedException] {
-        Write-Verbose "The bundled pwsh '$PwshPath' could not start: $($_.Exception.Message)"
+        Write-Verbose "The pwsh '$PwshPath' could not start: $($_.Exception.Message)"
         return $false
     }
     finally {
@@ -70,7 +70,7 @@ function Invoke-LambdaPSContextPrecompile {
         $reason = if ($exitCode -ne 0) { "it exited with $exitCode" } else { 'it wrote no assembly' }
         # `throw`, so the error stops the caller too (see Invoke-LambdaPSExternalTool).
         throw [System.Management.Automation.ErrorRecord]::new(
-            [System.InvalidOperationException]::new("The bundled pwsh did not precompile PowerShellLambdaContext.dll: $reason."),
+            [System.InvalidOperationException]::new("The pwsh '$PwshPath' did not precompile PowerShellLambdaContext.dll: $reason."),
             'ContextCompileFailed', [System.Management.Automation.ErrorCategory]::InvalidResult, $PwshPath)
     }
     $true

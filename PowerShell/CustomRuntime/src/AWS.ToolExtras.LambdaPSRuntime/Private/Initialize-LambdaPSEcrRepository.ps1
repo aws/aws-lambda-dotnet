@@ -18,12 +18,12 @@ function Initialize-LambdaPSEcrRepository {
              gets the push credentials from its own AWS credential chain (AWS_PROFILE, the AWS
              environment variables, the default profile), not from -CredentialParameter, so a
              warning says so when -CredentialParameter is given.
-          3. New-ECRRepository (with scan on push) when the repository is absent, then the Lambda
-             image-pull grant, scoped to this account and -RuntimeArn. The existing policy is READ and
-             the grant MERGED in (Merge-LambdaPSEcrPullPolicy); nothing is written when Lambda already
-             has access for this runtime, with a warning when that existing grant does not pin the
-             account. Set-ECRRepositoryPolicy replaces a policy wholesale, so writing a fixed policy
-             would delete every other grant on an existing repository.
+          3. New-ECRRepository (with scan on push and immutable tags) when the repository is absent,
+             then the Lambda image-pull grant, scoped to this account and -RuntimeArn. The existing
+             policy is READ and the grant MERGED in (Merge-LambdaPSEcrPullPolicy); nothing is written
+             when Lambda already has access for this runtime, with a warning when that existing grant
+             does not pin the account. Set-ECRRepositoryPolicy replaces a policy wholesale, so writing
+             a fixed policy would delete every other grant on an existing repository.
 
         Known limit: ECR has no conditional policy write. Two deploys that share one -RepositoryName
         and run at the same time each read the policy, merge in their grant and write the whole
@@ -197,8 +197,9 @@ function Initialize-LambdaPSEcrRepository {
     $created = $false
     if (-not $existing) {
         try {
-            # Scan on push: the repository holds the image every function on the runtime runs.
-            $null = New-ECRRepository -RepositoryName $RepositoryName -ImageScanningConfiguration_ScanOnPush $true -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
+            # Scan on push: the repository holds the image every function on the runtime runs. Immutable
+            # tags: each tag is a runtime version name, and must keep naming that version's image.
+            $null = New-ECRRepository -RepositoryName $RepositoryName -ImageScanningConfiguration_ScanOnPush $true -ImageTagMutability IMMUTABLE -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
             $created = $true
         }
         catch {
