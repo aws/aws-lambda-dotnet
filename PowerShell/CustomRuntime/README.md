@@ -51,8 +51,8 @@ redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by
 `New-LambdaPSRuntimeDeployment` finds a newer one it can verify (see
 [Patching a runtime](#patching-a-runtime)); the
 releases and their tarball SHA256s are listed in `Config/pwsh.psd1`. `-PwshVersion` picks another
-release: an x86_64 image installs any x.y.z from Microsoft's signed RPM repository, while an arm64
-image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
+release: an x86_64 image built with Docker installs any x.y.z from Microsoft's signed RPM repository,
+while an arm64 or no-Docker image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
 each line to its newest servicing release and keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
 PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
 ([lifecycle](https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle)):
@@ -149,8 +149,8 @@ deploy.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
-| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
-| arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
+| x86_64 (Docker) | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
+| arm64, or x86_64 without Docker | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
 
 The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When
 the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which, so a patch

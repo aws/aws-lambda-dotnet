@@ -71,6 +71,21 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 2 -Exactly -ParameterFilter { $BuildMethod -ne 'NoDocker' }
         }
 
+        It 'installs the newest pinned x86_64 release, with a warning, when the repository has a newer one' {
+            # Arrange
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { '7.4.99' }
+            $pinned = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object { $_ -like '7.4.*' -and $script:Config.pwsh.ArchiveSha256[$_].x64 } |
+                Sort-Object { [version]$_ })[-1]
+
+            # Act
+            $result = New-LambdaPSRuntimeDeployment @script:splat -WarningVariable warnings -WarningAction SilentlyContinue
+
+            # Assert
+            $result.RuntimeVersion | Should -Be "$pinned-1"
+            @($warnings) -like '*pwsh 7.4.99 is the newest*no-Docker x86_64 build*-BuildMethod Docker*' | Should -HaveCount 1
+            Should -Invoke 'New-LambdaPSRuntimeProject' -Times 1 -Exactly -ParameterFilter { $PwshVersion -eq $pinned }
+        }
+
         It 'refuses an x86_64 pwsh release with no pinned x64 hash in preflight, under -WhatIf too, before anything is created' {
             { New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99' -WhatIf } |
                 Should -Throw -ErrorId 'PwshX64HashNotPinned,New-LambdaPSRuntimeDeployment'

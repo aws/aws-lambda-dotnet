@@ -129,8 +129,9 @@ function New-LambdaPSRuntimeDeployment {
     .PARAMETER PwshVersion
         The full pwsh version to install (x.y.z, for example 7.4.20), forwarded to
         New-LambdaPSRuntimeProject. When omitted, the newest release of -PowerShellVersion the build
-        can verify is used: on x86_64 the newest in Microsoft's RPM repository (the module's pinned
-        release if the repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
+        can verify is used: for a Docker x86_64 build the newest in Microsoft's RPM repository (the
+        module's pinned release if the repository cannot be read), for arm64 or a no-Docker build the
+        newest with a pinned tarball SHA256.
         If that pinned release is older than the one the alias runs, on the same line and
         architecture, the deploy stops with PwshReleaseOlderThanAlias.
         Give it to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release.
@@ -416,10 +417,13 @@ function New-LambdaPSRuntimeDeployment {
 
         # Preflight (read-only; always runs, even under -WhatIf).
         # The pwsh lookup reads Microsoft's package repository, so it runs after the local checks.
+        Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
+        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod
+        $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
         $releaseParams = @{
             PowerShellVersion = $PowerShellVersion
             PwshVersion       = $PwshVersion
-            InstallSource     = if ($Architecture -eq 'arm64') { 'PinnedArchive' } else { 'PackageRepository' }
+            InstallSource     = if ($Architecture -eq 'arm64' -or $noDocker) { 'PinnedArchive' } else { 'PackageRepository' }
             Architecture      = $Architecture
         }
         $pwshRelease = Resolve-LambdaPSPwshRelease @releaseParams
@@ -451,9 +455,6 @@ function New-LambdaPSRuntimeDeployment {
         $shownInformation = @{}
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
-        Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
-        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod
-        $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
         if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture x86_64))) {
             $PSCmdlet.ThrowTerminatingError((New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $resolvedPwshVersion))
         }
