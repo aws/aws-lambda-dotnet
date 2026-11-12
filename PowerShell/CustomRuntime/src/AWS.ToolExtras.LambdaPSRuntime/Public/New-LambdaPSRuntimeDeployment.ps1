@@ -113,6 +113,9 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeVersionWaitFailed
                                 (the new version's state could not be read),
                                 RuntimeImageArchitectureMismatch
+          alias                 RuntimeAliasUpdateFailed (the version is published, but the alias
+                                could not be created or moved; the message names the command to
+                                finish with)
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
@@ -800,6 +803,11 @@ function New-LambdaPSRuntimeDeployment {
 
         # Stage 4: Point the alias at the published version.
         Write-Verbose "Stage 4: Point alias '$RuntimeAlias' at '$RuntimeVersion'."
+        # Declined or failed, this stage leaves the version published and a rerun refused, so name the one
+        # command that moves or creates the alias. The preflight read says which.
+        $aliasCommand = if ($null -ne $currentAlias) { 'Update-LMCRuntimeAlias' } else { 'New-LMCRuntimeAlias' }
+        $aliasCommandLine = ("$aliasCommand -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $RuntimeVersion " +
+            "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)")
         if ($declinedStage) {
             Write-Warning "Skipped pointing alias '$RuntimeAlias' at '$RuntimeVersion', because the $declinedStage stage was declined."
         }
@@ -810,16 +818,24 @@ function New-LambdaPSRuntimeDeployment {
                 RuntimeVersion = $RuntimeVersion
                 Region         = $Region
             }
-            $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
+            try {
+                $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
+            }
+            catch {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Runtime '$RuntimeName' version '$RuntimeVersion' is published and ACTIVE, but alias '$RuntimeAlias' " +
+                             "could not be pointed at it. The version exists, so running the deploy again is refused; " +
+                             "point the alias with $aliasCommandLine. $($_.Exception.Message)"),
+                            $_.Exception),
+                        'RuntimeAliasUpdateFailed', [System.Management.Automation.ErrorCategory]::WriteError, "$RuntimeName/$RuntimeAlias"))
+            }
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
         }
         elseif (-not $WhatIfPreference) {
-            # The version is published, but functions bound to the alias stay where they are. The preflight
-            # read says whether the alias exists, so name the one command that moves or creates it.
-            $aliasCommand = if ($null -ne $currentAlias) { 'Update-LMCRuntimeAlias' } else { 'New-LMCRuntimeAlias' }
             Write-Warning ("Alias '$RuntimeAlias' was not pointed at '$RuntimeVersion', because that stage was declined. " +
-                "Point it later with $aliasCommand -RuntimeName $RuntimeName -Name $RuntimeAlias " +
-                "-RuntimeVersion $RuntimeVersion -Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter).")
+                "Point it later with $aliasCommandLine.")
         }
 
         [PSCustomObject]@{
