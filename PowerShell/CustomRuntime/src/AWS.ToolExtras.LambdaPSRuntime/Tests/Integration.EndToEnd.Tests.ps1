@@ -283,7 +283,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -Region $script:Region.ToUpperInvariant() `
+        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -RuntimeAlias default -Region $script:Region.ToUpperInvariant() `
             -ProjectPath ([System.IO.Path]::Combine($script:Work, 'cmr')) -Confirm:$false
         $runtime.Region | Should -BeExactly $lowerRegion
         $runtime.RuntimeArn | Should -MatchExactly $inRegion

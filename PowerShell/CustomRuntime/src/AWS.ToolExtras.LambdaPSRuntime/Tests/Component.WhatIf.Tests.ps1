@@ -31,7 +31,7 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
             Mock $command -ModuleName $script:moduleName -MockWith { throw 'must not call AWS under -WhatIf' }
         }
         $script:projectPath = Join-Path $TestDrive "rt-$([guid]::NewGuid().ToString('N'))"
-        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
+        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4'; RuntimeAlias = 'default'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
     }
 
     It 'previews a valid deploy without writing anything' {

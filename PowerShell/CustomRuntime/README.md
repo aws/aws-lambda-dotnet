@@ -74,8 +74,9 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'default' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+#    publish version -> point the 'default' alias at it). -RuntimeAlias is required, as every function
+#    bound to the alias runs the new version; Tab offers 'default' and the runtime's aliases.
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -154,7 +155,7 @@ the alias already pointed at a version, the result's `PreviousRuntimeVersion` sa
 can be rolled back:
 
 ```powershell
-$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1
 Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
 ```
