@@ -93,6 +93,39 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 0 -Exactly
         }
 
+        Context 'when the repository has an x86_64 release newer than the pins' {
+            BeforeEach {
+                Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { '7.4.99' }
+            }
+
+            It 'reports RuntimeVersionExists for an existing -RuntimeVersion' {
+                # Arrange
+                Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ RuntimeVersion = 'v1' } }
+
+                # Act / Assert
+                { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 -WarningAction SilentlyContinue } |
+                    Should -Throw -ErrorId 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
+            }
+
+            It 'advises building with Docker when the alias runs a newer release with no pinned x64 hash' {
+                # Arrange
+                Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.99-1' } }
+
+                # Act / Assert
+                { New-LambdaPSRuntimeDeployment @script:splat -WhatIf -WarningAction SilentlyContinue } |
+                    Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment' -ExpectedMessage '*runs pwsh 7.4.99*Build with Docker (-BuildMethod Docker) to keep it*'
+            }
+
+            It 'previews under -WhatIf without building' {
+                # Act
+                $null = New-LambdaPSRuntimeDeployment @script:splat -WhatIf -WarningAction SilentlyContinue
+
+                # Assert
+                Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 0 -Exactly
+                Should -Invoke 'Publish-LambdaPSRuntimeVersion' -Times 0 -Exactly
+            }
+        }
+
         It 'fails in preflight under -BuildMethod Docker when docker is missing, before anything is created' {
             { New-LambdaPSRuntimeDeployment @script:splat -BuildMethod Docker } | Should -Throw -ErrorId 'DockerNotFound,New-LambdaPSRuntimeDeployment'
             Should -Invoke 'New-LambdaPSRuntimeProject' -Times 0 -Exactly

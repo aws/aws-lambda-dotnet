@@ -434,8 +434,8 @@ function New-LambdaPSRuntimeDeployment {
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
-        # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
-        # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
+        # An arm64 or no-Docker image installs pwsh from a tarball checked against a pinned SHA256. Without
+        # one the build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
         if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
             # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
@@ -451,14 +451,14 @@ function New-LambdaPSRuntimeDeployment {
                          "arm64 hash$pinnedList. Nothing was created.")),
                     'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
         }
+        if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture x86_64))) {
+            $PSCmdlet.ThrowTerminatingError((New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $resolvedPwshVersion))
+        }
         # The release is shown even without -InformationAction Continue, since an unchanged command can
         # install a new release; an -InformationAction the caller gives still applies.
         $shownInformation = @{}
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
-        if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture x86_64))) {
-            $PSCmdlet.ThrowTerminatingError((New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $resolvedPwshVersion))
-        }
         if ($noDocker) {
             Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy'
             # Load the library now, so a missing or conflicting copy fails before anything is created.
@@ -669,12 +669,17 @@ function New-LambdaPSRuntimeDeployment {
                     if ($aliasRelease -and -not $aliasRelease.StartsWith("$PowerShellVersion.", [System.StringComparison]::Ordinal)) { $aliasRelease = $null }
                 }
                 if ($aliasRelease -and [version]$aliasRelease -gt [version]$resolvedPwshVersion) {
+                    # A no-Docker x86_64 build can install only pinned tarballs, so it cannot keep an RPM-only release.
+                    $keep = if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $aliasRelease -Architecture x86_64))) {
+                        'Build with Docker (-BuildMethod Docker) to keep it'
+                    }
+                    else { "Pass -PwshVersion $aliasRelease to keep it" }
                     $PSCmdlet.ThrowTerminatingError(
                         [System.Management.Automation.ErrorRecord]::new(
                             [System.InvalidOperationException]::new(
                                 ("Alias '$RuntimeAlias' of runtime '$RuntimeName' runs pwsh $aliasRelease, newer than the " +
-                                 "pinned release $resolvedPwshVersion this deploy would install. Pass -PwshVersion $aliasRelease " +
-                                 "to keep it, or -PwshVersion $resolvedPwshVersion to move back. Nothing was built or pushed.")),
+                                 "pinned release $resolvedPwshVersion this deploy would install. $keep, or pass -PwshVersion " +
+                                 "$resolvedPwshVersion to move back. Nothing was built or pushed.")),
                             'PwshReleaseOlderThanAlias', [System.Management.Automation.ErrorCategory]::InvalidOperation, $resolvedPwshVersion))
                 }
             }
