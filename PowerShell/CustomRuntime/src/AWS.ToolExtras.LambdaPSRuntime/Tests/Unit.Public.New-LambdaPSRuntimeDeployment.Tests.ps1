@@ -753,9 +753,10 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
     Context 'architecture mapping' {
         It 'maps arm64 to linux/arm64 for the build' {
+            # Docker, since Auto builds without it on an x86_64 Linux host with no arm64 emulator.
             $splat = @{
                 RuntimeName = 'my-ps'; PowerShellVersion = '7.4'
-                Region = 'us-east-1'; RepositoryName = 'rt'; Architecture = 'arm64'
+                Region = 'us-east-1'; RepositoryName = 'rt'; Architecture = 'arm64'; BuildMethod = 'Docker'
             }
             $result = New-LambdaPSRuntimeDeployment @splat
 

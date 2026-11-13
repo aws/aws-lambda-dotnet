@@ -21,6 +21,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
 
         BeforeEach {
             Mock 'Invoke-LambdaPSExternalTool' -MockWith { }
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -MockWith { }
             Mock 'Test-LambdaPSContainerRuntime' -MockWith {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new('The docker CLI was not found on PATH.'), 'DockerNotFound',

@@ -63,7 +63,8 @@ function Build-LambdaPSRuntimeImage {
         -ImageUri or -Tag.
     .PARAMETER BuildMethod
         Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
-        no-Docker builder (-ImageUri only). Docker: always docker buildx. NoDocker: always the no-Docker builder.
+        no-Docker builder (-ImageUri only). It also uses the no-Docker builder when docker's buildx builder
+        lists no -Architecture platform, for example with no emulator registered. Docker: always docker buildx. NoDocker: always the no-Docker builder.
     .PARAMETER Region
         No-Docker push only: the region of the ECR token. Defaults to the region in -ImageUri's host.
     .PARAMETER ProfileName
@@ -179,7 +180,7 @@ function Build-LambdaPSRuntimeImage {
         # The same docker and buildx check as the deploy preflight (DockerNotFound / DockerBuildxNotFound).
         # The build runs the docker program it found, so a docker function or alias cannot stand in for it.
         # Auto falls back to the no-Docker builder only when that check fails and the image is pushed.
-        $resolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -LocalBuild:(-not $push)
+        $resolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -Architecture $Architecture -LocalBuild:(-not $push)
         if ($resolved.Method -eq 'NoDocker') {
             # Every check that reads only local files runs before ShouldProcess, so -WhatIf fails the same way.
             $plan = Get-LambdaPSOciImagePlan -Path $root -Architecture $Architecture
@@ -274,6 +275,7 @@ function Build-LambdaPSRuntimeImage {
                 $output = $_.Exception.Data['Output']
                 $emulation = 'on Linux, register QEMU with binfmt_misc (for example: docker run --privileged --rm ' +
                     'tonistiigi/binfmt --install all); Docker Desktop includes emulation.'
+                if ($push) { $emulation += ' Or build with -BuildMethod NoDocker, which needs no emulator.' }
                 $hint = if ($null -eq $output) {
                     "The build targets $platform on a $hostPlatform host. If docker reported 'exec format error', no " +
                     "emulator is registered for ${platform}: $emulation Otherwise, see the docker output above for the failing step."

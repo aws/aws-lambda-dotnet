@@ -15,7 +15,8 @@ AfterAll {
 
 Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
     BeforeEach {
-        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker' } }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
+        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
         Mock 'Get-STSCallerIdentity' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Account = '111122223333' } }
         Mock 'Get-LMCRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = $RuntimeName } }
         Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
@@ -147,7 +148,8 @@ Describe 'Build-LambdaPSRuntimePackage -WhatIf' -Tag 'Component' {
 # -WhatIf on the cmdlets that write files or run docker must write nothing and run nothing.
 Describe '-WhatIf writes nothing' -Tag 'Component' {
     It 'Build-LambdaPSRuntimeImage runs no docker build' {
-        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker' } }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
+        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName $script:moduleName -MockWith { }
         $project = Join-Path $TestDrive 'image-whatif'
         $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion 7.4

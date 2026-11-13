@@ -210,7 +210,8 @@ function New-LambdaPSRuntimeDeployment {
         to invoke from their next cold start until they are redeployed.
     .PARAMETER BuildMethod
         Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
-        no-Docker builder. Docker or NoDocker: that one only.
+        no-Docker builder. It also uses the no-Docker builder when docker's buildx builder lists
+        no -Architecture platform, for example with no emulator registered. Docker or NoDocker: that one only.
     .PARAMETER ProjectPath
         Where to scaffold the runtime-image project (alias -Path). Defaults to ./<RuntimeName>-runtime
         under the current location. NOTE: this directory is REPLACED. If it is a project this cmdlet
@@ -419,7 +420,7 @@ function New-LambdaPSRuntimeDeployment {
         # Preflight (read-only; always runs, even under -WhatIf).
         # The pwsh lookup reads Microsoft's package repository, so it runs after the local checks.
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
-        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod
+        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -Architecture $Architecture
         $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
         $releaseParams = @{
             PowerShellVersion = $PowerShellVersion

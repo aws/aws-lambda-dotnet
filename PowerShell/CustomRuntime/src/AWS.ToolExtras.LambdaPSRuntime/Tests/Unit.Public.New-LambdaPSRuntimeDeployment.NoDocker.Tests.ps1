@@ -16,6 +16,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
     Describe 'New-LambdaPSRuntimeDeployment -BuildMethod' -Tag 'Unit' {
         BeforeEach {
             Push-Location $TestDrive
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -MockWith { }
             Mock 'Test-LambdaPSContainerRuntime' -MockWith {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new('The docker CLI was not found on PATH.'), 'DockerNotFound',
@@ -69,6 +70,19 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Import-LambdaPSOciBuilder' -Times 0 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 1 -Exactly -ParameterFilter { -not $SkipDockerLogin }
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 2 -Exactly -ParameterFilter { $BuildMethod -ne 'NoDocker' }
+        }
+
+        It 'Should deploy without Docker under Auto when docker''s builder lists no linux/arm64 platform' {
+            # Arrange
+            Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -ParameterFilter { $Path -eq '/usr/bin/docker' } -MockWith { 'linux/amd64', 'linux/386' }
+
+            # Act
+            $null = New-LambdaPSRuntimeDeployment @script:splat -Architecture arm64
+
+            # Assert
+            Should -Invoke 'Get-LambdaPSDockerBuilderPlatform' -ParameterFilter { $Path -eq '/usr/bin/docker' } -Times 1 -Exactly
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 1 -Exactly -ParameterFilter { $BuildMethod -eq 'NoDocker' -and $Architecture -eq 'arm64' }
         }
 
         It 'installs the newest pinned x86_64 release, with a warning, when the repository has a newer one' {

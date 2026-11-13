@@ -49,7 +49,8 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
         # The real Publish-LambdaPSRuntimeVersion and Set-LambdaPSRuntimeAlias run; only the
         # local tooling and the AWS cmdlets are stubbed.
         $stub = {
-            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker' } }
+            # Path is set to a docker that does not exist, so the builder-platform probe reports none and Auto keeps Docker.
+            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
             function script:Get-STSCallerIdentity { [CmdletBinding()] param($Region, $ClientConfig) [PSCustomObject]@{ Account = '111122223333' } }
             # Advanced functions, so a parameter the caller passes but the stub does not declare fails the test.
             function script:New-LambdaPSRuntimeProject { [CmdletBinding(SupportsShouldProcess)] param($Path, $PowerShellVersion, $PwshVersion, $IncludeModule, $MissingModuleAction, $ModuleRepository, [switch]$Force) }

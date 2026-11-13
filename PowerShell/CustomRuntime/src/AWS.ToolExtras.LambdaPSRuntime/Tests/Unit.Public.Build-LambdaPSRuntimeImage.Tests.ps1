@@ -14,6 +14,7 @@ AfterAll {
 Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
     BeforeEach {
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
             [PSCustomObject]@{ Name = 'docker'; Path = '/opt/found/bin/docker'; BuildxVersion = 'v0.0.0' }
         }
@@ -169,6 +170,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
     Context 'error handling' {
         It 'throws the container-runtime preflight error before building, under -WhatIf too' {
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
             Mock 'Test-LambdaPSContainerRuntime' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new('The docker CLI was not found on PATH.'),
@@ -258,6 +260,18 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
                 $err.Exception.Message | Should -Match "If docker reported 'exec format error'"
                 $err.Exception.Message | Should -Match 'binfmt'
                 $err.Exception.Message | Should -Match 'Docker Desktop includes emulation'
+                $err.Exception.Message | Should -Not -Match '-BuildMethod NoDocker'
+            }
+
+            It 'Should name -BuildMethod NoDocker in the emulation hint of a push' {
+                # Act
+                $err = $null
+                try { Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1' -Architecture $script:otherArchitecture -BuildMethod Docker }
+                catch { $err = $_ }
+
+                # Assert
+                $err.FullyQualifiedErrorId | Should -BeLike 'ExternalToolFailed*'
+                $err.Exception.Message | Should -Match 'Or build with -BuildMethod NoDocker, which needs no emulator\.'
             }
 
             # A broken Dockerfile on an arm64 Mac (the default build is cross-architecture there) must not
