@@ -118,8 +118,9 @@ try {
                 # the nearest one, so the stop is seen here and reported.
                 $private:__LambdaPSRuntimeScriptCompleted = $false
                 do {
-                    # With AWS_LAMBDA_LOG_FORMAT=JSON, the top-level code's records and output are logged as JSON.
-                    if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:__LambdaPSRuntimeHandler.ScriptFilePath }
+                    # With AWS_LAMBDA_LOG_FORMAT=JSON, the top-level code's records and output are logged as JSON;
+                    # in text mode its errors are, as the handler's are, one line each.
+                    if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:__LambdaPSRuntimeHandler.ScriptFilePath 2>&1 | Microsoft.PowerShell.Core\ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { pwsh-runtime\Write-LambdaLog -Record $_ } else { $_ } } }
                     else { . $private:__LambdaPSRuntimeHandler.ScriptFilePath *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     $private:__LambdaPSRuntimeScriptCompleted = $true
                 } while ($false)
@@ -134,7 +135,7 @@ try {
                 $private:__LambdaPSRuntimeImportCompleted = $false
                 do {
                     try {
-                        if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop }
+                        if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop } 2>&1 | Microsoft.PowerShell.Core\ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { pwsh-runtime\Write-LambdaLog -Record $_ } else { $_ } } }
                         # In a script block: redirected directly, Import-Module drops the error records the module's code writes.
                         else { . { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop } *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     }

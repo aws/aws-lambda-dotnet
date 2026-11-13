@@ -787,8 +787,26 @@ public class InvokeBin : PSCmdlet {
         $posts[0].Body | Should -Be 'ok'
         $errorLine = @($log -split '\n' | Where-Object { $_ -like '*soft*' })
         $errorLine.Count | Should -Be 1
-        $errorLine[0] | Should -BeLike "soft`rat Warn, *fn.ps1: line *"
+        $errorLine[0] | Should -BeLike "``[Error``] - soft`rat Warn, *fn.ps1: line *"
         $log | Should -Not -Match 'Invoke-FunctionHandler\.ps1:\d|Line \|'
+    }
+
+    It 'logs the start-up code''s Write-Error as one labelled line in the text log format (<Handler>)' -ForEach @(
+        @{ Handler = 'startup.ps1::Handle' }
+        @{ Handler = 'Module::StartMod::Handle' }
+    ) {
+        $code = 'Write-Error ''startup-error''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'startup.ps1')) -Value $code
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod', 'StartMod.psm1')) -Value $code
+
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}' -LogVariable log)
+
+        $posts[0].Body | Should -Be 'ok'
+        $errorLine = @($log -split '\n' | Where-Object { $_ -like '*startup-error*' })
+        $errorLine.Count | Should -Be 1
+        $errorLine[0] | Should -BeLike '`[Error`] - startup-error*'
+        $log | Should -Not -Match 'Line \|'
     }
 
     It 'posts a handler''s exception to /error and goes on to the next event' {
@@ -813,7 +831,7 @@ public class InvokeBin : PSCmdlet {
         $lines = $log -split '\n'
         $lines | Where-Object { $_ -like 'END RequestId*' -or $_ -like '`[RUNTIME`]forged*' } | Should -BeNullOrEmpty
         # The message, where it was thrown and the stack, on the one line.
-        $errorLine = @($lines | Where-Object { $_ -like 'bad name: x*' })
+        $errorLine = @($lines | Where-Object { $_ -like '`[Error`] - bad name: x*' })
         $errorLine.Count | Should -Be 1
         $errorLine[0] | Should -BeLike "*`rEND RequestId: req-1`r``[RUNTIME``]forged line*fn.ps1*"
     }
