@@ -55,8 +55,10 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Select-LambdaPSBuildContextFile -Path $root | Should -Be @('.dockerignore', 'd/b.tmp')
         }
 
-        It 'refuses a character class rather than match it differently from docker' {
-            $root = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, 'class')) -File 'a.txt' -Ignore '[ab].txt'
+        It 'refuses <Pattern> rather than match it differently from docker' -ForEach @(
+            @{ Pattern = '[ab].txt' }, @{ Pattern = 'foo\*' }, @{ Pattern = 'sub/../secret' }
+        ) {
+            $root = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, "refused-$($Pattern.Length)")) -File 'a.txt' -Ignore $Pattern
 
             { Select-LambdaPSBuildContextFile -Path $root } | Should -Throw -ErrorId 'DockerIgnorePatternUnsupported'
         }

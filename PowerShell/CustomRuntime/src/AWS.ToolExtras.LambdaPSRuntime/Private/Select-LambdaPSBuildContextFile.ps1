@@ -19,8 +19,8 @@ function Select-LambdaPSBuildContextFile {
         A link is skipped when its target is outside -Path (with a warning), is excluded, or is a folder
         the link is inside (with a warning); a folder link inside -Path is walked.
 
-        Character classes ('[a-z]') and escapes are not supported; a pattern that uses one is refused with
-        DockerIgnorePatternUnsupported rather than matched differently from docker.
+        Character classes ('[a-z]'), '\' (an escape to docker) and '..' segments are not supported; a pattern
+        that uses one is refused with DockerIgnorePatternUnsupported rather than matched differently from docker.
     .PARAMETER Path
         The build context root.
     .OUTPUTS
@@ -50,13 +50,13 @@ function Select-LambdaPSBuildContextFile {
             $include = $pattern.StartsWith('!')
             if ($include) { $pattern = $pattern.Substring(1).Trim() }
             # Cleaned as docker cleans it (filepath.Clean), so 'secrets/' matches the folder 'secrets'.
-            $pattern = ($pattern.Replace('\', '/') -replace '/+', '/' -replace '^(\./|/)+', '').TrimEnd('/')
+            $pattern = ($pattern -replace '/+', '/' -replace '^(\./|/)+', '').TrimEnd('/')
             if ($pattern.Length -eq 0) { continue }
-            if ($pattern -match '[\[\]]') {
+            if ($pattern -match '[\[\]\\]|(^|/)\.\.(/|$)') {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.NotSupportedException]::new(
-                        ("The .dockerignore pattern '$line' in '$root' uses a character class, which the no-Docker build does " +
-                         'not match. Rewrite it with * and ?, or build with -BuildMethod Docker.')),
+                        ("The .dockerignore pattern '$line' in '$root' uses a character class, a '\' or a '..' segment, which the " +
+                         'no-Docker build does not match. Rewrite it with /, * and ?, or build with -BuildMethod Docker.')),
                     'DockerIgnorePatternUnsupported', [System.Management.Automation.ErrorCategory]::InvalidData, $ignorePath)
             }
             # '**/' is any number of leading folders, '**' anything, '*' and '?' stop at '/'.
