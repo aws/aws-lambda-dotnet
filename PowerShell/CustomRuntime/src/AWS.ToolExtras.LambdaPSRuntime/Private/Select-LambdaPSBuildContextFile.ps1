@@ -16,6 +16,9 @@ function Select-LambdaPSBuildContextFile {
           - a pattern starting with '!' includes again what an earlier pattern excluded, and the last
             pattern that matches a path decides.
 
+        A link is skipped when its target is outside -Path (with a warning), is excluded, or is a folder
+        the link is inside (with a warning); a folder link inside -Path is walked.
+
         Character classes ('[a-z]') and escapes are not supported; a pattern that uses one is refused with
         DockerIgnorePatternUnsupported rather than matched differently from docker.
     .PARAMETER Path
@@ -73,20 +76,52 @@ function Select-LambdaPSBuildContextFile {
         }
     }
 
-    $files = [System.IO.Directory]::EnumerateFiles($root, '*', [System.IO.SearchOption]::AllDirectories)
-    $selected = foreach ($file in $files) {
-        $relative = $file.Substring($root.Length).TrimStart('\', '/').Replace('\', '/')
-        # A pattern excludes a path when it matches the path or any folder above it.
-        $prefixes = [System.Collections.Generic.List[string]]::new()
-        $segments = $relative.Split('/')
-        for ($n = 1; $n -le $segments.Count; $n++) { $prefixes.Add(($segments[0..($n - 1)] -join '/')) }
+    # A pattern excludes a path when it matches the path or any folder above it; the last match decides.
+    $isExcluded = {
+        param([string]$Relative)
+        $segments = $Relative.Split('/')
         $excluded = $false
         foreach ($rule in $rules) {
-            foreach ($prefix in $prefixes) {
-                if ($rule.Regex.IsMatch($prefix)) { $excluded = -not $rule.Include; break }
+            for ($n = 1; $n -le $segments.Count; $n++) {
+                if ($rule.Regex.IsMatch(($segments[0..($n - 1)] -join '/'))) { $excluded = -not $rule.Include; break }
             }
         }
-        if (-not $excluded) { $relative }
+        $excluded
+    }
+
+    # Docker sends a link as a link, so a link out of the context, or to a path .dockerignore excludes,
+    # never brings its target into the image. A folder link inside the context is walked, as the .zip build does.
+    $separator = [System.IO.Path]::DirectorySeparatorChar
+    $comparison = if ($IsLinux) { [System.StringComparison]::Ordinal } else { [System.StringComparison]::OrdinalIgnoreCase }
+    $realRoot = (Get-LambdaPSRealPath -Path $root).TrimEnd($separator)
+    $selected = [System.Collections.Generic.List[string]]::new()
+    $folders = [System.Collections.Generic.Stack[object]]::new()
+    $folders.Push([PSCustomObject]@{ Real = $realRoot; Reached = ''; Chain = @($realRoot) })
+    while ($folders.Count -gt 0) {
+        $folder = $folders.Pop()
+        foreach ($item in [System.IO.DirectoryInfo]::new($folder.Real).EnumerateFileSystemInfos()) {
+            $reached = if ($folder.Reached) { "$($folder.Reached)/$($item.Name)" } else { $item.Name }
+            $real = $item.FullName
+            if ($null -ne $item.LinkTarget) {
+                $real = try { Get-LambdaPSRealPath -Path $item.FullName } catch { $null }
+                if (-not $real -or -not ($real.Equals($realRoot, $comparison) -or $real.StartsWith($realRoot + $separator, $comparison))) {
+                    Write-Warning "Skipped '$reached': it links to '$($item.LinkTarget)', outside '$root'."
+                    continue
+                }
+                if (-not $real.Equals($realRoot, $comparison) -and (& $isExcluded $real.Substring($realRoot.Length + 1).Replace('\', '/'))) { continue }
+                if (@($folder.Chain | Where-Object { $real.Equals($_, $comparison) }).Count -gt 0) {
+                    Write-Warning "Skipped '$reached': it links to a folder it is inside, '$($item.LinkTarget)'."
+                    continue
+                }
+                if (-not [System.IO.File]::Exists($real) -and -not [System.IO.Directory]::Exists($real)) {
+                    Write-Warning "Skipped '$reached': it links to '$($item.LinkTarget)', which does not exist."
+                    continue
+                }
+            }
+            # Folders are walked even when excluded, since a later '!' pattern can include a file in them again.
+            if ([System.IO.Directory]::Exists($real)) { $folders.Push([PSCustomObject]@{ Real = $real; Reached = $reached; Chain = @($folder.Chain) + $real }) }
+            elseif (-not (& $isExcluded $reached)) { $selected.Add($reached) }
+        }
     }
     @($selected) | Sort-Object -Culture '' -CaseSensitive
 }
