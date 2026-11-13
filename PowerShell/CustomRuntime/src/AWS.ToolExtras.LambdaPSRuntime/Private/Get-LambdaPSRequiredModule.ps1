@@ -48,6 +48,21 @@ function Get-LambdaPSRequiredModule {
     $tokens = $null
     $errors = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($fullPath, [ref]$tokens, [ref]$errors)
+    # Only #Requires errors: the rest of the script is Lambda's to run, and this host's pwsh may be older.
+    $requiresComments = @($tokens | Where-Object { $_.Kind -eq 'Comment' -and $_.Text -match '\A#requires\b' })
+    $requiresError = @($errors | Where-Object {
+            $offset = $_.Extent.StartOffset
+            @($requiresComments | Where-Object { $offset -ge $_.Extent.StartOffset -and $offset -lt $_.Extent.EndOffset }).Count -gt 0
+        }) | Select-Object -First 1
+    if ($null -ne $requiresError) {
+        $hint = if ($requiresError.ErrorId -eq 'RequiresArgumentMustBeConstant') {
+            " Quote module names and versions, for example #Requires -Modules @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }."
+        }
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.Management.Automation.ParseException]::new(
+                "'$fullPath' line $($requiresError.Extent.StartLineNumber): the #Requires statement does not parse: $($requiresError.Message)$hint"),
+            'InvalidRequiresStatement', [System.Management.Automation.ErrorCategory]::ParserError, $fullPath)
+    }
 
     # ScriptRequirements is null when the script has no #Requires at all; RequiredModules is null when
     # it has #Requires statements but none name a module. Emit nothing in either case so the caller's

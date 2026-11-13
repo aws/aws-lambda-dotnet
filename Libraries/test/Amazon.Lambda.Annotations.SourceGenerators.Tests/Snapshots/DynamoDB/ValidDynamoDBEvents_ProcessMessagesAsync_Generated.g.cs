@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.DynamoDBEventExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.DynamoDBEventExamples.ValidDynamoDBEvents"/>.
+    /// </summary>
     public class ValidDynamoDBEvents_ProcessMessagesAsync_Generated
     {
         private readonly ValidDynamoDBEvents validDynamoDBEvents;

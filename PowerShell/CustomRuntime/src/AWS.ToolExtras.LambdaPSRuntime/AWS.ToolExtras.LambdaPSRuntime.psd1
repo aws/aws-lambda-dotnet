@@ -53,6 +53,7 @@
         PSData = @{
             Tags         = @('AWS', 'Lambda', 'PowerShell', 'CustomRuntime', 'CustomerManagedRuntime', 'Scaffolding')
             LicenseUri   = 'https://aws.amazon.com/apache-2-0/'
+            IconUri      = 'https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png'
             ProjectUri   = 'https://github.com/aws/aws-lambda-dotnet/tree/HEAD/PowerShell/CustomRuntime'
             ReleaseNotes = 'Initial release.'
         }

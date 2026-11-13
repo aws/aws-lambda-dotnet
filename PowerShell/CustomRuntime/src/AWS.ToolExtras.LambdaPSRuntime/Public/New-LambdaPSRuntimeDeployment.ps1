@@ -63,7 +63,8 @@ function New-LambdaPSRuntimeDeployment {
         A version that cannot be read for any reason other than not existing stops the deploy with
         RuntimeVersionCheckFailed, rather than being taken as new. For a new version it then reads
         -RuntimeAlias, to warn when the deploy moves it off a version that supports an architecture
-        the new version does not. A missing alias is created by the deploy; any other failed read, such as a refused
+        the new version does not. A missing alias is created by the deploy, and one scheduled for
+        deletion stops it with RuntimeAliasPendingDeletion; any other failed read, such as a refused
         lambda:GetRuntimeAlias, stops the deploy with RuntimeAliasCheckFailed. The image is built
         before the ECR repository is ensured, so a failed build leaves nothing in AWS; the push reuses
         the local build's cache. The local build leaves an image tagged
@@ -91,11 +92,12 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeImageTagExists,
-                                RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed, PwshArm64HashNotPinned
+                                RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed,
+                                RuntimeAliasPendingDeletion, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
                                 PwshReleaseOlderThanAlias (the pinned release is older than the
                                 one the alias runs, on the same line and architecture)
-          scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
+          scaffold and modules  TargetOwnedByAnotherUser, IdCommandNotFound, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
                                 -IncludeModule name that is a wildcard or a path),
@@ -113,6 +115,9 @@ function New-LambdaPSRuntimeDeployment {
                                 RuntimeVersionWaitFailed
                                 (the new version's state could not be read),
                                 RuntimeImageArchitectureMismatch
+          alias                 RuntimeAliasUpdateFailed (the version is published, but the alias
+                                could not be created or moved; the message names the command to
+                                finish with)
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
@@ -635,6 +640,15 @@ function New-LambdaPSRuntimeDeployment {
                             'RuntimeAliasCheckFailed', [System.Management.Automation.ErrorCategory]::ReadError, "$RuntimeName/$RuntimeAlias"))
                 }
             }
+            # Lambda resolves an alias scheduled for deletion as if it were missing, for days.
+            if ([string]$currentAlias.State -eq 'PENDING_DELETION') {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Alias '$RuntimeAlias' of runtime '$RuntimeName' is scheduled for deletion. Pass another " +
+                             '-RuntimeAlias, or run again once Lambda has purged it. Nothing was built or pushed.')),
+                        'RuntimeAliasPendingDeletion', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, "$RuntimeName/$RuntimeAlias"))
+            }
             if ($null -ne $currentAlias) {
                 [string[]]$aliasArchitecture = Get-LambdaPSReportedArchitecture -Compatibility $currentAlias.Compatibility
                 # Any architecture the alias supports that the new version does not is dropped,
@@ -823,6 +837,11 @@ function New-LambdaPSRuntimeDeployment {
 
         # Stage 4: Point the alias at the published version.
         Write-Verbose "Stage 4: Point alias '$RuntimeAlias' at '$RuntimeVersion'."
+        # Declined or failed, this stage leaves the version published and a rerun refused, so name the one
+        # command that moves or creates the alias. The preflight read says which.
+        $aliasCommand = if ($null -ne $currentAlias) { 'Update-LMCRuntimeAlias' } else { 'New-LMCRuntimeAlias' }
+        $aliasCommandLine = ("$aliasCommand -RuntimeName $RuntimeName -Name $RuntimeAlias -RuntimeVersion $RuntimeVersion " +
+            "-Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter)")
         if ($declinedStage) {
             Write-Warning "Skipped pointing alias '$RuntimeAlias' at '$RuntimeVersion', because the $declinedStage stage was declined."
         }
@@ -833,16 +852,24 @@ function New-LambdaPSRuntimeDeployment {
                 RuntimeVersion = $RuntimeVersion
                 Region         = $Region
             }
-            $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
+            try {
+                $null = Set-LambdaPSRuntimeAlias @aliasParams -CredentialParameter $credentialParameter -Confirm:$false
+            }
+            catch {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("Runtime '$RuntimeName' version '$RuntimeVersion' is published and ACTIVE, but alias '$RuntimeAlias' " +
+                             "could not be pointed at it. The version exists, so running the deploy again is refused; " +
+                             "point the alias with $aliasCommandLine. $($_.Exception.Message)"),
+                            $_.Exception),
+                        'RuntimeAliasUpdateFailed', [System.Management.Automation.ErrorCategory]::WriteError, "$RuntimeName/$RuntimeAlias"))
+            }
             Write-Information "Pointed alias '$RuntimeAlias' at '$RuntimeVersion'." -Tags 'LambdaPSDeploy'
         }
         elseif (-not $WhatIfPreference) {
-            # The version is published, but functions bound to the alias stay where they are. The preflight
-            # read says whether the alias exists, so name the one command that moves or creates it.
-            $aliasCommand = if ($null -ne $currentAlias) { 'Update-LMCRuntimeAlias' } else { 'New-LMCRuntimeAlias' }
             Write-Warning ("Alias '$RuntimeAlias' was not pointed at '$RuntimeVersion', because that stage was declined. " +
-                "Point it later with $aliasCommand -RuntimeName $RuntimeName -Name $RuntimeAlias " +
-                "-RuntimeVersion $RuntimeVersion -Region $Region$(Get-LambdaPSCredentialArgumentText -CredentialParameter $credentialParameter).")
+                "Point it later with $aliasCommandLine.")
         }
 
         [PSCustomObject]@{

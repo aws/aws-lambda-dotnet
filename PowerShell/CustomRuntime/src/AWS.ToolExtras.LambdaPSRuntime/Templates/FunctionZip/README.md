@@ -14,8 +14,8 @@ them) from manifest.json, and checks the function's architecture against the run
 
 Declare modules in the handler with `#Requires -Modules` and an exact `RequiredVersion`, or pass
 `-IncludeModule`. They are staged into the package with their dependencies, and downloaded if they
-are not installed. Modules under ./modules are packaged as well, and take precedence over the
-runtime's modules. To fetch modules ahead of time:
+are not installed. Or, instead of declaring a module, keep it under ./modules: the folder is packaged
+as it is, and takes precedence over the runtime's modules. For example, to put a module there:
 
     Save-LambdaPSModule -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Path ./modules
 

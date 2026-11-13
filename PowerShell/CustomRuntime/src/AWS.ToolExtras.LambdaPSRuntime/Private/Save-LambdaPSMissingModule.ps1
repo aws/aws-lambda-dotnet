@@ -147,10 +147,16 @@ function Save-LambdaPSMissingModule {
                     $null = Test-LambdaPSModuleFolder -Path ([System.IO.Path]::Combine($root, 'AWS.Tools.Common', $item.Version)) -Name 'AWS.Tools.Common'
                 }
             }
+            $isAwsTools = { param($m) $m.Name -like 'AWS.Tools.*' -and $m.Name -ne 'AWS.Tools.Installer' }
             foreach ($item in $fetch) {
                 if ($attempted.Contains($item.Key)) {
-                    $message = "Module '$($item.Name)' $($item.Version) was downloaded, but " +
+                    $message = if (& $isAwsTools $item) {
+                        "AWS.Tools $($item.Version) has no module named '$($item.Name)'. Check the module name."
+                    }
+                    else {
+                        "Module '$($item.Name)' $($item.Version) was not saved: " +
                         "'$([System.IO.Path]::Combine($root, $item.Name, $item.Version, "$($item.Name).psd1"))' was not found."
+                    }
                     throw [System.Management.Automation.ErrorRecord]::new(
                         [System.InvalidOperationException]::new($message),
                         'ModuleDownloadFailed', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, $item.Key)
@@ -170,7 +176,6 @@ function Save-LambdaPSMissingModule {
                 break
             }
 
-            $isAwsTools = { param($m) $m.Name -like 'AWS.Tools.*' -and $m.Name -ne 'AWS.Tools.Installer' }
             $awsTools = @($fetch | Where-Object { & $isAwsTools $_ })
             $others = @($fetch | Where-Object { -not (& $isAwsTools $_) })
 

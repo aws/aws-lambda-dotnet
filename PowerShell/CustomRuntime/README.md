@@ -250,6 +250,10 @@ cmdlets:
 | `Install` | Download the same way, and also install into the CurrentUser module folder (never over an existing version). |
 | `Stop` | Fail with `ModuleNotFoundLocally`. |
 
+A source's own `modules/` folder is packaged as it is, but not searched for the modules to stage. When the folder also holds a
+`#Requires` module, the packagers warn, since the staged copy is written over the folder's or ships beside its other
+copy, and under `Stop` the error names the folder when it holds the missing version.
+
 Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the AWS.Tools.zip from
 CloudFront, one download per version; the Installer checks it against the SHA512 published beside it, which detects a
 corrupted download, not a tampered one, and only on Windows also checks each module manifest's Authenticode signer)
@@ -321,6 +325,7 @@ PSScriptAnalyzer 1.21.0 or later:
 pwsh ./build.ps1            # Pester suite + code coverage
 pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
 pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+pwsh ./build.ps1 -Task Package     # stage the module to publish (no Tests/) in Deployment/LambdaPSRuntime
 ```
 
 The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory

@@ -28,6 +28,23 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         @($written | Where-Object { [System.IO.Path]::GetFileName($_) -eq 'both.txt' }).Count | Should -Be 1
     }
 
+    It 'writes a template file named _<name> as .<name>' {
+        $source = Join-Path $TestDrive 'dot-src'
+        $null = New-Item -ItemType Directory -Path (Join-Path $source 'modules') -Force
+        'ignore' | Set-Content -LiteralPath (Join-Path $source '_dockerignore')
+        '' | Set-Content -LiteralPath (Join-Path $source 'modules/_gitkeep')
+        $destination = Join-Path $TestDrive 'dot-out'
+
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination } {
+            param($Source, $Destination)
+            $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
+        }
+
+        (Get-Content -LiteralPath (Join-Path $destination '.dockerignore')) | Should -Be 'ignore'
+        Test-Path -LiteralPath (Join-Path $destination 'modules/.gitkeep') | Should -BeTrue
+        @(Get-ChildItem -LiteralPath $destination -Recurse -Force -Filter '_*') | Should -BeNullOrEmpty
+    }
+
     It 'normalizes a CRLF <File> to LF' -ForEach @(@{ File = 'bootstrap' }, @{ File = 'lambda-entrypoint.sh' }) {
         $source = Join-Path $TestDrive "crlf-src-$File"
         $null = New-Item -ItemType Directory -Path $source -Force
@@ -59,6 +76,27 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         Test-Path -LiteralPath (Join-Path $destination 'Dockerfile.append') | Should -BeFalse
         @($written | Where-Object { $_ -like '*.append' }) | Should -BeNullOrEmpty
     }
+    It 'stamps the runtime client version into the <Target> project''s pwsh-runtime.psd1' -ForEach @(
+        @{ Target = 'CMR' }, @{ Target = 'Container' }, @{ Target = 'Layer' }, @{ Target = 'SelfContainedZip' }
+    ) {
+        $destination = [System.IO.Path]::Combine($TestDrive, "ricver-$Target")
+        $moduleVersion = (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine((Split-Path -Parent $PSScriptRoot), 'AWS.ToolExtras.LambdaPSRuntime.psd1'))).ModuleVersion
+
+        InModuleScope $script:moduleName -Parameters @{ Target = $Target; Destination = $destination } {
+            param($Target, $Destination)
+            $copyParams = @{
+                Path              = Get-LambdaPSProjectTemplateRoot -Target $Target
+                Destination       = $Destination
+                PwshVersion       = '7.4.20'
+                Target            = $Target
+                PowerShellVersion = '7.4'
+            }
+            $null = Copy-LambdaPSProjectTemplate @copyParams -WarningAction SilentlyContinue
+        }
+
+        (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($destination, 'modules', 'pwsh-runtime.psd1'))).ModuleVersion | Should -Be $moduleVersion
+    }
+
     It 'replaces each -Token, as a JSON value in a .json file and as text elsewhere' {
         $source = Join-Path $TestDrive 'token-src'
         $null = New-Item -ItemType Directory -Path $source -Force
@@ -112,6 +150,27 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
 
         @($written | ForEach-Object { [System.IO.Path]::GetFileName($_) }) | Should -Be @('handler.ps1')
         Join-Path $destination 'lambdaps-runtime.json' | Should -Not -Exist
+    }
+
+    It 'records the module version in the lambdaps-runtime.json marker, prerelease label <Prerelease>' -ForEach @(
+        @{ Prerelease = ''; Suffix = '' }, @{ Prerelease = 'preview1'; Suffix = '-preview1' }
+    ) {
+        $source = Join-Path $TestDrive "marker-src-$Prerelease"
+        $null = New-Item -ItemType Directory -Path $source -Force
+        $destination = Join-Path $TestDrive "marker-out-$Prerelease"
+
+        InModuleScope $script:moduleName -Parameters @{ Source = $source; Destination = $destination; Prerelease = $Prerelease } {
+            param($Source, $Destination, $Prerelease)
+            $psData = $ExecutionContext.SessionState.Module.PrivateData.PSData
+            if ($Prerelease) { $psData['Prerelease'] = $Prerelease }
+            try {
+                $null = Copy-LambdaPSProjectTemplate -Path $Source -Destination $Destination -PwshVersion '7.4.20' -Target Layer -PowerShellVersion '7.4'
+            }
+            finally { $psData.Remove('Prerelease') }
+        }
+
+        (Get-Content -LiteralPath (Join-Path $destination 'lambdaps-runtime.json') -Raw | ConvertFrom-Json).ModuleVersion |
+            Should -Be ((Import-PowerShellDataFile -LiteralPath $script:modulePath).ModuleVersion + $Suffix)
     }
 
     It 'throws PwshVersionRequired for a runtime-carrying target without the versions' {

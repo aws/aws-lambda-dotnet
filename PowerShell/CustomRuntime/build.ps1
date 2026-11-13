@@ -17,12 +17,17 @@
     Test  - run the Pester suite (default).
     Lint  - run PSScriptAnalyzer: strict over the module source, relaxed over Tests/ and Templates/.
     All   - Lint then Test.
+    Package - stage the module to publish, without Tests/, plus the repository's LICENSE, into
+            -OutputPath. The release pipeline signs and publishes what it stages.
     Integration - run only the integration suite (every test under Tests/ tagged 'Integration'),
             which deploys each target to AWS and removes it again. The suite's file header says
             what it creates and what it costs. It needs AWS credentials, docker, AWS.Tools.S3 and
             AWS.Tools.CloudWatchLogs, and the environment variables LAMBDAPS_INTEGRATION_REGION,
             LAMBDAPS_INTEGRATION_ACCOUNT and LAMBDAPS_INTEGRATION_ROLE_ARN (the region, the account
             it must run in, and the function role to deploy with).
+.PARAMETER OutputPath
+    The folder -Task Package stages the module folder into. Default: Deployment/LambdaPSRuntime at the
+    repository root.
 .PARAMETER SkipCoverage
     Run tests without collecting code coverage (faster).
 .EXAMPLE
@@ -32,13 +37,18 @@
     pwsh ./build.ps1 -Task All
     Runs PSScriptAnalyzer, then the test suite.
 .EXAMPLE
+    pwsh ./build.ps1 -Task Package -OutputPath ./out
+    Stages the module to publish into ./out/AWS.ToolExtras.LambdaPSRuntime.
+.EXAMPLE
     pwsh ./build.ps1 -Task Integration
     Runs the integration suite against AWS.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Lint', 'All', 'Integration')]
+    [ValidateSet('Test', 'Lint', 'All', 'Integration', 'Package')]
     [string]$Task = 'Test',
+
+    [string]$OutputPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'Deployment', 'LambdaPSRuntime')),
 
     [switch]$SkipCoverage
 )
@@ -250,6 +260,23 @@ function Invoke-Test {
     finally { $env:LAMBDAPS_INTEGRATION_TESTS = $callerSetting }
 }
 
+function Invoke-Package {
+    $destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        [System.IO.Path]::Combine($OutputPath, 'AWS.ToolExtras.LambdaPSRuntime'))
+    $source = [System.IO.Path]::GetFullPath($moduleRoot)
+    if ($destination -eq $source -or $destination.StartsWith($source + [System.IO.Path]::DirectorySeparatorChar)) {
+        throw "-OutputPath '$OutputPath' would stage the module over its own source."
+    }
+    if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+    $null = New-Item -ItemType Directory -Path $destination
+    Get-ChildItem -LiteralPath $moduleRoot -Force | Where-Object Name -ne 'Tests' |
+        Copy-Item -Destination $destination -Recurse -Force
+    # bin/ and obj/ are left by local builds of a template project.
+    Get-ChildItem -LiteralPath $destination -Directory -Recurse -Force | Where-Object Name -in 'bin', 'obj' | Remove-Item -Recurse -Force
+    Copy-Item -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'LICENSE')) -Destination $destination
+    Write-Host "Module staged in $destination"
+}
+
 # Before anything else runs: whatever AWS.Tools build loads first is what the tests get.
 if ($Task -in 'Test', 'All', 'Integration') {
     Initialize-AWSToolsModulePath
@@ -259,6 +286,7 @@ switch ($Task) {
     'Lint' { Invoke-Lint }
     'Test' { Invoke-Test }
     'Integration' { Invoke-Test -Integration }
+    'Package' { Invoke-Package }
     'All'  {
         # Lint runs in its own pwsh: PSScriptAnalyzer loads AWS.Tools assemblies while it resolves
         # commands, and an assembly loaded into this process cannot be replaced by the build the tests

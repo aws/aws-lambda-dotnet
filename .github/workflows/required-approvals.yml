@@ -1,0 +1,125 @@
+name: Required Approvals
+
+# Enforces the number of approvals required to merge a PR. Only approvals from users with
+# write (or higher) permission count. Two approvals are required by default; one approval is
+# required when the '1p-approval' label was applied by a user with write (or higher) permission.
+#
+# This job must be configured as a required status check on the protected branch.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  required-approvals:
+    name: Required Approvals
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read # to list the PR reviews
+      issues: read # to read the PR timeline and find who applied the 1p-approval label
+
+    steps:
+      - name: Check approvals
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const ONE_PERSON_LABEL = '1p-approval';
+            const DEFAULT_REQUIRED = 2;
+            const WRITE_PERMISSIONS = ['admin', 'write'];
+
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prAuthor = pr.user.login;
+
+            const permissionCache = new Map();
+            async function hasWriteAccess(username) {
+              if (!permissionCache.has(username)) {
+                let permission = 'none';
+                try {
+                  const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username });
+                  permission = data.permission;
+                } catch (error) {
+                  core.warning(`Unable to determine permission for ${username}: ${error.message}`);
+                }
+                permissionCache.set(username, permission);
+              }
+              return WRITE_PERMISSIONS.includes(permissionCache.get(username));
+            }
+
+            // Determine the number of required approvals.
+            let required = DEFAULT_REQUIRED;
+            let labelStatus = 'not applied';
+            const { data: currentPr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            if (currentPr.labels.some(l => l.name === ONE_PERSON_LABEL)) {
+              const timeline = await github.paginate(github.rest.issues.listEventsForTimeline, {
+                owner, repo, issue_number: prNumber, per_page: 100
+              });
+              const labeledEvent = timeline
+                .filter(e => e.event === 'labeled' && e.label && e.label.name === ONE_PERSON_LABEL)
+                .pop();
+              const labeler = labeledEvent && labeledEvent.actor ? labeledEvent.actor.login : null;
+
+              if (labeler && await hasWriteAccess(labeler)) {
+                required = 1;
+                labelStatus = `applied by ${labeler}`;
+              } else {
+                labelStatus = `ignored, applied by ${labeler ?? 'unknown'} who does not have write access`;
+                core.warning(`The '${ONE_PERSON_LABEL}' label was ${labelStatus}.`);
+              }
+            }
+
+            // Find each reviewer's latest effective review state. Comment-only reviews do not
+            // change a reviewer's approval state.
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner, repo, pull_number: prNumber, per_page: 100
+            });
+            const latestState = new Map();
+            for (const review of reviews) {
+              if (!review.user || !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) {
+                continue;
+              }
+              latestState.set(review.user.login, { state: review.state, type: review.user.type });
+            }
+
+            const qualifying = [];
+            const ignored = [];
+            for (const [login, { state, type }] of latestState) {
+              if (state !== 'APPROVED') {
+                continue;
+              }
+              if (login === prAuthor) {
+                ignored.push(`${login} (PR author)`);
+              } else if (type === 'Bot') {
+                ignored.push(`${login} (bot)`);
+              } else if (!(await hasWriteAccess(login))) {
+                ignored.push(`${login} (no write access)`);
+              } else {
+                qualifying.push(login);
+              }
+            }
+
+            await core.summary
+              .addHeading('Required Approvals')
+              .addTable([
+                [{ data: 'Item', header: true }, { data: 'Value', header: true }],
+                ['Required approvals', `${required}`],
+                [`'${ONE_PERSON_LABEL}' label`, labelStatus],
+                ['Qualifying approvers', qualifying.join(', ') || 'none'],
+                ['Ignored approvers', ignored.join(', ') || 'none']
+              ])
+              .write();
+
+            if (qualifying.length >= required) {
+              core.info(`✅ Found ${qualifying.length} of ${required} required approval(s): ${qualifying.join(', ')}`);
+            } else {
+              core.setFailed(`❌ Requires ${required} approval(s) from users with write access; found ${qualifying.length}.`);
+            }

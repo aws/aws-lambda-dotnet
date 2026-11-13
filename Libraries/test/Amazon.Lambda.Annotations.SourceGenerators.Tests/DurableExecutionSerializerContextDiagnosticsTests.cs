@@ -16,6 +16,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
     /// types must be registered on TContext with [JsonSerializable], otherwise serialization fails at
     /// invocation time.
     /// </summary>
+    // These cases emit only warnings (or no diagnostic), so the generator does not short-circuit on a fatal
+    // error and proceeds to the CloudFormation sync, which reads/writes a generated serverless.template on
+    // disk. That file is shared with the other generator-running test classes, so this class must join the
+    // serialization collection or its template read races with a concurrent write (surfacing as AWSLambda0001).
+    [Collection(TestServerlessAppCollection.Name)]
     public class DurableExecutionSerializerContextDiagnosticsTests
     {
         // Minimal durable SDK stubs. The real Amazon.Lambda.DurableExecution package cannot be referenced

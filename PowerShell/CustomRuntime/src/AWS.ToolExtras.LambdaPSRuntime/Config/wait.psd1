@@ -8,6 +8,12 @@
         IntervalSeconds = 2
     }
 
+    # A create or configuration update Lambda refuses because it cannot assume the role yet.
+    Role           = @{
+        Attempts        = 12
+        IntervalSeconds = 5
+    }
+
     # A published runtime version, until it is no longer CREATING.
     RuntimeVersion = @{
         Attempts        = 60

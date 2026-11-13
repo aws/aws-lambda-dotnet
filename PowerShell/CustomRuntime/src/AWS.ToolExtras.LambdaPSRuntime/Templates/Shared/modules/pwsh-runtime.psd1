@@ -6,8 +6,8 @@
 # Script module or binary module file associated with this manifest.
 RootModule = 'pwsh-runtime.psm1'
 
-# Version number of this module.
-ModuleVersion = '0.1.0'
+# 0.0.0 until Copy-LambdaPSProjectTemplate stamps in the runtime client version.
+ModuleVersion = '0.0.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -73,6 +73,7 @@ FunctionsToExport = @(
     'Set-HandlerEnvironmentVariables'
     'Set-LambdaContext'
     'Set-PSModulePath'
+    'Write-LambdaLog'
 )
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = ''

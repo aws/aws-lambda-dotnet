@@ -740,6 +740,23 @@ param($LambdaInput, $LambdaContext)
         }
     }
 
+    # The source's modules/ folder is copied into the package and the #Requires copy is staged over it.
+    Context 'a #Requires module the source also keeps in modules/' {
+        BeforeAll {
+            $script:vendoredSource = Join-Path $TestDrive 'vendored'
+            $null = New-FakeModule -Root (Join-Path $script:vendoredSource 'modules') -Name 'LambdaPSFake.Vendored' -Version '1.2.0'
+            Set-Content -LiteralPath (Join-Path $script:vendoredSource 'handler.ps1') -Value "#Requires -Modules @{ ModuleName = 'LambdaPSFake.Vendored'; RequiredVersion = '1.2.0' }", 'param($LambdaInput, $LambdaContext)'
+        }
+
+        It 'names the folder in ModuleNotFoundLocally under -MissingModuleAction Stop' {
+            $err = $null
+            try { $null = Compress-LambdaPSFunctionPackage -Path $script:vendoredSource -OutFile (Join-Path $TestDrive 'vendored-stop.zip') -MissingModuleAction Stop -WarningAction SilentlyContinue }
+            catch { $err = $_ }
+            $err.FullyQualifiedErrorId | Should -Be 'ModuleNotFoundLocally,Compress-LambdaPSFunctionPackage'
+            $err.Exception.Message | Should -BeLike "*'LambdaPSFake.Vendored' 1.2.0 is in '*vendored*modules*LambdaPSFake.Vendored', which is packaged as it is but not searched*"
+        }
+    }
+
     It 'names the handler script when its #Requires does not pin a version' {
         $dir = Join-Path $TestDrive 'req-unpinned'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null

@@ -7,7 +7,7 @@ function private:Send-FunctionHandlerError {
             POST function invocation error back to Runtime API.
 
         .DESCRIPTION
-            Writes the error to the function log as one line, then posts its message, type and stack trace
+            Writes the error to the function log as one record, then posts its message, type and stack trace
             to the Runtime API.
 
         .PARAMETER Uri
@@ -32,16 +32,12 @@ function private:Send-FunctionHandlerError {
     )
 
     if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') { Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME-Send-FunctionHandlerError]Start: Send-FunctionHandlerError' }
-    # The message alone does not say where the handler failed, so log the script position and stack.
-    # Lambda makes each stdout line its own log event, so the error is written as one line with its
-    # newlines turned into carriage returns, as the Node.js and Python runtimes do: one failure is one
-    # event, and text in the exception cannot add lines such as 'END RequestId: ...' to the log.
+    # The message alone does not say where the handler failed, so log the script position; Write-LambdaLog adds the stack.
     $private:logText = @(
         [string]$private:Exception
         if ($private:Exception.InvocationInfo) { $private:Exception.InvocationInfo.PositionMessage }
-        if ($private:Exception.ScriptStackTrace) { $private:Exception.ScriptStackTrace }
     ) -join "`n"
-    Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue ($private:logText -replace '\r?\n', "`r")
+    & $script:__LambdaPSRuntimeWriteLambdaLog ERROR $private:logText -ErrorRecord $private:Exception
 
     # The error type is the exception's type name (RuntimeException, FileNotFoundException, ...), sent as
     # the body's errorType and as the Lambda-Runtime-Function-Error-Type header alike, as the .NET
@@ -63,6 +59,6 @@ function private:Send-FunctionHandlerError {
         & $script:__LambdaPSRuntimeSendRuntimeApiRequest $private:HttpClient $Uri $private:body $private:headers
     }
     catch {
-        Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
+        & $script:__LambdaPSRuntimeWriteLambdaLog ERROR "[RUNTIME-Send-FunctionHandlerError]Failed to report the error: $($_.Exception.Message)"
     }
 }

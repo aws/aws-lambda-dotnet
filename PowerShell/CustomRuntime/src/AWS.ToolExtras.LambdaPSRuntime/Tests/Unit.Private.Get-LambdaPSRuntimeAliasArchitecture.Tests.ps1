@@ -55,6 +55,23 @@ Describe 'Get-LambdaPSRuntimeAliasArchitecture' -Tag 'Unit' {
         }
     }
 
+    It 'throws RuntimeAliasPendingDeletion for an alias scheduled for deletion' {
+        InModuleScope $script:moduleName {
+            # Arrange
+            function Get-LMCRuntimeAlias { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Get-LMCRuntimeAlias' -MockWith {
+                [PSCustomObject]@{ Name = 'default'; State = 'PENDING_DELETION' }
+            }
+
+            # Act
+            $err = { Get-LambdaPSRuntimeAliasArchitecture -RuntimeName 'my-ps' -RuntimeAlias 'default' -Region 'us-east-1' } |
+                Should -Throw -ErrorId 'RuntimeAliasPendingDeletion' -PassThru
+
+            # Assert
+            $err.Exception.Message | Should -BeLike "Runtime alias 'default' of runtime 'my-ps' in region 'us-east-1' is scheduled for deletion, so a function bound to it would deploy and then fail on every invoke.*"
+        }
+    }
+
     It 'throws RuntimeAliasCheckFailed, wrapping any other error whose text <Case>, instead of masking it as not-found' -ForEach @(
         @{ Case = 'has no full stop'; Text = 'not authorized to perform lambda:GetRuntimeAlias'; Detail = ': not authorized to perform lambda:GetRuntimeAlias.' }
         @{ Case = 'ends with one'; Text = 'Rate exceeded.'; Detail = ': Rate exceeded.' }

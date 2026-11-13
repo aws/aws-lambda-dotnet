@@ -762,6 +762,33 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    Context 'alias failure' {
+        BeforeEach {
+            $script:aliasSplat = @{ RuntimeName = 'my-ps'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'rt'; RuntimeVersion = 'v7' }
+            Mock 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('User is not authorized to perform lambda:UpdateRuntimeAlias') }
+        }
+
+        It 'fails with RuntimeAliasUpdateFailed naming <Command> when the alias <Case>' -TestCases @(
+            @{ Case = 'does not exist'; Exists = $false; Command = 'New-LMCRuntimeAlias' }
+            @{ Case = 'exists'; Exists = $true; Command = 'Update-LMCRuntimeAlias' }
+        ) {
+            if ($Exists) {
+                Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                    [PSCustomObject]@{ RuntimeVersion = 'v6'; Compatibility = [PSCustomObject]@{ Architectures = @('x86_64') } }
+                }
+            }
+            $err = { New-LambdaPSRuntimeDeployment @script:aliasSplat } | Should -Throw -ErrorId 'RuntimeAliasUpdateFailed,New-LambdaPSRuntimeDeployment' -PassThru
+
+            $err.Exception.Message | Should -Be ("Runtime 'my-ps' version 'v7' is published and ACTIVE, but alias 'default' could not be " +
+                "pointed at it. The version exists, so running the deploy again is refused; point the alias with $Command " +
+                "-RuntimeName my-ps -Name default -RuntimeVersion v7 -Region us-east-1. User is not authorized to perform " +
+                "lambda:UpdateRuntimeAlias")
+            $err.Exception.InnerException | Should -BeOfType ([LambdaPSTests.Fakes.AccessDeniedException])
+            $err.CategoryInfo.Category | Should -Be 'WriteError'
+            $err.TargetObject | Should -Be 'my-ps/default'
+        }
+    }
+
     Context 'architecture mapping' {
         It 'maps arm64 to linux/arm64 for the build' {
             $splat = @{
@@ -1351,6 +1378,23 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
     Context 'alias architecture preflight' {
         BeforeEach {
             $script:splat = @{ RuntimeName = 'my-ps'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'rt'; RuntimeVersion = 'v2' }
+        }
+
+        It 'throws RuntimeAliasPendingDeletion, under -WhatIf too, when the alias is scheduled for deletion' -ForEach @(
+            @{ WhatIf = $true }, @{ WhatIf = $false }
+        ) {
+            # Arrange
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; State = 'PENDING_DELETION' }
+            }
+
+            # Act
+            $err = { New-LambdaPSRuntimeDeployment @script:splat -WhatIf:$WhatIf } |
+                Should -Throw -ErrorId 'RuntimeAliasPendingDeletion,New-LambdaPSRuntimeDeployment' -PassThru
+
+            # Assert
+            $err.Exception.Message | Should -BeExactly "Alias 'default' of runtime 'my-ps' is scheduled for deletion. Pass another -RuntimeAlias, or run again once Lambda has purged it. Nothing was built or pushed."
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
         It 'warns, naming both architectures, when the alias moves from <Current> to <New> (WhatIf: <WhatIf>)' -ForEach @(
