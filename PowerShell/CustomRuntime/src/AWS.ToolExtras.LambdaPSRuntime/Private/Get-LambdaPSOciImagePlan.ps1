@@ -69,8 +69,9 @@ function Get-LambdaPSOciImagePlan {
     }
 
     # The Dockerfile must be the rendered template. A Container project's CMD may name another handler,
-    # so the template is rendered for the handler the CMD names.
-    $normalize = { param([string]$Text) ($Text.TrimStart([char]0xFEFF) -replace "`r`n", "`n").TrimEnd() }
+    # so the template is rendered for the handler the CMD names. Comments are left out of the comparison:
+    # they don't change the image, and the template's comments name the handler it was scaffolded with.
+    $normalize = { param([string]$Text) ((($Text.TrimStart([char]0xFEFF) -replace "`r`n", "`n") -split "`n" | Where-Object { -not $_.TrimStart().StartsWith('#') }) -join "`n").TrimEnd() }
     $actual = & $normalize ([System.IO.File]::ReadAllText($dockerfilePath))
     $handler = 'handler.ps1'
     if ($target -eq 'Container') {

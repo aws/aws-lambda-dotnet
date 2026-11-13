@@ -78,6 +78,18 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             (Get-LambdaPSOciImagePlan -Path $copy -Architecture x86_64).Platform | Should -Be 'linux/amd64'
         }
 
+        It 'accepts a Container project whose CMD was changed to another script, as its Dockerfile says to' {
+            # Arrange
+            $root = [System.IO.Path]::Combine($TestDrive, 'fn-cmd')
+            $null = New-LambdaPSFunctionProject -Path $root -Handler 'handler' -Target Container -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+            Copy-Item -LiteralPath ([System.IO.Path]::Combine($root, 'handler.ps1')) -Destination ([System.IO.Path]::Combine($root, 'other.ps1'))
+            $dockerfile = [System.IO.Path]::Combine($root, 'Dockerfile')
+            [System.IO.File]::WriteAllText($dockerfile, [System.IO.File]::ReadAllText($dockerfile).Replace('CMD [ "handler.ps1" ]', 'CMD [ "other.ps1" ]'))
+
+            # Act / Assert
+            (Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64).Cmd | Should -Be @('other.ps1')
+        }
+
         It 'refuses an edited Dockerfile with DockerfileModified, which names -BuildMethod Docker' {
             $copy = [System.IO.Path]::Combine($TestDrive, 'rt-edited')
             Copy-Item -LiteralPath $script:runtimePath -Destination $copy -Recurse
