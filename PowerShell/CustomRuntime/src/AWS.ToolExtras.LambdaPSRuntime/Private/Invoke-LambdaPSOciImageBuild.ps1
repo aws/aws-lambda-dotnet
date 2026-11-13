@@ -154,7 +154,8 @@ function Invoke-LambdaPSOciImageBuild {
                 [System.IO.File]::WriteAllText($local, $text, [System.Text.UTF8Encoding]::new($false))
             }
             if ($file.Executable) { $runtimeFiles.AddExecutable($local, $file.ContainerPath) }
-            else { $runtimeFiles.Add($local, $file.ContainerPath, [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead') }
+            # The source's mode, as docker COPY keeps it (a module's native helper stays executable).
+            else { $runtimeFiles.Add($local, $file.ContainerPath) }
         }
         $hostArchitecture = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
         $contextSource = @($Plan.RuntimeFiles | Where-Object { $_.ContainerPath -ceq '/var/runtime/PowerShellLambdaContext.cs' })[0].LocalPath
@@ -181,7 +182,7 @@ function Invoke-LambdaPSOciImageBuild {
         if ($Plan.FunctionFiles.Count -gt 0) {
             $functionFiles = [AWS.OCI.Builder.FileManifest]::new()
             foreach ($file in $Plan.FunctionFiles) {
-                $functionFiles.Add($file.LocalPath, $file.ContainerPath, [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
+                $functionFiles.Add($file.LocalPath, $file.ContainerPath)
             }
             & $addFolders $functionFiles
             Write-Progress -Activity $activity -Status 'Building the function layer'
