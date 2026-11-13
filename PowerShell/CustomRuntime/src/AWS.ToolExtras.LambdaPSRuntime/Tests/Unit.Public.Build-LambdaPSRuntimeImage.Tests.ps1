@@ -264,12 +264,9 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             }
 
             It 'Should name -BuildMethod NoDocker in the emulation hint of a push' {
-                # Act
                 $err = $null
                 try { Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1' -Architecture $script:otherArchitecture -BuildMethod Docker }
                 catch { $err = $_ }
-
-                # Assert
                 $err.FullyQualifiedErrorId | Should -BeLike 'ExternalToolFailed*'
                 $err.Exception.Message | Should -Match 'Or build with -BuildMethod NoDocker, which needs no emulator\.'
             }

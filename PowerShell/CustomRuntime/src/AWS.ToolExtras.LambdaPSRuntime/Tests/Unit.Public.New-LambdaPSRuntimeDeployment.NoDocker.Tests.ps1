@@ -73,28 +73,18 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'Should deploy without Docker under Auto when docker''s builder lists no linux/arm64 platform' {
-            # Arrange
             Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
             Mock 'Get-LambdaPSDockerBuilderPlatform' -ParameterFilter { $Path -eq '/usr/bin/docker' } -MockWith { 'linux/amd64', 'linux/386' }
-
-            # Act
             $null = New-LambdaPSRuntimeDeployment @script:splat -Architecture arm64
-
-            # Assert
             Should -Invoke 'Get-LambdaPSDockerBuilderPlatform' -ParameterFilter { $Path -eq '/usr/bin/docker' } -Times 1 -Exactly
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 1 -Exactly -ParameterFilter { $BuildMethod -eq 'NoDocker' -and $Architecture -eq 'arm64' }
         }
 
         It 'installs the newest pinned x86_64 release, with a warning, when the repository has a newer one' {
-            # Arrange
             Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { '7.4.99' }
             $pinned = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object { $_ -like '7.4.*' -and $script:Config.pwsh.ArchiveSha256[$_].x64 } |
                 Sort-Object { [version]$_ })[-1]
-
-            # Act
             $result = New-LambdaPSRuntimeDeployment @script:splat -WarningVariable warnings -WarningAction SilentlyContinue
-
-            # Assert
             $result.RuntimeVersion | Should -Be "$pinned-1"
             @($warnings) -like '*pwsh 7.4.99 is the newest*no-Docker x86_64 build*-BuildMethod Docker*' | Should -HaveCount 1
             Should -Invoke 'New-LambdaPSRuntimeProject' -Times 1 -Exactly -ParameterFilter { $PwshVersion -eq $pinned }
@@ -113,28 +103,19 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             }
 
             It 'reports RuntimeVersionExists for an existing -RuntimeVersion' {
-                # Arrange
                 Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ RuntimeVersion = 'v1' } }
-
-                # Act / Assert
                 { New-LambdaPSRuntimeDeployment @script:splat -RuntimeVersion v1 -WarningAction SilentlyContinue } |
                     Should -Throw -ErrorId 'RuntimeVersionExists,New-LambdaPSRuntimeDeployment'
             }
 
             It 'advises building with Docker when the alias runs a newer release with no pinned x64 hash' {
-                # Arrange
                 Mock 'Get-LMCRuntimeAlias' -MockWith { [PSCustomObject]@{ Name = 'default'; RuntimeVersion = '7.4.99-1' } }
-
-                # Act / Assert
                 { New-LambdaPSRuntimeDeployment @script:splat -WhatIf -WarningAction SilentlyContinue } |
                     Should -Throw -ErrorId 'PwshReleaseOlderThanAlias,New-LambdaPSRuntimeDeployment' -ExpectedMessage '*runs pwsh 7.4.99*Build with Docker (-BuildMethod Docker) to keep it*'
             }
 
             It 'previews under -WhatIf without building' {
-                # Act
                 $null = New-LambdaPSRuntimeDeployment @script:splat -WhatIf -WarningAction SilentlyContinue
-
-                # Assert
                 Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 0 -Exactly
                 Should -Invoke 'Publish-LambdaPSRuntimeVersion' -Times 0 -Exactly
             }

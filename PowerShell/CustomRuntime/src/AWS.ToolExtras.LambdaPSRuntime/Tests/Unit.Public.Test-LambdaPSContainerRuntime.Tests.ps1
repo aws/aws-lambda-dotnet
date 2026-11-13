@@ -131,13 +131,10 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
 
     Context 'when the Docker daemon cannot be reached' {
         It 'throws DockerDaemonNotRunning with docker''s message' {
-            # Arrange
             $script:fakeDocker = New-FakeDockerProgram -Name 'docker-stopped.ps1' -Output 'github.com/docker/buildx v0.17.1' -ExitCode 0 -VersionExitCode 1
             Mock 'Get-Command' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' `
                 -ParameterFilter { $Name -eq 'docker' -and $CommandType -eq 'Application' } `
                 -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = $script:fakeDocker } }
-
-            # Act / Assert
             { Test-LambdaPSContainerRuntime } | Should -Throw -ErrorId 'DockerDaemonNotRunning,Test-LambdaPSContainerRuntime' `
                 -ExpectedMessage '*cannot reach the Docker daemon*Cannot connect to the Docker daemon*-BuildMethod Auto*'
         }

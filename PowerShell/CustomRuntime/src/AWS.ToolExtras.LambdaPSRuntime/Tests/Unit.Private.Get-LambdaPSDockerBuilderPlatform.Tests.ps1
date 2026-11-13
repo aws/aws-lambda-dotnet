@@ -25,14 +25,9 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'Should return every node''s platforms without the user-set marker or the variant count' {
-            # Arrange
             $docker = & $script:newDocker ("Name: multi`nNodes:`nName: n1`nPlatforms: linux/amd64*, linux/386`n" +
                 "Name: n2`nPlatforms: linux/arm64 (+3)")
-
-            # Act
             $platforms = Get-LambdaPSDockerBuilderPlatform -Path $docker
-
-            # Assert
             $platforms | Should -Be @('linux/amd64', 'linux/386', 'linux/arm64')
         }
 
@@ -40,10 +35,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             @{ Case = 'the builder is not running and lists no platforms'; Output = "Name: c`nDriver: docker-container`nStatus: inactive"; ExitCode = 0 }
             @{ Case = 'docker buildx inspect fails'; Output = 'ERROR: no builder found'; ExitCode = 1 }
         ) {
-            # Arrange
             $docker = & $script:newDocker $Output $ExitCode
-
-            # Act / Assert
             Get-LambdaPSDockerBuilderPlatform -Path $docker | Should -BeNullOrEmpty
         }
 

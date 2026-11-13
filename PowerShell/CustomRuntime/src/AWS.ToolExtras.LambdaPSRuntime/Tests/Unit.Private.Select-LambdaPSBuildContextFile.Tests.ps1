@@ -64,27 +64,19 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'skips, with a warning, file and folder links that leave the context' -Skip:$IsWindows {
-            # Arrange
             $outside = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, 'outside')) -File 'secret.txt'
             $root = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, 'links')) -File 'handler.ps1'
             $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($root, 'file-link')) -Target ([System.IO.Path]::Combine($outside, 'secret.txt'))
             $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($root, 'folder-link')) -Target $outside
-
-            # Act
             $files = Select-LambdaPSBuildContextFile -Path $root -WarningVariable warnings -WarningAction SilentlyContinue
-
-            # Assert
             $files | Should -Be @('handler.ps1')
             @($warnings -like "*outside*") | Should -HaveCount 2
         }
 
         It 'walks a folder link inside the context, and leaves out a file link whose target is excluded' -Skip:$IsWindows {
-            # Arrange
             $root = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, 'inner-links')) -File 'shared/lib.ps1', 'secrets/key.txt' -Ignore '.dockerignore', 'secrets'
             $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($root, 'lib')) -Target ([System.IO.Path]::Combine($root, 'shared'))
             $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($root, 'cfg.txt')) -Target ([System.IO.Path]::Combine($root, 'secrets', 'key.txt'))
-
-            # Act / Assert
             Select-LambdaPSBuildContextFile -Path $root | Should -Be @('lib/lib.ps1', 'shared/lib.ps1')
         }
 

@@ -43,29 +43,21 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'leaves out of modules/ what .dockerignore excludes, such as a module''s .git folder' {
-            # Arrange
             $root = [System.IO.Path]::Combine($TestDrive, 'rt-git')
             $null = New-LambdaPSRuntimeProject -Path $root -PowerShellVersion '7.4' -WarningAction SilentlyContinue
             $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($root, 'modules', 'MyModule', '.git')) -Force
             [System.IO.File]::WriteAllText([System.IO.Path]::Combine($root, 'modules', 'MyModule', '.git', 'HEAD'), 'ref')
             [System.IO.File]::WriteAllText([System.IO.Path]::Combine($root, 'modules', 'MyModule', 'MyModule.psm1'), '1')
             [System.IO.File]::WriteAllLines([System.IO.Path]::Combine($root, '.dockerignore'), [string[]]@('**/.git'))
-
-            # Act
             $paths = (Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64).RuntimeFiles.ContainerPath
-
-            # Assert
             $paths | Should -Contain '/var/runtime/modules/MyModule/MyModule.psm1'
             @($paths -like '*/.git/*') | Should -HaveCount 0
         }
 
         It 'refuses a project whose .dockerignore excludes modules/ with ModulesFolderIgnored, as docker''s COPY modules fails' {
-            # Arrange
             $root = [System.IO.Path]::Combine($TestDrive, 'rt-nomodules')
             $null = New-LambdaPSRuntimeProject -Path $root -PowerShellVersion '7.4' -WarningAction SilentlyContinue
             [System.IO.File]::WriteAllLines([System.IO.Path]::Combine($root, '.dockerignore'), [string[]]@('modules'))
-
-            # Act / Assert
             { Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64 } | Should -Throw -ErrorId 'ModulesFolderIgnored'
         }
 
@@ -79,14 +71,11 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'accepts a Container project whose CMD was changed to another script, as its Dockerfile says to' {
-            # Arrange
             $root = [System.IO.Path]::Combine($TestDrive, 'fn-cmd')
             $null = New-LambdaPSFunctionProject -Path $root -Handler 'handler' -Target Container -PowerShellVersion '7.4' -WarningAction SilentlyContinue
             Copy-Item -LiteralPath ([System.IO.Path]::Combine($root, 'handler.ps1')) -Destination ([System.IO.Path]::Combine($root, 'other.ps1'))
             $dockerfile = [System.IO.Path]::Combine($root, 'Dockerfile')
             [System.IO.File]::WriteAllText($dockerfile, [System.IO.File]::ReadAllText($dockerfile).Replace('CMD [ "handler.ps1" ]', 'CMD [ "other.ps1" ]'))
-
-            # Act / Assert
             (Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64).Cmd | Should -Be @('other.ps1')
         }
 
