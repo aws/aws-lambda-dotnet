@@ -1,3 +1,10 @@
+## Release 2026-11-13
+
+### AWS.OCI.Builder (0.6.0)
+* Initial release of AWS library for programmatically building OCI images without a container runtime
+### Amazon.Lambda.AspNetCoreServer (10.3.2)
+* Fix response streaming dropping bytes written to HttpResponse.BodyWriter that the application did not flush before the response was started by CompleteAsync, Response.StartAsync or SendFileAsync.
+
 ## Release 2026-11-06
 
 ### Amazon.Lambda.AspNetCoreServer (10.3.1)
