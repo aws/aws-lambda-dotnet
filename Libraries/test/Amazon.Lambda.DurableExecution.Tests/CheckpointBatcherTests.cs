@@ -265,4 +265,33 @@ public class CheckpointBatcherTests
 
         Assert.Equal(100, totalFlushed);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task MissingToken_SuspendsAndStopsFlushing(string? missingToken)
+    {
+        var tm = new TerminationManager();
+        var flushCalls = 0;
+        var batcher = new CheckpointBatcher("token-0",
+            (token, ops, ct) =>
+            {
+                Interlocked.Increment(ref flushCalls);
+                return Task.FromResult(missingToken);
+            },
+            termination: tm);
+
+        var first = batcher.EnqueueAsync(Update("0-step"));
+
+        var termination = await tm.TerminationTask.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(TerminationReason.CheckpointTokenMissing, termination.Reason);
+        Assert.Null(termination.Exception);
+
+        var later = batcher.EnqueueAsync(Update("1-step"));
+        await batcher.DrainAsync();
+
+        Assert.False(first.IsCompleted);
+        Assert.False(later.IsCompleted);
+        Assert.Equal(1, flushCalls);
+    }
 }

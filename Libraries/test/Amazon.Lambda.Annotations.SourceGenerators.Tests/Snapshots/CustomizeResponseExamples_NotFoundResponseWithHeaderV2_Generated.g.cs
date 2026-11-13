@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.CustomizeResponseExamples"/>.
+    /// </summary>
     public class CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated
     {
         private readonly CustomizeResponseExamples customizeResponseExamples;

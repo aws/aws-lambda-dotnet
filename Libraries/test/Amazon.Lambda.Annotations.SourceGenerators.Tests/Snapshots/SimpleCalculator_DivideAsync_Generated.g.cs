@@ -11,6 +11,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.SimpleCalculator"/>.
+    /// </summary>
     public class SimpleCalculator_DivideAsync_Generated
     {
         private readonly ServiceProvider serviceProvider;

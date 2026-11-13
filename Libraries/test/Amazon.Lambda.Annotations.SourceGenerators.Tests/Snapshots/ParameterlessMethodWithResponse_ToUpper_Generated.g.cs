@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.ParameterlessMethodWithResponse"/>.
+    /// </summary>
     public class ParameterlessMethodWithResponse_NoParameterWithResponse_Generated
     {
         private readonly ParameterlessMethodWithResponse parameterlessMethodWithResponse;
