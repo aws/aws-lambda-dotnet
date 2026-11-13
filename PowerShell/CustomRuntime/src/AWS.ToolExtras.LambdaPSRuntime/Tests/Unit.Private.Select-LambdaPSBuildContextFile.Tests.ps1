@@ -60,5 +60,11 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
 
             { Select-LambdaPSBuildContextFile -Path $root } | Should -Throw -ErrorId 'DockerIgnorePatternUnsupported'
         }
+
+        It 'excludes a folder named by a pattern with a trailing slash, as docker does' {
+            $root = & $script:newContextTree -Root ([System.IO.Path]::Combine($TestDrive, 'slash')) -File 'handler.ps1', 'secrets/key.txt' -Ignore '.dockerignore', 'secrets/'
+
+            Select-LambdaPSBuildContextFile -Path $root | Should -Be @('handler.ps1')
+        }
     }
 }

@@ -7,8 +7,9 @@ function Select-LambdaPSBuildContextFile {
         ones included, less those a .dockerignore pattern excludes. It follows docker's rules for the
         patterns the scaffolded .dockerignore and common edits use:
 
-          - one pattern per line; blank lines and lines starting with '#' are ignored, and a leading '/'
-            or './' is dropped, since every pattern is relative to the context root;
+          - one pattern per line; blank lines and lines starting with '#' are ignored, a leading '/'
+            or './' is dropped, since every pattern is relative to the context root, and a trailing '/'
+            is dropped, as docker cleans each pattern;
           - '*' matches any run of characters but '/', '?' any one character but '/', and '**' any number
             of folders, so '**/.git' matches .git at any depth;
           - a pattern that matches a folder excludes everything under it;
@@ -45,7 +46,9 @@ function Select-LambdaPSBuildContextFile {
             if ($pattern.Length -eq 0 -or $pattern.StartsWith('#')) { continue }
             $include = $pattern.StartsWith('!')
             if ($include) { $pattern = $pattern.Substring(1).Trim() }
-            $pattern = $pattern.Replace('\', '/') -replace '^(\./|/)+', ''
+            # Cleaned as docker cleans it (filepath.Clean), so 'secrets/' matches the folder 'secrets'.
+            $pattern = ($pattern.Replace('\', '/') -replace '/+', '/' -replace '^(\./|/)+', '').TrimEnd('/')
+            if ($pattern.Length -eq 0) { continue }
             if ($pattern -match '[\[\]]') {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.NotSupportedException]::new(
