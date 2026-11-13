@@ -233,16 +233,33 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 ["attempt"] = attemptNumber,
             }))
             {
+                // The START checkpoint above may have been awaited; the workflow
+                // can have been torn down meanwhile. Never start the body then.
+                _workflowCancellation.Token.ThrowIfCancellationRequested();
+                // Also against the clock: the awaited START can finish after the
+                // deadline while its timer has not run yet.
+                _workflowCancellation.ThrowIfDeadlineExceeded(
+                    "The invocation deadline passed before the step body started.");
                 result = await _func(stepContext, linked.Token);
             }
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (
+            linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)
         {
             // Cancellation owned by the linked source (caller-cancel or workflow
             // shutdown). Do NOT checkpoint FAIL and do NOT consult the retry
             // strategy — the termination signal that fired (if any) owns the
             // suspend/abort decision; an upstream caller-cancel propagates up
             // as a fault on the workflow user task.
+            throw;
+        }
+        catch (Exception) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The invocation deadline passed (Lambda Managed Instances only). A
+            // body that converts its cancellation into another exception did not
+            // really fail: do NOT checkpoint FAIL or RETRY, or replay would see a
+            // permanent failure caused by a timeout. The invocation is retried
+            // and the step runs again.
             throw;
         }
         catch (Exception ex)

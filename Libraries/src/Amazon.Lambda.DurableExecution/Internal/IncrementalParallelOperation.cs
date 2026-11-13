@@ -556,6 +556,10 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         }
 
         // A torn-down operation propagates cancellation rather than a synthesized verdict.
+        // The deadline is checked against the clock too, in case the deadline timer
+        // has not run yet when branches failed because time ran out.
+        _workflowCancellation.ThrowIfDeadlineExceeded(
+            "The invocation deadline passed before the parallel operation completed; its outcome is not recorded.");
         _workflowCancellation.Token.ThrowIfCancellationRequested();
         cancellationToken.ThrowIfCancellationRequested();
 

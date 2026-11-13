@@ -84,6 +84,7 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
         var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
@@ -99,6 +100,7 @@ internal sealed class DurableContext : IDurableContext
         string? name = null,
         CancellationToken cancellationToken = default)
     {
+        _workflowCancellation.ThrowIfTornDown();
         // Service timer granularity is 1 second; sub-second waits would round to 0.
         // WaitOptions.WaitSeconds is integer in [1, 31_622_400] (1 second to ~1 year).
         if (duration < TimeSpan.FromSeconds(1))
@@ -144,6 +146,7 @@ internal sealed class DurableContext : IDurableContext
         string? name = null,
         CancellationToken cancellationToken = default)
     {
+        _workflowCancellation.ThrowIfTornDown();
         ArgumentNullException.ThrowIfNull(check);
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(config.WaitStrategy);
@@ -163,6 +166,7 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
         var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
@@ -186,6 +190,7 @@ internal sealed class DurableContext : IDurableContext
         CallbackConfig? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
@@ -199,6 +204,7 @@ internal sealed class DurableContext : IDurableContext
         string? name = null,
         ParallelConfig? config = null)
     {
+        _workflowCancellation.ThrowIfTornDown();
         var effectiveConfig = config ?? new ParallelConfig();
         // Operation-level default for per-branch result serialization: the config's
         // ItemSerializer if set, else the globally-registered serializer. Individual
@@ -266,6 +272,7 @@ internal sealed class DurableContext : IDurableContext
         ParallelConfig? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         if (branches == null) throw new ArgumentNullException(nameof(branches));
         for (var i = 0; i < branches.Count; i++)
         {
@@ -306,6 +313,7 @@ internal sealed class DurableContext : IDurableContext
         MapConfig<TItem>? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         if (items == null) throw new ArgumentNullException(nameof(items));
         if (func == null) throw new ArgumentNullException(nameof(func));
 
@@ -528,6 +536,7 @@ internal sealed class DurableContext : IDurableContext
         InvokeConfig? config,
         CancellationToken cancellationToken)
     {
+        _workflowCancellation.ThrowIfTornDown();
         // Argument validation runs synchronously at the call site (matches the
         // .NET convention of failing fast for misuse). Match Python/JS/Java
         // parity: only check for null/empty here; the durable execution service

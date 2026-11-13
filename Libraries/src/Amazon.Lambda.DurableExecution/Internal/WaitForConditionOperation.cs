@@ -148,6 +148,22 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         return ExecuteIteration(priorState, attemptNumber, existingStatus: ready.Status, cancellationToken);
     }
 
+    private void ThrowIfDeadlineExceeded() =>
+        _workflowCancellation.ThrowIfDeadlineExceeded(
+            "The invocation deadline passed during the condition check; its outcome is not recorded.");
+
+    /// <summary>
+    /// Serializes <paramref name="state"/> for a checkpoint, then re-checks the
+    /// deadline: serialization runs user serializer code, which can take long
+    /// enough to cross it. Used on every path that records an outcome.
+    /// </summary>
+    private string SerializeStateForCheckpoint(TState state)
+    {
+        var serialized = SerializeState(state);
+        ThrowIfDeadlineExceeded();
+        return serialized;
+    }
+
     private async Task<TState> ExecuteIteration(TState currentState, int attemptNumber, string? existingStatus, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -191,13 +207,26 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         try
         {
             var checkContext = new ConditionCheckContext(attemptNumber, _logger);
+            // Never start the check once the workflow has been torn down.
+            _workflowCancellation.Token.ThrowIfCancellationRequested();
+            // Also against the clock: restoring the prior state on replay can
+            // cross the deadline while its timer has not run yet.
+            ThrowIfDeadlineExceeded();
             newState = await _check(currentState, checkContext, linked.Token);
         }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        catch (OperationCanceledException) when (
+            linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)
         {
             // Cancellation owned by the linked source — caller cancel or workflow
             // shutdown. Do NOT checkpoint FAIL: the termination signal (or
             // upstream cancel) owns the outcome.
+            throw;
+        }
+        catch (Exception) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The invocation deadline passed (Lambda Managed Instances only). An
+            // exception raised because the check was cancelled is not a real
+            // failure: do NOT checkpoint FAIL. The invocation is retried.
             throw;
         }
         catch (Exception ex)
@@ -223,10 +252,22 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             };
         }
 
+        // The invocation deadline passed (Lambda Managed Instances only) while the
+        // check ran. A check that swallowed the cancellation and returned a state
+        // did not complete a real poll: record no RETRY (which would consume an
+        // attempt) and no FAIL. The poll runs again when the invocation is retried.
+        ThrowIfDeadlineExceeded();
+
         WaitDecision decision;
         try
         {
             decision = _config.WaitStrategy.Decide(newState, attemptNumber);
+        }
+        catch (WaitForConditionException) when (_workflowCancellation.IsDeadlineExceeded)
+        {
+            // The deadline passed while the strategy ran: never record FAIL for it.
+            ThrowIfDeadlineExceeded();
+            throw;
         }
         catch (WaitForConditionException maxEx)
         {
@@ -245,6 +286,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             // that hits this cached FAIL can reconstruct LastState identically
             // to the live throw. The wire protocol forbids a Payload on FAIL
             // updates, so ErrorData is the only field that survives replay.
+            var lastStateData = SerializeStateForCheckpoint(newState);
             await EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
@@ -257,17 +299,21 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
                 {
                     ErrorType = typeof(WaitForConditionException).FullName,
                     ErrorMessage = enriched.Message,
-                    ErrorData = SerializeState(newState)
+                    ErrorData = lastStateData
                 }
             }, cancellationToken);
 
             throw enriched;
         }
 
+        // Decide is user code too; the deadline can pass while it runs.
+        ThrowIfDeadlineExceeded();
+
         if (!decision.ShouldContinue)
         {
             // Stop() means the condition has been met. Persist the final
             // state and return it to the caller.
+            var finalState = SerializeStateForCheckpoint(newState);
             await EnqueueAsync(new SdkOperationUpdate
             {
                 Id = OperationId,
@@ -276,7 +322,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
                 Action = OperationAction.SUCCEED,
                 SubType = OperationSubTypes.WaitForCondition,
                 Name = Name,
-                Payload = SerializeState(newState)
+                Payload = finalState
             }, cancellationToken);
 
             return newState;
@@ -287,6 +333,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
         // service definitely has the new state and timer scheduled before
         // we suspend.
         var delaySeconds = (int)Math.Max(1, Math.Ceiling(decision.Delay.TotalSeconds));
+        var nextState = SerializeStateForCheckpoint(newState);
         await EnqueueAsync(new SdkOperationUpdate
         {
             Id = OperationId,
@@ -295,7 +342,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             Action = OperationAction.RETRY,
             SubType = OperationSubTypes.WaitForCondition,
             Name = Name,
-            Payload = SerializeState(newState),
+            Payload = nextState,
             StepOptions = new SdkStepOptions { NextAttemptDelaySeconds = delaySeconds }
         }, cancellationToken);
 
