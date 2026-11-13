@@ -197,7 +197,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     # Every target ships the one runtime interface client under Templates/Shared; its behavior is
     # tested in Component.RuntimeInterfaceClient.Tests.ps1. Here: each scaffold carries all of it,
-    # unchanged.
+    # unchanged except for the stamped version in pwsh-runtime.psd1 (Copy-LambdaPSProjectTemplate's tests).
     It 'scaffolds every Templates/Shared file unchanged for <Target>' -ForEach @(
         @{ Target = 'CMR'; Scaffold = 'Runtime' }
         @{ Target = 'Layer'; Scaffold = 'Runtime' }
@@ -220,6 +220,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
             $relative = [System.IO.Path]::GetRelativePath($shared, $file.FullName)
             $emitted = [System.IO.Path]::Combine($projectPath, $relative)
             $emitted | Should -Exist -Because "every target ships $relative"
+            if ($relative -eq [System.IO.Path]::Combine('modules', 'pwsh-runtime.psd1')) { continue }
             [System.IO.File]::ReadAllText($emitted) | Should -BeExactly ([System.IO.File]::ReadAllText($file.FullName)) -Because "$relative is copied unchanged"
         }
         foreach ($append in @(Get-ChildItem -LiteralPath $shared -Recurse -File -Filter '*.append')) {

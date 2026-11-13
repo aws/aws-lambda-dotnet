@@ -76,6 +76,27 @@ Describe 'Copy-LambdaPSProjectTemplate' -Tag 'Unit' {
         Test-Path -LiteralPath (Join-Path $destination 'Dockerfile.append') | Should -BeFalse
         @($written | Where-Object { $_ -like '*.append' }) | Should -BeNullOrEmpty
     }
+    It 'stamps the runtime client version into the <Target> project''s pwsh-runtime.psd1' -ForEach @(
+        @{ Target = 'CMR' }, @{ Target = 'Container' }, @{ Target = 'Layer' }, @{ Target = 'SelfContainedZip' }
+    ) {
+        $destination = [System.IO.Path]::Combine($TestDrive, "ricver-$Target")
+        $moduleVersion = (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine((Split-Path -Parent $PSScriptRoot), 'AWS.ToolExtras.LambdaPSRuntime.psd1'))).ModuleVersion
+
+        InModuleScope $script:moduleName -Parameters @{ Target = $Target; Destination = $destination } {
+            param($Target, $Destination)
+            $copyParams = @{
+                Path              = Get-LambdaPSProjectTemplateRoot -Target $Target
+                Destination       = $Destination
+                PwshVersion       = '7.4.20'
+                Target            = $Target
+                PowerShellVersion = '7.4'
+            }
+            $null = Copy-LambdaPSProjectTemplate @copyParams -WarningAction SilentlyContinue
+        }
+
+        (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($destination, 'modules', 'pwsh-runtime.psd1'))).ModuleVersion | Should -Be $moduleVersion
+    }
+
     It 'replaces each -Token, as a JSON value in a .json file and as text elsewhere' {
         $source = Join-Path $TestDrive 'token-src'
         $null = New-Item -ItemType Directory -Path $source -Force
