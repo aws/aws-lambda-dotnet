@@ -151,14 +151,14 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             "$warnings" | Should -BeLike "Could not list /opt, /var/task and /tmp in image 'rt:v1'*: docker: Error response from daemon: exec: *"
         }
 
-        It 'checks a Dockerfile project that has no lambdaps-runtime.json' {
+        It 'does not check a Dockerfile project that has no lambdaps-runtime.json' {
             $bare = [System.IO.Path]::Combine($TestDrive, 'bare-image')
             $null = New-Item -ItemType Directory -Path $bare
             Set-Content -LiteralPath ([System.IO.Path]::Combine($bare, 'Dockerfile')) -Value 'FROM public.ecr.aws/lambda/provided:al2023'
 
             $null = Build-LambdaPSRuntimeImage -Path $bare -Tag 'bare:v1'
 
-            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter { $ArgumentList[0] -eq 'run' }
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 0 -Exactly -ParameterFilter { $ArgumentList[0] -eq 'run' }
         }
 
         It 'does not check a Container function image, whose code belongs in /var/task' {

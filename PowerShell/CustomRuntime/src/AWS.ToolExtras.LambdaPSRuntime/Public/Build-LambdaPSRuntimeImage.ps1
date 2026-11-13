@@ -32,7 +32,7 @@ function Build-LambdaPSRuntimeImage {
         builder, the reserved-path check below pulls it there. Remove it with
         'docker image rm <ImageUri>' when it is not needed.
 
-        After the build, a runtime image (not a Container function image) is checked for files in
+        After the build, a runtime image (lambdaps-runtime.json Target CMR) is checked for files in
         /opt, /var/task and /tmp, which Lambda hides at run time, with 'docker run --rm --network none
         --user 0 --entrypoint /bin/sh'. A pushed image is pulled again and checked after the push. When
         the check cannot run (for example an image with no /bin/sh or ls), it warns and the build succeeds.
@@ -234,10 +234,10 @@ function Build-LambdaPSRuntimeImage {
             if ($push) { Remove-Item -LiteralPath $metadataFile -Force -ErrorAction SilentlyContinue }
         }
 
-        # RUN steps can't be judged from the Dockerfile's text, so list the built image instead.
+        # RUN steps can't be judged from the Dockerfile's text, so list the built image instead. Only a
+        # project marked as a runtime image is checked: a function image's code belongs in /var/task.
         $marker = try { Get-LambdaPSProjectMarker -Path $root } catch { $null }
-        $isFunctionImage = $marker -and $marker.Target -eq 'Container'
-        if (-not $isFunctionImage) {
+        if ($marker -and $marker.Target -eq 'CMR') {
             $imageRef = if (-not $push) { $Tag } elseif ($digest) { "$ImageUri@$digest" } else { $ImageUri }
             $listScript = 'command -v ls >/dev/null || { echo "ls not found in the image"; exit 4; }; rc=0; for d in /opt /var/task /tmp; do n=$(ls -A "$d" 2>/dev/null | wc -l); ' +
                 'if [ "$n" -gt 0 ]; then echo "LAMBDAPS_RESERVED $d ($n entries): $(ls -A "$d" | head -n 5 | tr "\n" " ")"; rc=3; fi; done; exit $rc'
