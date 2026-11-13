@@ -22,7 +22,7 @@ image. This module automates building and deploying it. It lives deliberately ou
   `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
 - The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —
   that is the path for Docker-averse environments.
-- AWS.Tools 5.0.1001 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
+- AWS.Tools 5.0.336 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
   `AWS.Tools.SecurityToken`), with an `AWS.Tools.LambdaCore` that exports the Lambda
   customer-managed runtime cmdlets (`New-LMCRuntime`, `New-LMCRuntimeVersion`,
   `New-LMCRuntimeAlias`, …) and an `AWS.Tools.Lambda` whose function cmdlets accept the runtime
@@ -319,10 +319,9 @@ calls carry a stable `app/AWS.ToolExtras.LambdaPSRuntime#<version>` token for ad
 ## Testing
 
 Run the offline test suite (all AWS and container seams are mocked) with coverage. The suite also
-checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
-exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
-directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+checks every AWS cmdlet call against the real cmdlets, so it needs AWS.Tools 5.0.336 or later; set
+`LAMBDAPS_AWSTOOLS_MODULE_PATH` to a directory containing `AWS.Tools.*/<version>/` to use one that
+is not on `PSModulePath`. The suite needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
 and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
@@ -380,7 +379,7 @@ file.
   `Get-LMCRuntime`, …) and the function cmdlets' runtime binding (`-RuntimeConfig_RuntimeArn`,
   `-RuntimeConfig_RuntimeAlias`). The manifest declares
   `AWS.Tools.Lambda`/`.LambdaCore`/`.ECR`/`.SecurityToken` as `RequiredModules` with a **minimum**
-  `ModuleVersion` of `5.0.1001`, the first build with those cmdlets and parameters, not an exact
+  `ModuleVersion` of `5.0.336`, the first build with those cmdlets and parameters, not an exact
   pin, so consumers can take newer AWS.Tools releases without this module re-pinning. All four share
   one `AWS.Tools.Common` build, so they have the same floor. Without them, or with an older build,
   the module does not import. A manifest cannot express "exports command X", so a later build whose

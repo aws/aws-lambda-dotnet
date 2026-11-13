@@ -27,9 +27,8 @@ function Publish-LambdaPSRuntimeVersion {
         checked against the architecture the service reports for the version, and a mismatch is a
         terminating RuntimeImageArchitectureMismatch error.
 
-        The service reports what it reads from the image MANIFEST, not what the caller declares: a
-        version published with Compatibility_Architecture arm64 from an amd64 image reports
-        [x86_64]. So a mismatch means the image itself was built for the wrong platform --
+        The service reports what it reads from the image MANIFEST: an amd64 image reports [x86_64].
+        So a mismatch means the image itself was built for the wrong platform --
         for example 'docker buildx' on a single-architecture builder that cannot emit linux/arm64.
         Failing here stops the caller from pointing an alias, and then functions, at it.
     .PARAMETER RuntimeAlias
@@ -117,16 +116,13 @@ function Publish-LambdaPSRuntimeVersion {
     }
 
     # Create an immutable version from the pushed image. -RuntimeName is the runtime and -Name is the
-    # version label. Compatibility_Architecture is sent for completeness, but the architecture the
-    # service reports comes from the image manifest (see -Architecture), so the check after the
-    # wait -- not this declaration -- is what guarantees the architecture.
+    # version label. The service reads the architecture from the image manifest (see -Architecture).
     $publishParams = @{
-        RuntimeName                = $RuntimeName
-        Name                       = $RuntimeVersion
-        ImageUri                   = $ImageUri
-        Compatibility_Architecture = @($Architecture)
-        Region                     = $Region
-        ClientConfig               = $clientConfig
+        RuntimeName  = $RuntimeName
+        Name         = $RuntimeVersion
+        ImageUri     = $ImageUri
+        Region       = $Region
+        ClientConfig = $clientConfig
     }
     if ($ReleaseNote) { $publishParams.ReleaseNote = $ReleaseNote }
     try {
