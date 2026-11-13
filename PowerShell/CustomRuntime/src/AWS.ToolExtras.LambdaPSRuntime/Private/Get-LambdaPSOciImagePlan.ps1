@@ -113,19 +113,26 @@ function Get-LambdaPSOciImagePlan {
         $executable = @('lambda-entrypoint.sh', 'bootstrap') -ccontains $name
         $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$name"; Executable = $executable; Normalize = $executable })
     }
-    $modulesRoot = [System.IO.Path]::Combine($root, 'modules')
-    if ([System.IO.Directory]::Exists($modulesRoot)) {
-        foreach ($file in [System.IO.Directory]::EnumerateFiles($modulesRoot, '*', [System.IO.SearchOption]::AllDirectories)) {
-            $relative = $file.Substring($modulesRoot.Length).TrimStart('\', '/').Replace('\', '/')
-            $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $file; ContainerPath = "/var/runtime/modules/$relative"; Executable = $false; Normalize = $false })
-        }
+    # COPY modules honors .dockerignore (for example **/.git) like COPY . does, and fails when it excludes the folder.
+    $contextFiles = @(Select-LambdaPSBuildContextFile -Path $root)
+    if ([System.IO.Directory]::Exists([System.IO.Path]::Combine($root, 'modules')) -and
+        @($contextFiles | Where-Object { $_.StartsWith('modules/', [System.StringComparison]::Ordinal) }).Count -eq 0) {
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.InvalidOperationException]::new(
+                "The .dockerignore in '$root' excludes modules/, which the image needs. Remove the pattern that matches it."),
+            'ModulesFolderIgnored', [System.Management.Automation.ErrorCategory]::InvalidData, [System.IO.Path]::Combine($root, '.dockerignore'))
+    }
+    foreach ($relative in $contextFiles) {
+        if (-not $relative.StartsWith('modules/', [System.StringComparison]::Ordinal)) { continue }
+        $local = [System.IO.Path]::Combine($root, $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
+        $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$relative"; Executable = $false; Normalize = $false })
     }
 
     # Step 5: COPY . /var/task, then the rm of the runtime files.
     $functionFiles = [System.Collections.Generic.List[object]]::new()
     if ($target -eq 'Container') {
         $runtimeNames = @('lambda-entrypoint.sh', 'bootstrap', 'runtime.ps1', 'PowerShellLambdaContext.cs')
-        foreach ($relative in @(Select-LambdaPSBuildContextFile -Path $root)) {
+        foreach ($relative in $contextFiles) {
             if ($runtimeNames -ccontains $relative -or $relative.StartsWith('modules/', [System.StringComparison]::Ordinal)) { continue }
             $functionFiles.Add([PSCustomObject]@{
                     LocalPath     = [System.IO.Path]::Combine($root, $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
