@@ -60,10 +60,8 @@ function New-LambdaPSFunctionProject {
         handler forms are not scaffolded: set them when you deploy (the function's handler setting).
     .PARAMETER RuntimeAlias
         The runtime alias the function binds to at deploy time (RuntimeBound target). Defaults to
-        'default', the same alias New-LambdaPSRuntimeDeployment creates and
-        New-LambdaPSFunctionDeployment binds to. Ignored, with a warning, for the other targets. An
-        alias name is up to 128 letters, digits, '_', '.' and '-', not starting or ending with '.' or
-        '-', as Lambda requires.
+        'default'. Ignored, with a warning, for the other targets. An alias name is up to 128 letters,
+        digits, '_', '.' and '-', not starting or ending with '.' or '-', as Lambda requires.
     .PARAMETER Architecture
         The target architecture: x86_64 or arm64 (RuntimeBound target), recorded in manifest.json so
         New-LambdaPSFunctionDeployment uses it. When omitted, none is recorded and the deploy takes the

@@ -99,9 +99,9 @@ function New-LambdaPSFunctionDeployment {
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
         manifest.json records another). Otherwise it defaults to the alias recorded in a scaffolded
-        project's manifest.json, or else 'default', matching New-LambdaPSRuntimeDeployment's default
-        alias. An alias name is up to 128 ASCII letters, digits, '_', '.' and '-', not starting or
-        ending with '.' or '-', as Lambda requires, and is case-sensitive ('Staging' is not 'staging').
+        project's manifest.json, or else 'default'. An alias name is up to 128 ASCII letters, digits,
+        '_', '.' and '-', not starting or ending with '.' or '-', as Lambda requires, and is
+        case-sensitive ('Staging' is not 'staging').
         An alias read from manifest.json is checked the same way, and one that does not match is an
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
