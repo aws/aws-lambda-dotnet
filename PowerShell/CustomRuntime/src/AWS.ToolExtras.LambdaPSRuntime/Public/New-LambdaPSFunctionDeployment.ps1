@@ -90,6 +90,7 @@ function New-LambdaPSFunctionDeployment {
         source (for example '../outside.ps1'). For a folder source the handler is a path relative to
         the folder, written with '/': an absolute path, or one containing '\', fails with
         InvalidHandlerPath, because Lambda joins the handler to its task root as written.
+        A handler with whitespace in it fails with InvalidHandler.
     .PARAMETER RuntimeName
         The customer-managed runtime the function binds to. Its ARN is resolved automatically. A runtime
         name is 2 to 128 lowercase ASCII letters, digits, '_', '.' and '-', starting and ending with a
@@ -463,6 +464,16 @@ function New-LambdaPSFunctionDeployment {
                         'HandlerNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
             }
             $Handler = $resolved
+        }
+
+        # Lambda refuses whitespace in a handler: on create with a raw error, and on a redeploy only after
+        # the code is updated.
+        if ($Handler -match '\s') {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Handler '$Handler' contains whitespace, which Lambda does not accept in a handler. Remove it from -Handler, or rename the script or the folder it is in.", 'Handler'),
+                    'InvalidHandler', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Handler))
         }
 
         # The script whose #Requires -Modules to read is the leading token before '::' when it is a .ps1

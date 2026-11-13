@@ -97,7 +97,7 @@ function New-LambdaPSRuntimeDeployment {
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
                                 PwshReleaseOlderThanAlias (the pinned release is older than the
                                 one the alias runs, on the same line and architecture)
-          scaffold and modules  TargetOwnedByAnotherUser, TemplateNotFound,
+          scaffold and modules  TargetOwnedByAnotherUser, IdCommandNotFound, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
                                 -IncludeModule name that is a wildcard or a path),

@@ -115,7 +115,7 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
                 Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
             } } | Should -Throw -ErrorId 'BackslashInFileName'
         Test-Path -LiteralPath $zip | Should -BeFalse
-        @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
+        Test-Path -LiteralPath (Split-Path -Parent $zip) | Should -BeFalse -Because 'a refused package creates no folder'
     }
 
     # A file link would ship the file it points to, which can be outside -Path; a folder link would ship nothing.
@@ -236,7 +236,7 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
                 } } | Should -Throw -ErrorId 'UnzippedPackageTooLarge' -PassThru
             $err.Exception.Message | Should -BeLike "'size-over.zip' would unzip to 281 MB, over the 250 MB*it was not written. The bundled pwsh takes 170 MB. The largest modules: Big (50 MB), Mid (20 MB), Tiny (6 MB). Remove modules*"
             Test-Path -LiteralPath $zip | Should -BeFalse
-            @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
+            Test-Path -LiteralPath (Split-Path -Parent $zip) | Should -BeFalse -Because 'a refused package creates no folder'
         }
 
         # One decimal place would print 250 MB for a package just over the limit.
@@ -309,5 +309,26 @@ Describe 'Write-LambdaPSZipArchive' -Tag 'Unit' {
 
         Get-Content -LiteralPath $zip -Raw | Should -Match 'an older package'
         @(Get-ChildItem -LiteralPath (Split-Path -Parent $zip) -Filter '*.partial') | Should -BeNullOrEmpty
+    }
+
+    It 'throws PackageWriteFailed naming the cause when <Case> is not writable' -Skip:($IsWindows -or (& id -u) -eq '0') -ForEach @(
+        @{ Case = 'the destination folder'; Relative = 'package.zip' }
+        @{ Case = 'the folder a new destination folder goes in'; Relative = 'sub/package.zip' }
+    ) {
+        $stage = Join-Path $TestDrive 'zip-ro-stage'
+        $null = New-Item -ItemType Directory -Path $stage -Force
+        'x' | Set-Content -LiteralPath (Join-Path $stage 'a.txt')
+        $folder = Join-Path $TestDrive 'zip-ro'
+        $null = New-Item -ItemType Directory -Path $folder -Force
+        & chmod 555 $folder
+
+        try {
+            $err = { InModuleScope $script:moduleName -Parameters @{ Stage = $stage; Zip = (Join-Path $folder $Relative) } {
+                    param($Stage, $Zip)
+                    Write-LambdaPSZipArchive -Path $Stage -DestinationPath $Zip
+                } } | Should -Throw -ErrorId 'PackageWriteFailed' -ExpectedMessage '*is denied*' -PassThru
+            $err.Exception.Message | Should -Not -BeLike '*.partial*'
+        }
+        finally { & chmod 755 $folder }
     }
 }
