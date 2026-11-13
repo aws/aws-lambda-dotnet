@@ -73,3 +73,7 @@ restores `$LASTEXITCODE` and `$env:PSModulePath` to their values at the end of s
 the handler changes, such as a global variable, an environment variable the runtime does not set, the
 current location or an imported module, is still there for the next invocation. So are the jobs,
 event subscriptions (`-Action`) and remoting sessions that the handler's start-up code created.
+
+The runtime sets `AWS_EXECUTION_ENV` to `AWS_Lambda_lambdapsruntime_pwsh_<pwsh version>_ric_<runtime client
+version>`, or appends the part from `_lambdapsruntime` to a value already set. The AWS SDK sends it in the
+user agent of each call the function makes.

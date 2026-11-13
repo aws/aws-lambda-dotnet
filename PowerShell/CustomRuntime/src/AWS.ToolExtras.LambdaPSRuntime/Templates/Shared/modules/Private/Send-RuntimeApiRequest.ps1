@@ -9,9 +9,9 @@ function Send-RuntimeApiRequest {
             POST a body to the Lambda Runtime API.
 
         .DESCRIPTION
-            Sends the body to the given Runtime API URI with the runtime's User-Agent and any extra
-            headers, and throws when the Runtime API does not accept it (any status but 2xx), so the
-            caller can report or log why.
+            Sends the body to the given Runtime API URI with the runtime's User-Agent, the invocation's
+            Lambda-Runtime-Invocation-Id when Lambda sent one, and any extra headers, and throws when the
+            Runtime API does not accept it (any status but 2xx), so the caller can report or log why.
     #>
     [CmdletBinding()]
     param (
@@ -30,6 +30,10 @@ function Send-RuntimeApiRequest {
 
     $private:request = [System.Net.Http.HttpRequestMessage]::new()
     $private:request.Headers.Add('User-Agent', "aws-lambda-powershell/$env:POWERSHELL_VERSION")
+    # The Runtime API checks it against the invocation it sent, so a post cannot complete another invocation.
+    if ($script:__LambdaPSRuntimeInvocationId) {
+        $private:request.Headers.Add('Lambda-Runtime-Invocation-Id', $script:__LambdaPSRuntimeInvocationId)
+    }
     if ($private:Header) {
         foreach ($h in $private:Header) {
             $private:request.Headers.Add($h.Key, $h.Value)
