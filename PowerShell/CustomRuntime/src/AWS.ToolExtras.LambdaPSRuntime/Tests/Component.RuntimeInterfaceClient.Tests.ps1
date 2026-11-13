@@ -445,6 +445,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativefail.ps1')) -Value 'param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 2''', '''native done'''
         $writeError = '$PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new([System.Exception]::new(''soft''), ''Soft'', ''NotSpecified'', $null))'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', '''written''', $writeError
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativewriteerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 5''', '''native written''', $writeError
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerrorfn.ps1')) -Value "function Handle { [CmdletBinding()] param(`$LambdaInput, `$LambdaContext) pwsh -NoProfile -Command 'exit 2'; 'fn written'; $writeError }"
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'topbreak.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toplabel.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break nowhere } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
@@ -763,8 +764,14 @@ public class InvokeBin : PSCmdlet {
         @{ Name = 'a Script handler that leaves a native command''s non-zero exit code'; Handler = 'nativefail.ps1'; Body = 'native done' }
         @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError'; Handler = 'writeerror.ps1'; Body = 'written' }
         @{ Name = 'an advanced handler function that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'writeerrorfn.ps1::Handle'; Body = 'fn written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'nativewriteerror.ps1'; Body = 'native written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails, with AWS_LAMBDA_LOG_FORMAT=JSON'; Handler = 'nativewriteerror.ps1'; Body = 'native written'; Format = 'JSON' }
     ) {
-        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}')
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
 
         $posts[0].Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
         $posts[0].Body | Should -Be $Body

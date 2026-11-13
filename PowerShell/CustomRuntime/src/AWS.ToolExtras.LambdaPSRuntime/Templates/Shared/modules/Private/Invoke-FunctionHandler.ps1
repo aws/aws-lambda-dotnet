@@ -53,12 +53,15 @@ function private:Invoke-FunctionHandler {
     # result unreported. A labelled one whose label matches no loop, like exit in a handler function,
     # goes past this loop and ends the runtime; the finally in runtime.ps1's event loop reports that on
     # /error and exits 1. exit in a <script>.ps1 handler ends only that script, and a non-zero code fails
-    # the invocation, as pwsh -File does. $? is false after the script only then, so a native command's
-    # code left in $LASTEXITCODE does not count.
+    # the invocation, as pwsh -File does. $? is false after it, and $LASTEXITCODE holds the code, but an
+    # advanced script's $PSCmdlet.WriteError also clears $? and may follow a failed native command, so
+    # the check also needs the script to have recorded no error, which exit doesn't. Exiting after such
+    # an error is therefore sent as a response.
     #
     # With AWS_LAMBDA_LOG_FORMAT=JSON, each stream's records are logged at their level, as
     # Amazon.Lambda.PowerShellHost does. The handler's output is wrapped first, so a record it returns
     # stays in the response.
+    $private:lastError = $global:Error[0]
     $private:handlerCompleted = $false
     do {
         $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') {
@@ -83,7 +86,8 @@ function private:Invoke-FunctionHandler {
         throw [System.InvalidOperationException]::new(
             'The handler used break or continue outside a loop of its own, so it stopped before returning. Use return to leave the handler early.')
     }
-    if (-not $private:handlerSucceeded -and $private:HandlerArray.handlerType -eq 'Script' -and $global:LASTEXITCODE) {
+    if (-not $private:handlerSucceeded -and $private:HandlerArray.handlerType -eq 'Script' -and $global:LASTEXITCODE -and
+        [object]::ReferenceEquals($global:Error[0], $private:lastError)) {
         throw [System.InvalidOperationException]::new("The handler script exited with code $global:LASTEXITCODE.")
     }
 
