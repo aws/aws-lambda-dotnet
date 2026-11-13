@@ -1342,6 +1342,23 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $script:splat = @{ RuntimeName = 'my-ps'; PowerShellVersion = '7.4'; Region = 'us-east-1'; RepositoryName = 'rt'; RuntimeVersion = 'v2' }
         }
 
+        It 'throws RuntimeAliasPendingDeletion, under -WhatIf too, when the alias is scheduled for deletion' -ForEach @(
+            @{ WhatIf = $true }, @{ WhatIf = $false }
+        ) {
+            # Arrange
+            Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Name = 'default'; RuntimeVersion = 'v1'; State = 'PENDING_DELETION' }
+            }
+
+            # Act
+            $err = { New-LambdaPSRuntimeDeployment @script:splat -WhatIf:$WhatIf } |
+                Should -Throw -ErrorId 'RuntimeAliasPendingDeletion,New-LambdaPSRuntimeDeployment' -PassThru
+
+            # Assert
+            $err.Exception.Message | Should -BeExactly "Alias 'default' of runtime 'my-ps' is scheduled for deletion. Pass another -RuntimeAlias, or run again once Lambda has purged it. Nothing was built or pushed."
+            Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
         It 'warns, naming both architectures, when the alias moves from <Current> to <New> (WhatIf: <WhatIf>)' -ForEach @(
             @{ Current = 'x86_64'; New = 'arm64'; WhatIf = $true; Verb = 'would move' }
             @{ Current = 'arm64'; New = 'x86_64'; WhatIf = $false; Verb = 'moves' }

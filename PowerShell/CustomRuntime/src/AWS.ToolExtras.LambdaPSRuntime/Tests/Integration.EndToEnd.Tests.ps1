@@ -25,7 +25,8 @@
 #     deployed twice;
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, removes the log groups again after 30 seconds in case a late log delivery
-# created one again, and fails listing anything it could not remove. Nothing whose name does not start
+# created one again, and fails listing anything it could not remove. Lambda deletes a runtime's alias and
+# versions days later, so the runtime is left, with a warning naming it. Nothing whose name does not start
 # with this run's prefix is changed.
 #
 # What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
@@ -265,18 +266,28 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             Remove-ECRRepository -RepositoryName $runtimeName -IgnoreExistingImages $true -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime' -Name $runtimeName -Remove {
-            # Lambda deletes a runtime's versions in the background, and refuses to delete a runtime that
-            # still lists one, so wait (up to two minutes) until none is listed.
+            # Lambda refuses to delete a runtime that still lists a version or alias, and a deleted alias
+            # stays listed for days. Wait (up to two minutes) for other deletes to finish.
             for ($wait = 0; $wait -lt 24; $wait++) {
-                if (@(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop).Count -eq 0) { break }
+                $left = @(Get-LMCRuntimeAliasList -RuntimeName $runtimeName -Region $region -ErrorAction Stop) +
+                    @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)
+                if (-not @($left | Where-Object { [string]$_.State -eq 'DELETING' })) { break }
                 Start-Sleep -Seconds 5
+            }
+            if ($left) {
+                Write-Warning "Runtime '$runtimeName' in $region and its versions are left, since its alias is scheduled for deletion. Remove them once Lambda has purged it."
+                return
             }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         # The deploy names the version after the pwsh release it installs, so every version the run's
-        # own runtime lists is removed.
+        # own runtime lists is removed, except one already scheduled for deletion or one an alias scheduled
+        # for deletion points at: Lambda refuses that delete, and the runtime is left with it either way.
         Add-IntegrationResource -Kind 'runtime versions of' -Name $runtimeName -Remove {
+            $pendingAliasVersions = @(Get-LMCRuntimeAliasList -RuntimeName $runtimeName -Region $region -ErrorAction Stop |
+                    Where-Object { [string]$_.State -eq 'PENDING_DELETION' } | ForEach-Object { [string]$_.RuntimeVersion })
             foreach ($version in @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)) {
+                if ([string]$version.State -eq 'PENDING_DELETION' -or $pendingAliasVersions -ccontains $version.Name) { continue }
                 Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name $version.Name -Region $region -Force -ErrorAction Stop
             }
         }.GetNewClosure()
