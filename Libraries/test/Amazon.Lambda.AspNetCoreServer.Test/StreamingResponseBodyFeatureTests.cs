@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 using System;
 using System.IO;
+using System.IO.Pipelines;
+using System.Text;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.AspNetCoreServer.Internal;
@@ -279,6 +281,78 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                     OnFirstWrite?.Invoke();
                 }
             }
+        }
+
+        // -----------------------------------------------------------------------
+        // Writer bytes that were advanced but never flushed by the application must
+        // still reach the Lambda stream, however the response is started.
+        // -----------------------------------------------------------------------
+
+        private static void WriteWithoutFlush(PipeWriter writer, string text)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var span = writer.GetSpan(bytes.Length);
+            bytes.CopyTo(span);
+            writer.Advance(bytes.Length);
+        }
+
+        [Fact]
+        public async Task Writer_AdvancedButUnflushedBytes_ReachLambdaStream_OnCompleteAsync()
+        {
+            var (feature, lambdaStream, _) = CreateFeature();
+
+            WriteWithoutFlush(feature.Writer, "hello-streaming");
+            await feature.CompleteAsync();
+
+            Assert.Equal("hello-streaming", Encoding.UTF8.GetString(lambdaStream.ToArray()));
+        }
+
+        [Fact]
+        public async Task Writer_AdvancedBytes_ReachLambdaStream_AfterExplicitStartAsync()
+        {
+            var (feature, lambdaStream, _) = CreateFeature();
+
+            WriteWithoutFlush(feature.Writer, "hello-streaming");
+            await feature.StartAsync();
+            await feature.Writer.FlushAsync();
+
+            Assert.Equal("hello-streaming", Encoding.UTF8.GetString(lambdaStream.ToArray()));
+        }
+
+        [Fact]
+        public async Task Writer_AdvancedBytes_PrecedeFileContent_OnSendFileAsync()
+        {
+            var (feature, lambdaStream, _) = CreateFeature();
+            var path = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(path, "-file");
+
+                WriteWithoutFlush(feature.Writer, "header");
+                await feature.SendFileAsync(path, 0, null);
+                await feature.CompleteAsync();
+
+                Assert.Equal("header-file", Encoding.UTF8.GetString(lambdaStream.ToArray()));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public async Task Writer_WritesBeforeAndAfterStartAsync_AllReachLambdaStream_InOrder()
+        {
+            var (feature, lambdaStream, _) = CreateFeature();
+
+            WriteWithoutFlush(feature.Writer, "one;");
+            await feature.StartAsync();
+            WriteWithoutFlush(feature.Writer, "two;");
+            await feature.Writer.FlushAsync();
+            WriteWithoutFlush(feature.Writer, "three");
+            await feature.CompleteAsync();
+
+            Assert.Equal("one;two;three", Encoding.UTF8.GetString(lambdaStream.ToArray()));
         }
     }
 }
