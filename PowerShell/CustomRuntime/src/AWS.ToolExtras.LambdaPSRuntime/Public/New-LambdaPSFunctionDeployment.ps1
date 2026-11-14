@@ -26,8 +26,8 @@ function New-LambdaPSFunctionDeployment {
 
         Before packaging, the runtime and its alias are read to check the function's architecture
         against the runtime's (see -Architecture). A missing runtime (RuntimeArnNotFound) or alias
-        (RuntimeAliasNotFound) is also caught here, rather than producing a function that fails on
-        every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
+        (RuntimeAliasNotFound), or an alias scheduled for deletion (RuntimeAliasPendingDeletion), is also
+        caught here, rather than producing a function that fails on every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
         RuntimeAliasCheckFailed, which wraps the service's error.
 
@@ -67,9 +67,10 @@ function New-LambdaPSFunctionDeployment {
         ask again, and declining the packaging skips the create, which would deploy that package.
     .PARAMETER FunctionName
         The Lambda function name to create or update, or its full or partial ARN. When -Region is
-        omitted, the region in a full ARN is used (a -Region that differs from it fails with
+        omitted, the region in a full or partial ARN is used (a -Region that differs from it fails with
         FunctionRegionMismatch), and the default -PackagePath is named after the function name in either
-        form of ARN.
+        form of ARN. A name or ARN with a version or alias (hello:live) fails with FunctionNameQualified
+        before anything is read or packaged: a deploy creates or updates the function itself.
     .PARAMETER ProjectPath
         Your handler code: a single .ps1 script, or a prepared folder packaged as-is. Aliased as
         -ScriptPath and -Path. A path that does not exist fails with ProjectNotFound. A folder with a
@@ -89,6 +90,7 @@ function New-LambdaPSFunctionDeployment {
         source (for example '../outside.ps1'). For a folder source the handler is a path relative to
         the folder, written with '/': an absolute path, or one containing '\', fails with
         InvalidHandlerPath, because Lambda joins the handler to its task root as written.
+        A handler with whitespace in it fails with InvalidHandler.
     .PARAMETER RuntimeName
         The customer-managed runtime the function binds to. Its ARN is resolved automatically. A runtime
         name is 2 to 128 lowercase ASCII letters, digits, '_', '.' and '-', starting and ending with a
@@ -97,14 +99,15 @@ function New-LambdaPSFunctionDeployment {
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
         manifest.json records another). Otherwise it defaults to the alias recorded in a scaffolded
-        project's manifest.json, or else 'default', matching New-LambdaPSRuntimeDeployment's default
-        alias. An alias name is up to 128 ASCII letters, digits, '_', '.' and '-', not starting or
-        ending with '.' or '-', as Lambda requires, and is case-sensitive ('Staging' is not 'staging').
+        project's manifest.json, or else 'default'. An alias name is up to 128 ASCII letters, digits,
+        '_', '.' and '-', not starting or ending with '.' or '-', as Lambda requires, and is
+        case-sensitive ('Staging' is not 'staging').
         An alias read from manifest.json is checked the same way, and one that does not match is an
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
         The Lambda execution role ARN for the function (arn:aws:iam::<account>:role/<name>). A role
-        name alone is refused before anything is packaged.
+        name alone is refused before anything is packaged. A role Lambda cannot assume yet, as while IAM
+        propagates a new role, is retried for up to a minute, then the deploy fails with RoleNotAssumable.
     .PARAMETER Region
         The AWS region to deploy into. When omitted and -FunctionName is a function ARN, the region in
         the ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's
@@ -306,6 +309,19 @@ function New-LambdaPSFunctionDeployment {
         # where the function cannot be found, and rather than an ARN as a file name.
         $functionParts = Split-LambdaPSFunctionArn -FunctionName $FunctionName
         $packageName = $functionParts.Name
+        # A deploy changes the unqualified function's code and configuration, never a version's or an
+        # alias's, so a qualifier would be dropped or, on Windows, written to an alternate data stream of a
+        # file named after the function.
+        if ($functionParts.Qualifier) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        ("-FunctionName '$FunctionName' names the version or alias '$($functionParts.Qualifier)' of function " +
+                         "'$($functionParts.Name)'. A deploy creates or updates the function itself, so pass -FunctionName " +
+                         'without the qualifier. To move an alias to the new code, publish a version and update the alias ' +
+                         'with Publish-LMVersion and Update-LMAlias.')),
+                    'FunctionNameQualified', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
+        }
         if (-not $PSBoundParameters.ContainsKey('Region')) {
             $Region = if ($functionParts.Region) { $functionParts.Region } else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState }
         }
@@ -448,6 +464,16 @@ function New-LambdaPSFunctionDeployment {
                         'HandlerNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
             }
             $Handler = $resolved
+        }
+
+        # Lambda refuses whitespace in a handler: on create with a raw error, and on a redeploy only after
+        # the code is updated.
+        if ($Handler -match '\s') {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Handler '$Handler' contains whitespace, which Lambda does not accept in a handler. Remove it from -Handler, or rename the script or the folder it is in.", 'Handler'),
+                    'InvalidHandler', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Handler))
         }
 
         # The script whose #Requires -Modules to read is the leading token before '::' when it is a .ps1

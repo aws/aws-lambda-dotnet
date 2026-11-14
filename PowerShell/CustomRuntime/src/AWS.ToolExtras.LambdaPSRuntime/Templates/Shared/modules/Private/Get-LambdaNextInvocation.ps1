@@ -44,7 +44,7 @@ function private:Get-LambdaNextInvocation {
                     ('Lambda Runtime API at {0} could not be reached after {1} attempts; the runtime is exiting. {2}' -f
                         $env:AWS_LAMBDA_RUNTIME_API, $private:maxAttempts, $_.Exception.GetBaseException().Message))
             }
-            Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable (attempt $private:attempt of $private:maxAttempts), retrying: $($_.Exception.GetBaseException().Message)"
+            & $script:__LambdaPSRuntimeWriteLambdaLog WARN "[RUNTIME-Get-LambdaNextInvocation]Runtime API not reachable (attempt $private:attempt of $private:maxAttempts), retrying: $($_.Exception.GetBaseException().Message)"
             Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 100
         }
         finally {

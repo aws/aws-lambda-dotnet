@@ -10,7 +10,7 @@
 #   ./build_examples.sh [operation...]
 #
 # Operations (default: every suite directory found next to the templates):
-#   step wait callback child invoke parallel map wait_for_callback wait_for_condition
+#   step wait callback child invoke parallel map static_typing wait_for_callback wait_for_condition
 #
 # Examples:
 #   ./build_examples.sh step

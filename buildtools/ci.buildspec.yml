@@ -18,5 +18,6 @@ phases:
     commands:
       - dotnet msbuild buildtools/build.proj /t:testtoolv2-tests /p:Cicd=true
       - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true
+      - dotnet msbuild buildtools/build.proj /t:lambdapsruntime-tests /p:Cicd=true
       - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true
 

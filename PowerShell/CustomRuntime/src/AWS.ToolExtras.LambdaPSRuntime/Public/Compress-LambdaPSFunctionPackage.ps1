@@ -56,9 +56,9 @@ function Compress-LambdaPSFunctionPackage {
           - The source: ProjectNotFound, SourceNotPowerShell, NotAFunctionProject, InvalidProjectMarker,
             InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath, BackslashInFileName (off Windows,
             a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, PackageWriteFailed, OutFileIsSource (-OutFile
             is the single-file -Path).
-          - Modules (-IncludeModule and the handler's #Requires): ModuleNameInvalid (-IncludeModule or a
+          - Modules (-IncludeModule and the handler's #Requires): InvalidRequiresStatement, ModuleNameInvalid (-IncludeModule or a
             #Requires naming a wildcard or a path), ModuleVersionRequired (a #Requires that does not pin
             an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires
             that names the AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
@@ -88,7 +88,8 @@ function Compress-LambdaPSFunctionPackage {
                    local PowerShell environment is not changed.
           Install  download it the same way, and also install it for the current user so it stays
                    available for local testing.
-          Stop     fail with ModuleNotFoundLocally.
+          Stop     fail with ModuleNotFoundLocally. The source's own modules/ folder is not searched;
+                   the error names it when the missing version is there.
         Versions are matched exactly, so a requirement that differs from an available version only in a
         trailing .0 fails with ModuleVersionSpelling.
         AWS.Tools modules are downloaded with AWS.Tools.Installer 2.0.5 or a later 2.x (the
@@ -273,9 +274,9 @@ function Compress-LambdaPSFunctionPackage {
             }
         }
         $required = @()
+        $shippedModules = if (-not $isFile) { [System.IO.Path]::Combine($source.FullName, 'modules') }
         if ($handlerPath) {
             # PowerShell's own modules are part of every pwsh, so they are not staged (Select-LambdaPSUnmetModule).
-            $shippedModules = if (-not $isFile) { [System.IO.Path]::Combine($source.FullName, 'modules') }
             $required = @(Select-LambdaPSUnmetModule -Module @(Get-LambdaPSRequiredModule -Path $handlerPath) -ModulesPath $shippedModules)
             # Checked here rather than with -IncludeModule below, so the error names the script that
             # declared the module: the caller never typed it.
@@ -306,7 +307,7 @@ function Compress-LambdaPSFunctionPackage {
                 if ($MissingModuleAction -ne 'Stop') {
                     $pending = @((Save-LambdaPSMissingModule -Module $combined -Path $downloadRoot -MissingModuleAction $MissingModuleAction -ModuleRepository $ModuleRepository).Pending)
                 }
-                $null = Copy-LambdaPSModuleSet -Module $combined -Path ([System.IO.Path]::Combine($destination, 'modules')) -SearchPath $downloadRoot -Pending $pending
+                $null = Copy-LambdaPSModuleSet -Module $combined -Path ([System.IO.Path]::Combine($destination, 'modules')) -SearchPath $downloadRoot -Pending $pending -SourceModulesPath $shippedModules
             }
             return
         }
@@ -346,7 +347,7 @@ function Compress-LambdaPSFunctionPackage {
                 if ($MissingModuleAction -ne 'Stop') {
                     $null = Save-LambdaPSMissingModule -Module $combined -Path $downloadRoot -MissingModuleAction $MissingModuleAction -ModuleRepository $ModuleRepository
                 }
-                $null = Copy-LambdaPSModuleSet -Module $combined -Path ([System.IO.Path]::Combine($stage, 'modules')) -SearchPath $downloadRoot
+                $null = Copy-LambdaPSModuleSet -Module $combined -Path ([System.IO.Path]::Combine($stage, 'modules')) -SearchPath $downloadRoot -SourceModulesPath $shippedModules
             }
 
             # Record what the package will contain, read from the staged tree (not from the input lists,

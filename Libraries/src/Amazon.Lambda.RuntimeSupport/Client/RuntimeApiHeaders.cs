@@ -63,16 +63,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public RuntimeApiHeaders(Dictionary<string, IEnumerable<string>> headers)
         {
-            var caseInsensitiveHeaders = new Dictionary<string, IEnumerable<string>>(headers, StringComparer.OrdinalIgnoreCase);
-
-            DeadlineMs = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderDeadlineMs);
-            AwsRequestId = GetHeaderValueRequired(caseInsensitiveHeaders, HeaderAwsRequestId);
-            ClientContextJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderClientContext);
-            CognitoIdentityJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderCognitoIdentity);
-            InvokedFunctionArn = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvokedFunctionArn);
-            TraceId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderTraceId);
-            TenantId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderAwsTenantId);
-            InvocationId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvocationId);
+            DeadlineMs = GetHeaderValueOrNull(headers, HeaderDeadlineMs);
+            AwsRequestId = GetHeaderValueRequired(headers, HeaderAwsRequestId);
+            ClientContextJson = GetHeaderValueOrNull(headers, HeaderClientContext);
+            CognitoIdentityJson = GetHeaderValueOrNull(headers, HeaderCognitoIdentity);
+            InvokedFunctionArn = GetHeaderValueOrNull(headers, HeaderInvokedFunctionArn);
+            TraceId = GetHeaderValueOrNull(headers, HeaderTraceId);
+            TenantId = GetHeaderValueOrNull(headers, HeaderAwsTenantId);
+            InvocationId = GetHeaderValueOrNull(headers, HeaderInvocationId);
         }
 
         public string AwsRequestId { get; private set; }
@@ -86,17 +84,45 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private string GetHeaderValueRequired(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            return headers[header].FirstOrDefault();
+            if (!TryGetHeaderValues(headers, header, out var values))
+            {
+                throw new KeyNotFoundException($"The given key '{header}' was not present in the dictionary.");
+            }
+
+            return values.FirstOrDefault();
         }
 
         private string GetHeaderValueOrNull(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            if (headers.TryGetValue(header, out var values))
+            if (TryGetHeaderValues(headers, header, out var values))
             {
                 return values.FirstOrDefault();
             }
 
             return null;
+        }
+
+        private static bool TryGetHeaderValues(Dictionary<string, IEnumerable<string>> headers, string header, out IEnumerable<string> values)
+        {
+            // Header names are case-insensitive. The Runtime API sends the headers with the casing of the
+            // constants, so look the header up directly first and only fall back to searching the headers
+            // ignoring case, rather than copying them into a case-insensitive dictionary for every invocation.
+            if (headers.TryGetValue(header, out values))
+            {
+                return true;
+            }
+
+            foreach (var pair in headers)
+            {
+                if (string.Equals(pair.Key, header, StringComparison.OrdinalIgnoreCase))
+                {
+                    values = pair.Value;
+                    return true;
+                }
+            }
+
+            values = null;
+            return false;
         }
     }
 }

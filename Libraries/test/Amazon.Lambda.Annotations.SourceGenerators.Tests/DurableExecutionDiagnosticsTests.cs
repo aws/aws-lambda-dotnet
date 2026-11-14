@@ -10,6 +10,11 @@ using VerifyCS = Amazon.Lambda.Annotations.SourceGenerators.Tests.CSharpSourceGe
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
+    // Most cases here report a fatal error (which skips the CloudFormation sync), but the non-fatal cases
+    // (e.g. ExplicitRole_ReportsCheckpointPolicyInfo) let the generator run the sync and write a generated
+    // serverless.template on disk. That file is shared with the other generator-running test classes, so this
+    // class must join the serialization collection to avoid racing on the template file.
+    [Collection(TestServerlessAppCollection.Name)]
     public class DurableExecutionDiagnosticsTests
     {
         // Minimal serializer registration so the generator does not also emit AWSLambda0108.

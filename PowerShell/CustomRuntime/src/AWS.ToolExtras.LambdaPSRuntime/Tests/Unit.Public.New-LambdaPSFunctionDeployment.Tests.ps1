@@ -255,6 +255,20 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
+        It 'throws InvalidHandler for a handler with whitespace, before packaging' {
+            $source = Join-Path $TestDrive 'fn-space-case'
+            $null = New-Item -ItemType Directory -Path (Join-Path $source 'sub dir') -Force
+            Set-Content -LiteralPath (Join-Path $source 'sub dir' 'h.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+            $splat = @{
+                FunctionName = 'hello'; ProjectPath = $source; Handler = 'sub dir/h.ps1'
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+            }
+
+            { New-LambdaPSFunctionDeployment @splat } |
+                Should -Throw -ErrorId 'InvalidHandler,New-LambdaPSFunctionDeployment' -ExpectedMessage '*contains whitespace*'
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
         # These scripts are in the source, but Lambda would not find them under the handler as written.
         It 'refuses a handler naming a script in a folder source as <Case>, saying what to write instead' -ForEach @(
             @{ Case = 'an absolute path'; Handler = '<absolute>'; Message = '*is an absolute path*relative to the function source*' }
@@ -834,6 +848,18 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
 
             $result.PackagePath | Should -Be ([System.IO.Path]::Combine($TestDrive, 'hello.zip'))
             $result.Region | Should -Be 'ap-southeast-2'
+        }
+
+        It 'refuses a -FunctionName with a qualifier, before anything is read or packaged: <Value>' -ForEach @(
+            @{ Value = 'hello:prod'; Qualifier = 'prod' }
+            @{ Value = 'arn:aws:lambda:eu-west-1:111122223333:function:hello:live'; Qualifier = 'live' }
+            @{ Value = '111122223333:function:hello:3'; Qualifier = '3' }
+        ) {
+            $err = { New-LambdaPSFunctionDeployment -FunctionName $Value -ProjectPath $script:handlerFile -RuntimeName my-ps `
+                    -Role 'arn:aws:iam::111122223333:role/r' -Region eu-west-1 } |
+                Should -Throw -ErrorId 'FunctionNameQualified,New-LambdaPSFunctionDeployment' -PassThru
+            $err.Exception.Message | Should -BeLike "*names the version or alias '$Qualifier' of function 'hello'*without the qualifier*"
+            Should -Invoke 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
         It 'refuses a -Region that differs from the region in a function ARN, before anything is read or packaged' {

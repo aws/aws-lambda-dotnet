@@ -1,6 +1,7 @@
 namespace Amazon.Lambda.Core
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Object that allows you to access useful information available within
@@ -107,6 +108,15 @@ namespace Amazon.Lambda.Core
         /// handlers).
         /// </summary>
         ILambdaSerializer Serializer { get { return null; } }
+
+        /// <summary>
+        /// The W3C trace-context fields (<c>traceparent</c>, <c>tracestate</c>,
+        /// <c>baggage</c>) carried on the invoke's <c>clientContext.w3c</c> payload.
+        /// </summary>
+        IReadOnlyDictionary<string, string> W3C
+        {
+            get { return new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>()); }
+        }
 #endif
     }
 }

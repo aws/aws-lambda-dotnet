@@ -98,6 +98,10 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly System.Net.Http.HttpClient _httpClient;
         private InternalLogger _logger;
 
+        // The URI most recently used to get the next invocation, which is cached as it is used for every invocation.
+        // Accessed with Volatile.Read/Volatile.Write as it can be read and written by multiple concurrent processing tasks.
+        private NextUri _nextUri;
+
         public InternalRuntimeApiClient(System.Net.Http.HttpClient httpClient)
         {
             _httpClient = httpClient;
@@ -134,10 +138,10 @@ namespace Amazon.Lambda.RuntimeSupport
                         request_.Headers.TryAddWithoutValidation("Lambda-Runtime-Function-Error-Type", ConvertToString(lambda_Runtime_Function_Error_Type, System.Globalization.CultureInfo.InvariantCulture));
                     using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ErrorContentType);
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         var url_ = urlBuilder_.ToString();
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
@@ -251,17 +255,20 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Method = System.Net.Http.HttpMethod.Get;
                     
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
-                    var url_ = BaseUrl.TrimEnd('/') + endpointUrl;
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.Absolute);
+                    request_.RequestUri = GetNextUri(endpointUrl);
 
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        // Size the dictionary for all the headers to avoid resizing it for every invocation
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>(
+                            response_.Headers.NonValidated.Count + response_.Content.Headers.NonValidated.Count);
+                        foreach (var item_ in response_.Headers)
+                                headers_.Add(item_.Key, item_.Value);
                         foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
 
@@ -310,6 +317,47 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
+        private System.Uri GetNextUri(string endpointUrl)
+        {
+            var baseUrl = BaseUrl;
+            var nextUri = Volatile.Read(ref _nextUri);
+
+            if (nextUri == null ||
+                !string.Equals(nextUri.BaseUrl, baseUrl, StringComparison.Ordinal) ||
+                !string.Equals(nextUri.EndpointUrl, endpointUrl, StringComparison.Ordinal))
+            {
+                var uri = new System.Uri(baseUrl.TrimEnd('/') + endpointUrl, System.UriKind.Absolute);
+                nextUri = new NextUri(baseUrl, endpointUrl, uri);
+
+                // If multiple processing tasks create the URI concurrently they will all create equivalent values,
+                // so it does not matter which one is published; the important thing is that the instance is
+                // safely published so that no task observes a partially constructed instance.
+                Volatile.Write(ref _nextUri, nextUri);
+            }
+
+            return nextUri.Uri;
+        }
+
+        /// <summary>
+        /// The URI to get the next invocation for a base URL and endpoint URL. This class is immutable so that
+        /// it can be safely read by multiple concurrent processing tasks.
+        /// </summary>
+        private sealed class NextUri
+        {
+            public NextUri(string baseUrl, string endpointUrl, System.Uri uri)
+            {
+                BaseUrl = baseUrl;
+                EndpointUrl = endpointUrl;
+                Uri = uri;
+            }
+
+            public string BaseUrl { get; }
+
+            public string EndpointUrl { get; }
+
+            public System.Uri Uri { get; }
+        }
+
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
@@ -344,10 +392,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
                     try
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         // Echo the per-invocation id back for cross-wiring protection. Only sent when the
                         // Runtime API provided it on /next; added to this request message (never the shared
@@ -362,6 +410,12 @@ namespace Amazon.Lambda.RuntimeSupport
                         _logger.LogInformation("Return from SendAsync");
                         try
                         {
+                            if (response_.StatusCode == HttpStatusCode.Accepted)
+                            {
+                                // The headers of a successful response are not used, so do not copy them for every invocation
+                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>(), new StatusResponse());
+                            }
+
                             var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
                             if (response_.Content != null && response_.Content.Headers != null)
                             {
@@ -369,11 +423,6 @@ namespace Amazon.Lambda.RuntimeSupport
                                     headers_[item_.Key] = item_.Value;
                             }
 
-                            if (response_.StatusCode == HttpStatusCode.Accepted)
-                            {
-                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, new StatusResponse());
-                            }
-                            else
                             if (response_.StatusCode == HttpStatusCode.Gone)
                             {
                                 // 410 Gone means the invocation timed out before this response was submitted.
@@ -512,10 +561,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
                     using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        content_.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ErrorContentType);
                         request_.Content = content_;
-                        request_.Method = new System.Net.Http.HttpMethod("POST");
-                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                        request_.Method = System.Net.Http.HttpMethod.Post;
+                        request_.Headers.TryAddWithoutValidation("Accept", "application/json");
 
                         var url_ = urlBuilder_.ToString();
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);

@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.SNSEventExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.SNSEventExamples.ValidSNSEvents"/>.
+    /// </summary>
     public class ValidSNSEvents_ProcessMessages_Generated
     {
         private readonly ValidSNSEvents validSNSEvents;

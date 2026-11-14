@@ -120,6 +120,7 @@ internal sealed class FunctionRegistry
         var nestedOptions = _options with
         {
             DurableExecutionArn = _options.DurableExecutionArn + ":nested:" + Guid.NewGuid().ToString("N"),
+            OmitCheckpointToken = null,
         };
         var nested = new DurableTestRunner<TPayload, TResult>(handler, nestedOptions, registry: this);
 

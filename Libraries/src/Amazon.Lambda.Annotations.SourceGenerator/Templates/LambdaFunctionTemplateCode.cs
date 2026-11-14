@@ -15,6 +15,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             _model = model;
         }
 
+        private List<string> GetClassDocumentation()
+        {
+            // Provide a class-level XMLDoc summary so the generated handler class does not trigger
+            // CS1591 ("Missing XML comment for publicly visible type or member") when the consuming
+            // project enables <GenerateDocumentationFile>true</GenerateDocumentationFile>.
+            var lambdaMethod = _model.LambdaMethod;
+            return new List<string>
+            {
+                "/// <summary>",
+                $"/// The generated Lambda function handler for <see cref=\"{lambdaMethod.ContainingType.FullName}\"/>.",
+                "/// </summary>"
+            };
+        }
+
         private List<string> GetMethodDocumentation()
         {
             var lambdaMethod = _model.LambdaMethod;

@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.ScheduleEventExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.ScheduleEventExamples.ValidScheduleEvents"/>.
+    /// </summary>
     public class ValidScheduleEvents_ProcessScheduledEventAsync_Generated
     {
         private readonly ValidScheduleEvents validScheduleEvents;

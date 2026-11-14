@@ -59,7 +59,7 @@ public sealed class DurableTestRunner<TInput, TOutput> : IDurableTestRunner<TInp
         _lambdaContext = CreateLambdaContext();
         _store = new InMemoryOperationStore();
         _processor = new CheckpointProcessor(_store, _options.SkipTime);
-        _serviceClient = new InMemoryDurableServiceClient(_store, _processor);
+        _serviceClient = new InMemoryDurableServiceClient(_store, _processor, _options.OmitCheckpointToken);
         _registry = registry ?? new FunctionRegistry(_options);
     }
 

@@ -25,6 +25,10 @@ namespace LambdaPSTests.Fakes {
         public string ErrorCode { get { return "RepositoryNotFoundException"; } }
         public RepositoryNotFoundException(string message) : base(message) { }
     }
+    public class ImageNotFoundException : System.Exception {
+        public string ErrorCode { get { return "ImageNotFoundException"; } }
+        public ImageNotFoundException(string message) : base(message) { }
+    }
     public class RepositoryPolicyNotFoundException : System.Exception {
         public string ErrorCode { get { return "RepositoryPolicyNotFoundException"; } }
         public RepositoryPolicyNotFoundException(string message) : base(message) { }

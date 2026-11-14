@@ -441,7 +441,7 @@ public class DurableFunctionTests
     // aws-durable-execution-sdk-python):
     //   4xx (except 429) → terminal (Failed envelope)
     //   429 / 5xx / no status → transient (escapes to host for Lambda retry)
-    //   Carve-out: InvalidParameterValueException "Invalid Checkpoint Token" → transient
+    //   Carve-out: InvalidParameterValueException "Invalid checkpoint token" → transient
     //
     // Driven through CheckpointDurableExecution: a workflow that succeeds a single Step
     // forces the batcher to flush, which is wrapped by the try/catch in WrapAsyncCore.
@@ -484,7 +484,8 @@ public class DurableFunctionTests
         new object[] { MakeServiceException("TooManyRequestsException", (HttpStatusCode)429, "throttled") },
         // No status (network / SDK-internal). HttpStatusCode default (0) → classifier treats < 400 as transient.
         new object[] { MakeServiceException("RequestTimeout", 0, "timeout") },
-        // Carve-out: stale checkpoint token is transient.
+        // Carve-out: stale checkpoint token is transient (any casing).
+        new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Invalid checkpoint token: stale") },
         new object[] { MakeServiceException("InvalidParameterValueException", HttpStatusCode.BadRequest, "Invalid Checkpoint Token: stale") },
     };
 
@@ -505,6 +506,30 @@ public class DurableFunctionTests
                 SingleStepWorkflow, input, CreateLambdaContext(), mockClient));
 
         Assert.Same(ex, thrown.InnerException);
+    }
+
+    [Fact]
+    public async Task WrapAsync_CheckpointResponseWithoutToken_ReturnsPendingAndStopsCheckpointing()
+    {
+        var input = MakeCheckpointInput();
+        var mockClient = new MockLambdaClient { OmitTokenOnCall = 1 };
+        var bodyRan = false;
+
+        var output = await DurableFunction.WrapAsync<OrderEvent, OrderResult>(
+            async (_, ctx) =>
+            {
+                // AtMostOncePerRetry sync-flushes START, so call 1 is deterministic.
+                await ctx.StepAsync(async (_, _) => { bodyRan = true; await Task.CompletedTask; return "ok"; },
+                    name: "s1", config: new StepConfig { Semantics = StepSemantics.AtMostOncePerRetry });
+                await ctx.StepAsync(async (_, _) => { await Task.CompletedTask; return "ok"; }, name: "s2");
+                return new OrderResult { Status = "done" };
+            },
+            input, CreateLambdaContext(), mockClient);
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Null(output.Error);
+        Assert.Single(mockClient.CheckpointCalls);
+        Assert.False(bodyRan);
     }
 
     [Fact]

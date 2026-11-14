@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    The .NET Durable Execution SDK is consumed by every conformance handler via a
+    ProjectReference to the in-repo SDK. The SDK's own runtime NuGet dependencies
+    (AWSSDK.Lambda, used by the durable service client, and
+    Microsoft.Extensions.Logging.Abstractions, used by DurableFunction.WrapAsyncCore)
+    do NOT flow transitively into a handler's framework-dependent publish output, so
+    without them each handler throws FileNotFoundException at runtime. Declaring them
+    here applies to every handler project under Conformance/, so a single place keeps
+    the deployed bundles complete. Handlers that need additional packages (e.g.
+    AWSSDK.DynamoDBv2 for the retry-attempt table) still declare those themselves.
+  -->
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.13.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
