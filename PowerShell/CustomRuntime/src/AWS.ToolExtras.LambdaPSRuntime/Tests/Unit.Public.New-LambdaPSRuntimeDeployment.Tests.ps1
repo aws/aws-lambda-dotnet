@@ -8,9 +8,12 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PwshConfig.ps1'))
     # The version a deploy of PowerShell 7.4 to a runtime with no versions is named.
     $script:defaultVersion = "$($script:pwshConfig.DefaultPatch['7.4'])-1"
+    # -RuntimeAlias is mandatory; the tests that aren't about it deploy to 'default'.
+    $PSDefaultParameterValues['New-LambdaPSRuntimeDeployment:RuntimeAlias'] = 'default'
 }
 
 AfterAll {
+    $PSDefaultParameterValues.Remove('New-LambdaPSRuntimeDeployment:RuntimeAlias')
     Remove-LambdaPSTestModule
 }
 
@@ -251,6 +254,16 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
     # exists, and at the alias stage, after the version is published, when it does not. So it is checked
     # at binding.
     Context 'runtime alias name' {
+        It 'requires -RuntimeAlias, and completes it with default and the runtime''s aliases' {
+            Mock 'Get-LMCRuntimeAliasList' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'test' } }
+            $line = 'New-LambdaPSRuntimeDeployment -RuntimeName my-ps -Region us-east-1 -RuntimeAlias '
+
+            $completion = TabExpansion2 -inputScript $line -cursorColumn $line.Length
+
+            (Get-Command New-LambdaPSRuntimeDeployment).Parameters['RuntimeAlias'].Attributes.Where({ $_ -is [Parameter] }).Mandatory | Should -BeTrue
+            $completion.CompletionMatches.CompletionText | Should -Be @('default', 'test')
+        }
+
         It 'rejects a -RuntimeAlias the service refuses: <Name>' -ForEach @(
             @{ Name = 'Prod Live'; Value = 'Prod Live' }, @{ Name = 'prod-'; Value = 'prod-' }, @{ Name = '.prod'; Value = '.prod' }
             @{ Name = 'prod/live'; Value = 'prod/live' }, @{ Name = 'a trailing newline'; Value = "prod`n" }
@@ -663,7 +676,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             # A script block's local scope, as in a function of the script: AWS.Tools reads global settings
             # itself, so only a non-global scope needs the caller's session state.
             $command = "& { Set-DefaultAWSRegion -Region ap-northeast-3 -Scope Local; Set-AWSCredential -AccessKey AKIAEXAMPLE -SecretKey example -Scope Local; " +
-                "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -ProjectPath '$project' -WhatIf; 'REGION=' + `$r.Region }"
+                "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -RepositoryName rt -ProjectPath '$project' -WhatIf; 'REGION=' + `$r.Region }"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
@@ -862,7 +875,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, 'whatif-rt')
-            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WhatIf"
+            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WhatIf"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
@@ -893,7 +906,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, "scaffold-warnings-$([bool]$Fail)")
-            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -ProjectPath '$project' -WhatIf"
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -ProjectPath '$project' -WhatIf"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString().Replace('#FAIL', $Fail)) -Command $command
 
@@ -922,7 +935,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, "information-$WhatIf")
-            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WarningAction SilentlyContinue -WhatIf:`$$WhatIf$Extra"
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WarningAction SilentlyContinue -WhatIf:`$$WhatIf$Extra"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
@@ -953,7 +966,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 function script:New-LambdaPSRuntimeProject { }
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
-            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WhatIf"
+            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -WhatIf"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command
 
@@ -985,7 +998,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, "decline-$($Answers.Count)")
-            $command = "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm; 'ARN=' + `$r.RuntimeArn"
+            $command = "`$r = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm; 'ARN=' + `$r.RuntimeArn"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command -Answer $Answers
 
@@ -1016,7 +1029,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, "decline-alias-$($AliasCommand)")
-            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm"
+            $command = "`$null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString() + "`nfunction script:Get-LMCRuntimeAlias { $Alias }") -Command $command -Answer 'Y', 'Y', 'Y', 'N'
 
@@ -1046,7 +1059,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, 'confirm-rt')
-            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm"
+            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v7 -ProjectPath '$project' -Confirm"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command -Answer 'Y', 'Y', 'Y', 'Y'
 
@@ -1611,7 +1624,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             }
             $fakeTypes = [System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1')
             $project = [System.IO.Path]::Combine($TestDrive, 'confirm-arch-rt')
-            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v2 -Architecture arm64 -ProjectPath '$project' -Confirm"
+            $command = "New-LambdaPSRuntimeDeployment -RuntimeName my-ps -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -RepositoryName rt -RuntimeVersion v2 -Architecture arm64 -ProjectPath '$project' -Confirm"
 
             $result = Invoke-InChildPwsh -Stub (". '$fakeTypes'`n" + $stub.ToString()) -Command $command -Answer 'N'
 
