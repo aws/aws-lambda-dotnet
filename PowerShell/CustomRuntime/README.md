@@ -320,8 +320,8 @@ Run the offline test suite (all AWS and container seams are mocked) with coverag
 checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
 exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
 directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
-PSScriptAnalyzer 1.21.0 or later:
+needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage
