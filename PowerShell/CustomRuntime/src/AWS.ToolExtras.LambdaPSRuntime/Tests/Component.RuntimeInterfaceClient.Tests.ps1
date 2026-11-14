@@ -1145,12 +1145,18 @@ public class InvokeBin : PSCmdlet {
             @{ Format = $format; Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
             @{ Format = $format; Handler = 'CmdletGuid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
             @{ Format = $format; Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+            # A value whose type name the handler changed, after a plain value of the same .NET type.
+            @{ Format = $format; Handler = 'RenamedHashtable'; Expected = '[{"a":1},{"b":2}]' }
+            @{ Format = $format; Handler = 'RenamedInt'; Expected = '[5,7]' }
         }
     ) {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'values.ps1')) -Value @(
+            'Update-TypeData -TypeName My.Renamed -MemberType ScriptProperty -MemberName X -Value { 42 } -Force'
             'function Guid { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' }'
             'function CmdletGuid { param($LambdaInput, $LambdaContext) Write-Output ([guid]''11111111-1111-1111-1111-111111111111'') }'
             'function Tagged { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' | Add-Member -NotePropertyName Tag -NotePropertyValue t -PassThru }'
+            'function RenamedHashtable { param($LambdaInput, $LambdaContext) @{ a = 1 }; $h = @{ b = 2 }; $h.PSTypeNames.Insert(0, ''My.Renamed''); $h }'
+            'function RenamedInt { param($LambdaInput, $LambdaContext) 5; $i = [psobject]7; $i.PSTypeNames.Insert(0, ''My.Renamed''); $i }'
         )
         $env:AWS_LAMBDA_LOG_FORMAT = $Format
         try {

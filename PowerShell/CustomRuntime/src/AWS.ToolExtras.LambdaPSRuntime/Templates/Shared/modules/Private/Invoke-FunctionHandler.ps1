@@ -59,13 +59,23 @@ function private:Invoke-FunctionHandler {
     # would otherwise print over several lines naming this file. The handler's output is wrapped first,
     # so a record it returns stays in the response.
     # The pipeline wraps each value in a PSObject, which ConvertTo-Json writes with its type's extended
-    # properties ([guid] gains Guid); the wrapper is kept only for members the handler added. Process
-    # blocks and a foreach loop, not ForEach-Object and Where-Object, halve the cost per returned item.
+    # properties ([guid] gains Guid); the wrapper is kept only for members the handler added. Only values
+    # whose type names carry extended properties are checked, found once per list of type names (type
+    # data attaches by name, and a value's names can be changed): listing a value's properties costs
+    # about 30 us, and even reading .PSObject 20 us.
+    $script:__LambdaPSRuntimeTypeExtended = @{}
     $private:handlerRun = {
         & $private:handlerCommand $LambdaInput $LambdaContext | & {
             process {
                 $private:item = $_
                 if ($null -eq $private:item) { return , [ref]$private:item }
+                $private:typeNames = $private:item.PSTypeNames -join '|'
+                $private:extended = $script:__LambdaPSRuntimeTypeExtended[$private:typeNames]
+                if ($null -eq $private:extended) {
+                    $private:extended = $script:__LambdaPSRuntimeTypeExtended[$private:typeNames] =
+                        [bool]@($private:item.PSObject.Properties | Microsoft.PowerShell.Core\Where-Object { -not $_.IsInstance -and $_.MemberType -ne 'Property' }).Count
+                }
+                if (-not $private:extended) { return , [ref]$private:item }
                 foreach ($private:property in $private:item.PSObject.Properties) {
                     if ($private:property.IsInstance -and $private:property.MemberType -ne 'Property') { return , [ref]$private:item }
                 }
