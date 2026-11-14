@@ -147,7 +147,8 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
 image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
-days later.
+days later. A `-ProjectPath` project is built as is, with the release its `Dockerfile` names, so patch
+it by deploying without `-ProjectPath`, or by changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
@@ -214,10 +215,11 @@ On Linux and macOS, an existing target directory owned by a user other than you,
 writable by group or others, is refused with `TargetOwnedByAnotherUser`, even with `-Force` (no check
 when running as root). `-Force` does not replace a non-empty target that is a link
 (`TargetIsLink`), a drive root, or the current location or your home folder or a folder that contains
-either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
-`-ProjectPath` the same way, but only when it holds a runtime-image project this module scaffolded
-(a `lambdaps-runtime.json` marker with target CMR); any other non-empty directory is refused with
-`TargetNotEmpty` before anything is created.
+either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` never replaces a
+folder. Without `-ProjectPath`, it scaffolds in a new temp folder and removes it at the end. A
+`-ProjectPath` that holds a runtime-image project this module scaffolded (a `lambdaps-runtime.json`
+marker with target CMR) is built as is, so edits to its `Dockerfile`, `runtime.ps1` or `modules/`
+ship. Any other non-empty directory is refused with `TargetNotEmpty` before anything is created.
 
 `-WhatIf` runs the same local checks as a real run — module pins and availability, the pwsh version,
 the handler, the architecture — and the deploy cmdlets also run their read-only AWS checks, so a
