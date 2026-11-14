@@ -63,7 +63,7 @@ function Resolve-LambdaPSBuildMethod {
         $platform = if ($Architecture -eq 'arm64') { 'linux/arm64' } else { 'linux/amd64' }
         # Compared on os/architecture, so a variant such as linux/arm64/v8 counts as linux/arm64.
         $platforms = @(Get-LambdaPSDockerBuilderPlatform -Path $containerRuntime.Path) |
-            ForEach-Object { ($_ -split '/')[0, 1] -join '/' }
+            ForEach-Object { ($_ -split '/')[0, 1] -join '/' } | Select-Object -Unique
         if ($platforms.Count -gt 0 -and $platform -notin $platforms) {
             Write-Verbose "docker's builder can't build $platform (it lists $($platforms -join ', ')); building without it."
             return [PSCustomObject]@{ Method = 'NoDocker'; ContainerRuntime = $null }
