@@ -39,7 +39,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
                 [PSCustomObject]@{ RuntimeName = $RuntimeName; ImageUri = $ImageUri; Version = 'v1'; Arn = "arn:aws:lambda:eu-west-1:111122223333:runtime/$RuntimeName/version/v1" }
             }
             Mock 'Set-LambdaPSRuntimeAlias' -MockWith { $RuntimeAlias }
-            $script:splat = @{ RuntimeName = 'my-ps'; PowerShellVersion = '7.4'; Region = 'eu-west-1'; RepositoryName = 'rt' }
+            $script:splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; PowerShellVersion = '7.4'; Region = 'eu-west-1'; RepositoryName = 'rt' }
         }
 
         AfterEach {
