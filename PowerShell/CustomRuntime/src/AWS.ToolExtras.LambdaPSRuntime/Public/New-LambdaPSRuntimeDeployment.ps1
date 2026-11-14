@@ -14,8 +14,8 @@ function New-LambdaPSRuntimeDeployment {
         alias at it. A version that does not reach ACTIVE is a terminating error, so the cmdlet never
         reports success over a runtime that cannot be invoked.
 
-        Running the same command again patches the runtime: it installs the newest pwsh release the build
-        can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
+        Running the same command again, without -ProjectPath, patches the runtime: it installs the
+        newest pwsh release the build can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
         it returns that version as PreviousRuntimeVersion, which Update-LMCRuntimeAlias
         -RuntimeVersion takes to roll the patch back. After a patch that changes the pwsh release,
@@ -88,6 +88,7 @@ function New-LambdaPSRuntimeDeployment {
                                 UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
+                                ProjectParameterConflict,
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
@@ -208,12 +209,13 @@ function New-LambdaPSRuntimeDeployment {
         confirmed, and under -WhatIf: functions bound to it that were built for that architecture fail
         to invoke from their next cold start until they are redeployed.
     .PARAMETER ProjectPath
-        Where to scaffold the runtime-image project (alias -Path). Defaults to ./<RuntimeName>-runtime
-        under the current location. NOTE: this directory is REPLACED. If it is a project this cmdlet
-        scaffolded before (it has a lambdaps-runtime.json marker with Target CMR), its contents are
-        deleted before the project is written, so keep customizations elsewhere. Any other non-empty
-        directory is refused with TargetNotEmpty and left untouched. Use -WhatIf to see what would be
-        replaced.
+        Where to scaffold the runtime-image project (alias -Path). Without it, the project is scaffolded
+        in a new temp folder, removed when the deploy ends, and the result's ProjectPath is empty.
+        A runtime project this module scaffolded (a lambdaps-runtime.json marker with Target CMR) is
+        built as is, edits included: its Dockerfile sets the pwsh release, and its modules/ folder the
+        modules. A -PowerShellVersion or -PwshVersion it doesn't match, or -IncludeModule, is a
+        ProjectParameterConflict error. Any other non-empty directory is refused with TargetNotEmpty and
+        left untouched.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment
 
@@ -322,6 +324,8 @@ function New-LambdaPSRuntimeDeployment {
     # Set-LambdaPSRuntimeAlias) and the read-only preflight calls the cmdlets directly, so the whole
     # flow is unit testable offline. No AWS SDK type is bound directly.
     try {
+        # First, so the finally never reads a caller's variable of the same name.
+        $temporaryProject = [string]::IsNullOrWhiteSpace($ProjectPath)
         # Credential parameters the caller gave, passed to every seam that calls AWS.
         $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
         if (-not $PSBoundParameters.ContainsKey('Region')) {
@@ -333,8 +337,9 @@ function New-LambdaPSRuntimeDeployment {
         $Region = $Region.ToLowerInvariant()
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
-        if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
-            $ProjectPath = [System.IO.Path]::Combine((Get-Location).Path, "$RuntimeName-runtime")
+        # The project is scaffolded again on every deploy, so nothing in the current location is kept.
+        if ($temporaryProject) {
+            $ProjectPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$RuntimeName-runtime-$([System.IO.Path]::GetRandomFileName())")
         }
         # A full path, so the result still names the project after a Set-Location.
         $ProjectPath = Resolve-LambdaPSPath -Path $ProjectPath
@@ -357,10 +362,11 @@ function New-LambdaPSRuntimeDeployment {
                     'InvalidRepositoryName', [System.Management.Automation.ErrorCategory]::InvalidArgument, $effectiveRepository))
         }
 
-        # Stage 1 replaces -ProjectPath, deleting what is in it. Only a runtime-image project this module
-        # scaffolded (a lambdaps-runtime.json marker with Target CMR) is replaced; a file, or any other
-        # non-empty directory (including a function or layer project), is refused here, before anything
-        # is read from or created in AWS.
+        # Stage 1 scaffolds into -ProjectPath unless it holds a runtime-image project this module scaffolded
+        # (a lambdaps-runtime.json marker with Target CMR); a file, or any other non-empty directory
+        # (including a function or layer project), is refused here, before anything is read from or
+        # created in AWS.
+        $existingMarker = $null
         if (Test-Path -LiteralPath $ProjectPath -PathType Leaf) {
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
@@ -385,7 +391,7 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' is not a runtime project scaffolded by this module (its " +
-                             'lambdaps-runtime.json names no target), so it was not replaced. Pass an empty or new ' +
+                             'lambdaps-runtime.json names no target), so it is not used. Pass an empty or new ' +
                              'directory, or remove its contents first. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
@@ -394,7 +400,7 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' holds a '$($existingMarker.Target)' project, not a runtime " +
-                             'image project, so it was not replaced. Pass an empty or new directory. Nothing was created.')),
+                             'image project, so it is not used. Pass an empty or new directory. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
             if ($null -eq $existingMarker -and $existingItems.Count -gt 0) {
@@ -402,9 +408,30 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' is not empty and is not a runtime project scaffolded by " +
-                             'this module (it has no lambdaps-runtime.json), so it was not replaced. Pass an empty ' +
+                             'this module (it has no lambdaps-runtime.json), so it is not used. Pass an empty ' +
                              'or new directory, or remove its contents first. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
+            }
+        }
+        # A runtime project this module scaffolded is built as is, so edits to it ship. Its Dockerfile
+        # says which pwsh it installs.
+        $existingProject = -not $temporaryProject -and $null -ne $existingMarker
+        if ($existingProject) {
+            $dockerfilePath = [System.IO.Path]::Combine($ProjectPath, 'Dockerfile')
+            $dockerfileText = if (Test-Path -LiteralPath $dockerfilePath -PathType Leaf) { [System.IO.File]::ReadAllText($dockerfilePath) } else { '' }
+            $projectPwshVersion = if ($dockerfileText -match '(?m)^ARG PWSH_VERSION=(\d+\.\d+\.\d+)\s*$') { $Matches[1] }
+            $conflict = if (-not $projectPwshVersion) { "its Dockerfile has no 'ARG PWSH_VERSION=<x.y.z>' line" }
+            elseif (-not $projectPwshVersion.StartsWith("$PowerShellVersion.")) { "its Dockerfile installs pwsh $projectPwshVersion, not a PowerShell $PowerShellVersion release" }
+            elseif ($existingMarker.PowerShellVersion -and $existingMarker.PowerShellVersion -ne $PowerShellVersion) { "it is a PowerShell $($existingMarker.PowerShellVersion) project, not $PowerShellVersion" }
+            elseif ($PwshVersion -and $PwshVersion -ne $projectPwshVersion) { "it installs pwsh $projectPwshVersion, not $PwshVersion" }
+            elseif ($PSBoundParameters.ContainsKey('IncludeModule')) { "-IncludeModule stages modules only in a new project; this one ships its modules/ folder (add modules there with Save-LambdaPSModule)" }
+            if ($conflict) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.InvalidOperationException]::new(
+                            ("-ProjectPath '$ProjectPath' is a runtime project, which is built as is, but $conflict. " +
+                             'Change the parameters to match it, or pass a new -ProjectPath, or none. Nothing was created.')),
+                        'ProjectParameterConflict', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
             }
         }
 
@@ -416,16 +443,19 @@ function New-LambdaPSRuntimeDeployment {
             InstallSource     = if ($Architecture -eq 'arm64') { 'PinnedArchive' } else { 'PackageRepository' }
             Architecture      = $Architecture
         }
-        $pwshRelease = Resolve-LambdaPSPwshRelease @releaseParams
+        $pwshRelease = if ($existingProject) { [PSCustomObject]@{ Version = $projectPwshVersion; Source = 'Project' } } else { Resolve-LambdaPSPwshRelease @releaseParams }
         $resolvedPwshVersion = $pwshRelease.Version
         $pwshSource = switch ($pwshRelease.Source) {
+            'Project' { 'the Dockerfile in -ProjectPath' }
             'Parameter' { '-PwshVersion' }
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
-        # build can only fail, after Stage 1 has replaced -ProjectPath, so refuse here, under -WhatIf too.
-        if ($Architecture -eq 'arm64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
+        # build can only fail, after Stage 1 has scaffolded, so refuse here, under -WhatIf too.
+        # A kept project's Dockerfile carries its own arm64 hash, which Build-LambdaPSRuntimeImage checks
+        # before anything is created.
+        if ($Architecture -eq 'arm64' -and -not $existingProject -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
             # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
                     $_.StartsWith("$PowerShellVersion.") -and
@@ -736,17 +766,9 @@ function New-LambdaPSRuntimeDeployment {
 
         # Stage 1: Scaffold and stage modules. Module staging is delegated to the scaffolder:
         # -IncludeModule is forwarded to New-LambdaPSRuntimeProject, which copies them from the local
-        # machine. This is the ONLY module handling in this cmdlet.
-        # -Force is passed so a re-deploy is repeatable, which means an existing directory at
-        # $ProjectPath is REPLACED (its contents deleted). The ShouldProcess message says so, so -WhatIf
-        # and -Confirm disclose it rather than silently discarding a customized project.
-        Write-Verbose "Stage 1: Scaffold runtime project at '$ProjectPath'."
-        $scaffoldAction = if ((Test-Path -LiteralPath $ProjectPath -PathType Container) -and @(Get-ChildItem -LiteralPath $ProjectPath -Force).Count -gt 0) {
-            "Replace existing directory with a scaffolded PowerShell $PowerShellVersion runtime project (existing contents are deleted)"
-        }
-        else {
-            "Scaffold PowerShell $PowerShellVersion runtime project"
-        }
+        # machine. This is the ONLY module handling in this cmdlet. An existing project is not touched.
+        Write-Verbose $(if ($existingProject) { "Stage 1: Build the runtime project at '$ProjectPath' as is." } else { "Stage 1: Scaffold runtime project at '$ProjectPath'." })
+        $scaffoldAction = "Scaffold PowerShell $PowerShellVersion runtime project"
         # The stage confirms once for everything under it, so say when that includes installing
         # missing modules into the current user's module path, which outlives the deploy.
         if ($MissingModuleAction -eq 'Install' -and @($IncludeModule).Count -gt 0) {
@@ -758,7 +780,6 @@ function New-LambdaPSRuntimeDeployment {
             PwshVersion         = $resolvedPwshVersion
             IncludeModule       = $IncludeModule
             MissingModuleAction = $MissingModuleAction
-            Force               = $true
             WarningAction       = 'SilentlyContinue'
             WarningVariable     = 'scaffoldWarnings'
         }
@@ -768,7 +789,10 @@ function New-LambdaPSRuntimeDeployment {
         # project, an image tag left by an earlier run, a version that was not published).
         $declinedStage = $null
         try {
-            if ($PSCmdlet.ShouldProcess($ProjectPath, $scaffoldAction)) {
+            if ($existingProject) {
+                $modulesStaged = Get-LambdaPSStagedModule -Path ([System.IO.Path]::Combine($ProjectPath, 'modules'))
+            }
+            elseif ($PSCmdlet.ShouldProcess($ProjectPath, $scaffoldAction)) {
                 $null = New-LambdaPSRuntimeProject @scaffoldParams -Confirm:$false
                 $modulesStaged = Get-LambdaPSStagedModule -Path ([System.IO.Path]::Combine($ProjectPath, 'modules'))
                 Write-Information "Scaffolded runtime project at '$ProjectPath'." -Tags 'LambdaPSDeploy'
@@ -889,12 +913,15 @@ function New-LambdaPSRuntimeDeployment {
             PreviousRuntimeVersion = $previousRuntimeVersion
             Architecture           = $Architecture
             ModulesStaged          = $modulesStaged
-            ProjectPath            = $ProjectPath
+            ProjectPath            = if ($temporaryProject) { $null } else { $ProjectPath }
         }
     }
     catch {
         # Rethrow from this cmdlet: a helper's terminating error otherwise ends only the
         # statement that called it, and this cmdlet would carry on to its next step.
         $PSCmdlet.ThrowTerminatingError($_)
+    }
+    finally {
+        if ($temporaryProject -and $ProjectPath) { Remove-Item -LiteralPath $ProjectPath -Recurse -Force -Confirm:$false -WhatIf:$false -ErrorAction SilentlyContinue }
     }
 }
