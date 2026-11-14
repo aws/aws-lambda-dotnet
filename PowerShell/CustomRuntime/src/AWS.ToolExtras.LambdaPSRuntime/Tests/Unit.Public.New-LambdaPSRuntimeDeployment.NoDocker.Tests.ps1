@@ -80,6 +80,30 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 1 -Exactly -ParameterFilter { $BuildMethod -eq 'NoDocker' -and $Architecture -eq 'arm64' }
         }
 
+        Context 'a kept runtime project' {
+            BeforeEach {
+                $script:keptPath = [System.IO.Path]::Combine($TestDrive, 'kept')
+                $null = New-Item -ItemType Directory -Path $script:keptPath -Force
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($script:keptPath, 'lambdaps-runtime.json')) -Value '{"Target":"CMR","PowerShellVersion":"7.4"}'
+            }
+
+            It 'Should refuse an edited Dockerfile with DockerfileModified before the ECR repository is created' {
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($script:keptPath, 'Dockerfile')) -Value "FROM x`nARG PWSH_VERSION=$($script:Config.pwsh.DefaultPatch['7.4'])`n"
+
+                { New-LambdaPSRuntimeDeployment @script:splat -ProjectPath $script:keptPath -WarningAction SilentlyContinue } |
+                    Should -Throw -ErrorId 'DockerfileModified,New-LambdaPSRuntimeDeployment'
+                Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 0 -Exactly
+            }
+
+            It 'Should refuse an arm64 build of a pwsh release with no pinned arm64 hash, which the no-Docker build would need' {
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($script:keptPath, 'Dockerfile')) -Value "FROM x`nARG PWSH_VERSION=7.4.99`n"
+
+                { New-LambdaPSRuntimeDeployment @script:splat -ProjectPath $script:keptPath -Architecture arm64 -WarningAction SilentlyContinue } |
+                    Should -Throw -ErrorId 'PwshArm64HashNotPinned,New-LambdaPSRuntimeDeployment'
+                Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 0 -Exactly
+            }
+        }
+
         It 'installs the newest pinned x86_64 release, with a warning, when the repository has a newer one' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { '7.4.99' }
             $pinned = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object { $_ -like '7.4.*' -and $script:Config.pwsh.ArchiveSha256[$_].x64 } |

@@ -470,8 +470,8 @@ function New-LambdaPSRuntimeDeployment {
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
         # build can only fail, after Stage 1 has scaffolded, so refuse here, under -WhatIf too.
         # A kept project's Dockerfile carries its own arm64 hash, which Build-LambdaPSRuntimeImage checks
-        # before anything is created.
-        if ($Architecture -eq 'arm64' -and -not $existingProject -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
+        # before anything is created; the no-Docker build uses the module's pinned hashes, so it is checked here.
+        if ($Architecture -eq 'arm64' -and -not ($existingProject -and -not $noDocker) -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
             # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
                     $_.StartsWith("$PowerShellVersion.") -and
@@ -498,6 +498,9 @@ function New-LambdaPSRuntimeDeployment {
             Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy'
             # Load the library now, so a missing or conflicting copy fails before anything is created.
             $null = Import-LambdaPSOciBuilder
+            # A kept project is built as is, so an edited Dockerfile fails DockerfileModified here, not after
+            # the ECR repository exists.
+            if ($existingProject) { $null = Get-LambdaPSOciImagePlan -Path $ProjectPath -Architecture $Architecture }
         }
         else {
             $runtimeProbe = $buildMethodResolved.ContainerRuntime
@@ -831,7 +834,7 @@ function New-LambdaPSRuntimeDeployment {
         }
         elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository' and its Lambda pull grant, and push image")) {
             if ($noDocker) {
-                # No local build to stop on first: the scaffold is fresh, so the recipe always applies.
+                # No local build to stop on first: preflight checked that the project fits the recipe.
                 $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -SkipDockerLogin -Confirm:$false
                 $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod NoDocker -Region $Region @credentialParameter -Confirm:$false
             }
