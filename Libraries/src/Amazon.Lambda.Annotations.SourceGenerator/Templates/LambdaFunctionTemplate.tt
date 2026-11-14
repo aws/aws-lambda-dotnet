@@ -22,6 +22,15 @@ using <#= ns #>;
 
 namespace <#= _model.LambdaMethod.ContainingNamespace #>
 {
+<#
+    var classDocumentationLines = GetClassDocumentation();
+    foreach (var line in classDocumentationLines)
+    {
+#>
+    <#= line #>
+<#
+    }
+#>
     public class <#= _model.GeneratedMethod.ContainingType.Name #>
     {
 <#

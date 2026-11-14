@@ -25,6 +25,10 @@
         </ItemGroup>
         <Copy SourceFiles="@(AWSLambdaPSCoreModuleFiles)" DestinationFolder="../Deployment/PowerShell/AWSLambdaPSCore/%(RecursiveDir)" />
     </Target>
+    <!-- Stages into its own folder: the release pipeline publishes every module folder under its working directory. -->
+    <Target Name="copy-lambdapsruntime-module">
+        <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task Package" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    </Target>
     <ItemGroup>
         <LibraryName Include="..\Libraries\src\**\*.csproj"/>
     </ItemGroup>
@@ -220,6 +224,7 @@
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.DurableExecution.Tests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.AspNetCoreServer.Test"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.AspNetCoreServer.Hosting.Tests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\AWS.OCI.Builder.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
         <!-- Each *.IntegrationTests.csproj deploys its own isolated CloudFormation stack, so the

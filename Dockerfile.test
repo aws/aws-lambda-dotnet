@@ -1,0 +1,16 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+ARG BASE_IMAGE=public.ecr.aws/lambda/provided:al2023
+FROM ${BASE_IMAGE}
+
+
+ARG RIE_URL=https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie
+
+RUN curl -fsSL -o /usr/local/bin/aws-lambda-rie "${RIE_URL}" \
+    && chmod +x /usr/local/bin/aws-lambda-rie
+
+COPY test/dockerized/tasks /var/task
+RUN chmod +x /var/task/bootstrap
+
+ENTRYPOINT ["/usr/local/bin/aws-lambda-rie", "/var/task/bootstrap"]

@@ -60,9 +60,6 @@ Resources:
     Type: AWS::Serverless::Function
     TestingMetadata:
       TestDescription: ["3-1"]
-      NotImplemented:
-        - id: "3-14"
-          reason: "Child context with custom serdes: .NET has no per-operation serdes slot; all payloads use the one registered ILambdaSerializer (matches the Java approach)."
     Metadata:
       BuildMethod: makefile
     Properties:
@@ -365,6 +362,24 @@ Resources:
       CodeUri: publish/ChildStepWaitAfter/
       Handler: bootstrap
       Description: Child context with step and wait inside, step and wait after
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+
+  ChildCustomSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["3-14"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/ChildCustomSerdes/
+      Handler: bootstrap
+      Description: Child context with a custom serdes (uppercases the child result on serialize)
       Role:
         Fn::GetAtt:
         - DurableFunctionRole

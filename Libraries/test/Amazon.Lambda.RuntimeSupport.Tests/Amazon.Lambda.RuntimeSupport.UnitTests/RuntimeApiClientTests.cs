@@ -294,6 +294,155 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal("req-timeout", ex.AwsRequestId);
         }
 
+        // --- Request messages sent to the Runtime API ---
+
+        /// <summary>
+        /// Mock handler that captures the request and returns a next invocation with the specified headers.
+        /// </summary>
+        private class NextInvocationMockHttpMessageHandler : HttpMessageHandler
+        {
+            public HttpRequestMessage CapturedRequest { get; private set; }
+            private readonly (string Name, string Value)[] _headers;
+
+            public NextInvocationMockHttpMessageHandler(params (string Name, string Value)[] headers)
+            {
+                _headers = headers;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                CapturedRequest = request;
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"key\":\"value\"}")
+                };
+
+                foreach (var (name, value) in _headers)
+                {
+                    response.Headers.TryAddWithoutValidation(name, value);
+                }
+
+                return Task.FromResult(response);
+            }
+        }
+
+        [Fact]
+        public async Task GetNextInvocationAsync_SendsExpectedRequest()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(("Lambda-Runtime-Aws-Request-Id", "req-1"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            using var invocation = await client.GetNextInvocationAsync(CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Get, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+        }
+
+        [Fact]
+        public async Task GetNextInvocationAsync_UsesExpectedUriForEachEndpoint()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(("Lambda-Runtime-Aws-Request-Id", "req-1"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            await client.RestoreNextInvocationAsync(CancellationToken.None);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/restore/next", handler.CapturedRequest.RequestUri.ToString());
+
+            using (await client.GetNextInvocationAsync(CancellationToken.None))
+            {
+                Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            }
+
+            using (await client.GetNextInvocationAsync(CancellationToken.None))
+            {
+                Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/next", handler.CapturedRequest.RequestUri.ToString());
+            }
+
+            await client.RestoreNextInvocationAsync(CancellationToken.None);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/restore/next", handler.CapturedRequest.RequestUri.ToString());
+        }
+
+        [Fact]
+        public async Task GetNextInvocationAsync_ReadsRuntimeApiHeadersIgnoringCase()
+        {
+            var handler = new NextInvocationMockHttpMessageHandler(
+                ("lambda-runtime-aws-request-id", "req-1"),
+                ("LAMBDA-RUNTIME-INVOKED-FUNCTION-ARN", "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime"),
+                ("Lambda-Runtime-Trace-Id", "Root=1-5bef4de7-ad49b0e87f6ef6c87fc2e700;Parent=9a9197af755a6419;Sampled=1"),
+                ("lambda-runtime-deadline-ms", "1542409706888"),
+                ("Lambda-Runtime-Aws-Tenant-Id", "tenant-1"),
+                ("lambda-runtime-invocation-id", "inv-uuid-abc"));
+            var httpClient = new HttpClient(handler);
+            var envVars = new TestEnvironmentVariables();
+            envVars.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", "localhost:9001");
+            var client = new RuntimeApiClient(envVars, httpClient);
+
+            using var invocation = await client.GetNextInvocationAsync(CancellationToken.None);
+
+            var context = Assert.IsType<LambdaContext>(invocation.LambdaContext);
+            Assert.Equal("req-1", context.AwsRequestId);
+            Assert.Equal("arn:aws:lambda:us-east-2:123456789012:function:custom-runtime", context.InvokedFunctionArn);
+            Assert.Equal("Root=1-5bef4de7-ad49b0e87f6ef6c87fc2e700;Parent=9a9197af755a6419;Sampled=1", context.TraceId);
+            Assert.Equal("tenant-1", context.TenantId);
+            Assert.Equal("inv-uuid-abc", context.InvocationId);
+
+            using var reader = new StreamReader(invocation.InputStream);
+            Assert.Equal("{\"key\":\"value\"}", await reader.ReadToEndAsync());
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            var outputStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            await client.SendResponseAsync("req-1", outputStream, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/req-1/response", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
+        [Fact]
+        public async Task SendResponseAsync_WithoutOutputStream_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted);
+            var client = CreateClientWith(handler);
+
+            await client.SendResponseAsync("req-1", null, CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
+        [Fact]
+        public async Task ReportInvocationErrorAsync_SendsExpectedRequest()
+        {
+            var handler = new ConfigurableMockHttpMessageHandler(HttpStatusCode.Accepted, "{}");
+            var client = CreateClientWith(handler);
+
+            await client.ReportInvocationErrorAsync("req-1", new Exception("boom"), CancellationToken.None);
+
+            Assert.NotNull(handler.CapturedRequest);
+            Assert.Equal(HttpMethod.Post, handler.CapturedRequest.Method);
+            Assert.Equal("http://localhost:9001/2018-06-01/runtime/invocation/req-1/error", handler.CapturedRequest.RequestUri.ToString());
+            Assert.Equal("application/json", handler.CapturedRequest.Headers.GetValues("Accept").Single());
+            Assert.Equal("application/vnd.aws.lambda.error+json", handler.CapturedRequest.Content.Headers.GetValues("Content-Type").Single());
+        }
+
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {

@@ -114,3 +114,7 @@ catch (WaitForConditionException ex)
     ctx.Logger.LogWarning("Gave up after {Attempts} polls; last status was {Status}", attempts, last);
 }
 ```
+
+## Custom serializer
+
+Set `WaitForConditionConfig<TState>.Serializer` to override the `ILambdaSerializer` used to serialize and (on replay) deserialize the checkpointed `TState`. When `null` (default), the globally-registered serializer on `ILambdaContext.Serializer` is used. See [Steps → Custom serializer](steps.md#custom-serializer) for details and replay/AOT notes.

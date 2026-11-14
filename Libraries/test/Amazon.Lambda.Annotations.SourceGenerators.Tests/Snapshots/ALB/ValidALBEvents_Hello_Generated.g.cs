@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.ALBEventExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.ALBEventExamples.ValidALBEvents"/>.
+    /// </summary>
     public class ValidALBEvents_Hello_Generated
     {
         private readonly ValidALBEvents validALBEvents;

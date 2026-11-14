@@ -26,10 +26,10 @@ BeforeAll {
     # The runtime settings are cleared too, so a runner that sets them cannot change what is tested;
     # the child runtimes inherit this process's environment.
     foreach ($name in 'AWS_LAMBDA_RUNTIME_API', 'AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID', 'AWS_LAMBDA_RUNTIME_DEADLINE_MS', 'POWERSHELL_VERSION',
-        'POWERSHELL_RUNTIME_JSON_DEPTH', 'POWERSHELL_RUNTIME_VERBOSE', 'AWS_LAMBDA_LOG_FORMAT', 'AWS_LAMBDA_LOG_LEVEL') {
+        'POWERSHELL_RUNTIME_JSON_DEPTH', 'POWERSHELL_RUNTIME_VERBOSE', 'AWS_LAMBDA_LOG_FORMAT', 'AWS_LAMBDA_LOG_LEVEL', 'AWS_EXECUTION_ENV') {
         $script:savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
     }
-    $env:POWERSHELL_RUNTIME_JSON_DEPTH = $env:POWERSHELL_RUNTIME_VERBOSE = $env:AWS_LAMBDA_LOG_FORMAT = $env:AWS_LAMBDA_LOG_LEVEL = $null
+    $env:POWERSHELL_RUNTIME_JSON_DEPTH = $env:POWERSHELL_RUNTIME_VERBOSE = $env:AWS_LAMBDA_LOG_FORMAT = $env:AWS_LAMBDA_LOG_LEVEL = $env:AWS_EXECUTION_ENV = $null
 }
 
 AfterAll {
@@ -462,6 +462,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'peek.ps1')) -Value '"loader:[$privateFunctionsPath]"'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'noparam.ps1')) -Value '@{ Name = $LambdaInput.name; RequestId = $LambdaContext.AwsRequestId; Peek = "[$inputObject][$handlerCommand]" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'noparamfn.ps1')) -Value 'function Handle { "fn:[$LambdaInput][$LambdaContext]" }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'execenv.ps1')) -Value '$env:AWS_EXECUTION_ENV'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
@@ -958,6 +959,29 @@ public class InvokeBin : PSCmdlet {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'peek.ps1' -EventBody '{}')
 
         $posts[0].Body | Should -BeExactly 'loader:[]'
+    }
+
+    It 'echoes each invocation''s Lambda-Runtime-Invocation-Id on its <Post>, and none when absent' -ForEach @(
+        @{ Post = '/response'; Handler = 'script.ps1' }
+        @{ Post = '/error'; Handler = 'fn.ps1::Fail' }
+    ) {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}', '{}' -InvocationId 'inv-1', '')
+
+        $posts[0].Path | Should -BeLike "*$Post"
+        $posts[0].InvocationId | Should -BeExactly 'inv-1'
+        $posts[1].InvocationId | Should -BeNullOrEmpty
+    }
+
+    # The template's pwsh-runtime.psd1 is unstamped, so the runtime client version is 0.0.0.
+    It 'sets AWS_EXECUTION_ENV to <Expected> when it is <Case>' -ForEach @(
+        @{ Case = 'unset'; Preset = $null; Expected = 'AWS_Lambda_lambdapsruntime_pwsh_<pwsh version>_ric_0.0.0' }
+        @{ Case = 'already set'; Preset = 'AWS_Lambda_x'; Expected = 'AWS_Lambda_x_lambdapsruntime_pwsh_<pwsh version>_ric_0.0.0' }
+    ) {
+        $env:AWS_EXECUTION_ENV = $Preset
+        try { $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'execenv.ps1' -EventBody '{}') }
+        finally { $env:AWS_EXECUTION_ENV = $null }
+
+        $posts[0].Body | Should -BeExactly $Expected.Replace('<pwsh version>', $PSVersionTable.PSVersion.ToString())
     }
 
     It 'sets _X_AMZN_TRACE_ID for its own invocation only' {

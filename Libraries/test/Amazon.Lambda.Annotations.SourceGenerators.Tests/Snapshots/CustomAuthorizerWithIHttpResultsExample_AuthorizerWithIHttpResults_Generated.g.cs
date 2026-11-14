@@ -11,6 +11,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.CustomAuthorizerWithIHttpResultsExample"/>.
+    /// </summary>
     public class CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated
     {
         private readonly CustomAuthorizerWithIHttpResultsExample customAuthorizerWithIHttpResultsExample;

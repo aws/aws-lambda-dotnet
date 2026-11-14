@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.DurableExecution;
 
 /// <summary>
@@ -16,7 +18,8 @@ public sealed class ChildContextConfig
 {
     /// <summary>
     /// Operation sub-type label for observability (e.g. <c>"WaitForCallback"</c>).
-    /// Surfaces on the wire <c>OperationUpdate.SubType</c> field.
+    /// Surfaces on the wire <c>OperationUpdate.SubType</c> field. Null or empty sends
+    /// no subtype. Must be 1 to 32 characters from <c>[a-zA-Z0-9-_]</c>.
     /// </summary>
     public string? SubType { get; set; }
 
@@ -54,4 +57,25 @@ public sealed class ChildContextConfig
     /// </para>
     /// </remarks>
     public NestingType NestingType { get; set; } = NestingType.Nested;
+
+    /// <summary>
+    /// Optional serializer for this child context's result payload. When <c>null</c>
+    /// (default), the globally-registered <see cref="ILambdaSerializer"/> on
+    /// <see cref="ILambdaContext.Serializer"/> is used.
+    /// </summary>
+    /// <remarks>
+    /// <b>Size-dependent transform on overflow.</b> On a fresh (non-replay) success the
+    /// child context result is round-tripped through this serializer before it is
+    /// returned, so a serializer that transforms the value (e.g. redaction, canonicalization)
+    /// has that transform reflected in the returned result — but <em>only</em> while the
+    /// serialized payload fits inline in a single checkpoint (≈256&#160;KB). If the result
+    /// is large enough to overflow, the payload is not stored inline; the value is instead
+    /// recovered by re-running the child body on replay, which does <em>not</em> apply the
+    /// round-trip transform. A serializer whose <c>Deserialize</c> is not a pure inverse of
+    /// its <c>Serialize</c> will therefore observe a size-dependent difference in the returned
+    /// value (transform applied for small results, skipped for overflowed ones). Prefer a
+    /// round-tripping serializer, or do not depend on the transform being applied to results
+    /// large enough to overflow the checkpoint.
+    /// </remarks>
+    public ILambdaSerializer? Serializer { get; set; }
 }

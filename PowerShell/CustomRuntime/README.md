@@ -74,8 +74,9 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'default' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+#    publish version -> point the 'default' alias at it). -RuntimeAlias is required, as every function
+#    bound to the alias runs the new version; Tab offers 'default' and the runtime's aliases.
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -141,8 +142,8 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy. A `-ProjectPath` project is built as is, with the release its `Dockerfile` names, so patch
+image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
+days later. A `-ProjectPath` project is built as is, with the release its `Dockerfile` names, so patch
 it by deploying without `-ProjectPath`, or by changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
@@ -155,7 +156,7 @@ the alias already pointed at a version, the result's `PreviousRuntimeVersion` sa
 can be rolled back:
 
 ```powershell
-$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1
 Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
 ```
@@ -326,6 +327,7 @@ PSScriptAnalyzer 1.21.0 or later:
 pwsh ./build.ps1            # Pester suite + code coverage
 pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
 pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+pwsh ./build.ps1 -Task Package     # stage the module to publish (no Tests/) in Deployment/LambdaPSRuntime
 ```
 
 The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory
