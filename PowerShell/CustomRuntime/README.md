@@ -78,8 +78,9 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'default' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+#    publish version -> point the 'default' alias at it). -RuntimeAlias is required, as every function
+#    bound to the alias runs the new version; Tab offers 'default' and the runtime's aliases.
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -145,8 +146,8 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy.
+image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
+days later.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
@@ -158,7 +159,7 @@ the alias already pointed at a version, the result's `PreviousRuntimeVersion` sa
 can be rolled back:
 
 ```powershell
-$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1
 Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
 ```

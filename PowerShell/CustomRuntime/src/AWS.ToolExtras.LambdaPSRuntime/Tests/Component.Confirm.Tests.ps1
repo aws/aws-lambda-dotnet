@@ -72,7 +72,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'N'
 
@@ -95,7 +95,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'N'
 
@@ -119,7 +119,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'Y', 'N'
 

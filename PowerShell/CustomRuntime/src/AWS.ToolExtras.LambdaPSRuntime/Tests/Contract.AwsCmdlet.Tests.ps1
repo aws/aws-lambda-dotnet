@@ -51,6 +51,10 @@ BeforeDiscovery {
         @{ Cmdlet = 'Get-LMCRuntimeAlias'; Module = 'AWS.Tools.LambdaCore'
            Parameters = @('RuntimeName', 'Name', 'Region', 'ClientConfig') }
 
+        # --- Runtime alias completion (Private/Get-LambdaPSRuntimeAliasCompletion.ps1) ---
+        @{ Cmdlet = 'Get-LMCRuntimeAliasList'; Module = 'AWS.Tools.LambdaCore'
+           Parameters = @('RuntimeName', 'Region', 'ClientConfig') }
+
         # --- Runtime ARN resolution (Private/Get-LambdaPSRuntimeArn.ps1) ---
         # -RuntimeName, NOT -Name. New-LMCRuntime is the odd one out in the family.
         @{ Cmdlet = 'Get-LMCRuntime'; Module = 'AWS.Tools.LambdaCore'

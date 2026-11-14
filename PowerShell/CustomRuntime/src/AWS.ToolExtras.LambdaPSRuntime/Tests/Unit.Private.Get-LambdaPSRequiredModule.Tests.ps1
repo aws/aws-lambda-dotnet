@@ -117,6 +117,28 @@ param($LambdaInput, $LambdaContext)
         }
     }
 
+    It 'throws InvalidRequiresStatement when a #Requires does not parse<Case>' -ForEach @(
+        @{ Case = ''; Line = '#Requires -Modules @{ ModuleName = AWS.Tools.S3; RequiredVersion = 5.0.274 }' }
+        @{ Case = ', after code on its line'; Line = 'Write-Host hi #Requires -Modules @{ ModuleName = AWS.Tools.S3; RequiredVersion = 5.0.274 }' }
+    ) {
+        $path = Join-Path $TestDrive 'handler-bad-requires.ps1'
+        Set-Content -LiteralPath $path -Value ($Line, 'param($LambdaInput, $LambdaContext)')
+        InModuleScope $script:moduleName -Parameters @{ p = $path } {
+            param($p)
+            { Get-LambdaPSRequiredModule -Path $p } |
+                Should -Throw -ErrorId 'InvalidRequiresStatement' -ExpectedMessage '*line 1: the #Requires statement does not parse: Argument must be constant. Quote module names*'
+        }
+    }
+
+    It 'ignores a parse error outside #Requires lines' {
+        $path = Join-Path $TestDrive 'handler-bad-body.ps1'
+        Set-Content -LiteralPath $path -Value ("#Requires -Modules @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }", 'if (')
+        InModuleScope $script:moduleName -Parameters @{ p = $path } {
+            param($p)
+            @(Get-LambdaPSRequiredModule -Path $p).Name | Should -Be 'AWS.Tools.S3'
+        }
+    }
+
     # The public cmdlets call this inside try and rethrow with their own $PSCmdlet; the error they
     # surface, and every record -ErrorVariable collects, must name the cmdlet, not this helper.
     It 'surfaces <ErrorId> (<Case>) from the calling cmdlet, and names no internal helper in -ErrorVariable' -ForEach @(

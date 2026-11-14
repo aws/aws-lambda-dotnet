@@ -26,8 +26,8 @@ function New-LambdaPSFunctionDeployment {
 
         Before packaging, the runtime and its alias are read to check the function's architecture
         against the runtime's (see -Architecture). A missing runtime (RuntimeArnNotFound) or alias
-        (RuntimeAliasNotFound) is also caught here, rather than producing a function that fails on
-        every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
+        (RuntimeAliasNotFound), or an alias scheduled for deletion (RuntimeAliasPendingDeletion), is also
+        caught here, rather than producing a function that fails on every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
         RuntimeAliasCheckFailed, which wraps the service's error.
 
@@ -90,6 +90,7 @@ function New-LambdaPSFunctionDeployment {
         source (for example '../outside.ps1'). For a folder source the handler is a path relative to
         the folder, written with '/': an absolute path, or one containing '\', fails with
         InvalidHandlerPath, because Lambda joins the handler to its task root as written.
+        A handler with whitespace in it fails with InvalidHandler.
     .PARAMETER RuntimeName
         The customer-managed runtime the function binds to. Its ARN is resolved automatically. A runtime
         name is 2 to 128 lowercase ASCII letters, digits, '_', '.' and '-', starting and ending with a
@@ -98,9 +99,9 @@ function New-LambdaPSFunctionDeployment {
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
         manifest.json records another). Otherwise it defaults to the alias recorded in a scaffolded
-        project's manifest.json, or else 'default', matching New-LambdaPSRuntimeDeployment's default
-        alias. An alias name is up to 128 ASCII letters, digits, '_', '.' and '-', not starting or
-        ending with '.' or '-', as Lambda requires, and is case-sensitive ('Staging' is not 'staging').
+        project's manifest.json, or else 'default'. An alias name is up to 128 ASCII letters, digits,
+        '_', '.' and '-', not starting or ending with '.' or '-', as Lambda requires, and is
+        case-sensitive ('Staging' is not 'staging').
         An alias read from manifest.json is checked the same way, and one that does not match is an
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
@@ -463,6 +464,16 @@ function New-LambdaPSFunctionDeployment {
                         'HandlerNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
             }
             $Handler = $resolved
+        }
+
+        # Lambda refuses whitespace in a handler: on create with a raw error, and on a redeploy only after
+        # the code is updated.
+        if ($Handler -match '\s') {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Handler '$Handler' contains whitespace, which Lambda does not accept in a handler. Remove it from -Handler, or rename the script or the folder it is in.", 'Handler'),
+                    'InvalidHandler', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Handler))
         }
 
         # The script whose #Requires -Modules to read is the leading token before '::' when it is a .ps1
