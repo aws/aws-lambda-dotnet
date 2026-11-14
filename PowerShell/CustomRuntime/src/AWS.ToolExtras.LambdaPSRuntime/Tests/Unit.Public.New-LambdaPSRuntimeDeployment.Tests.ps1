@@ -21,6 +21,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
     BeforeEach {
         # Run each test from TestDrive, so a relative -ProjectPath stays there.
         Push-Location $TestDrive
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith {
             [PSCustomObject]@{
                 PSTypeName = 'AWS.ToolExtras.LambdaPSRuntime.ContainerRuntime'
