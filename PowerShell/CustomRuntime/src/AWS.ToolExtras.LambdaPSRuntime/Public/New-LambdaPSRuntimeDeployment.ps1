@@ -390,7 +390,7 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' is not a runtime project scaffolded by this module (its " +
-                             'lambdaps-runtime.json names no target), so it was not replaced. Pass an empty or new ' +
+                             'lambdaps-runtime.json names no target), so it is not used. Pass an empty or new ' +
                              'directory, or remove its contents first. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
@@ -399,7 +399,7 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' holds a '$($existingMarker.Target)' project, not a runtime " +
-                             'image project, so it was not replaced. Pass an empty or new directory. Nothing was created.')),
+                             'image project, so it is not used. Pass an empty or new directory. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
             if ($null -eq $existingMarker -and $existingItems.Count -gt 0) {
@@ -407,7 +407,7 @@ function New-LambdaPSRuntimeDeployment {
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.IO.IOException]::new(
                             ("-ProjectPath '$ProjectPath' is not empty and is not a runtime project scaffolded by " +
-                             'this module (it has no lambdaps-runtime.json), so it was not replaced. Pass an empty ' +
+                             'this module (it has no lambdaps-runtime.json), so it is not used. Pass an empty ' +
                              'or new directory, or remove its contents first. Nothing was created.')),
                         'TargetNotEmpty', [System.Management.Automation.ErrorCategory]::ResourceExists, $ProjectPath))
             }
