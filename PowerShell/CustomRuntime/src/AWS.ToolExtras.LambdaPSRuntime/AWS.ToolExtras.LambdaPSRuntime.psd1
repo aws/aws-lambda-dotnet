@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AWS.ToolExtras.LambdaPSRuntime.psm1'
-    ModuleVersion     = '0.1.0'
+    ModuleVersion     = '1.0.0'
     GUID              = '1d3067bc-4650-4c14-b36c-11563ec12158'
     Author            = 'AWS Tools for PowerShell'
     CompanyName       = 'Amazon Web Services'
@@ -55,7 +55,7 @@
             LicenseUri   = 'https://aws.amazon.com/apache-2-0/'
             IconUri      = 'https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png'
             ProjectUri   = 'https://github.com/aws/aws-lambda-dotnet/tree/HEAD/PowerShell/CustomRuntime'
-            ReleaseNotes = 'Initial release.'
+            ReleaseNotes = 'Initial release. See https://github.com/aws/aws-lambda-dotnet/blob/master/CHANGELOG.md'
         }
     }
 }

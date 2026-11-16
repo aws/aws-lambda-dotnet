@@ -1,5 +1,8 @@
 ## Release 2026-11-06
 
+### AWS.ToolExtras.LambdaPSRuntime PowerShell Module (1.0.0)
+* Initial release. Scaffolds, builds, deploys and invokes PowerShell Lambda functions on a custom runtime, as a Layer, a self-contained .zip, a container image or a Lambda customer-managed runtime.
+
 ### Amazon.Lambda.AspNetCoreServer (10.3.1)
 * ** Breaking Change ** Only set an authenticated HttpContext.User from the API Gateway request context authorizer when the authorizer supplies at least one claim with a non-null value. Requests whose authorizer context has no such claims, for example an HTTP API route using payload format 1.0 with no authorizer, previously appeared authenticated (User.Identity.IsAuthenticated was true with zero claims) and will now appear anonymous, so a bare [Authorize] denies them.
 * For HTTP API payload format 2.0, marshal Lambda authorizer context and IAM caller details into claims.
