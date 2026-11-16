@@ -383,6 +383,13 @@ runtime logging in `Templates/`, `PSReviewUnusedParameter` for mockable stub sig
 `PSUseSingularNouns` for non-exported helper names in both) are each documented in that settings
 file.
 
+## Known limitations
+
+- A runtime project you keep with `-ProjectPath` keeps the `bootstrap`, `runtime.ps1` and
+  `PowerShellLambdaContext.cs` it was scaffolded with, so it does not pick up runtime fixes from a
+  newer module. To pick them up, deploy without `-ProjectPath`, or scaffold a new project and move
+  your changes into it.
+
 ## Status
 
 - **AWS.Tools dependency:** the AWS-calling paths use the Lambda customer-managed runtime cmdlets
