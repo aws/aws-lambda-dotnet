@@ -1567,6 +1567,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'warns before anything is confirmed, and declining the first stage runs nothing' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-LambdaPSDockerBuilderPlatform { }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
                 function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }
