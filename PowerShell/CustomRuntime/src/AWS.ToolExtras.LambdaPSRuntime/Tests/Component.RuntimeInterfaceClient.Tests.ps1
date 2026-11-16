@@ -782,6 +782,34 @@ public class InvokeBin : PSCmdlet {
         $log.Contains([char]27) | Should -BeFalse
     }
 
+    It 'logs a handler''s Write-Error as one line with the handler''s stack, not pwsh''s block at the runtime''s call' {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'fn.ps1::Warn' -EventBody '{}' -LogVariable log)
+
+        $posts[0].Body | Should -Be 'ok'
+        $errorLine = @($log -split '\n' | Where-Object { $_ -like '*soft*' })
+        $errorLine.Count | Should -Be 1
+        $errorLine[0] | Should -BeLike "``[Error``] - soft`rat Warn, *fn.ps1: line *"
+        $log | Should -Not -Match 'Invoke-FunctionHandler\.ps1:\d|Line \|'
+    }
+
+    It 'logs the start-up code''s Write-Error as one labelled line in the text log format (<Handler>)' -ForEach @(
+        @{ Handler = 'startup.ps1::Handle' }
+        @{ Handler = 'Module::StartMod::Handle' }
+    ) {
+        $code = 'Write-Error ''startup-error''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'startup.ps1')) -Value $code
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod', 'StartMod.psm1')) -Value $code
+
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}' -LogVariable log)
+
+        $posts[0].Body | Should -Be 'ok'
+        $errorLine = @($log -split '\n' | Where-Object { $_ -like '*startup-error*' })
+        $errorLine.Count | Should -Be 1
+        $errorLine[0] | Should -BeLike '`[Error`] - startup-error*'
+        $log | Should -Not -Match 'Line \|'
+    }
+
     It 'posts a handler''s exception to /error and goes on to the next event' {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'fn.ps1::Fail' -EventBody '{}', '{}')
 
@@ -804,7 +832,7 @@ public class InvokeBin : PSCmdlet {
         $lines = $log -split '\n'
         $lines | Where-Object { $_ -like 'END RequestId*' -or $_ -like '`[RUNTIME`]forged*' } | Should -BeNullOrEmpty
         # The message, where it was thrown and the stack, on the one line.
-        $errorLine = @($lines | Where-Object { $_ -like 'bad name: x*' })
+        $errorLine = @($lines | Where-Object { $_ -like '`[Error`] - bad name: x*' })
         $errorLine.Count | Should -Be 1
         $errorLine[0] | Should -BeLike "*`rEND RequestId: req-1`r``[RUNTIME``]forged line*fn.ps1*"
     }
@@ -1136,15 +1164,25 @@ public class InvokeBin : PSCmdlet {
         $records.level | Should -Be 'WARN', 'ERROR'
     }
 
-    It 'sends <Handler> as the text log format does, with AWS_LAMBDA_LOG_FORMAT=JSON' -ForEach @(
-        @{ Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
-        @{ Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+    It 'sends <Handler> the same way with AWS_LAMBDA_LOG_FORMAT=<Format>' -ForEach @(
+        foreach ($format in 'Text', 'JSON') {
+            @{ Format = $format; Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
+            @{ Format = $format; Handler = 'CmdletGuid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
+            @{ Format = $format; Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+            # A value whose type name the handler changed, after a plain value of the same .NET type.
+            @{ Format = $format; Handler = 'RenamedHashtable'; Expected = '[{"a":1},{"b":2}]' }
+            @{ Format = $format; Handler = 'RenamedInt'; Expected = '[5,7]' }
+        }
     ) {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'values.ps1')) -Value @(
+            'Update-TypeData -TypeName My.Renamed -MemberType ScriptProperty -MemberName X -Value { 42 } -Force'
             'function Guid { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' }'
+            'function CmdletGuid { param($LambdaInput, $LambdaContext) Write-Output ([guid]''11111111-1111-1111-1111-111111111111'') }'
             'function Tagged { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' | Add-Member -NotePropertyName Tag -NotePropertyValue t -PassThru }'
+            'function RenamedHashtable { param($LambdaInput, $LambdaContext) @{ a = 1 }; $h = @{ b = 2 }; $h.PSTypeNames.Insert(0, ''My.Renamed''); $h }'
+            'function RenamedInt { param($LambdaInput, $LambdaContext) 5; $i = [psobject]7; $i.PSTypeNames.Insert(0, ''My.Renamed''); $i }'
         )
-        $env:AWS_LAMBDA_LOG_FORMAT = 'JSON'
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
         try {
             $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "values.ps1::$Handler" -EventBody '{}')
         }
