@@ -215,9 +215,10 @@ function New-LambdaPSRuntimeDeployment {
         modules. A -PowerShellVersion or -PwshVersion it doesn't match, or -IncludeModule, is a
         ProjectParameterConflict error. Any other non-empty directory is refused with TargetNotEmpty and
         left untouched.
-    .PARAMETER NoPull
-        Builds without refreshing the base image from its registry, as Build-LambdaPSRuntimeImage -NoPull
-        does; for example when the Dockerfile's FROM names an image only in the local docker image store.
+    .PARAMETER Pull
+        Refreshes the base image from its registry in both image builds, as Build-LambdaPSRuntimeImage
+        -Pull does. A project this deploy scaffolds is always built with -Pull, so a new runtime
+        version gets the current base image; -Pull matters only for an existing -ProjectPath project.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment
 
@@ -321,7 +322,7 @@ function New-LambdaPSRuntimeDeployment {
         [string]$ProjectPath,
 
         [Parameter()]
-        [switch]$NoPull
+        [switch]$Pull
     )
 
     # AWS is reached only through AWS.Tools cmdlets: the state-changing calls are wrapped in small
@@ -805,9 +806,12 @@ function New-LambdaPSRuntimeDeployment {
             Write-Warning "Skipped building and pushing the image, because the $declinedStage stage was declined."
         }
         elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository' and its Lambda pull grant, and push image")) {
-            $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -NoPull:$NoPull -Confirm:$false
+            # A project scaffolded here builds FROM the public Lambda base image, which can't be local-only,
+            # and the deploy is online anyway, so pulling only stops a stale cached base from shipping.
+            $pullBase = $Pull -or -not $existingProject
+            $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -Pull:$pullBase -Confirm:$false
             $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
-            $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -NoPull:$NoPull -Confirm:$false
+            $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -Pull:$pullBase -Confirm:$false
             # Publish exactly the image just pushed: by digest, so a tag moved in between cannot change
             # what the version runs. The tag is the fallback when buildx reported no digest.
             if ($null -ne $pushed -and $pushed.ImageDigest) {

@@ -63,8 +63,8 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
     }
 
     Context 'the base image refresh' {
-        It 'passes --pull by default' {
-            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1'
+        It 'passes --pull under -Pull' {
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1' -Pull
 
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
                 $ArgumentList[0] -eq 'buildx' -and @($ArgumentList | Where-Object { $_ -eq '--pull' }).Count -eq 1 -and
@@ -72,8 +72,8 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             }
         }
 
-        It 'omits --pull under -NoPull' {
-            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1' -NoPull
+        It 'omits --pull by default' {
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1'
 
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
                 $ArgumentList -notcontains '--pull' -and $ArgumentList -contains '--load'

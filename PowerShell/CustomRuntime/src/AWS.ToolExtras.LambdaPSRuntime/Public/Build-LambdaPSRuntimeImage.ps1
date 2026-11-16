@@ -35,7 +35,8 @@ function Build-LambdaPSRuntimeImage {
         After the build, a runtime image (lambdaps-runtime.json Target CMR) is checked for files in
         /opt, /var/task and /tmp, which Lambda hides at run time, with 'docker run --rm --network none
         --user 0 --entrypoint /bin/sh'. A pushed image is pulled again and checked after the push. When
-        the check cannot run (for example an image with no /bin/sh or ls), it warns and the build succeeds.
+        the check cannot run (for example an image with no /bin/sh, ls, wc, head or tr), it warns and
+        the build succeeds.
 
         This cmdlet shells out to the docker CLI only and makes no AWS call. It does not create the
         ECR repository, set its policy or log docker in to it: New-LambdaPSRuntimeDeployment does
@@ -57,10 +58,9 @@ function Build-LambdaPSRuntimeImage {
     .PARAMETER ImageUri
         The fully-qualified image reference to push the image to (for example an ECR URI). Use
         -ImageUri or -Tag.
-    .PARAMETER NoPull
-        Builds without --pull, from the base image already in the local docker image store (docker
-        still pulls it when there is no local copy). By default the base image is refreshed from its
-        registry on every build.
+    .PARAMETER Pull
+        Passes --pull, so docker refreshes the base image from its registry rather than building from
+        a copy it already has. Off by default, as with docker build.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeImage
 
@@ -96,7 +96,7 @@ function Build-LambdaPSRuntimeImage {
         [string]$ImageUri,
 
         [Parameter()]
-        [switch]$NoPull
+        [switch]$Pull
     )
 
     try {
@@ -155,7 +155,7 @@ function Build-LambdaPSRuntimeImage {
         # wraps the image in an index with an attestation manifest, so the push would not be the single
         # Docker v2 Schema 2 manifest this recipe produces.
         $dockerArgs.Add('--sbom=false')
-        if (-not $NoPull) { $dockerArgs.Add('--pull') }
+        if ($Pull) { $dockerArgs.Add('--pull') }
         if ($push) {
             # Direct single-step push: type=image + oci-mediatypes=false pushes a Docker v2
             # Schema 2 manifest straight to the registry (the CMR-required format).
@@ -239,7 +239,7 @@ function Build-LambdaPSRuntimeImage {
         $marker = try { Get-LambdaPSProjectMarker -Path $root } catch { $null }
         if ($marker -and $marker.Target -eq 'CMR') {
             $imageRef = if (-not $push) { $Tag } elseif ($digest) { "$ImageUri@$digest" } else { $ImageUri }
-            $listScript = 'command -v ls >/dev/null || { echo "ls not found in the image"; exit 4; }; rc=0; for d in /opt /var/task /tmp; do n=$(ls -A "$d" 2>/dev/null | wc -l); ' +
+            $listScript = 'for t in ls wc head tr; do command -v "$t" >/dev/null || { echo "$t not found in the image"; exit 4; }; done; rc=0; for d in /opt /var/task /tmp; do n=$(ls -A "$d" 2>/dev/null | wc -l); ' +
                 'if [ "$n" -gt 0 ]; then echo "LAMBDAPS_RESERVED $d ($n entries): $(ls -A "$d" | head -n 5 | tr "\n" " ")"; rc=3; fi; done; exit $rc'
             # As root, so an image's USER can't hide a folder it can't read. A push is checked from the
             # registry by the digest it returns, so neither a local copy nor a moved tag stands in for it.
