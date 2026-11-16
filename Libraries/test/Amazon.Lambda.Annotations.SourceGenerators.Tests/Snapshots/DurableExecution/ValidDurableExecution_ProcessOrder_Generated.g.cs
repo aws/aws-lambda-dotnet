@@ -11,6 +11,9 @@ using Amazon.Lambda.DurableExecution;
 
 namespace TestServerlessApp.DurableExecutionExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.DurableExecutionExamples.ValidDurableExecution"/>.
+    /// </summary>
     public class ValidDurableExecution_ProcessOrder_Generated
     {
         private readonly ValidDurableExecution validDurableExecution;

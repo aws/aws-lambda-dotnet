@@ -17,10 +17,10 @@ function Get-LambdaPSRuntimeAliasArchitecture {
         at publish. The array is EMPTY if the service reports none, in which case the caller cannot
         verify the match and should say so rather than assume one.
 
-        An alias that does not exist is a terminating RuntimeAliasNotFound error: a function bound to
-        a missing alias would otherwise be created and fail on every invoke. Any other failed read (a
-        refused lambda:GetRuntimeAlias, for one) is a terminating RuntimeAliasCheckFailed error that
-        wraps the service's error.
+        An alias that does not exist is a terminating RuntimeAliasNotFound error, and one scheduled for
+        deletion RuntimeAliasPendingDeletion: a function bound to it would otherwise be created and fail
+        on every invoke. Any other failed read (a refused lambda:GetRuntimeAlias, for one) is a
+        terminating RuntimeAliasCheckFailed error that wraps the service's error.
     .PARAMETER RuntimeName
         The customer-managed runtime name the alias belongs to.
     .PARAMETER RuntimeAlias
@@ -94,6 +94,16 @@ function Get-LambdaPSRuntimeAliasArchitecture {
                  'point the alias first (for example with New-LambdaPSRuntimeDeployment -RuntimeAlias ' +
                  "$RuntimeAlias), or pass the alias that exists.")),
             'RuntimeAliasNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, "$RuntimeName/$RuntimeAlias")
+    }
+
+    # Lambda resolves an alias scheduled for deletion as if it were missing.
+    if ([string]$aliasInfo.State -eq 'PENDING_DELETION') {
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.InvalidOperationException]::new(
+                ("Runtime alias '$RuntimeAlias' of runtime '$RuntimeName' in region '$Region' is scheduled for " +
+                 'deletion, so a function bound to it would deploy and then fail on every invoke. Pass another ' +
+                 'alias (New-LambdaPSRuntimeDeployment -RuntimeAlias creates one).')),
+            'RuntimeAliasPendingDeletion', [System.Management.Automation.ErrorCategory]::ResourceUnavailable, "$RuntimeName/$RuntimeAlias")
     }
 
     $compatibility = if ($null -ne $aliasInfo) { $aliasInfo.Compatibility } else { $null }

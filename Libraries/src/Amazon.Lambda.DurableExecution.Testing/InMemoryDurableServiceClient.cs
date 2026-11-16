@@ -15,11 +15,14 @@ internal sealed class InMemoryDurableServiceClient : IDurableServiceClient
 {
     private readonly InMemoryOperationStore _store;
     private readonly CheckpointProcessor _processor;
+    private readonly Func<int, bool>? _omitCheckpointToken;
+    private int _checkpointCalls;
 
-    public InMemoryDurableServiceClient(InMemoryOperationStore store, CheckpointProcessor processor)
+    public InMemoryDurableServiceClient(InMemoryOperationStore store, CheckpointProcessor processor, Func<int, bool>? omitCheckpointToken = null)
     {
         _store = store;
         _processor = processor;
+        _omitCheckpointToken = omitCheckpointToken;
     }
 
     public Task<string?> CheckpointAsync(
@@ -36,6 +39,9 @@ internal sealed class InMemoryDurableServiceClient : IDurableServiceClient
 
         if (onNewOperations is not null && newOps.Count > 0)
             onNewOperations(newOps);
+
+        if (_omitCheckpointToken?.Invoke(Interlocked.Increment(ref _checkpointCalls)) == true)
+            return Task.FromResult<string?>(null);
 
         return Task.FromResult<string?>(newToken);
     }

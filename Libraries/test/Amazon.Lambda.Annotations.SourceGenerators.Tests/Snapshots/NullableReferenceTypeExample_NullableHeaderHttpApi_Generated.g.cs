@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.NullableReferenceTypeExample"/>.
+    /// </summary>
     public class NullableReferenceTypeExample_NullableHeaderHttpApi_Generated
     {
         private readonly NullableReferenceTypeExample nullableReferenceTypeExample;

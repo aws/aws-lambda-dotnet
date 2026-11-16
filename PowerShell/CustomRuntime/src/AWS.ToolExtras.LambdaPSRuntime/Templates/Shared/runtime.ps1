@@ -32,7 +32,11 @@ if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Wr
 
 # Importing runtime module helpers
 if ($env:POWERSHELL_RUNTIME_VERBOSE -eq 'TRUE') {Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue '[RUNTIME]Importing runtime module helpers'}
-Import-Module ([System.IO.Path]::Combine($PSScriptRoot, 'modules', 'pwsh-runtime.psd1'))
+$private:__LambdaPSRuntimeClientVersion = (Import-Module ([System.IO.Path]::Combine($PSScriptRoot, 'modules', 'pwsh-runtime.psd1')) -PassThru).Version
+
+# The AWS SDK puts AWS_EXECUTION_ENV in the user agent of each call a function makes, so this marks them
+# as this runtime's, as AWSLambdaPSCore's host appends _powershell_<version>. OS-only runtimes leave it unset.
+$env:AWS_EXECUTION_ENV = "$(if ($env:AWS_EXECUTION_ENV) { "$($env:AWS_EXECUTION_ENV)_" } else { 'AWS_Lambda_' })lambdapsruntime_pwsh_$($env:POWERSHELL_VERSION)_ric_$private:__LambdaPSRuntimeClientVersion"
 
 # The Runtime API is on the sandbox's loopback. A function's HTTP_PROXY is for its own outbound calls:
 # through it, events and responses would reach the proxy, or never arrive.
@@ -118,8 +122,9 @@ try {
                 # the nearest one, so the stop is seen here and reported.
                 $private:__LambdaPSRuntimeScriptCompleted = $false
                 do {
-                    # With AWS_LAMBDA_LOG_FORMAT=JSON, the top-level code's records and output are logged as JSON.
-                    if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:__LambdaPSRuntimeHandler.ScriptFilePath }
+                    # With AWS_LAMBDA_LOG_FORMAT=JSON, the top-level code's records and output are logged as JSON;
+                    # in text mode its errors are, as the handler's are, one line each.
+                    if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:__LambdaPSRuntimeHandler.ScriptFilePath 2>&1 | Microsoft.PowerShell.Core\ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { pwsh-runtime\Write-LambdaLog -Record $_ } else { $_ } } }
                     else { . $private:__LambdaPSRuntimeHandler.ScriptFilePath *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     $private:__LambdaPSRuntimeScriptCompleted = $true
                 } while ($false)
@@ -134,7 +139,7 @@ try {
                 $private:__LambdaPSRuntimeImportCompleted = $false
                 do {
                     try {
-                        if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop }
+                        if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop } 2>&1 | Microsoft.PowerShell.Core\ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { pwsh-runtime\Write-LambdaLog -Record $_ } else { $_ } } }
                         # In a script block: redirected directly, Import-Module drops the error records the module's code writes.
                         else { . { Import-Module -Name $private:__LambdaPSRuntimeHandler.moduleName -Force -ErrorAction Stop } *>&1 | Microsoft.PowerShell.Core\ForEach-Object { pwsh-runtime\Write-LambdaLog -Record $_ } }
                     }

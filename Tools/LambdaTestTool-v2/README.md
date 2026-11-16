@@ -25,6 +25,7 @@ Test and debug your .NET AWS Lambda functions locally. The tool runs a local Lam
   - [Single Route](#single-route)
   - [Multiple Routes](#multiple-routes)
   - [Wildcard Paths](#wildcard-paths)
+  - [HTTP Integration](#http-integration)
 - [Event Sources](#event-sources)
   - [SQS Event Source](#sqs-event-source)
   - [DynamoDB Streams Event Source](#dynamodb-streams-event-source)
@@ -281,7 +282,8 @@ When using the API Gateway emulator, map routes to functions with the `APIGATEWA
 - `LambdaResourceName` — the function name (matches the name in `AWS_LAMBDA_RUNTIME_API`).
 - `HttpMethod` — e.g. `Get`, `Post` (matched case-insensitively).
 - `Path` — the route template, e.g. `/add/{x}/{y}`.
-- `Endpoint` — the **base URL** of the Lambda Runtime API, e.g. `http://localhost:5050`. Do **not** append the function name here; that comes from `LambdaResourceName`. In Combined Mode this is the Lambda emulator's address.
+- `Endpoint` — the **base URL** of the Lambda Runtime API, e.g. `http://localhost:5050`. Do **not** append the function name here; that comes from `LambdaResourceName`. In Combined Mode this is the Lambda emulator's address. For an [HTTP integration](#http-integration) this is instead the base URL of the backend HTTP service to proxy to.
+- `IntegrationType` — optional. `Lambda` (the default) invokes a Lambda function; `Http` reverse-proxies the request to `Endpoint` instead of invoking a Lambda. See [HTTP Integration](#http-integration).
 
 The value can be a single route object or an array of routes.
 
@@ -342,6 +344,37 @@ Use the `{proxy+}` syntax to proxy any additional path segments to a function. S
 ```
 
 This maps `/root` to `RootFunction` and any deeper path (e.g. `/root/a/b`) to `MyOtherLambdaFunction`.
+
+### HTTP Integration
+
+By default a route invokes a Lambda function (`IntegrationType` of `Lambda`). Set `IntegrationType` to `Http` to have the emulator act as a **reverse proxy** instead: matching requests are forwarded to the route's `Endpoint` — a plain HTTP(s) service — rather than being converted to an API Gateway event and sent to a Lambda function.
+
+This lets you keep a single emulator origin in front of a mixed local topology, so a front end (or `curl`) can hit both your Lambda-backed routes and a non-Lambda backend (a running web API, a container, a third-party service) through the same host and port. The emulator forwards the method, path, query string, headers (except `Host`), and body, then relays the backend's status code, headers, and body back to the caller unchanged.
+
+For an HTTP integration:
+
+- `Endpoint` is the **base URL of the backend service** to proxy to (not a Lambda Runtime API). The incoming path and query string are appended to it. It must be a valid absolute `http`/`https` URL, or the route is rejected at startup.
+- `LambdaResourceName` is still required and is used to identify the route in logs.
+
+```json
+[
+    {
+        "LambdaResourceName": "AddLambdaFunction",
+        "HttpMethod": "Get",
+        "Path": "/add/{x}/{y}",
+        "Endpoint": "http://localhost:5050"
+    },
+    {
+        "LambdaResourceName": "LocalWebApi",
+        "HttpMethod": "Get",
+        "Path": "/api/{proxy+}",
+        "Endpoint": "http://localhost:6000",
+        "IntegrationType": "Http"
+    }
+]
+```
+
+With this config, `GET /add/5/3` invokes the `AddLambdaFunction` Lambda as usual, while `GET /api/orders/42` is proxied to `http://localhost:6000/api/orders/42` and its response is returned verbatim.
 
 ## Event Sources
 

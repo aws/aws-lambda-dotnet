@@ -369,12 +369,30 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         var completionReason = ComputeCompletionReason(items, unitCount);
         var result = new BatchResult<T>(items, completionReason);
 
-        await CheckpointParentResultAsync(result, completionReason, cancellationToken);
+        // For Nested (non-virtual) units, capture each succeeded child's OWN serialized
+        // checkpoint payload (S(body)) so the parent inlines it verbatim rather than
+        // re-serializing the round-tripped return value. Indexed by unit index. Empty/absent
+        // for Flat, which the parent serializes inline itself.
+        Dictionary<int, string?>? nestedInlinePayloads = null;
+        if (!_isVirtual)
+        {
+            nestedInlinePayloads = new Dictionary<int, string?>(unitCount);
+            for (var i = 0; i < unitCount; i++)
+            {
+                if (dispatched[i] && slots[i].Status == BatchItemStatus.Succeeded)
+                    nestedInlinePayloads[i] = slots[i].SerializedPayload;
+            }
+        }
+
+        // Returns the result to OBSERVE. For Flat (virtual) units on a non-overflow
+        // fresh success it is round-tripped through the item serializer so the value
+        // matches replay; otherwise it is the same result instance.
+        var observed = await CheckpointParentResultAsync(result, completionReason, nestedInlinePayloads, cancellationToken);
 
         // Never throw on failure — always return the aggregate result. The caller
         // inspects CompletionReason / HasFailure or calls ThrowIfError. Matches
         // the JS/Python/Java SDKs.
-        return result;
+        return observed;
     }
 
     /// <summary>
@@ -500,7 +518,16 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             try
             {
                 var result = await childOp.ExecuteAsync(cancellationToken).ConfigureAwait(false);
-                slots[index] = new UnitOutcome { Status = BatchItemStatus.Succeeded, Result = result };
+                slots[index] = new UnitOutcome
+                {
+                    Status = BatchItemStatus.Succeeded,
+                    Result = result,
+                    // Nested (non-virtual) children write their own SUCCEED checkpoint and
+                    // expose its exact payload here; capture it so the parent inlines the
+                    // child's ORIGINAL S(body) rather than re-serializing the round-tripped
+                    // return value. Null for Flat children and for child-level overflow.
+                    SerializedPayload = childOp.SerializedResultPayload
+                };
             }
             catch (ChildContextException ex)
             {
@@ -684,21 +711,27 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         return _policy.Evaluate(succeeded, failed, started, totalCount);
     }
 
-    private async Task CheckpointParentResultAsync(
+    private async Task<BatchResult<T>> CheckpointParentResultAsync(
         BatchResult<T> result,
         CompletionReason completionReason,
+        IReadOnlyDictionary<int, string?>? nestedInlinePayloads,
         CancellationToken cancellationToken)
     {
-        // Local builder: includeInline=true writes per-unit Result/Error inline
-        // (Flat only); includeInline=false writes the minimal index/name/status
-        // map (the shape Nested always uses, and the Flat overflow fallback).
-        // The persisted summary keeps EVERY declared unit — including
-        // never-dispatched ones tagged STARTED — even though result.All now omits
-        // them from the user-facing view. Replay/reconstruct and the unit-name
-        // drift check both loop the declared UnitCount and read per-unit
-        // status/name from this summary, so it must stay complete. Dispatched
-        // units are looked up by Index in result.All; the gaps are the
-        // never-dispatched branches.
+        // The completion reason to persist, and any Flat units whose fresh-success
+        // round-trip deserialize failed. Both may be updated after the round-trip below;
+        // BuildSummary closes over them so a rebuild reflects the terminal failures.
+        var reasonToPersist = completionReason;
+        Dictionary<int, DurableExecutionException>? flatRoundTripFailures = null;
+
+        // Local builder: includeInline=true writes per-unit Result/Error inline; false writes
+        // the minimal index/name/status map (the Flat overflow fallback). Serialization always
+        // reads from `result` (the ORIGINAL per-unit values) so a Nested unit inlines the
+        // child's captured S(body) and a Flat unit inlines S(raw) — never the round-tripped
+        // value, which would double-transform an asymmetric serializer. The persisted summary
+        // keeps EVERY declared unit — including never-dispatched ones tagged STARTED — even
+        // though result.All now omits them from the user-facing view. Replay/reconstruct and
+        // the unit-name drift check both loop the declared UnitCount and read per-unit
+        // status/name from this summary, so it must stay complete.
         BatchSummary BuildSummary(bool includeInline)
         {
             var byIndex = new Dictionary<int, IBatchItem<T>>(result.All.Count);
@@ -707,33 +740,66 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
 
             var s = new BatchSummary
             {
-                CompletionReason = SerializeCompletionReason(completionReason),
+                CompletionReason = SerializeCompletionReason(reasonToPersist),
                 Units = new List<BatchUnitSummary>(UnitCount)
             };
             for (var i = 0; i < UnitCount; i++)
             {
                 var (unitName, _) = GetUnit(i);
                 byIndex.TryGetValue(i, out var item);
+
+                // A Flat unit whose fresh-success round-trip deserialize failed is recorded
+                // Failed (terminal) even though its body succeeded, so replay reads the Error
+                // and never re-deserializes the poison payload (which would fail identically).
+                DurableExecutionException? forcedError = null;
+                if (flatRoundTripFailures != null)
+                    flatRoundTripFailures.TryGetValue(i, out forcedError);
+
+                var status = forcedError != null
+                    ? BatchItemStatus.Failed
+                    : (item?.Status ?? BatchItemStatus.Started);
+
                 var unit = new BatchUnitSummary
                 {
                     Index = i,
                     Name = item?.Name ?? unitName,
-                    Status = SerializeStatus(item?.Status ?? BatchItemStatus.Started)
+                    Status = SerializeStatus(status)
                 };
-                // Persist each unit's result/error inline on the parent summary —
-                // for BOTH Nested and Flat units. The service collapses completed
-                // per-unit child contexts out of the state returned on a later
-                // (post-operation) resume, so replay cannot recover a Nested unit's
-                // value from its child checkpoint; the inline copy is the only
-                // durable source. This mirrors the JS SDK, whose default
-                // BatchResult serdes serializes the whole `all` array (results
-                // included) into the parent payload.
-                if (includeInline && item != null)
+
+                // Persist each unit's result/error inline on the parent summary — for BOTH
+                // Nested and Flat units. The service collapses completed per-unit child
+                // contexts out of the state returned on a later (post-operation) resume, so
+                // replay cannot recover a Nested unit's value from its child checkpoint; the
+                // inline copy is the only durable source. This mirrors the JS SDK, whose
+                // default BatchResult serdes serializes the whole `all` array into the parent
+                // payload.
+                if (includeInline)
                 {
-                    if (item.Status == BatchItemStatus.Succeeded)
-                        unit.Result = SerializeResult(item.Result);
-                    else if (item.Status == BatchItemStatus.Failed && item.Error != null)
+                    if (forcedError != null)
+                    {
+                        unit.Error = ErrorObject.FromException(forcedError);
+                    }
+                    else if (item != null && item.Status == BatchItemStatus.Succeeded)
+                    {
+                        // Nested: inline the child's ORIGINAL SUCCEED payload (serialized by
+                        // the child at its own OperationId), captured on this fresh run.
+                        // Flat: the virtual child emitted no checkpoint, so the parent is the
+                        // sole writer — serialize the raw item result at "{OperationId}#{i}".
+                        if (_isVirtual)
+                        {
+                            unit.Result = SerializeResult(item.Result, i);
+                        }
+                        else
+                        {
+                            unit.Result = nestedInlinePayloads != null && nestedInlinePayloads.TryGetValue(i, out var p)
+                                ? p
+                                : null;
+                        }
+                    }
+                    else if (item != null && item.Status == BatchItemStatus.Failed && item.Error != null)
+                    {
                         unit.Error = ErrorObject.FromException(item.Error);
+                    }
                 }
                 s.Units.Add(unit);
             }
@@ -749,6 +815,50 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         // Applies to both Nested and Flat now that both inline their results.
         var overflow =
             Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+
+        // Result to OBSERVE. Starts as the raw aggregate; the Flat path below replaces it
+        // with the round-tripped values (and any terminal round-trip failures applied).
+        var observed = result;
+
+        // Fresh-success round-trip for Flat (virtual) units. A Flat unit's body result is
+        // returned RAW from ChildContextOperation (a virtual child suppresses its own SUCCEED
+        // and the round-trip a Nested child performs), whereas ReconstructFromCheckpoints
+        // rebuilds each value by DESERIALIZING the inline payload. Mirror Step/Child:
+        // deserialize the just-serialized per-unit payload and observe THAT value, so a
+        // non-round-tripping ItemSerializer yields identical values on a fresh run and on
+        // replay. Runs BEFORE the parent SUCCEED is emitted so a deserialize failure is
+        // handled terminally (below) instead of after a terminal checkpoint exists.
+        //
+        // Nested units already round-tripped inside ChildContextOperation and are never
+        // re-processed here (guarded by _isVirtual). On overflow the inline results are
+        // stripped and ReplayChildrenAsync recovers each value by re-running the unit body
+        // (also raw), so leaving the fresh values raw keeps fresh==replay in that case too.
+        if (_isVirtual && !overflow)
+        {
+            observed = RoundTripFlatResults(result, summary, reasonToPersist, out var failures);
+
+            if (failures.Count > 0)
+            {
+                // A unit's inline result could not be deserialized on this fresh run. This is
+                // TERMINAL for that unit (mirrors Step/Child): rather than let it propagate raw
+                // — which would leave the parent with NO terminal checkpoint and re-run every
+                // virtual unit body on replay (a deterministic poison loop) — record each such
+                // unit Failed, recompute the completion reason, and STILL emit the parent
+                // SUCCEED. Replay then reconstructs the same Failed unit from the rebuilt inline
+                // summary (Error, not Result) without re-deserializing or re-running it.
+                flatRoundTripFailures = failures;
+                reasonToPersist = ComputeCompletionReason(observed.All, UnitCount);
+                observed = new BatchResult<T>(observed.All, reasonToPersist);
+
+                // Rebuild from the ORIGINAL result (raw survivors) with the failed units forced
+                // to Error, so surviving Succeeded units still inline S(raw) — deserialized to
+                // the round-tripped value on replay, matching `observed`.
+                summary = BuildSummary(includeInline: true);
+                payload = JsonSerializer.Serialize(summary, BatchJsonContext.Default.BatchSummary);
+                overflow = Encoding.UTF8.GetByteCount(payload) > DurableConstants.MaxOperationCheckpointBytes;
+            }
+        }
+
         if (overflow)
         {
             summary = BuildSummary(includeInline: false);
@@ -772,6 +882,91 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                 ? new SdkContextOptions { ReplayChildren = true }
                 : null
         }, cancellationToken);
+
+        return observed;
+    }
+
+    /// <summary>
+    /// Rebuilds <paramref name="result"/> with each SUCCEEDED unit's value replaced by the
+    /// round-trip of its just-serialized inline payload, so the observed per-unit value on a
+    /// Flat (virtual) fresh success matches what <see cref="ReconstructFromCheckpoints"/>
+    /// rebuilds from the same inline payload on replay. Only used on the Flat, non-overflow
+    /// path — mirrors the fresh-success round-trip in <see cref="StepOperation{T}"/> and
+    /// <see cref="ChildContextOperation{T}"/>. Failed / never-dispatched units are left
+    /// untouched.
+    /// <para>
+    /// A per-unit deserialize failure is TERMINAL for that unit: it is added to
+    /// <paramref name="failures"/> and materialized as a Failed <see cref="BatchItem{T}"/>,
+    /// so the caller can record it inline and still emit the parent SUCCEED (avoiding a raw
+    /// propagation that would leave no terminal checkpoint and re-run every unit on replay).
+    /// </para>
+    /// </summary>
+    private BatchResult<T> RoundTripFlatResults(
+        BatchResult<T> result,
+        BatchSummary inlineSummary,
+        CompletionReason completionReason,
+        out Dictionary<int, DurableExecutionException> failures)
+    {
+        failures = new Dictionary<int, DurableExecutionException>();
+
+        var serializedByIndex = new Dictionary<int, string?>(inlineSummary.Units.Count);
+        foreach (var u in inlineSummary.Units)
+            serializedByIndex[u.Index] = u.Result;
+
+        var items = new List<IBatchItem<T>>(result.All.Count);
+        foreach (var item in result.All)
+        {
+            if (item.Status == BatchItemStatus.Succeeded
+                && serializedByIndex.TryGetValue(item.Index, out var serialized)
+                && serialized != null)
+            {
+                T value;
+                try
+                {
+                    // Symmetric with SerializeResult(item.Result, i) and with
+                    // ReconstructFromCheckpoints' DeserializeResult(..., "{OperationId}#{i}").
+                    value = DeserializeResult(serialized, $"{OperationId}#{item.Index}");
+                }
+                catch (Exception ex)
+                {
+                    // Terminal for this unit — record it Failed. The caller rebuilds the inline
+                    // summary with this Error (not a Result) and still emits the parent SUCCEED,
+                    // so replay reads a terminal Error instead of re-deserializing the same
+                    // poison payload or re-running the body.
+                    var wrapped = new ChildContextException(ex.Message, ex)
+                    {
+                        SubType = ChildSubType,
+                        ErrorType = ex.GetType().FullName,
+                        OriginalStackTrace = ex.StackTrace?.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                    };
+                    failures[item.Index] = wrapped;
+                    items.Add(new BatchItem<T>
+                    {
+                        Index = item.Index,
+                        Name = item.Name,
+                        Status = BatchItemStatus.Failed,
+                        Result = default,
+                        Error = wrapped
+                    });
+                    continue;
+                }
+
+                items.Add(new BatchItem<T>
+                {
+                    Index = item.Index,
+                    Name = item.Name,
+                    Status = item.Status,
+                    Result = value,
+                    Error = item.Error
+                });
+            }
+            else
+            {
+                items.Add(item);
+            }
+        }
+
+        return new BatchResult<T>(items, completionReason);
     }
 
     private IBatchResult<T> ReconstructFromCheckpoints(Operation parent)
@@ -826,7 +1021,15 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             // whose child op is still present in state).
             if (status == BatchItemStatus.Succeeded && summaryEntry?.Result != null)
             {
-                unitResult = DeserializeResult(summaryEntry.Result);
+                // The inline payload's entity id depends on who wrote it: a Flat unit was
+                // serialized by THIS parent at "{OperationId}#{i}", whereas a Nested unit's
+                // inline payload IS the child's own checkpoint payload, serialized by the
+                // child at childOpId. Deserialize each with the entity id it was written with
+                // so a context-aware serializer (e.g. FileSystemSerializer) resolves the same
+                // external location — and, for Nested, the SAME file the child wrote (no
+                // orphan, no second file).
+                var inlineEntityId = _isVirtual ? $"{OperationId}#{i}" : childOpId;
+                unitResult = DeserializeResult(summaryEntry.Result, inlineEntityId);
             }
             else if (status == BatchItemStatus.Failed && summaryEntry?.Error != null)
             {
@@ -841,7 +1044,10 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             }
             else if (status == BatchItemStatus.Succeeded && childOp?.ContextDetails?.Result != null)
             {
-                unitResult = DeserializeResult(childOp.ContextDetails.Result);
+                // This payload is the child's OWN context checkpoint, written by
+                // ChildContextOperation using the child op's id as EntityId — so
+                // deserialize with childOpId, not the parent's per-unit id.
+                unitResult = DeserializeResult(childOp.ContextDetails.Result, childOpId);
             }
             else if (status == BatchItemStatus.Failed && childOp?.ContextDetails?.Error != null)
             {
@@ -930,11 +1136,12 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         _                            => CompletionReason.AllCompleted
     };
 
-    private T DeserializeResult(string serialized)
+    private T DeserializeResult(string serialized, string entityId)
     {
         var bytes = Encoding.UTF8.GetBytes(serialized);
         using var ms = new MemoryStream(bytes);
-        return Serializer.Deserialize<T>(ms);
+        return LambdaSerializerHelper.Deserialize<T>(
+            Serializer, ms, new DurableSerializationContext(entityId, DurableExecutionArn));
     }
 
     /// <summary>
@@ -943,10 +1150,12 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     /// serialization a Nested unit's <see cref="ChildContextOperation{T}"/> would
     /// have written to its own checkpoint.
     /// </summary>
-    private string SerializeResult(T? value)
+    private string SerializeResult(T? value, int index)
     {
         using var ms = new MemoryStream();
-        Serializer.Serialize(value!, ms);
+        LambdaSerializerHelper.Serialize(
+            Serializer, value!, ms,
+            new DurableSerializationContext($"{OperationId}#{index}", DurableExecutionArn));
         return Encoding.UTF8.GetString(ms.ToArray());
     }
 
@@ -960,5 +1169,14 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
         public BatchItemStatus Status;
         public T? Result;
         public DurableExecutionException? Error;
+
+        /// <summary>
+        /// For a Nested (non-virtual) succeeded unit: the child's OWN serialized
+        /// SUCCEED-checkpoint payload (<c>S(body)</c>), captured from
+        /// <see cref="ChildContextOperation{T}.SerializedResultPayload"/> so the parent can
+        /// inline it verbatim instead of re-serializing the round-tripped return value.
+        /// <c>null</c> for Flat units, failures, and overflow.
+        /// </summary>
+        public string? SerializedPayload;
     }
 }
