@@ -37,6 +37,23 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         }
     }
 
+    It 'keeps source control out of the image with .dockerignore, and every file the Dockerfile copies in' {
+        $target = [System.IO.Path]::Combine($TestDrive, 'rt-dockerignore')
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $ignorePath = [System.IO.Path]::Combine($target, '.dockerignore')
+        $ignorePath | Should -Exist
+        $ignored = @(Get-Content -LiteralPath $ignorePath | Where-Object { $_ -and -not $_.StartsWith('#') })
+        $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
+
+        $ignored | Should -Contain '**/.git'
+        $ignored | Should -Contain '**/.gitignore'
+        $sources = @([regex]::Matches($dockerfile, '(?m)^COPY (?:--\S+ )*(\S+)\s+/var/runtime') | ForEach-Object { $_.Groups[1].Value })
+        $sources | Should -Contain 'modules'
+        foreach ($source in $sources) {
+            @($ignored | Where-Object { $source -like $_ }) | Should -BeNullOrEmpty -Because "COPY $source needs it in the build context"
+        }
+    }
+
     It 'writes a lambdaps-runtime.json marker recording the CMR target and version' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-marker-cmr')
         $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
