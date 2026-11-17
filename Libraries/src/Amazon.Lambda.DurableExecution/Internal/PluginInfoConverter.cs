@@ -61,11 +61,18 @@ internal static class PluginInfoConverter
     };
 
     /// <summary>
-    /// The 1-based number of the latest attempt of a step. The service records how many attempts came before
-    /// (<c>StepDetails.Attempt</c>), and the SDK numbers the next one from it.
+    /// The 1-based number of the latest attempt of a step. <c>StepDetails.Attempt</c> counts the attempts that
+    /// have finished, so a finished record already holds the number of its last attempt, and an unfinished one
+    /// (ready to retry, pending a retry, started) is on the attempt after them.
     /// </summary>
-    private static int? AttemptOf(string type, Operation? op) =>
-        type == OperationTypes.Step ? (op?.StepDetails?.Attempt ?? 0) + 1 : null;
+    private static int? AttemptOf(string type, Operation? op)
+    {
+        if (type != OperationTypes.Step)
+            return null;
+
+        var finished = op?.StepDetails?.Attempt ?? 0;
+        return op != null && IsTerminal(op.Status) ? Math.Max(finished, 1) : finished + 1;
+    }
 
     internal static IReadOnlyDictionary<string, OperationInfo> ToOperationMap(IEnumerable<Operation> operations, ISet<string>? onlyIds = null)
     {

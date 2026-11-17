@@ -46,6 +46,12 @@ internal abstract class DurableOperation<TResult>
     protected virtual string? OperationSubType => null;
 
     /// <summary>
+    /// Whether the operation is finished when <see cref="ExecuteAsync"/> returns. False for an operation that
+    /// hands back a handle and finishes later (a callback), which then calls <see cref="ReportEnd"/> itself.
+    /// </summary>
+    protected virtual bool EndsWhenExecuteReturns => true;
+
+    /// <summary>
     /// The plugins of this invocation, or null when none is registered. Set by whoever creates the operation,
     /// so the constructors stay unchanged.
     /// </summary>
@@ -97,13 +103,19 @@ internal abstract class DurableOperation<TResult>
         }
         catch (Exception ex) when (IsOperationFailure(ex))
         {
-            plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Failed, ex));
+            if (EndsWhenExecuteReturns)
+                plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Failed, ex));
             throw;
         }
 
-        plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Succeeded, null));
+        if (EndsWhenExecuteReturns)
+            plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Succeeded, null));
         return result;
     }
+
+    /// <summary>Reports that the operation reached a terminal state. For operations that finish after they return.</summary>
+    protected void ReportEnd(string status, bool isReplay, Exception? exception) =>
+        Plugins?.OperationEnd(CreateEndInfo(null, isReplay, status, exception));
 
     private OperationEndInfo CreateEndInfo(Operation? existing, bool isReplay, string status, Exception? exception)
     {

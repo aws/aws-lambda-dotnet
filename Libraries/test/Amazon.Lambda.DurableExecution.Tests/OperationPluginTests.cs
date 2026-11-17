@@ -337,6 +337,68 @@ public class OperationPluginTests
         Assert.Empty(recorder.OperationEnds);
     }
 
+    private static Operation CallbackRecord(string status, string? result = null, ErrorObject? error = null) => new()
+    {
+        Id = IdAt(1), Type = OperationTypes.Callback, Name = "approval", Status = status,
+        CallbackDetails = new CallbackDetails { CallbackId = "cb-1", Result = result, Error = error },
+    };
+
+    [Fact]
+    public async Task Callback_WaitingForItsResult_HasStartedButNotEnded()
+    {
+        var recorder = new Recorder();
+
+        var output = await Run(recorder, async ctx =>
+        {
+            var callback = await ctx.CreateCallbackAsync<string>(name: "approval");
+            return await callback.GetResultAsync();
+        }, CallbackRecord(OperationStatuses.Started));
+
+        Assert.Equal(InvocationStatus.Pending, output.Status);
+        Assert.Equal(OperationTypes.Callback, Assert.Single(recorder.OperationStarts).Type);
+        Assert.Empty(recorder.OperationEnds);
+    }
+
+    [Fact]
+    public async Task Callback_EndsWhenItsResultIsRead_NotWhenItIsCreated()
+    {
+        var recorder = new Recorder();
+
+        await Run(recorder, async ctx =>
+        {
+            var callback = await ctx.CreateCallbackAsync<string>(name: "approval");
+            Assert.Empty(recorder.OperationEnds); // created, result not read yet
+            var first = await callback.GetResultAsync();
+            await callback.GetResultAsync();      // reading again does not end it twice
+            return first;
+        }, CallbackRecord(OperationStatuses.Succeeded, result: "\"yes\""));
+
+        var end = Assert.Single(recorder.OperationEnds);
+        Assert.Equal(OperationStatuses.Succeeded, end.Status);
+        Assert.True(end.IsReplay);
+    }
+
+    [Theory]
+    [InlineData(OperationStatuses.Failed, OperationStatuses.Failed)]
+    [InlineData(OperationStatuses.TimedOut, OperationStatuses.TimedOut)]
+    public async Task Callback_FailureOrTimeout_EndsWithThatStatusAndTheError(string recorded, string expected)
+    {
+        var recorder = new Recorder();
+        var error = new ErrorObject { ErrorType = "Rejected", ErrorMessage = "no thanks" };
+
+        await Run(recorder, async ctx =>
+        {
+            var callback = await ctx.CreateCallbackAsync<string>(name: "approval");
+            try { await callback.GetResultAsync(); }
+            catch (CallbackException) { }
+            return "handled";
+        }, CallbackRecord(recorded, error: error));
+
+        var end = Assert.Single(recorder.OperationEnds);
+        Assert.Equal(expected, end.Status);
+        Assert.Equal("no thanks", end.Error!.ErrorMessage);
+    }
+
     [Fact]
     public async Task NoPlugins_RunsWorkflowWithoutAnyHooks()
     {
