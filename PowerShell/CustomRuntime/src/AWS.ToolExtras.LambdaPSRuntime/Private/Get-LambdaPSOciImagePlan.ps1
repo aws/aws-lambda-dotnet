@@ -114,14 +114,26 @@ function Get-LambdaPSOciImagePlan {
         $executable = @('lambda-entrypoint.sh', 'bootstrap') -ccontains $name
         $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$name"; Executable = $executable; Normalize = $executable })
     }
-    # COPY modules honors .dockerignore (for example **/.git) like COPY . does, and fails when it excludes the folder.
+    # COPY modules honors .dockerignore (for example **/.git) like COPY . does. It fails, as this does, when
+    # the folder is missing, named in another case (the daemon matches case on every OS), or excluded.
+    $modulesPath = [System.IO.Path]::Combine($root, 'modules')
+    $folderNames = @([System.IO.Directory]::GetDirectories($root) | ForEach-Object { [System.IO.Path]::GetFileName($_) })
+    if ($folderNames -cnotcontains 'modules') {
+        $otherCase = @($folderNames | Where-Object { $_ -eq 'modules' }) | Select-Object -First 1
+        $found = if ($otherCase) { " (it has '$otherCase', and the image build matches case)" } else { '' }
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.IO.DirectoryNotFoundException]::new("The project '$root' has no modules folder$found, which the image needs."),
+            'ProjectFileNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $modulesPath)
+    }
     $contextFiles = @(Select-LambdaPSBuildContextFile -Path $root)
-    if ([System.IO.Directory]::Exists([System.IO.Path]::Combine($root, 'modules')) -and
+    $ignorePath = [System.IO.Path]::Combine($root, '.dockerignore')
+    if ([System.IO.File]::Exists($ignorePath) -and
+        @([System.IO.Directory]::EnumerateFileSystemEntries($modulesPath)).Count -gt 0 -and
         @($contextFiles | Where-Object { $_.StartsWith('modules/', [System.StringComparison]::Ordinal) }).Count -eq 0) {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.InvalidOperationException]::new(
                 "The .dockerignore in '$root' excludes modules/, which the image needs. Remove the pattern that matches it."),
-            'ModulesFolderIgnored', [System.Management.Automation.ErrorCategory]::InvalidData, [System.IO.Path]::Combine($root, '.dockerignore'))
+            'ModulesFolderIgnored', [System.Management.Automation.ErrorCategory]::InvalidData, $ignorePath)
     }
     foreach ($relative in $contextFiles) {
         if (-not $relative.StartsWith('modules/', [System.StringComparison]::Ordinal)) { continue }

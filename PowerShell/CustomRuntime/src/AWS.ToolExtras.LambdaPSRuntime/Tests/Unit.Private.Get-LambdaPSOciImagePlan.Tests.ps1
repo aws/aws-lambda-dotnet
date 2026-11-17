@@ -61,6 +61,27 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             { Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64 } | Should -Throw -ErrorId 'ModulesFolderIgnored'
         }
 
+        # Docker's COPY modules fails on a 'Modules' folder on every OS, and copies an empty one.
+        It 'refuses a project whose modules folder is named in another case with ProjectFileNotFound, naming it' {
+            $root = [System.IO.Path]::Combine($TestDrive, 'rt-case')
+            $null = New-LambdaPSRuntimeProject -Path $root -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+            # Two moves, so a case-insensitive file system renames it too.
+            Move-Item -LiteralPath ([System.IO.Path]::Combine($root, 'modules')) -Destination ([System.IO.Path]::Combine($root, 'm-tmp'))
+            Move-Item -LiteralPath ([System.IO.Path]::Combine($root, 'm-tmp')) -Destination ([System.IO.Path]::Combine($root, 'Modules'))
+            $err = { Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64 } | Should -Throw -ErrorId 'ProjectFileNotFound' -PassThru
+            $err.Exception.Message | Should -BeLike "*has no modules folder (it has 'Modules'*"
+        }
+
+        It 'builds a project with an empty modules folder and no .dockerignore' {
+            $root = [System.IO.Path]::Combine($TestDrive, 'rt-empty')
+            $null = New-LambdaPSRuntimeProject -Path $root -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+            Remove-Item -LiteralPath ([System.IO.Path]::Combine($root, '.dockerignore')) -Force
+            Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($root, 'modules')) -Force | Remove-Item -Recurse -Force
+            $paths = @((Get-LambdaPSOciImagePlan -Path $root -Architecture x86_64).RuntimeFiles.ContainerPath)
+            $paths | Should -Contain '/var/runtime/runtime.ps1'
+            @($paths -like '/var/runtime/modules/*') | Should -HaveCount 0
+        }
+
         It 'accepts the scaffolded Dockerfile with CRLF line endings and a BOM (an edit on Windows that changes nothing)' {
             $copy = [System.IO.Path]::Combine($TestDrive, 'rt-crlf')
             Copy-Item -LiteralPath $script:runtimePath -Destination $copy -Recurse
