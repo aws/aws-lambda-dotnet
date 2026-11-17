@@ -1,3 +1,9 @@
+## Release 2026-11-17
+
+### Amazon.Lambda.DurableExecution (2.2.1)
+* Cancel user work that is still running when an invocation ends, and reject new durable operations started after that point.
+* On Lambda Managed Instances, stop durable work at the invocation deadline and throw TimeoutException so the invocation is retried instead of left running.
+
 ## Release 2026-11-13
 
 ### AWS.OCI.Builder (0.6.0)
