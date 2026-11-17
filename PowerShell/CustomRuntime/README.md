@@ -65,6 +65,8 @@ limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Con
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
+`New-LambdaPSFunctionDeployment` stops before it creates or updates the function: with `PackageTooLarge`
+over 50 MB zipped, and with `UnzippedPackageTooLarge` over 250 MB unzipped.
 
 ## Quick start (high-level)
 
