@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add an instrumentation plugin API (IDurableInstrumentationPlugin and IDurableInstrumentationPluginFactory) and DurableExecutionOptions, accepted by new DurableFunction.WrapAsync overloads. Plugins observe the invocation lifecycle and can run the workflow function inside their own context."
+      ]
+    }
+  ]
+}

@@ -30,6 +30,13 @@ public sealed class DurableExecutionInvocationInput
     /// </summary>
     [JsonPropertyName("InitialExecutionState")]
     public InitialExecutionState? InitialExecutionState { get; set; }
+
+    /// <summary>
+    /// Ids of operations that changed since the previous invocation of this execution, as reported by the
+    /// service. Absent on the first invocation.
+    /// </summary>
+    [JsonPropertyName("UpdatedOperationIds")]
+    public IReadOnlyList<string>? UpdatedOperationIds { get; set; }
 }
 
 /// <summary>

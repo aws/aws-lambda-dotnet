@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.Instrumentation;
 using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.DurableExecution.Services;
 using Amazon.Lambda.Model;
@@ -73,6 +74,61 @@ public static class DurableFunction
             async (input, ctx) => { await workflow(input, ctx); return null; },
             invocationInput, lambdaContext,
             new LambdaDurableServiceClient(lambdaClient));
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output) with <see cref="DurableExecutionOptions"/>, for example to
+    /// register instrumentation plugins. Create the options once and reuse them for every invocation.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        DurableExecutionOptions options)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(_cachedLambdaClient.Value), ToInvocationOptions(options));
+
+    /// <summary>
+    /// Wrap a workflow (typed input + output) with an explicit Lambda client and
+    /// <see cref="DurableExecutionOptions"/>.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient,
+        DurableExecutionOptions options)
+        => WrapAsyncCore(workflow, invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(lambdaClient), ToInvocationOptions(options));
+
+    /// <summary>
+    /// Wrap a void workflow with <see cref="DurableExecutionOptions"/>.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        DurableExecutionOptions options)
+        => WrapAsync(workflow, invocationInput, lambdaContext, _cachedLambdaClient.Value, options);
+
+    /// <summary>
+    /// Wrap a void workflow with an explicit Lambda client and <see cref="DurableExecutionOptions"/>.
+    /// </summary>
+    public static Task<DurableExecutionInvocationOutput> WrapAsync<TInput>(
+        Func<TInput, IDurableContext, Task> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IAmazonLambda lambdaClient,
+        DurableExecutionOptions options)
+        => WrapAsyncCore<TInput, object?>(
+            async (input, ctx) => { await workflow(input, ctx); return null; },
+            invocationInput, lambdaContext,
+            new LambdaDurableServiceClient(lambdaClient), ToInvocationOptions(options));
+
+    private static DurableInvocationOptions ToInvocationOptions(DurableExecutionOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return new DurableInvocationOptions { Execution = options };
+    }
 
     /// <summary>
     /// Internal overload for the testing package — accepts an
@@ -153,6 +209,93 @@ public static class DurableFunction
             throw CreateDeadlineException(invocationInput.DurableExecutionArn, ex);
         }
 
+        var isMultiConcurrency = options?.IsMultiConcurrency ?? InvocationDeadline.IsMultiConcurrency();
+
+        // Instrumentation plugins. No runner, and no snapshot cost, when none is registered. The runner logs
+        // through the core logger directly because the workflow logger suppresses output while replaying.
+        PluginRunner? plugins = null;
+        InvocationInfo? invocationInfo = null;
+        if (options?.Execution is { Plugins.Count: > 0 })
+        {
+            invocationInfo = PluginInfoConverter.ToInvocationInfo(invocationInput, state, lambdaContext, isMultiConcurrency);
+            plugins = PluginRunner.Create(
+                options.Execution, invocationInfo, new LambdaCoreLogger(), () => lambdaContext.RemainingTime);
+        }
+
+        if (plugins == null)
+        {
+            return await RunInvocationAsync(
+                workflow, invocationInput, lambdaContext, serviceClient, serializer, state, terminationManager,
+                workflowCancellation, deadline, cleanupTimeout, startTimestamp, checkpointToken, plugins: null);
+        }
+
+        plugins.InvocationStart(invocationInfo!);
+
+        DurableExecutionInvocationOutput output;
+        try
+        {
+            output = await RunInvocationAsync(
+                workflow, invocationInput, lambdaContext, serviceClient, serializer, state, terminationManager,
+                workflowCancellation, deadline, cleanupTimeout, startTimestamp, checkpointToken, plugins);
+        }
+        catch (Exception ex)
+        {
+            // The invocation throws, so Lambda retries it (a missed deadline, a transient checkpoint error).
+            await plugins.InvocationEndAsync(CreateEndInfo(
+                invocationInput, lambdaContext, state, InvocationEndStatus.Retrying, error: null, ex));
+            throw;
+        }
+
+        await plugins.InvocationEndAsync(CreateEndInfo(
+            invocationInput, lambdaContext, state,
+            output.Status switch
+            {
+                InvocationStatus.Succeeded => InvocationEndStatus.Succeeded,
+                InvocationStatus.Pending => InvocationEndStatus.Pending,
+                _ => InvocationEndStatus.Failed,
+            },
+            output.Error, exception: null));
+        return output;
+    }
+
+    private static InvocationEndInfo CreateEndInfo(
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        ExecutionState state,
+        InvocationEndStatus status,
+        ErrorObject? error,
+        Exception? exception)
+    {
+        var operations = state.GetAllOperations();
+        var execution = operations.FirstOrDefault(op => op.Type == OperationTypes.Execution);
+        return new InvocationEndInfo
+        {
+            ExecutionArn = invocationInput.DurableExecutionArn,
+            RequestId = lambdaContext.AwsRequestId,
+            Status = status,
+            Error = error,
+            Exception = exception,
+            IsFirstInvocation = operations.All(op => op.Type == OperationTypes.Execution),
+            ExecutionStartTimestamp = execution?.StartTimestamp is { } ms ? DateTimeOffset.FromUnixTimeMilliseconds(ms) : null,
+            Operations = PluginInfoConverter.ToOperationMap(operations),
+        };
+    }
+
+    private static async Task<DurableExecutionInvocationOutput> RunInvocationAsync<TInput, TOutput>(
+        Func<TInput, IDurableContext, Task<TOutput>> workflow,
+        DurableExecutionInvocationInput invocationInput,
+        ILambdaContext lambdaContext,
+        IDurableServiceClient serviceClient,
+        ILambdaSerializer serializer,
+        ExecutionState state,
+        TerminationManager terminationManager,
+        WorkflowCancellation workflowCancellation,
+        TimeSpan? deadline,
+        TimeSpan cleanupTimeout,
+        long startTimestamp,
+        string? checkpointToken,
+        PluginRunner? plugins)
+    {
         var userPayload = ExtractUserPayload<TInput>(invocationInput, serializer);
         var idGenerator = new OperationIdGenerator();
 
@@ -189,7 +332,18 @@ public static class DurableFunction
             {
                 result = await DurableExecutionHandler.RunAsync<TOutput>(
                     state, terminationManager,
-                    async () => await workflow(userPayload, context),
+                    plugins == null
+                        ? async () => await workflow(userPayload, context)
+                        : async () =>
+                        {
+                            // Runs inside the plugins' WrapAsync so their ambient context (for example a
+                            // current activity) is in effect for the whole workflow function.
+                            TOutput? workflowResult = default;
+                            await plugins.WrapAsync(
+                                new UserCodeInfo { Kind = UserCodeKind.Invocation },
+                                async () => workflowResult = await workflow(userPayload, context));
+                            return workflowResult!;
+                        },
                     workflowCancellation);
             }
 

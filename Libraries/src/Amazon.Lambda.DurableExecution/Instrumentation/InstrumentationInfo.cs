@@ -62,7 +62,10 @@ public sealed class InvocationEndInfo
     /// <summary>How the invocation ended.</summary>
     public required InvocationEndStatus Status { get; init; }
 
-    /// <summary>The workflow failure or the exception behind <see cref="InvocationEndStatus.Retrying"/>, if any.</summary>
+    /// <summary>The error the workflow failed with, when <see cref="Status"/> is <see cref="InvocationEndStatus.Failed"/>.</summary>
+    public ErrorObject? Error { get; init; }
+
+    /// <summary>The exception behind <see cref="InvocationEndStatus.Retrying"/>, if any.</summary>
     public Exception? Exception { get; init; }
 
     /// <summary>True when the execution has no checkpointed history, apart from its input.</summary>

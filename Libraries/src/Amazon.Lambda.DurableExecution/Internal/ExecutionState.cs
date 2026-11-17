@@ -92,6 +92,15 @@ internal sealed class ExecutionState
         }
     }
 
+    /// <summary>A point-in-time copy of every known operation, for plugin snapshots.</summary>
+    public Operation[] GetAllOperations()
+    {
+        lock (_lock)
+        {
+            return _operations.Values.ToArray();
+        }
+    }
+
     /// <summary>
     /// Returns the checkpointed record for <paramref name="operationId"/>, or null
     /// if none. Callers should switch on <see cref="Operation.Status"/> against
