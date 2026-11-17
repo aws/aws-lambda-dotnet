@@ -51,7 +51,7 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
     Context 'a well-formed scaffolded project' {
         It 'passes every rule' {
             $target = [System.IO.Path]::Combine($TestDrive, 'good')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $findings = Test-LambdaPSRuntimeProject -Path $target
             $findings | Should -Not -BeNullOrEmpty
             ($findings | Where-Object { -not $_.Passed }) | Should -BeNullOrEmpty
@@ -91,8 +91,8 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
     Context 'an image that keeps the base image''s entrypoint (R-Entrypoint)' {
         It 'fails a <Target> project whose Dockerfile no longer sets the ENTRYPOINT' -ForEach @(@{ Target = 'CMR' }, @{ Target = 'Container' }) {
             $target = [System.IO.Path]::Combine($TestDrive, "no-entrypoint-$Target")
-            if ($Target -eq 'CMR') { $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' }
-            else { $null = New-LambdaPSFunctionProject -Path $target -Handler handler -Target Container -PowerShellVersion '7.4' }
+            if ($Target -eq 'CMR') { $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' }
+            else { $null = New-LambdaPSFunctionProject -Path $target -Handler handler -Target Container -PowerShellVersion '7.4.*' }
             $dockerfile = [System.IO.Path]::Combine($target, 'Dockerfile')
             [System.IO.File]::WriteAllText($dockerfile, ([System.IO.File]::ReadAllText($dockerfile) -replace '(?m)^ENTRYPOINT .*\n', ''))
 
@@ -114,7 +114,7 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
 
         It 'reports R-Globalization not-applicable (passing) for a CMR project' {
             $target = [System.IO.Path]::Combine($TestDrive, 'cmr-glob')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $g = Test-LambdaPSRuntimeProject -Path $target |
                 Where-Object { $_.RuleId -eq 'R-Globalization' }
             $g.Passed | Should -BeTrue
@@ -124,7 +124,7 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
     Context 'a well-formed scaffolded Layer project' {
         It 'lints with zero failures (target resolved from the marker)' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-good')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             $findings = Test-LambdaPSRuntimeProject -Path $target
             $findings | Should -Not -BeNullOrEmpty
             ($findings | Where-Object { -not $_.Passed }) | Should -BeNullOrEmpty
@@ -132,7 +132,7 @@ Describe 'Test-LambdaPSRuntimeProject' -Tag 'Unit' {
 
         It 'passes R-RuntimePath for a layer bootstrap referencing /opt' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-runtimepath-ok')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             $runtimePathFinding = Test-LambdaPSRuntimeProject -Path $target |
                 Where-Object { $_.RuleId -eq 'R-RuntimePath' }
             $runtimePathFinding.Passed | Should -BeTrue
@@ -165,7 +165,7 @@ exec /var/runtime/powershell/pwsh -NoProfile -NonInteractive -File /var/runtime/
     Context 'a well-formed scaffolded SelfContainedZip project' {
         It 'lints with zero failures (target resolved from the marker)' {
             $target = [System.IO.Path]::Combine($TestDrive, 'scz-good')
-            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
             $findings = Test-LambdaPSRuntimeProject -Path $target
             $findings | Should -Not -BeNullOrEmpty
             ($findings | Where-Object { -not $_.Passed }) | Should -BeNullOrEmpty
@@ -173,7 +173,7 @@ exec /var/runtime/powershell/pwsh -NoProfile -NonInteractive -File /var/runtime/
 
         It 'passes R-RuntimePath for a bootstrap referencing /var/task' {
             $target = [System.IO.Path]::Combine($TestDrive, 'scz-runtimepath-ok')
-            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
             $runtimePathFinding = Test-LambdaPSRuntimeProject -Path $target |
                 Where-Object { $_.RuleId -eq 'R-RuntimePath' }
             $runtimePathFinding.Passed | Should -BeTrue
@@ -206,7 +206,7 @@ exec /var/runtime/powershell/pwsh -NoProfile -NonInteractive -File /var/runtime/
     Context 'a well-formed scaffolded Container project' {
         It 'lints with zero failures (target resolved from the marker)' {
             $target = [System.IO.Path]::Combine($TestDrive, 'container-good')
-            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
             $findings = Test-LambdaPSRuntimeProject -Path $target
             $findings | Should -Not -BeNullOrEmpty
             ($findings | Where-Object { -not $_.Passed }) | Should -BeNullOrEmpty
@@ -214,7 +214,7 @@ exec /var/runtime/powershell/pwsh -NoProfile -NonInteractive -File /var/runtime/
 
         It 'passes R-RuntimePath for a bootstrap referencing /var/runtime' {
             $target = [System.IO.Path]::Combine($TestDrive, 'container-runtimepath-ok')
-            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+            $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
             $runtimePathFinding = Test-LambdaPSRuntimeProject -Path $target |
                 Where-Object { $_.RuleId -eq 'R-RuntimePath' }
             $runtimePathFinding.Passed | Should -BeTrue
@@ -270,7 +270,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'writes nothing to the error stream for a compliant project' {
             $target = [System.IO.Path]::Combine($TestDrive, 'gate-clean')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
             $errors = @()
             $null = Test-LambdaPSRuntimeProject -Path $target -ErrorVariable errors
@@ -287,14 +287,14 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'returns $true from -Quiet for a compliant project' {
             $target = [System.IO.Path]::Combine($TestDrive, 'gate-quiet-ok')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
             Test-LambdaPSRuntimeProject -Path $target -Quiet | Should -BeTrue
         }
 
         It 'reports a hand-edited marker naming an unknown target as InvalidProjectMarker' {
             $target = [System.IO.Path]::Combine($TestDrive, 'gate-bad-marker')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Value '{"Target":"layer2"}'
 
             { Test-LambdaPSRuntimeProject -Path $target -ErrorAction Stop } | Should -Throw -ErrorId 'InvalidProjectMarker,Test-LambdaPSRuntimeProject'
@@ -302,7 +302,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'takes the project from a piped directory or deployment result' {
             $target = [System.IO.Path]::Combine($TestDrive, 'gate-pipeline')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
             Get-Item -LiteralPath $target | Test-LambdaPSRuntimeProject -Quiet | Should -BeTrue
             [PSCustomObject]@{ ProjectPath = $target } | Test-LambdaPSRuntimeProject -Quiet | Should -BeTrue
@@ -318,7 +318,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context 'line endings (R-LineEndings)' {
         It 'fails a bootstrap saved with CRLF line endings' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'crlf')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             $path = [System.IO.Path]::Combine($dir, 'bootstrap')
             [System.IO.File]::WriteAllText($path, [System.IO.File]::ReadAllText($path).Replace("`n", "`r`n"))
 
@@ -333,7 +333,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'passes the scaffolded bootstrap' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'lf')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
 
             (Test-LambdaPSRuntimeProject -Path $dir | Where-Object RuleId -eq 'R-LineEndings').Passed | Should -BeTrue
         }
@@ -342,7 +342,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context 'byte order mark (R-Encoding)' {
         It 'fails a bootstrap saved with a UTF-8 byte order mark, and still runs the other rules on its text' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'bom')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             $path = [System.IO.Path]::Combine($dir, 'bootstrap')
             [System.IO.File]::WriteAllText($path, [System.IO.File]::ReadAllText($path), [System.Text.UTF8Encoding]::new($true))
             @([System.IO.File]::ReadAllBytes($path)[0..2]) | Should -Be @(0xEF, 0xBB, 0xBF)
@@ -359,7 +359,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'fails R-Encoding alone for a UTF-16 bootstrap, whose text the other rules still read' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'utf16')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             $path = [System.IO.Path]::Combine($dir, 'bootstrap')
             # What Windows PowerShell's Out-File and '>' write: UTF-16 LE with a byte order mark.
             [System.IO.File]::WriteAllText($path, [System.IO.File]::ReadAllText($path), [System.Text.UnicodeEncoding]::new($false, $true))
@@ -371,7 +371,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'passes the scaffolded bootstrap' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'nobom')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
 
             (Test-LambdaPSRuntimeProject -Path $dir | Where-Object RuleId -eq 'R-Encoding').Passed | Should -BeTrue
         }
@@ -387,10 +387,10 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'reports a lambdaps-runtime.json that is not valid as an error for that item, or $false under -Quiet' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'badmarker')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'lambdaps-runtime.json')) -Value '{ not json'
             $good = [System.IO.Path]::Combine($TestDrive, 'goodmarker')
-            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4.*'
 
             { Test-LambdaPSRuntimeProject -Path $dir -ErrorAction Stop } |
                 Should -Throw -ErrorId 'InvalidProjectMarker,Test-LambdaPSRuntimeProject' -ExpectedMessage '*Fix it, or pass -Target to choose the rules.'
@@ -414,7 +414,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
             # Non-terminating: a project piped after it is still checked.
             $good = [System.IO.Path]::Combine($TestDrive, 'after-nobootstrap')
-            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4.*'
             $errors = @()
             $findings = @($dir, $good | Test-LambdaPSRuntimeProject -ErrorVariable errors -ErrorAction SilentlyContinue)
             @($errors.FullyQualifiedErrorId) | Should -Be @('BootstrapNotFound,Test-LambdaPSRuntimeProject')
@@ -433,7 +433,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $full = [System.IO.Path]::Combine($TestDrive, $Name)
             if ($ErrorId -eq 'BootstrapNotFound') { $null = New-Item -ItemType Directory -Path $full -Force }
             if ($ErrorId -eq 'InvalidProjectMarker') {
-                $null = New-LambdaPSRuntimeProject -Path $full -PowerShellVersion '7.4' -Force
+                $null = New-LambdaPSRuntimeProject -Path $full -PowerShellVersion '7.4.*' -Force
                 Set-Content -LiteralPath ([System.IO.Path]::Combine($full, 'lambdaps-runtime.json')) -Value '{ not json'
             }
             Push-Location -LiteralPath $TestDrive
@@ -453,9 +453,9 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context 'unreadable bootstrap' -Skip:($IsWindows -or ((id -u) -eq '0')) {
         BeforeAll {
             $script:unreadable = [System.IO.Path]::Combine($TestDrive, 'unreadable')
-            $null = New-LambdaPSRuntimeProject -Path $script:unreadable -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $script:unreadable -PowerShellVersion '7.4.*'
             $script:readable = [System.IO.Path]::Combine($TestDrive, 'readable')
-            $null = New-LambdaPSRuntimeProject -Path $script:readable -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $script:readable -PowerShellVersion '7.4.*'
             $script:unreadableBootstrap = [System.IO.Path]::Combine($script:unreadable, 'bootstrap')
             [System.IO.File]::SetUnixFileMode($script:unreadableBootstrap, [System.IO.UnixFileMode]::None)
         }
@@ -525,10 +525,10 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context 'an unexpected failure under -Quiet' {
         It 'fails that project and keeps checking the next, instead of stopping' {
             $broken = [System.IO.Path]::Combine($TestDrive, 'quiet-broken')
-            $null = New-LambdaPSRuntimeProject -Path $broken -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $broken -PowerShellVersion '7.4.*'
             Add-Content -LiteralPath ([System.IO.Path]::Combine($broken, 'bootstrap')) -Value '# BROKEN'
             $good = [System.IO.Path]::Combine($TestDrive, 'quiet-good')
-            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4.*'
             # The first rule runs for both projects; the second throws for the broken one only.
             Mock -ModuleName $script:moduleName Test-LambdaPSBootstrapRuntimePath {
                 New-LambdaPSFinding -RuleId 'R-RuntimePath' -Passed $true -Message 'stub'
@@ -544,7 +544,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'still stops without -Quiet' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'loud-broken')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             Mock -ModuleName $script:moduleName Test-LambdaPSBootstrapEnvironment { throw 'rule failed unexpectedly' }
             { Test-LambdaPSRuntimeProject -Path $dir -ErrorAction SilentlyContinue } | Should -Throw '*rule failed unexpectedly*'
         }
@@ -648,7 +648,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'reports an unknown command in a CMR bootstrap as unverified for its four shell rules, with R-Globalization not applicable' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'shape-cmr-unknown-command')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             $bootstrap = [System.IO.Path]::Combine($dir, 'bootstrap')
             [System.IO.File]::WriteAllText($bootstrap, ([System.IO.File]::ReadAllText($bootstrap) -replace '(?m)^exec ', "/opt/tools/prepare.sh`nexec "))
 
@@ -775,8 +775,8 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             @{ Target = 'CMR' }, @{ Target = 'Layer' }, @{ Target = 'SelfContainedZip' }, @{ Target = 'Container' }
         ) {
             $dir = [System.IO.Path]::Combine($TestDrive, "verified-$Target")
-            if ($Target -in 'CMR', 'Layer') { $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4' -Target $Target }
-            else { $null = New-LambdaPSFunctionProject -Path $dir -Handler 'handler' -PowerShellVersion '7.4' -Target $Target }
+            if ($Target -in 'CMR', 'Layer') { $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*' -Target $Target }
+            else { $null = New-LambdaPSFunctionProject -Path $dir -Handler 'handler' -PowerShellVersion '7.4.*' -Target $Target }
             $findings = @(Test-LambdaPSRuntimeProject -Path $dir -WarningVariable warnings)
             @($findings.RuleId) | Should -Be @('R-RuntimePath', 'R-Env-Path', 'R-Env-LdLibraryPath', 'R-ReservedWrite', 'R-Globalization', 'R-LineEndings', 'R-Encoding', 'R-Entrypoint')
             @($findings | Where-Object { -not $_.Passed -or $_.Unverified }) | Should -BeNullOrEmpty
@@ -787,7 +787,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context 'what the bootstrap is' {
         It 'reports a file passed as the project as ProjectNotFound, saying it is a file' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'file-as-project')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             $file = [System.IO.Path]::Combine($dir, 'bootstrap')
             { Test-LambdaPSRuntimeProject -Path $file -ErrorAction Stop } |
                 Should -Throw -ErrorId 'ProjectNotFound,Test-LambdaPSRuntimeProject' -ExpectedMessage '*is a file, not a project directory.'
@@ -819,7 +819,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $null = New-Item -ItemType Directory -Path $loop -Force
             $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($loop, 'bootstrap')) -Target 'bootstrap'
             $good = [System.IO.Path]::Combine($TestDrive, 'loop-next')
-            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $good -PowerShellVersion '7.4.*'
 
             $output = @($loop, $good | Test-LambdaPSRuntimeProject -ErrorAction Continue 2>&1)
             $errors = @($output | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
@@ -912,7 +912,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
     Context '-Target and the marker' {
         It 'lints against an explicit -Target rather than the marker' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'target-override')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*' -Target Layer
 
             $finding = Test-LambdaPSRuntimeProject -Path $dir -Target CMR -ErrorAction SilentlyContinue |
                 Where-Object RuleId -eq 'R-RuntimePath'
@@ -922,7 +922,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'fails R-RuntimePath for a SelfContainedZip project linted as -Target Layer, whose bootstrap does not reference /opt' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'target-scz-as-layer')
-            $null = New-LambdaPSFunctionProject -Path $dir -Handler handler -Target SelfContainedZip -PowerShellVersion '7.4'
+            $null = New-LambdaPSFunctionProject -Path $dir -Handler handler -Target SelfContainedZip -PowerShellVersion '7.4.*'
 
             $findings = @(Test-LambdaPSRuntimeProject -Path $dir -Target Layer -ErrorAction SilentlyContinue)
             $finding = $findings | Where-Object RuleId -eq 'R-RuntimePath'
@@ -933,7 +933,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'says under -Verbose that a project with no marker is checked as CMR' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'target-no-marker')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*' -Target Layer
             Remove-Item -LiteralPath ([System.IO.Path]::Combine($dir, 'lambdaps-runtime.json'))
             $verbose = @(Test-LambdaPSRuntimeProject -Path $dir -Quiet -Verbose 4>&1 | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] })
             ($verbose.Message -join ' ') | Should -BeLike '*has no lambdaps-runtime.json naming a target, so it is checked as a CMR project.*'
@@ -941,7 +941,7 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
 
         It 'does not read a marker that is not valid when -Target is given' {
             $dir = [System.IO.Path]::Combine($TestDrive, 'target-badmarker')
-            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $dir -PowerShellVersion '7.4.*'
             Set-Content -LiteralPath ([System.IO.Path]::Combine($dir, 'lambdaps-runtime.json')) -Value '{ not json'
 
             Test-LambdaPSRuntimeProject -Path $dir -Target CMR -Quiet -ErrorAction Stop | Should -BeTrue
@@ -952,8 +952,8 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
         BeforeAll {
             $script:pipeA = [System.IO.Path]::Combine($TestDrive, 'pipe-a')
             $script:pipeB = [System.IO.Path]::Combine($TestDrive, 'pipe-b')
-            $null = New-LambdaPSRuntimeProject -Path $script:pipeA -PowerShellVersion '7.4'
-            $null = New-LambdaPSRuntimeProject -Path $script:pipeB -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $script:pipeA -PowerShellVersion '7.4.*'
+            $null = New-LambdaPSRuntimeProject -Path $script:pipeB -PowerShellVersion '7.4.*' -Target Layer
         }
 
         It 'binds a plain path string' {
@@ -1028,9 +1028,9 @@ exec /opt/powershell/pwsh -NoProfile -NonInteractive -File /opt/runtime.ps1
             $selfContained = [System.IO.Path]::Combine($root, 'b-scz')
             $container = [System.IO.Path]::Combine($root, 'c-ctr')
             $function = [System.IO.Path]::Combine($root, 'd-fn')
-            $null = New-LambdaPSRuntimeProject -Path $layer -PowerShellVersion '7.4' -Target Layer
-            $null = New-LambdaPSFunctionProject -Path $selfContained -Handler handler -Target SelfContainedZip -PowerShellVersion '7.4'
-            $null = New-LambdaPSFunctionProject -Path $container -Handler handler -Target Container -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $layer -PowerShellVersion '7.4.*' -Target Layer
+            $null = New-LambdaPSFunctionProject -Path $selfContained -Handler handler -Target SelfContainedZip -PowerShellVersion '7.4.*'
+            $null = New-LambdaPSFunctionProject -Path $container -Handler handler -Target Container -PowerShellVersion '7.4.*'
             $null = New-LambdaPSFunctionProject -Path $function -Handler handler
             $bootstrap = [System.IO.Path]::Combine($selfContained, 'bootstrap')
             [System.IO.File]::WriteAllText($bootstrap, ([System.IO.File]::ReadAllText($bootstrap) -replace '(?m)^export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1\n', ''))

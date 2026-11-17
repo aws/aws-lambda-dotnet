@@ -72,7 +72,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion '7.4.*' -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'N'
 
@@ -95,7 +95,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion '7.4.*' -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'N'
 
@@ -118,7 +118,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { }
             function script:Set-LambdaPSRuntimeAlias { }
         }
-        $command = 'New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -Confirm'
+        $command = 'New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4.* -Region us-east-1 -Confirm'
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'Y', 'Y', 'Y'
 
@@ -141,7 +141,7 @@ Describe 'Declining a stage under -Confirm' -Tag 'Component' {
             function script:Publish-LambdaPSRuntimeVersion { $script:LambdaPSCalls.Add('Publish') }
             function script:Set-LambdaPSRuntimeAlias { $script:LambdaPSCalls.Add('Alias') }
         }
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$project' -Confirm"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion '7.4.*' -Region us-east-1 -ProjectPath '$project' -Confirm"
 
         $result = Invoke-InChildPwsh -Stub $stub.ToString() -Command $command -Answer 'Y', 'Y', 'N'
 
@@ -190,7 +190,7 @@ Describe 'Confirming an invoke' -Tag 'Component' {
 Describe 'Previewing or confirming a scaffold' -Tag 'Component' {
     It 'shows one What if line for the whole template, not one per file' {
         $path = [System.IO.Path]::Combine($TestDrive, 'whatif-rt')
-        $result = Invoke-InChildPwsh -Command "New-LambdaPSRuntimeProject -Path '$path' -PowerShellVersion 7.4 -WhatIf"
+        $result = Invoke-InChildPwsh -Command "New-LambdaPSRuntimeProject -Path '$path' -PowerShellVersion '7.4.*' -WhatIf"
 
         $whatIf = @($result.Output -split "`n" | Where-Object { $_ -like 'What if:*' })
         # -BeLike on an array passes when any line matches, so count them: one line, not one per file.
@@ -204,7 +204,7 @@ Describe 'Previewing or confirming a scaffold' -Tag 'Component' {
         $null = New-Item -ItemType Directory -Path $path -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($path, 'keep.txt')) -Value 'existing content'
 
-        $result = Invoke-InChildPwsh -Command "New-LambdaPSRuntimeProject -Path '$path' -PowerShellVersion 7.4 -Force -WhatIf"
+        $result = Invoke-InChildPwsh -Command "New-LambdaPSRuntimeProject -Path '$path' -PowerShellVersion '7.4.*' -Force -WhatIf"
 
         $result.Output | Should -BeLike '*What if: Performing the operation "Delete existing contents before scaffolding (-Force)" on target "*whatif-force-rt"*'
         @($result.Output -split "`n" | Where-Object { $_ -like 'What if:*from the CMR template*' }).Count | Should -Be 1

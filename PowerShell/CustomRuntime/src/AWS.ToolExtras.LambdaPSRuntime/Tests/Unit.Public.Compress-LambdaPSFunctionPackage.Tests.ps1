@@ -367,9 +367,9 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
 
         # Zipped as handler code, such a project would have no pwsh and a bootstrap that is not executable.
         It 'throws NotAFunctionProject for a <Target> project' -ForEach @(
-            @{ Target = 'Layer'; Scaffold = { param($p) New-LambdaPSRuntimeProject -Path $p -PowerShellVersion '7.4' -Target Layer } }
-            @{ Target = 'SelfContainedZip'; Scaffold = { param($p) New-LambdaPSFunctionProject -Path $p -Handler 'handler' -Target SelfContainedZip -PowerShellVersion '7.4' } }
-            @{ Target = 'Container'; Scaffold = { param($p) New-LambdaPSFunctionProject -Path $p -Handler 'handler' -Target Container -PowerShellVersion '7.4' } }
+            @{ Target = 'Layer'; Scaffold = { param($p) New-LambdaPSRuntimeProject -Path $p -PowerShellVersion '7.4.*' -Target Layer } }
+            @{ Target = 'SelfContainedZip'; Scaffold = { param($p) New-LambdaPSFunctionProject -Path $p -Handler 'handler' -Target SelfContainedZip -PowerShellVersion '7.4.*' } }
+            @{ Target = 'Container'; Scaffold = { param($p) New-LambdaPSFunctionProject -Path $p -Handler 'handler' -Target Container -PowerShellVersion '7.4.*' } }
         ) {
             $project = [System.IO.Path]::Combine($TestDrive, "marker-$Target")
             $null = & $Scaffold $project

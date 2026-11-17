@@ -15,7 +15,7 @@ function New-LambdaPSRuntimeDeployment {
         reports success over a runtime that cannot be invoked.
 
         Running the same command again, without -ProjectPath, patches the runtime: it installs the
-        newest pwsh release the build can verify (see -PwshVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
+        newest pwsh release the build can verify (see -PowerShellVersion) and prints which, publishes it as the next version (see -RuntimeVersion) with the
         release note 'pwsh <release>', and moves the alias. When the alias already pointed at a version,
         it returns that version as PreviousRuntimeVersion, which Update-LMCRuntimeAlias
         -RuntimeVersion takes to roll the patch back. After a patch that changes the pwsh release,
@@ -85,7 +85,7 @@ function New-LambdaPSRuntimeDeployment {
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
-                                UnknownPwshVersion, PwshVersionMismatch, DriveNotFound and
+                                PowerShellVersionNotSpecific, UnknownPwshVersion, DriveNotFound and
                                 PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 ProjectParameterConflict,
@@ -124,15 +124,15 @@ function New-LambdaPSRuntimeDeployment {
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
         '-', 2 to 128 characters, starting and ending with a letter or digit.
     .PARAMETER PowerShellVersion
-        The PowerShell version the runtime image targets, in major.minor form (for example 7.4).
-    .PARAMETER PwshVersion
-        The full pwsh version to install (x.y.z, for example 7.4.20), forwarded to
-        New-LambdaPSRuntimeProject. When omitted, the newest release of -PowerShellVersion the build
-        can verify is used: on x86_64 the newest in Microsoft's RPM repository (the module's pinned
-        release if the repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
+        The PowerShell release the runtime image installs. 7.6.9 installs that exact release (the
+        preflight line names a newer 7.6 release when Microsoft's RPM repository has one): give it
+        to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release. 7.6.*
+        installs the newest 7.6 release the build can verify, and 7.* that of the highest 7.x line
+        the module supports. A bare 7.6 is PowerShellVersionNotSpecific. On x86_64 the newest
+        release is the newest in Microsoft's RPM repository (the module's pinned release if the
+        repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
         If that pinned release is older than the one the alias runs, on the same line and
         architecture, the deploy stops with PwshReleaseOlderThanAlias.
-        Give it to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release.
     .PARAMETER IncludeModule
         Modules to bake into the runtime, forwarded to New-LambdaPSRuntimeProject (with transitive
         dependencies). Accepts a list. Each specification must pin an exact RequiredVersion (for
@@ -213,7 +213,7 @@ function New-LambdaPSRuntimeDeployment {
         in a new temp folder, removed when the deploy ends, and the result's ProjectPath is empty.
         A runtime project this module scaffolded (a lambdaps-runtime.json marker with Target CMR) is
         built as is, edits included: its Dockerfile sets the pwsh release, and its modules/ folder the
-        modules. A -PowerShellVersion or -PwshVersion it doesn't match, or -IncludeModule, is a
+        modules. A -PowerShellVersion it doesn't match, or -IncludeModule, is a
         ProjectParameterConflict error. Any other non-empty directory is refused with TargetNotEmpty and
         left untouched.
     .PARAMETER Pull
@@ -235,13 +235,13 @@ function New-LambdaPSRuntimeDeployment {
         PreviousRuntimeVersion is the version the alias pointed at before the deploy (empty when the
         alias is new).
     .EXAMPLE
-        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1 -InformationAction Continue
+        New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6.* -RuntimeAlias default -Region us-east-1 -InformationAction Continue
 
         Runs the full flow with the ECR repository defaulted to the runtime name, alias 'default', the
         newest pwsh 7.6 release, a version named after it (for example 7.6.9-1), and x86_64
         architecture, showing a progress line as each stage completes.
     .EXAMPLE
-        New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.6 -RuntimeAlias test -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
+        New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.6.* -RuntimeAlias test -Region us-east-1 -RepositoryName rt -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -Architecture arm64 -WhatIf
 
         Previews an arm64 deployment to the 'rt' repository, behind alias 'test', that would bake
         AWS.Tools.S3 5.0.274 in, without changing anything.
@@ -262,12 +262,8 @@ function New-LambdaPSRuntimeDeployment {
         [string]$RuntimeName,
 
         [Parameter(Mandatory)]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a PowerShell version in major.minor form, for example 7.4.")]
+        [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
-
-        [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a pwsh release in x.y.z form, for example 7.4.20.")]
-        [string]$PwshVersion,
 
         [Parameter()]
         [Alias('Module')]
@@ -342,6 +338,8 @@ function New-LambdaPSRuntimeDeployment {
         # sends, which carries the lowercase name, so a region given in another case is lowercased here,
         # before it is used in any ARN, image URI or call.
         $Region = $Region.ToLowerInvariant()
+        $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
+        $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # The project is scaffolded again on every deploy, so nothing in the current location is kept.
@@ -454,7 +452,7 @@ function New-LambdaPSRuntimeDeployment {
         $resolvedPwshVersion = $pwshRelease.Version
         $pwshSource = switch ($pwshRelease.Source) {
             'Project' { 'the Dockerfile in -ProjectPath' }
-            'Parameter' { '-PwshVersion' }
+            'Parameter' { '-PowerShellVersion' }
             'PackageRepository' { "the newest PowerShell $PowerShellVersion release in Microsoft's package repository" }
             default { "the newest PowerShell $PowerShellVersion release this module pins" }
         }
@@ -463,7 +461,6 @@ function New-LambdaPSRuntimeDeployment {
         # A kept project's Dockerfile carries its own arm64 hash, which Build-LambdaPSRuntimeImage checks
         # before anything is created.
         if ($Architecture -eq 'arm64' -and -not $existingProject -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
-            # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
                     $_.StartsWith("$PowerShellVersion.") -and
                     -not [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $_ -Architecture arm64)) } |
@@ -473,7 +470,7 @@ function New-LambdaPSRuntimeDeployment {
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new(
                         ("pwsh $resolvedPwshVersion has no pinned SHA256 for its arm64 tarball, so an arm64 runtime " +
-                         "image cannot be built for it. Use -Architecture x86_64, or a -PwshVersion with a pinned " +
+                         "image cannot be built for it. Use -Architecture x86_64, or a -PowerShellVersion release with a pinned " +
                          "arm64 hash$pinnedList. Nothing was created.")),
                     'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
         }
@@ -481,7 +478,18 @@ function New-LambdaPSRuntimeDeployment {
         # install a new release; an -InformationAction the caller gives still applies.
         $shownInformation = @{}
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
-        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
+        # An exact or kept release is not looked up above; say when the line has a newer one.
+        $newerRelease = ''
+        if ($pwshRelease.Source -in 'Parameter', 'Project') {
+            try {
+                $newest = @(Get-LambdaPSPwshRepositoryRelease -PowerShellVersion $PowerShellVersion)
+                if ($newest.Count -gt 0 -and [version]$newest[-1] -gt [version]$resolvedPwshVersion) {
+                    $newerRelease = " The newest PowerShell $PowerShellVersion release is $($newest[-1])."
+                }
+            }
+            catch { Write-Verbose "Could not check for a pwsh release newer than ${resolvedPwshVersion}: $($_.Exception.Message)" }
+        }
+        Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource).$newerRelease" -Tags 'LambdaPSDeploy' @shownInformation
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
         $runtimeProbe = Test-LambdaPSContainerRuntime
         Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
@@ -721,8 +729,8 @@ function New-LambdaPSRuntimeDeployment {
                         [System.Management.Automation.ErrorRecord]::new(
                             [System.InvalidOperationException]::new(
                                 ("Alias '$RuntimeAlias' of runtime '$RuntimeName' runs pwsh $aliasRelease, newer than the " +
-                                 "pinned release $resolvedPwshVersion this deploy would install. Pass -PwshVersion $aliasRelease " +
-                                 "to keep it, or -PwshVersion $resolvedPwshVersion to move back. Nothing was built or pushed.")),
+                                 "pinned release $resolvedPwshVersion this deploy would install. Pass -PowerShellVersion $aliasRelease " +
+                                 "to keep it, or -PowerShellVersion $resolvedPwshVersion to move back. Nothing was built or pushed.")),
                             'PwshReleaseOlderThanAlias', [System.Management.Automation.ErrorCategory]::InvalidOperation, $resolvedPwshVersion))
                 }
             }
@@ -783,8 +791,7 @@ function New-LambdaPSRuntimeDeployment {
         }
         $scaffoldParams = @{
             Path                = $ProjectPath
-            PowerShellVersion   = $PowerShellVersion
-            PwshVersion         = $resolvedPwshVersion
+            PowerShellVersion   = $resolvedPwshVersion
             IncludeModule       = $IncludeModule
             MissingModuleAction = $MissingModuleAction
             WarningAction       = 'SilentlyContinue'

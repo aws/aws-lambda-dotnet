@@ -18,7 +18,7 @@ AfterAll {
 Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
     It 'scaffolds the complete runtime-image tree from the template' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-happy')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
         $written | Should -Not -BeNullOrEmpty
         $expected = @(
@@ -39,7 +39,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'writes a lambdaps-runtime.json marker recording the CMR target and version' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-marker-cmr')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $marker = Get-Content -LiteralPath (
             [System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json
         $marker.Target | Should -Be 'CMR'
@@ -49,7 +49,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'writes a Dockerfile that installs pwsh from the Microsoft RPM on amd64 and the verified tarball on arm64' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-rpm')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'provided:al2023'
         # packages.microsoft.com has no aarch64 pwsh RPM, so the install branches on BuildKit's TARGETARCH.
@@ -88,7 +88,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'bakes the pinned arm64 tarball SHA256 into the Dockerfile and leaves no token' -ForEach $script:arm64Cases {
         $target = [System.IO.Path]::Combine($TestDrive, "rt-arm64-$Pin")
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion $PowerShellVersion -PwshVersion $Pin -WarningVariable warnings
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion $Pin -WarningVariable warnings
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match "ARG PWSH_ARM64_SHA256=$Hash"
         $dockerfile | Should -Not -Match '__PWSH_ARM64_SHA256__'
@@ -97,7 +97,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'keeps the arm64 hash token and warns when no hash is pinned for the version' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-arm64-unpinned')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -PwshVersion '7.4.2' -WarningVariable warnings -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.2' -WarningVariable warnings -WarningAction SilentlyContinue
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         # The token stays so an arm64 build fails closed at the Dockerfile's hash check; amd64 is unaffected.
         $dockerfile | Should -Match 'ARG PWSH_ARM64_SHA256=__PWSH_ARM64_SHA256__'
@@ -108,7 +108,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'substitutes the resolved full pwsh version into the Dockerfile token' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-version')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Not -Match '__PWSH_VERSION__'
         $dockerfile | Should -Match "ARG PWSH_VERSION=$([regex]::Escape($script:pwshConfig.DefaultPatch['7.4']))"
@@ -116,35 +116,42 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'substitutes the default pwsh patch for PowerShell <PowerShellVersion>' -ForEach $script:arm64Cases {
         $target = [System.IO.Path]::Combine($TestDrive, "rt-default-$PowerShellVersion")
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion $PowerShellVersion
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion "$PowerShellVersion.*"
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match "(?m)^ARG PWSH_VERSION=$([regex]::Escape($Pin))$"
     }
 
-    It 'honors an explicit -PwshVersion override' {
+    It 'honors an x.y.z -PowerShellVersion' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-pin')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -PwshVersion '7.4.2' -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.2' -WarningAction SilentlyContinue
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match '(?m)^ARG PWSH_VERSION=7\.4\.2$' -Because 'the default 7.4 pin also starts with 7.4.2'
     }
 
     It 'throws UnknownPwshVersion for an unmapped major.minor with no override' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-unknown')
-        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.9' } |
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.9.*' } |
             Should -Throw -ErrorId 'UnknownPwshVersion,New-LambdaPSRuntimeProject'
         $target | Should -Not -Exist
     }
 
-    It 'scaffolds an unmapped major.minor when -PwshVersion is supplied' {
+    It 'throws PowerShellVersionNotSpecific for a bare major.minor, writing nothing' {
+        $target = [System.IO.Path]::Combine($TestDrive, 'rt-bare-line')
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.6' } |
+            Should -Throw -ErrorId 'PowerShellVersionNotSpecific,New-LambdaPSRuntimeProject' -ExpectedMessage "*Pass '7.6.*'*"
+        $target | Should -Not -Exist
+    }
+
+    It 'scaffolds an unmapped major.minor given as x.y.z' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-unknown-ok')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.9' -PwshVersion '7.9.1' -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.9.1' -WarningAction SilentlyContinue
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'ARG PWSH_VERSION=7\.9\.1'
     }
 
     It 'writes a Dockerfile with the precompile step and interpreter relocation' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-precompile')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'OutputAssembly'
         $dockerfile | Should -Match 'PowerShellLambdaContext\.dll'
@@ -153,7 +160,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'installs and relocates pwsh in one RUN, so no layer keeps the /opt copy' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-one-layer')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $runs = @([regex]::Matches($dockerfile, '(?ms)^RUN .*?(?<!\\)$\n(?!\s)').Value)
         $install = @($runs | Where-Object { $_ -match 'dnf install' })
@@ -166,7 +173,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         @{ File = 'lambda-entrypoint.sh' }, @{ File = 'bootstrap' }
     ) {
         $target = [System.IO.Path]::Combine($TestDrive, "rt-crlf-$File")
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $run = [regex]::Match($dockerfile, '(?m)^RUN (sed -i (?:-e ''[^'']*'' )+)/var/runtime/lambda-entrypoint\.sh /var/runtime/bootstrap$')
         $run.Success | Should -BeTrue -Because 'the Dockerfile repairs the entrypoint and the bootstrap with sed'
@@ -186,7 +193,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
     # handler argument, which a customer-managed runtime is not given.
     It 'sets the image ENTRYPOINT to its own executable lambda-entrypoint.sh' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-entrypoint')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match '(?m)^ENTRYPOINT \[ "/var/runtime/lambda-entrypoint\.sh" \]$'
         $dockerfile | Should -Match '(?m)^COPY --chmod=755 lambda-entrypoint\.sh /var/runtime/lambda-entrypoint\.sh$'
@@ -206,10 +213,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
     ) {
         $projectPath = [System.IO.Path]::Combine($TestDrive, "rt-shared-$Target")
         if ($Scaffold -eq 'Runtime') {
-            $null = New-LambdaPSRuntimeProject -Path $projectPath -PowerShellVersion '7.4' -Target $Target
+            $null = New-LambdaPSRuntimeProject -Path $projectPath -PowerShellVersion '7.4.*' -Target $Target
         }
         else {
-            $null = New-LambdaPSFunctionProject -Path $projectPath -Handler handler -PowerShellVersion '7.4' -Target $Target
+            $null = New-LambdaPSFunctionProject -Path $projectPath -Handler handler -PowerShellVersion '7.4.*' -Target $Target
         }
 
         $shared = [System.IO.Path]::Combine((Split-Path -Parent $PSScriptRoot), 'Templates', 'Shared')
@@ -253,10 +260,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
             # would overwrite the -ForEach $Target and every case would scaffold the same thing.
             $projectPath = [System.IO.Path]::Combine($TestDrive, "rt-pshome-$Target")
             if ($Scaffold -eq 'Runtime') {
-                $null = New-LambdaPSRuntimeProject -Path $projectPath -PowerShellVersion '7.4' -Target $Target
+                $null = New-LambdaPSRuntimeProject -Path $projectPath -PowerShellVersion '7.4.*' -Target $Target
             }
             else {
-                $null = New-LambdaPSFunctionProject -Path $projectPath -Handler handler -PowerShellVersion '7.4' -Target $Target
+                $null = New-LambdaPSFunctionProject -Path $projectPath -Handler handler -PowerShellVersion '7.4.*' -Target $Target
             }
 
             $savedModulePath = $env:PSModulePath
@@ -284,9 +291,9 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
     It 'throws on an existing non-empty directory without -Force' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-exists')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $before = @(Get-ChildItem -LiteralPath $target -Recurse -Force).Count
-        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' } |
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' } |
             Should -Throw -ErrorId 'TargetNotEmpty,New-LambdaPSRuntimeProject'
         @(Get-ChildItem -LiteralPath $target -Recurse -Force).Count | Should -Be $before
     }
@@ -294,18 +301,18 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
     It 'scaffolds into an existing empty directory without -Force' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-empty')
         $null = New-Item -ItemType Directory -Path $target
-        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' } | Should -Not -Throw
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' } | Should -Not -Throw
         [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Exist
     }
 
     It 'overwrites an existing directory when -Force is supplied' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-force')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $bootstrap = [System.IO.Path]::Combine($target, 'bootstrap')
         $original = [System.IO.File]::ReadAllText($bootstrap)
         [System.IO.File]::WriteAllText($bootstrap, 'edited')
 
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force
 
         [System.IO.File]::ReadAllText($bootstrap) | Should -BeExactly $original
     }
@@ -318,10 +325,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
     Context '-Force replaces rather than merges' {
         It 'removes a previous target-specific file that the new target does not emit' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-crosstarget')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Exist
 
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer -Force
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer -Force
 
             # The CMR Dockerfile must be gone, and the bootstrap must be the Layer's.
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Not -Exist
@@ -330,20 +337,20 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
         It 'removes a stray file the customer left in the target' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-stray')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $stray = [System.IO.Path]::Combine($target, 'stale-artifact.txt')
             [System.IO.File]::WriteAllText($stray, 'x')
 
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force
 
             $stray | Should -Not -Exist
         }
 
         It 'replaces a Layer project with a CMR one that lints clean' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-layer-to-cmr')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
 
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target CMR -Force
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target CMR -Force
 
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Exist
             Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'bootstrap')) -Raw | Should -Match '/var/runtime'
@@ -353,10 +360,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
         It 'deletes nothing under -WhatIf' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-whatif-force')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $before = @(Get-ChildItem -LiteralPath $target -Recurse -Force).Count
 
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer -Force -WhatIf
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer -Force -WhatIf
 
             @(Get-ChildItem -LiteralPath $target -Recurse -Force).Count | Should -Be $before
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Exist
@@ -379,9 +386,9 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         It 'asks once to write the files, not once per folder: one yes writes the whole project' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-confirm')
             $reference = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-reference')
-            $null = New-LambdaPSRuntimeProject -Path $reference -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $reference -PowerShellVersion '7.4.*'
 
-            $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -Confirm" -Answer 'Y', 'N', 'N'
+            $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -Confirm" -Answer 'Y', 'N', 'N'
 
             $written = & $script:fileList $target
             $written.Count | Should -BeGreaterThan 0
@@ -392,10 +399,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         It 'asks once to delete and once to write under -Force, not once per removed item' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-force')
             $reference = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-force-reference')
-            $null = New-LambdaPSRuntimeProject -Path $reference -PowerShellVersion '7.4' -Target Layer
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $reference -PowerShellVersion '7.4.*' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
-            $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -Target Layer -Force -Confirm" -Answer 'Y', 'Y', 'N', 'N'
+            $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -Target Layer -Force -Confirm" -Answer 'Y', 'Y', 'N', 'N'
 
             & $script:fileList $target | Should -Be (& $script:fileList $reference)
             [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Not -Exist
@@ -415,7 +422,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
             try {
                 $modules = "@{ ModuleName = 'LambdaPSConfirmSetA'; RequiredVersion = '1.0.0' }, @{ ModuleName = 'LambdaPSConfirmSetB'; RequiredVersion = '1.0.0' }"
                 # One yes writes the files and one copies the modules; a prompt per module would take the 'N'.
-                $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -IncludeModule $modules -Confirm" -Answer 'Y', 'Y', 'N'
+                $null = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -IncludeModule $modules -Confirm" -Answer 'Y', 'Y', 'N'
             }
             finally { $env:PSModulePath = $savedModulePath }
 
@@ -432,7 +439,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
             $savedModulePath = $env:PSModulePath
             $env:PSModulePath = $moduleRoot + [System.IO.Path]::PathSeparator + $env:PSModulePath
             try {
-                $command = "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -IncludeModule @{ ModuleName = 'LambdaPSConfirmFake'; RequiredVersion = '1.0.0' } -Confirm"
+                $command = "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -IncludeModule @{ ModuleName = 'LambdaPSConfirmFake'; RequiredVersion = '1.0.0' } -Confirm"
                 # A module copy asked about after the declined write would take the 'Y' and create the target.
                 $result = Invoke-InChildPwsh -Command $command -Answer 'N', 'Y'
             }
@@ -444,10 +451,10 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
 
         It 'writes nothing over the old project when the -Force delete is declined' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-decline')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $before = @(Get-ChildItem -LiteralPath $target -Recurse -Force | ForEach-Object FullName)
             # A file write asked about after the declined delete would take the 'Y' and write over the old project.
-            $result = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -Target Layer -Force -Confirm" -Answer 'N', 'Y'
+            $result = Invoke-InChildPwsh -Command "`$null = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -Target Layer -Force -Confirm" -Answer 'N', 'Y'
 
             $result.Output | Should -BeLike '*because deleting its existing contents was declined*'
             @(Get-ChildItem -LiteralPath $target -Recurse -Force | ForEach-Object FullName) | Should -Be $before
@@ -458,7 +465,7 @@ Describe 'New-LambdaPSRuntimeProject' -Tag 'Unit' {
         # written over and no project is written without the modules it was asked to include.
         It 'deletes and writes nothing, naming the modules, when the download is declined' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-confirm-decline-download')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
             $before = @(Get-ChildItem -LiteralPath $target -Recurse -Force | ForEach-Object FullName)
             $stub = @"
 function script:Save-LambdaPSModuleFromRepository {
@@ -471,7 +478,7 @@ function script:Save-LambdaPSModuleFromRepository {
     [PSCustomObject]@{ Name = `$Name; Version = `$exact; Repository = 'Internal' }
 }
 "@
-            $command = "`$r = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -Target Layer -Force " +
+            $command = "`$r = New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -Target Layer -Force " +
                 "-IncludeModule @{ ModuleName = 'LambdaPSFake.NotInstalled'; RequiredVersion = '1.0.0' } -Confirm; 'WRITTEN:' + (@(`$r) -join ',')"
 
             # 'N' declines the download; the 'Y's would delete, write and copy if the scaffold went on.
@@ -492,7 +499,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module')
             $modulesDir = [System.IO.Path]::Combine($target, 'modules')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' `
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' `
                 -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.103' }
 
             Should -Invoke 'Copy-LambdaPSModuleSet' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -503,7 +510,7 @@ function script:Save-LambdaPSModuleFromRepository {
             Mock 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Downloaded = @(); Pending = @() } }
             Mock 'Copy-LambdaPSModuleSet' -ModuleName $script:moduleName -MockWith { , [string[]]@() }
 
-            $null = New-LambdaPSRuntimeProject -Path ([System.IO.Path]::Combine($TestDrive, 'rt-repo')) -PowerShellVersion '7.4' `
+            $null = New-LambdaPSRuntimeProject -Path ([System.IO.Path]::Combine($TestDrive, 'rt-repo')) -PowerShellVersion '7.4.*' `
                 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' } -ModuleRepository 'Internal', 'PSGallery'
 
             Should -Invoke 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -517,7 +524,7 @@ function script:Save-LambdaPSModuleFromRepository {
             Mock 'Copy-LambdaPSModuleSet' -ModuleName $script:moduleName -MockWith { , [string[]]@() }
 
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-save')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' `
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' `
                 -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.103' }
 
             Should -Invoke 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -533,7 +540,7 @@ function script:Save-LambdaPSModuleFromRepository {
             Mock 'Copy-LambdaPSModuleSet' -ModuleName $script:moduleName -MockWith { , [string[]]@() }
 
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-install')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -MissingModuleAction Install `
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -MissingModuleAction Install `
                 -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.103' }
 
             Should -Invoke 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -Times 1 -Exactly `
@@ -549,7 +556,7 @@ function script:Save-LambdaPSModuleFromRepository {
             }
 
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-stop')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -MissingModuleAction Stop `
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -MissingModuleAction Stop `
                 -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.103' }
 
             Should -Invoke 'Save-LambdaPSMissingModule' -ModuleName $script:moduleName -Times 0 -Exactly
@@ -559,7 +566,7 @@ function script:Save-LambdaPSModuleFromRepository {
         It 'fails before writing anything under -MissingModuleAction Stop when a module is not installed' {
             # Stop must fail before the template is copied, or it leaves a half-written project.
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-stop-missing')
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -MissingModuleAction Stop `
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -MissingModuleAction Stop `
                     -Module @{ ModuleName = 'LambdaPSFake.NotInstalled'; RequiredVersion = '1.0.0' } } |
                 Should -Throw -ErrorId 'ModuleNotFoundLocally*'
             Test-Path -LiteralPath $target | Should -BeFalse
@@ -569,7 +576,7 @@ function script:Save-LambdaPSModuleFromRepository {
             $file = [System.IO.Path]::Combine($TestDrive, 'rt-a-file')
             Set-Content -LiteralPath $file -Value 'x'
             $target = $file
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force } | Should -Throw -ErrorId 'TargetIsFile*'
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force } | Should -Throw -ErrorId 'TargetIsFile*'
             Get-Content -LiteralPath $file | Should -Be 'x'
         }
 
@@ -582,7 +589,7 @@ function script:Save-LambdaPSModuleFromRepository {
             $keep = [System.IO.Path]::Combine($target, 'keep.txt')
             Set-Content -LiteralPath $keep -Value 'mine'
 
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force `
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force `
                     -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.99.999' } } |
                 Should -Throw -ErrorId 'ModuleDownloadFailed,New-LambdaPSRuntimeProject'
             Test-Path -LiteralPath $keep | Should -BeTrue
@@ -594,7 +601,7 @@ function script:Save-LambdaPSModuleFromRepository {
             $keep = [System.IO.Path]::Combine($target, 'keep.txt')
             Set-Content -LiteralPath $keep -Value 'mine'
 
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force -IncludeModule 'AWS.Tools.S3' } |
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force -IncludeModule 'AWS.Tools.S3' } |
                 Should -Throw -ErrorId 'ModuleVersionRequired,New-LambdaPSRuntimeProject'
             Test-Path -LiteralPath $keep | Should -BeTrue
         }
@@ -608,7 +615,7 @@ function script:Save-LambdaPSModuleFromRepository {
             Mock 'Copy-LambdaPSModuleSet' -ModuleName $script:moduleName -MockWith { , [string[]]@() }
 
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-cleanup')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' `
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' `
                 -Module @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.103' }
 
             # The mock body runs in this test file's scope, so $script: here is the test script.
@@ -619,7 +626,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'throws ModuleVersionRequired for a minimum-version spec before scaffolding' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-minver')
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' `
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' `
                     -Module @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.103' } } |
                 Should -Throw -ErrorId 'ModuleVersionRequired,New-LambdaPSRuntimeProject'
             $target | Should -Not -Exist
@@ -627,7 +634,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'throws ModuleVersionRequired for a bare module name before scaffolding' {
             $target = [System.IO.Path]::Combine($TestDrive, 'rt-module-bare')
-            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -IncludeModule 'AWS.Tools.S3' } |
+            { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -IncludeModule 'AWS.Tools.S3' } |
                 Should -Throw -ErrorId 'ModuleVersionRequired,New-LambdaPSRuntimeProject'
             $target | Should -Not -Exist
         }
@@ -636,7 +643,7 @@ function script:Save-LambdaPSModuleFromRepository {
     Context '-Target Layer' {
         It 'scaffolds the complete layer tree from the template' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-happy')
-            $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
 
             $written | Should -Not -BeNullOrEmpty
             $expected = @(
@@ -655,7 +662,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'suggests the configured timeout and memory for functions that use the layer' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-readme-sizing')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             $function = InModuleScope $script:moduleName { $script:Config.function }
             $readme = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($target, 'README.md'))
 
@@ -665,7 +672,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'does not emit a CMR Dockerfile for the Layer target' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-nodockerfile')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             Test-Path -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) |
                 Should -BeFalse
             @(Get-ChildItem -LiteralPath $target -Recurse -File -Filter '*Dockerfile*') | Should -BeNullOrEmpty
@@ -673,7 +680,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'records the target and PowerShell version in the marker' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-version')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             $marker = Get-Content -LiteralPath (
                 [System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json
             $marker.Target | Should -Be 'Layer'
@@ -682,7 +689,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
         It 'writes a layer bootstrap that references /opt and not /var/runtime' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-bootstrap')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Target Layer
             $bootstrap = Get-Content -LiteralPath (
                 [System.IO.Path]::Combine($target, 'bootstrap')) -Raw
             # Evaluate functional lines only: the template comment names the CMR path ("NOT
@@ -693,9 +700,9 @@ function script:Save-LambdaPSModuleFromRepository {
             $code | Should -Not -Match '/var/runtime'
         }
 
-        It 'records a -PwshVersion override in the marker, for Build-LambdaPSRuntimePackage' {
+        It 'records an x.y.z -PowerShellVersion in the marker as line and release, for Build-LambdaPSRuntimePackage' {
             $target = [System.IO.Path]::Combine($TestDrive, 'layer-marker')
-            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -PwshVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
+            $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
             $marker = Get-Content -LiteralPath (
                 [System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json
             $marker.Target | Should -Be 'Layer'
@@ -717,7 +724,7 @@ function script:Save-LambdaPSModuleFromRepository {
             $savedModulePath = $env:PSModulePath
             $env:PSModulePath = $moduleRoot + [System.IO.Path]::PathSeparator + $env:PSModulePath
             try {
-                $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.5' -PwshVersion '7.5.11' -Target Layer -IncludeModule $specs -WarningVariable warnings -WarningAction SilentlyContinue
+                $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.5.11' -Target Layer -IncludeModule $specs -WarningVariable warnings -WarningAction SilentlyContinue
             }
             finally { $env:PSModulePath = $savedModulePath }
 
@@ -753,7 +760,7 @@ Describe 'New-LambdaPSRuntimeProject when writing the project fails' -Tag 'Unit'
         $target = [System.IO.Path]::Combine($TestDrive, "write-fails-$Create")
         if ($Create) { $null = New-Item -ItemType Directory -Path $target }
 
-        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' } |
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' } |
             Should -Throw -ErrorId 'ProjectWriteFailed,New-LambdaPSRuntimeProject' -ExpectedMessage '*No space left on device*What this run wrote was removed.*'
         if ($Create) { @(Get-ChildItem -LiteralPath $target -Force) | Should -BeNullOrEmpty }
         else { $target | Should -Not -Exist }
@@ -765,14 +772,14 @@ Describe 'New-LambdaPSRuntimeProject when writing the project fails' -Tag 'Unit'
         $null = New-Item -ItemType Directory -Path $target
         Set-Content -LiteralPath ([System.IO.Path]::Combine($target, 'old.txt')) -Value 'old'
 
-        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -Force } |
+        { New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -Force } |
             Should -Throw -ErrorId 'ProjectWriteFailed,New-LambdaPSRuntimeProject' -ExpectedMessage '*rerun with -Force*'
         [System.IO.Path]::Combine($target, 'bootstrap') | Should -Exist
     }
 
     It 'leaves a successful scaffold whole' {
         $target = [System.IO.Path]::Combine($TestDrive, 'write-succeeds')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
         $written | ForEach-Object { $_ | Should -Exist }
         [System.IO.Path]::Combine($target, 'lambdaps-runtime.json') | Should -Exist
     }
@@ -805,7 +812,7 @@ Describe 'New-LambdaPSRuntimeProject output' -Tag 'Unit' {
 
     It 'returns one path per file written, each an existing file' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-out-files')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4'
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*'
 
         , $written | Should -BeOfType ([string[]])
         $files = @(Get-ChildItem -LiteralPath $target -Recurse -File -Force)
@@ -817,7 +824,7 @@ Describe 'New-LambdaPSRuntimeProject output' -Tag 'Unit' {
 
     It 'reports every staged module directory alongside the files' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-out-module')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -IncludeModule $script:fakeSpecs
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -IncludeModule $script:fakeSpecs
 
         foreach ($fakeName in $script:fakeNames) {
             $moduleDir = [System.IO.Path]::GetFullPath(
@@ -828,7 +835,7 @@ Describe 'New-LambdaPSRuntimeProject output' -Tag 'Unit' {
 
     It 'returns no paths under -WhatIf' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-out-whatif')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -WhatIf
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -WhatIf
 
         @($written).Count | Should -Be 0 -Because 'no path (not even an empty string) was written'
         $target | Should -Not -Exist
@@ -836,16 +843,16 @@ Describe 'New-LambdaPSRuntimeProject output' -Tag 'Unit' {
 
     It 'returns no paths under -Force -WhatIf over a project with staged modules' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-out-whatif-force-modules')
-        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -IncludeModule $script:fakeSpecs
+        $null = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -IncludeModule $script:fakeSpecs
 
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -IncludeModule $script:fakeSpecs -Force -WhatIf
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -IncludeModule $script:fakeSpecs -Force -WhatIf
 
         @($written).Count | Should -Be 0 -Because 'the module folders on disk are the earlier scaffold''s, not written by this run'
     }
 
     It 'writes nothing under -WhatIf with -IncludeModule' {
         $target = [System.IO.Path]::Combine($TestDrive, 'rt-out-whatif-modules')
-        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4' -IncludeModule $script:fakeSpecs -WhatIf
+        $written = New-LambdaPSRuntimeProject -Path $target -PowerShellVersion '7.4.*' -IncludeModule $script:fakeSpecs -WhatIf
 
         @($written).Count | Should -Be 0
         $target | Should -Not -Exist
@@ -856,7 +863,6 @@ Describe 'New-LambdaPSRuntimeProject output' -Tag 'Unit' {
 Describe 'New-LambdaPSRuntimeProject parameter validation' -Tag 'Unit' {
     It 'rejects -<Parameter> with a trailing newline' -ForEach @(
         @{ Parameter = 'PowerShellVersion'; Arguments = @{ PowerShellVersion = "7.4`n" } }
-        @{ Parameter = 'PwshVersion'; Arguments = @{ PowerShellVersion = '7.4'; PwshVersion = "7.4.20`n" } }
     ) {
         $target = [System.IO.Path]::Combine($TestDrive, "rt-newline-$Parameter")
         { New-LambdaPSRuntimeProject -Path $target @Arguments } |
@@ -865,28 +871,28 @@ Describe 'New-LambdaPSRuntimeProject parameter validation' -Tag 'Unit' {
     }
 
     # \d also matches other scripts' digits, such as Arabic-Indic ones; a version is ASCII digits only.
-    It 'rejects -<Parameter> in non-ASCII digits, naming the form it takes' -ForEach @(
-        @{ Parameter = 'PowerShellVersion'; Arguments = @{ PowerShellVersion = "$([char]0x0667).$([char]0x0664)" }; Message = '*is not a PowerShell version in major.minor form, for example 7.4.' }
-        @{ Parameter = 'PwshVersion'; Arguments = @{ PowerShellVersion = '7.4'; PwshVersion = "7.4.$([char]0x0662)$([char]0x0660)" }; Message = '*is not a pwsh release in x.y.z form, for example 7.4.20.' }
+    It 'rejects an <Form> -<Parameter> in non-ASCII digits, naming the form it takes' -ForEach @(
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y'; Arguments = @{ PowerShellVersion = "$([char]0x0667).$([char]0x0664)" }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y.z'; Arguments = @{ PowerShellVersion = "7.4.$([char]0x0662)$([char]0x0660)" }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
     ) {
-        $target = [System.IO.Path]::Combine($TestDrive, "rt-digits-$Parameter")
+        $target = [System.IO.Path]::Combine($TestDrive, "rt-digits-$Form")
         { New-LambdaPSRuntimeProject -Path $target @Arguments } |
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSRuntimeProject' -ExpectedMessage $Message
         $target | Should -Not -Exist
     }
 
-    It 'rejects -<Parameter> missing a version part, naming the form it takes' -ForEach @(
-        @{ Parameter = 'PowerShellVersion'; Arguments = @{ PowerShellVersion = '7' }; Message = '*is not a PowerShell version in major.minor form, for example 7.4.' }
-        @{ Parameter = 'PwshVersion'; Arguments = @{ PowerShellVersion = '7.4'; PwshVersion = '7.4' }; Message = '*is not a pwsh release in x.y.z form, for example 7.4.20.' }
+    It 'rejects -<Parameter> <Value>, which has the wrong number of version parts, naming the form it takes' -ForEach @(
+        @{ Parameter = 'PowerShellVersion'; Value = '7'; Arguments = @{ PowerShellVersion = '7' }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
+        @{ Parameter = 'PowerShellVersion'; Value = '7.4.20.1'; Arguments = @{ PowerShellVersion = '7.4.20.1' }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
     ) {
-        $target = [System.IO.Path]::Combine($TestDrive, "rt-short-$Parameter")
+        $target = [System.IO.Path]::Combine($TestDrive, "rt-parts-$Value")
         { New-LambdaPSRuntimeProject -Path $target @Arguments } |
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSRuntimeProject' -ExpectedMessage $Message
         $target | Should -Not -Exist
     }
 
     It 'rejects a whitespace-only -Path' {
-        { New-LambdaPSRuntimeProject -Path '   ' -PowerShellVersion '7.4' } |
+        { New-LambdaPSRuntimeProject -Path '   ' -PowerShellVersion '7.4.*' } |
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSRuntimeProject'
     }
 }

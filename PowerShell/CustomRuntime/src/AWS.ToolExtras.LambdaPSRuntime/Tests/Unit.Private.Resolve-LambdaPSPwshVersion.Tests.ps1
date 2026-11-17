@@ -25,20 +25,10 @@ Describe 'Resolve-LambdaPSPwshVersion' -Tag 'Unit' {
         }
     }
 
-    It 'throws PwshVersionMismatch for a -PwshVersion on another major.minor' {
-        InModuleScope $script:moduleName {
-            { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4' -PwshVersion '7.6.6' } |
-                Should -Throw -ErrorId 'PwshVersionMismatch' -ExpectedMessage "*'7.6.6' is not a PowerShell 7.4 release*"
-            # 7.40.1 shares the prefix '7.4' but not the line.
-            { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4' -PwshVersion '7.40.1' } |
-                Should -Throw -ErrorId 'PwshVersionMismatch'
-        }
-    }
-
-    It 'throws UnknownPwshVersion for an unmapped line with no -PwshVersion, naming -PwshVersion' {
+    It 'throws UnknownPwshVersion for an unmapped line with no -PwshVersion, naming -PowerShellVersion x.y.z' {
         InModuleScope $script:moduleName {
             { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.9' } |
-                Should -Throw -ErrorId 'UnknownPwshVersion' -ExpectedMessage '*Pass -PwshVersion*'
+                Should -Throw -ErrorId 'UnknownPwshVersion' -ExpectedMessage '*Pass -PowerShellVersion as a full pwsh release (x.y.z)*'
         }
     }
 }
@@ -79,7 +69,6 @@ Describe 'Resolve-LambdaPSPwshVersion parameter validation' -Tag 'Unit' {
 # surface, and every record -ErrorVariable collects, must name the cmdlet, not this helper.
 Describe 'Resolve-LambdaPSPwshVersion raised through a calling cmdlet' -Tag 'Unit' {
     It 'surfaces <ErrorId> from the calling cmdlet, and names no internal helper in -ErrorVariable' -ForEach @(
-        @{ ErrorId = 'PwshVersionMismatch'; Call = { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.4' -PwshVersion '7.6.6' } }
         @{ ErrorId = 'UnknownPwshVersion'; Call = { Resolve-LambdaPSPwshVersion -PowerShellVersion '7.99' } }
     ) {
         InModuleScope $script:moduleName -Parameters @{ ErrorId = $ErrorId; Call = $Call.ToString() } {

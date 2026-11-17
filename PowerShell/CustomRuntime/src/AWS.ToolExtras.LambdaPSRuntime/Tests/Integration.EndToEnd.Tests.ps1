@@ -172,7 +172,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
     It 'LayerRuntime: a provided.al2023 function with the runtime layer answers an invoke' {
         $region = $script:Region
         $layerProject = [System.IO.Path]::Combine($script:Work, 'layer')
-        $null = New-LambdaPSRuntimeProject -Path $layerProject -PowerShellVersion 7.4 -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $layerProject -PowerShellVersion '7.4.*' -Target Layer
         $layerPackage = Build-LambdaPSRuntimePackage -Path $layerProject -OutFile ([System.IO.Path]::Combine($script:Work, 'layer.zip'))
         Write-S3Object -BucketName $script:Bucket -Key 'layer.zip' -File $layerPackage.PackagePath -Region $script:Region -ErrorAction Stop
 
@@ -203,7 +203,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
     It 'SelfContainedZip: a provided.al2023 function that carries its own runtime answers an invoke' {
         $region = $script:Region
         $project = [System.IO.Path]::Combine($script:Work, 'zip')
-        $null = New-LambdaPSFunctionProject -Path $project -Handler handler -Target SelfContainedZip -PowerShellVersion 7.4
+        $null = New-LambdaPSFunctionProject -Path $project -Handler handler -Target SelfContainedZip -PowerShellVersion '7.4.*'
         $package = Build-LambdaPSRuntimePackage -Path $project -OutFile ([System.IO.Path]::Combine($script:Work, 'zip.zip'))
         Write-S3Object -BucketName $script:Bucket -Key 'zip.zip' -File $package.PackagePath -Region $script:Region -ErrorAction Stop
 
@@ -225,7 +225,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
     It 'ContainerFunction: an image function that carries its own runtime answers an invoke' {
         $region = $script:Region
         $project = [System.IO.Path]::Combine($script:Work, 'container')
-        $null = New-LambdaPSFunctionProject -Path $project -Handler handler -Target Container -PowerShellVersion 7.4
+        $null = New-LambdaPSFunctionProject -Path $project -Handler handler -Target Container -PowerShellVersion '7.4.*'
 
         $repositoryName = $script:Prefix + 'container'
         Add-IntegrationResource -Kind 'ECR repository' -Name $repositoryName -Remove {
@@ -294,7 +294,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -RuntimeAlias default -Region $script:Region.ToUpperInvariant() `
+        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion '7.4.*' -RuntimeAlias default -Region $script:Region.ToUpperInvariant() `
             -ProjectPath ([System.IO.Path]::Combine($script:Work, 'cmr')) -Confirm:$false
         $runtime.Region | Should -BeExactly $lowerRegion
         $runtime.RuntimeArn | Should -MatchExactly $inRegion

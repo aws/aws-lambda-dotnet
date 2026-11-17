@@ -32,7 +32,7 @@ AfterAll {
 Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     It 'builds a container-free Layer .zip with pwsh, bootstrap, runtime.ps1 and the context source' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-proj')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'layer.zip')
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $script:fakeTarball
@@ -63,7 +63,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # as '/bin/sh\r' and the runtime would fail to start ("bad interpreter").
     It 'writes the bootstrap into the package with LF line endings even if the project has CRLF' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-crlf')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $bootstrapPath = [System.IO.Path]::Combine($proj, 'bootstrap')
         $crlf = [System.IO.File]::ReadAllText($bootstrapPath).Replace("`n", "`r`n")
         [System.IO.File]::WriteAllText($bootstrapPath, $crlf)
@@ -85,7 +85,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'builds a self-contained function .zip that includes the handler' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-proj')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $out = [System.IO.Path]::Combine($TestDrive, 'scz.zip')
 
         $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $script:fakeTarball
@@ -101,8 +101,8 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         @{ Target = 'Layer'; IsLayer = $true }, @{ Target = 'SelfContainedZip'; IsLayer = $false }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "hint-$Target")
-        if ($Target -eq 'Layer') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer }
-        else { $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target $Target -PowerShellVersion '7.4' }
+        if ($Target -eq 'Layer') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer }
+        else { $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target $Target -PowerShellVersion '7.4.*' }
         Mock 'Write-LambdaPSZipArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
 
         $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, "hint-$Target.zip")) -PwshArchivePath $script:fakeTarball
@@ -112,7 +112,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'ships the project''s other files, and leaves out scaffolding, .git and outside links, as Compress does' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-files')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($proj, 'lib')), ([System.IO.Path]::Combine($proj, 'modules', '.git')) -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'lib', 'helper.ps1')) -Value '# helper'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'config.json')) -Value '{}'
@@ -154,7 +154,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # Lambda's paths are case-sensitive, so on Linux only the exact names are left out.
     It 'leaves out only a powershell folder of that exact name, with a warning, and packages PowerShell/ and readme.md, on Linux' -Skip:(-not $IsLinux) {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-case')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($proj, 'powershell')), ([System.IO.Path]::Combine($proj, 'PowerShell')) -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'powershell', 'stale.txt')) -Value 'x'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'PowerShell', 'lib.ps1')) -Value '# lib'
@@ -181,7 +181,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "err-$ErrorId")
         if ($ErrorId -ne 'ProjectNotFound') {
-            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
             & $Setup
         }
         Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { throw 'must not download' }
@@ -200,7 +200,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         @{ File = 'PowerShellLambdaContext.cs'; ErrorId = 'ContextSourceNotFound' }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "link-$File")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $outside = [System.IO.Path]::Combine($TestDrive, "outside-$File")
         Move-Item -LiteralPath ([System.IO.Path]::Combine($proj, $File)) -Destination $outside
         Add-Content -LiteralPath $outside -Value '# OUTSIDE CONTENT'
@@ -218,7 +218,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # A link into .git stays inside the project, so only the copy leaves it out, without a warning.
     It 'says the copy left out a required file that links into .git' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'link-git-bootstrap')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $git = [System.IO.Path]::Combine($proj, '.git')
         $null = New-Item -ItemType Directory -Path $git -Force
         Move-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'bootstrap')) -Destination ([System.IO.Path]::Combine($git, 'bootstrap'))
@@ -232,7 +232,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'throws PwshBinaryNotFound when the tarball holds no pwsh' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'no-pwsh')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $empty = [System.IO.Path]::Combine($TestDrive, 'no-pwsh-src')
         $null = New-Item -ItemType Directory -Path $empty -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($empty, 'readme.txt')) -Value 'no interpreter here'
@@ -256,7 +256,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'throws ContextCompileFailed when the bundled pwsh cannot compile the context class' -Skip:(-not $IsLinux) {
         $proj = [System.IO.Path]::Combine($TestDrive, 'bad-context')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'PowerShellLambdaContext.cs')) -Value 'this is not C#'
         # The bundled pwsh only runs (and so only compiles) for the host's own architecture.
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
@@ -267,14 +267,14 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'throws UnsupportedTarget for a CMR project' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'cmr-proj')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4'  # default CMR
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*'  # default CMR
         { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'cmr.zip')) -PwshArchivePath $script:fakeTarball } |
             Should -Throw -ErrorId 'UnsupportedTarget,Build-LambdaPSRuntimePackage'
     }
 
     It 'takes the destination as -PackagePath too, the name of the result field' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-alias')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'layer-alias.zip')
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -PackagePath $out -PwshArchivePath $script:fakeTarball
@@ -285,7 +285,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'throws OutFileIsDirectory when -OutFile is an existing directory, even with -Force' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-outdir')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'outdir')
         $null = New-Item -ItemType Directory -Path $out -Force
 
@@ -297,7 +297,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # -Force replaces an existing -OutFile, so the -PwshArchivePath tarball itself is refused, leaving it as it was.
     It 'throws OutFileIsSource, even with -Force, when -OutFile is the -PwshArchivePath tarball' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-out-tarball')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $tarball = [System.IO.Path]::Combine($TestDrive, 'own-pwsh.tar.gz')
         Copy-Item -LiteralPath $script:fakeTarball -Destination $tarball
         $before = (Get-FileHash -LiteralPath $tarball -Algorithm SHA256).Hash
@@ -310,7 +310,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # The tarball is extracted straight into the package, so a link in it would ship the file it points to.
     It 'throws PackageEntryIsLink for a -PwshArchivePath tarball that holds a link, writing no package' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-tar-link')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $linkSrc = [System.IO.Path]::Combine($TestDrive, 'link-pwsh-src')
         $null = New-Item -ItemType Directory -Path $linkSrc
         Copy-Item -LiteralPath ([System.IO.Path]::Combine($TestDrive, 'fake-pwsh-src', 'pwsh')) -Destination $linkSrc
@@ -328,7 +328,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'throws OutFileExists when the destination exists without -Force' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-proj2')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'exists.zip')
         Set-Content -LiteralPath $out -Value 'x'
         { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PwshArchivePath $script:fakeTarball } |
@@ -338,7 +338,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'overwrites an existing output file when -Force is supplied' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-force')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'force.zip')
         Set-Content -LiteralPath $out -Value 'x'
 
@@ -350,7 +350,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'replaces the package under -Force, with the edited handler' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-replace')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handler = [System.IO.Path]::Combine($proj, 'handler.ps1')
         Set-Content -LiteralPath $handler -Value 'param($LambdaInput, $LambdaContext)', '$v = 1'
         $out = [System.IO.Path]::Combine($TestDrive, 'scz-replace.zip')
@@ -369,7 +369,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 
     It 'creates the parent directory of the output file when missing' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-parent')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
 
         $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'nested', 'deep', 'layer.zip')) -PwshArchivePath $script:fakeTarball -WarningAction SilentlyContinue
 
@@ -379,7 +379,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # The help allows the bytes to differ (entry times); the entries themselves do not.
     It 'writes the same entry list on two builds of the same project' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-twice')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $a = [System.IO.Path]::Combine($TestDrive, 'twice-a.zip')
         $b = [System.IO.Path]::Combine($TestDrive, 'twice-b.zip')
 
@@ -394,7 +394,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
     # Without a precompiled DLL (a host that cannot run the bundled pwsh), an unchanged project rebuilds to the same bytes.
     It 'writes a byte-identical package when an unchanged project is built twice' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-repro')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
         $a = [System.IO.Path]::Combine($TestDrive, 'repro-a.zip')
         $b = [System.IO.Path]::Combine($TestDrive, 'repro-b.zip')
@@ -414,7 +414,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         $savedPath = $env:PSModulePath
         try {
             $env:PSModulePath = $installed + [System.IO.Path]::PathSeparator + $env:PSModulePath
-            $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4' -IncludeModule @{ ModuleName = 'LambdaPSFake.Inc'; RequiredVersion = '1.0.0' } -MissingModuleAction Stop
+            $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*' -IncludeModule @{ ModuleName = 'LambdaPSFake.Inc'; RequiredVersion = '1.0.0' } -MissingModuleAction Stop
         }
         finally { $env:PSModulePath = $savedPath }
         $out = [System.IO.Path]::Combine($TestDrive, 'scz-inc.zip')
@@ -439,7 +439,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
 Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
     BeforeAll {
         $script:reqProj = [System.IO.Path]::Combine($TestDrive, 'scz-req')
-        $null = New-LambdaPSFunctionProject -Path $script:reqProj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $script:reqProj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handlerFile = [System.IO.Path]::Combine($script:reqProj, 'handler.ps1')
         Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules @{ ModuleName = 'LambdaPSFake.Req'; RequiredVersion = '1.0.0' }") +
             @(Get-Content -LiteralPath $handlerFile))
@@ -527,7 +527,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
 
     It 'throws HandlerScriptNotFound under -WhatIf for a handler that links outside the project' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-handler-link')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $outside = [System.IO.Path]::Combine($TestDrive, 'scz-handler-outside.ps1')
         Move-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'handler.ps1')) -Destination $outside
         $null = New-Item -ItemType SymbolicLink -Path ([System.IO.Path]::Combine($proj, 'handler.ps1')) -Target $outside
@@ -539,7 +539,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
     # Off Windows '\' is a file name character, not a separator, so a handler named with it is refused.
     It 'refuses a SelfContainedZip handler named with a backslash off Windows' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-backslash')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($proj, 'lib')) -Force
         Move-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'handler.ps1')) -Destination ([System.IO.Path]::Combine($proj, 'lib', 'handler.ps1'))
 
@@ -561,7 +561,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         @{ Case = 'as a link to a script inside the project'; Name = 'scz-innerlink'; HandlerScript = 'handler.ps1'; Shipped = 'handler.ps1'; Link = $true }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, $Name)
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($proj, 'lib')) -Force
         if ($Link) {
             Move-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'handler.ps1')) -Destination ([System.IO.Path]::Combine($proj, 'lib', 'impl.ps1'))
@@ -583,7 +583,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         @{ Given = '-MissingModuleAction, -ModuleRepository'; Params = @{ MissingModuleAction = 'Stop'; ModuleRepository = 'PSGallery' } }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "layer-unused-$($Params.Count)")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
 
         $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, "layer-unused-$($Params.Count).zip")) -PwshArchivePath $script:fakeTarball @Params -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -594,10 +594,10 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
 
     It 'gives no such warning for a Layer built without them, or for a SelfContainedZip built with them' {
         $layer = [System.IO.Path]::Combine($TestDrive, 'layer-plain')
-        $null = New-LambdaPSRuntimeProject -Path $layer -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $layer -PowerShellVersion '7.4.*' -Target Layer
         $null = Build-LambdaPSRuntimePackage -Path $layer -OutFile ([System.IO.Path]::Combine($TestDrive, 'layer-plain.zip')) -PwshArchivePath $script:fakeTarball -WarningVariable layerWarnings -WarningAction SilentlyContinue
         $scz = [System.IO.Path]::Combine($TestDrive, 'scz-plain')
-        $null = New-LambdaPSFunctionProject -Path $scz -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $scz -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $null = Build-LambdaPSRuntimePackage -Path $scz -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-plain.zip')) -PwshArchivePath $script:fakeTarball -HandlerScript 'handler.ps1' -MissingModuleAction Stop -WarningVariable sczWarnings -WarningAction SilentlyContinue
 
         @(@($layerWarnings) + @($sczWarnings) | Where-Object { "$_" -like '*not apply to a Layer*' }) | Should -BeNullOrEmpty
@@ -609,7 +609,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         @{ Name = 'scz-builtin'; Requires = 'Microsoft.PowerShell.Utility'; Vendored = $false }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, $Name)
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handlerFile = [System.IO.Path]::Combine($proj, 'handler.ps1')
         Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules $Requires") + @(Get-Content -LiteralPath $handlerFile))
         if ($Vendored) {
@@ -629,7 +629,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         @{ Case = 'minimum-version #Requires'; Name = 'scz-vendored-min'; Requires = "@{ ModuleName = 'LambdaPSFake.Vendored'; ModuleVersion = '1.0.0' }" }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, $Name)
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handlerFile = [System.IO.Path]::Combine($proj, 'handler.ps1')
         Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules $Requires") + @(Get-Content -LiteralPath $handlerFile))
         $null = New-FakeModule -Root ([System.IO.Path]::Combine($proj, 'modules')) -Name 'LambdaPSFake.Vendored' -Version '1.2.0'
@@ -641,7 +641,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
     # Each module is named exactly: a pinned #Requires that names a module by its path is refused, not loaded.
     It 'throws ModuleNameInvalid for a #Requires that names a module by its path' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-req-path')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handlerFile = [System.IO.Path]::Combine($proj, 'handler.ps1')
         Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules @{ ModuleName = './lib/LambdaPSFake.Path.psd1'; RequiredVersion = '1.0.0' }") + @(Get-Content -LiteralPath $handlerFile))
 
@@ -651,7 +651,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
 
     It 'still refuses a pinned version the project does not ship' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-vendored-other')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $handlerFile = [System.IO.Path]::Combine($proj, 'handler.ps1')
         Set-Content -LiteralPath $handlerFile -Value (@("#Requires -Modules @{ ModuleName = 'LambdaPSFake.Vendored'; RequiredVersion = '2.0.0' }") + @(Get-Content -LiteralPath $handlerFile))
         $null = New-FakeModule -Root ([System.IO.Path]::Combine($proj, 'modules')) -Name 'LambdaPSFake.Vendored' -Version '1.2.0'
@@ -662,7 +662,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
 
     It 'reports an empty ModulesStaged for a Layer' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'layer-nomods')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'layer-nomods.zip')) -PwshArchivePath $script:fakeTarball -WarningAction SilentlyContinue
 
@@ -675,7 +675,7 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
 Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
     It 'throws ProjectFileNotFound for a missing runtime.ps1 before fetching pwsh' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-nort')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Remove-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'runtime.ps1'))
         Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { throw 'must not download' }
         # A temp folder of its own, so builds running elsewhere on the host cannot change the count.
@@ -696,7 +696,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'throws UnzippedPackageTooLarge for a package over 250 MB unzipped, naming pwsh, and writes no .zip' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-too-large')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $file = [System.IO.File]::Create([System.IO.Path]::Combine($proj, 'data.bin'))
         try { $file.SetLength(251MB) } finally { $file.Dispose() }
         $out = [System.IO.Path]::Combine($TestDrive, 'err-too-large.zip')
@@ -709,7 +709,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'throws PwshArchiveHashMismatch for a supplied tarball that differs from the pinned hash, before extracting' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-hash')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'err-hash.zip')
         Mock 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { '0' * 64 }
 
@@ -720,7 +720,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'throws PwshArchiveHashMismatch for a -PwshArchivePath of the other architecture, before staging' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-arch-hash')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'err-arch-hash.zip')
         Mock 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { 'ABC123' }
 
@@ -731,7 +731,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'throws TarNotFound before fetching pwsh when tar is not on PATH' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-notar')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         # The tar the module asks for on this host: System32\tar.exe on Windows, 'tar' elsewhere.
         Mock 'Get-Command' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $Name -eq $script:tar } -MockWith { }
         Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { throw 'must not download' }
@@ -747,7 +747,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
     # Get-LambdaPSTarCommand chooses (Windows' own tar.exe there).
     It 'throws TarNotFound when the tar Get-LambdaPSTarCommand chooses does not exist' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-chosen-tar')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $script:missingTar = [System.IO.Path]::Combine($TestDrive, 'no-such-dir', 'tar.exe')
         Mock 'Get-LambdaPSTarCommand' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { $script:missingTar }
         Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { throw 'must not download' }
@@ -765,7 +765,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
         It 'extracts pwsh with System32\tar.exe' -Skip:$IsWindows {
             $proj = [System.IO.Path]::Combine($TestDrive, 'win-tar')
-            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
             $script:winRoot = [System.IO.Path]::Combine($TestDrive, 'win-root')
             $system32 = [System.IO.Path]::Combine($script:winRoot, 'System32')
             $null = New-Item -ItemType Directory -Path $system32 -Force
@@ -783,7 +783,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
         It 'throws TarNotFound when there is no System32\tar.exe and no tar on PATH' {
             $proj = [System.IO.Path]::Combine($TestDrive, 'win-notar')
-            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+            $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
             $script:emptyWinRoot = [System.IO.Path]::Combine($TestDrive, 'win-root-empty')
             $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:emptyWinRoot, 'System32')) -Force
             Mock 'Get-LambdaPSTarCommand' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { & $script:realTarCommand -OnWindows $true -SystemRoot $script:emptyWinRoot }
@@ -797,7 +797,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'extracts pwsh with the tar Get-LambdaPSTarCommand chooses' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'chosen-tar')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         # A stand-in tar that leaves a marker and hands over to the tar on PATH.
         $script:ranMarker = [System.IO.Path]::Combine($TestDrive, 'chosen-tar-ran')
         $script:chosenTar = [System.IO.Path]::Combine($TestDrive, 'chosen-tar-bin', 'tar')
@@ -813,7 +813,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'throws PwshArchiveExtractFailed for a tarball tar cannot read' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-tar')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $bad = [System.IO.Path]::Combine($TestDrive, 'not-a-tarball.tar.gz')
         Set-Content -LiteralPath $bad -Value 'not gzip'
 
@@ -823,7 +823,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'keeps PwshArchiveExtractFailed when the caller turns on $PSNativeCommandUseErrorActionPreference' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-tar-native')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $bad = [System.IO.Path]::Combine($TestDrive, 'not-a-tarball-native.tar.gz')
         Set-Content -LiteralPath $bad -Value 'not gzip'
         $savedNative = $global:PSNativeCommandUseErrorActionPreference
@@ -842,7 +842,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
 
     It 'says the marker is missing when there is no marker and no -Target' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'err-nomarker')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Remove-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'lambdaps-runtime.json'))
 
         $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'err-nomarker.zip')) } |
@@ -853,7 +853,7 @@ Describe 'Build-LambdaPSRuntimePackage error handling' -Tag 'Unit' {
     # A function project is handler code for a separately deployed runtime, so it names the cmdlet that packages it.
     It 'throws NotARuntimeProject naming Compress-LambdaPSFunctionPackage for a function project, <Case>' -ForEach @(
         @{ Case = 'with no -Target'; Extra = @{} }
-        @{ Case = 'with -Target SelfContainedZip'; Extra = @{ Target = 'SelfContainedZip'; PowerShellVersion = '7.4' } }
+        @{ Case = 'with -Target SelfContainedZip'; Extra = @{ Target = 'SelfContainedZip'; PowerShellVersion = '7.4.*' } }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "err-function-$($Extra.Count)")
         $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler'
@@ -876,7 +876,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh tarball cleanup' -Tag 'Unit' {
 
     It 'deletes a downloaded pwsh tarball after the build, but keeps a caller-supplied one' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'cleanup')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $downloaded = [System.IO.Path]::Combine($TestDrive, 'downloaded-pwsh.tar.gz')
         & $script:tar -czf $downloaded -C $script:downloadedSrc .
         # Only the download is mocked: the -ValidateOnly check returns nothing, as the real one does,
@@ -896,7 +896,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh tarball cleanup' -Tag 'Unit' {
 
     It 'deletes a downloaded pwsh tarball when the build fails after the download' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'cleanup-fail')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $empty = [System.IO.Path]::Combine($TestDrive, 'downloaded-empty-src')
         $null = New-Item -ItemType Directory -Path $empty -Force
         Set-Content -LiteralPath ([System.IO.Path]::Combine($empty, 'readme.txt')) -Value 'no interpreter here'
@@ -917,7 +917,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh tarball cleanup' -Tag 'Unit' {
 Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
     It 'fails closed on a recorded SelfContainedZip pwsh version with no pinned hash, before downloading' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-unpinned')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4' -PwshVersion '7.4.19' -WarningAction SilentlyContinue
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.19' -WarningAction SilentlyContinue
         $out = [System.IO.Path]::Combine($TestDrive, 'scz-unpinned.zip')
 
         { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out } |
@@ -927,7 +927,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 
     It 'bundles the pwsh version the project was scaffolded with' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'pin-proj')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -PwshVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
         (Get-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json).PwshVersion | Should -Be '7.4.2'
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin.zip')) -PwshArchivePath $script:fakeTarball
@@ -935,11 +935,11 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
         $result.PwshVersion | Should -Be '7.4.2'
     }
 
-    It 'lets -PwshVersion override the recorded version' {
+    It 'lets an x.y.z -PowerShellVersion override the recorded release' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'pin-override')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -PwshVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
 
-        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin-override.zip')) -PwshVersion '7.4.3' -PwshArchivePath $script:fakeTarball
+        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin-override.zip')) -PowerShellVersion '7.4.3' -PwshArchivePath $script:fakeTarball
 
         $result.PwshVersion | Should -Be '7.4.3'
     }
@@ -947,10 +947,9 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
     # A pattern ending in '$' also matches before a final newline, so the versions are anchored with \z.
     It 'refuses -<Parameter> with a trailing newline at binding' -ForEach @(
         @{ Parameter = 'PowerShellVersion'; Value = "7.4`n" }
-        @{ Parameter = 'PwshVersion'; Value = "7.4.20`n" }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "newline-$Parameter")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $params = @{ Path = $proj; OutFile = [System.IO.Path]::Combine($TestDrive, "newline-$Parameter.zip"); PwshArchivePath = $script:fakeTarball; $Parameter = $Value }
         { Build-LambdaPSRuntimePackage @params } |
             Should -Throw -ErrorId "ParameterArgumentValidationError,Build-LambdaPSRuntimePackage"
@@ -962,13 +961,13 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
     }
 
     # \d also matches other scripts' digits, such as Arabic-Indic ones; a version is ASCII digits only.
-    It 'refuses -<Parameter> in non-ASCII digits at binding, naming the form it takes' -ForEach @(
-        @{ Parameter = 'PowerShellVersion'; Value = "$([char]0x0667).$([char]0x0664)"; Message = '*is not a PowerShell version in major.minor form, for example 7.4.' }
-        @{ Parameter = 'PwshVersion'; Value = "7.4.$([char]0x0662)$([char]0x0660)"; Message = '*is not a pwsh release in x.y.z form, for example 7.4.20.' }
+    It 'refuses an <Form> -<Parameter> in non-ASCII digits at binding, naming the form it takes' -ForEach @(
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y'; Value = "$([char]0x0667).$([char]0x0664)"; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y.z'; Value = "7.4.$([char]0x0662)$([char]0x0660)"; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
     ) {
-        $proj = [System.IO.Path]::Combine($TestDrive, "digits-$Parameter")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
-        $params = @{ Path = $proj; OutFile = [System.IO.Path]::Combine($TestDrive, "digits-$Parameter.zip"); PwshArchivePath = $script:fakeTarball; $Parameter = $Value }
+        $proj = [System.IO.Path]::Combine($TestDrive, "digits-$Form")
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
+        $params = @{ Path = $proj; OutFile = [System.IO.Path]::Combine($TestDrive, "digits-$Form.zip"); PwshArchivePath = $script:fakeTarball; $Parameter = $Value }
 
         { Build-LambdaPSRuntimePackage @params } |
             Should -Throw -ErrorId 'ParameterArgumentValidationError,Build-LambdaPSRuntimePackage' -ExpectedMessage $Message
@@ -976,14 +975,14 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 
     It 'bundles the default patch of the -PowerShellVersion line, not the recorded version of another line' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'pin-line')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -PwshVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
 
         # The tarball is checked against the hash pinned for the version it maps to.
         $script:fakeTarballHash = (Get-FileHash -LiteralPath $script:fakeTarball -Algorithm SHA256).Hash
         Mock 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { $script:fakeTarballHash }
         $out = [System.IO.Path]::Combine($TestDrive, 'pin-line.zip')
 
-        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PowerShellVersion '7.6' -PwshArchivePath $script:fakeTarball
+        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PowerShellVersion '7.6.*' -PwshArchivePath $script:fakeTarball
 
         $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.6']
         Should -Invoke 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $PwshVersion -eq $script:pwshConfig.DefaultPatch['7.6'] }
@@ -997,7 +996,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
     It 'throws PowerShellVersionRequired for a project with no marker and no -PowerShellVersion' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'nomarker-noversion')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Remove-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'lambdaps-runtime.json'))
         $out = [System.IO.Path]::Combine($TestDrive, 'nomarker-noversion.zip')
 
@@ -1008,7 +1007,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'says the marker records no PowerShell version when it has none' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'marker-noversion')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'lambdaps-runtime.json')) -Value '{"Target":"Layer"}'
 
         $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'marker-noversion.zip')) -PwshArchivePath $script:fakeTarball } |
@@ -1018,10 +1017,10 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'builds a project with no marker for the -Target given' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'target-nomarker')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Remove-Item -LiteralPath ([System.IO.Path]::Combine($proj, 'lambdaps-runtime.json'))
 
-        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'target-nomarker.zip')) -Target Layer -PowerShellVersion '7.4' -PwshArchivePath $script:fakeTarball
+        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'target-nomarker.zip')) -Target Layer -PowerShellVersion '7.4.*' -PwshArchivePath $script:fakeTarball
 
         $result.Target | Should -Be 'Layer'
         $names = Get-ZipEntryNames -ZipPath $result.PackagePath
@@ -1030,7 +1029,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'throws TargetMismatch for a -Target that disagrees with the marker' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'target-mismatch')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $out = [System.IO.Path]::Combine($TestDrive, 'target-mismatch.zip')
 
         $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -Target SelfContainedZip -PwshArchivePath $script:fakeTarball } |
@@ -1041,7 +1040,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'throws UnsupportedTarget, naming Build-LambdaPSRuntimeImage, for a CMR project whatever -Target says' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'target-cmr')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*'
         $out = [System.IO.Path]::Combine($TestDrive, 'target-cmr.zip')
 
         $err = { Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -Target Layer -PwshArchivePath $script:fakeTarball } |
@@ -1052,7 +1051,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'accepts a -Target that matches the marker' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'target-match')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'target-match.zip')) -Target Layer -PwshArchivePath $script:fakeTarball
 
@@ -1066,7 +1065,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
         @{ Case = '-Target'; Marker = $false }, @{ Case = 'marker Target'; Marker = $true }
     ) {
         $proj = [System.IO.Path]::Combine($TestDrive, "target-case-$Marker")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $markerPath = [System.IO.Path]::Combine($proj, 'lambdaps-runtime.json')
         $params = @{ Path = $proj; OutFile = [System.IO.Path]::Combine($TestDrive, "target-case-$Marker.zip"); PwshArchivePath = $script:fakeTarball }
         if ($Marker) {
@@ -1075,7 +1074,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
         else {
             Remove-Item -LiteralPath $markerPath
             $params.Target = 'layer'
-            $params.PowerShellVersion = '7.4'
+            $params.PowerShellVersion = '7.4.*'
         }
 
         $result = Build-LambdaPSRuntimePackage @params -WarningAction SilentlyContinue
@@ -1088,7 +1087,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
     # Spaces in the project path and in the -OutFile folder, through scaffold, lint, precompile and zip.
     It 'scaffolds, lints and builds a SelfContainedZip whose paths have spaces' -Skip:(-not $IsLinux) {
         $proj = [System.IO.Path]::Combine($TestDrive, 'spaced dir', 'my fn')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
         $out = [System.IO.Path]::Combine($TestDrive, 'out dir', 'my fn.zip')
 
@@ -1103,7 +1102,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 
     It 'precompiles a project whose path has a typographic apostrophe' -Skip:(-not $IsLinux) {
         $proj = [System.IO.Path]::Combine($TestDrive, "Jo$([char]0x2019)s layer")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'quote.zip')) -PwshArchivePath $script:fakeTarball -Architecture $arch
@@ -1118,7 +1117,7 @@ Describe 'Build-LambdaPSRuntimePackage target' -Tag 'Unit' {
 Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
     It 'precompiles with the bundled pwsh on a matching Linux host, and ships the .cs too' -Skip:(-not $IsLinux) {
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-bundled')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Remove-Item -LiteralPath $script:bundledRanMarker -ErrorAction SilentlyContinue
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
 
@@ -1138,7 +1137,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         $tarball = [System.IO.Path]::Combine($TestDrive, 'chatty-pwsh.tar.gz')
         & tar -czf $tarball -C $src .
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-chatty')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
 
         $result = @(Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'ctx-chatty.zip')) -PwshArchivePath $tarball -Architecture $arch 6>$null)
@@ -1155,7 +1154,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         $tarball = [System.IO.Path]::Combine($TestDrive, 'noexec-pwsh.tar.gz')
         & tar -czf $tarball -C $src .
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-noexec')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
 
         $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'ctx-noexec.zip')) -PwshArchivePath $tarball -Architecture $arch -WarningVariable warnings -WarningAction SilentlyContinue
@@ -1179,7 +1178,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         $tarball = [System.IO.Path]::Combine($TestDrive, 'elf-pwsh.tar.gz')
         & $script:tar -czf $tarball -C $src .
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-cross')
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
 
         $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-cross.zip')) -PwshArchivePath $tarball -Architecture $other -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -1199,7 +1198,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
 
     It 'warns and ships only the .cs when the host cannot run the bundled pwsh' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-cross')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
 
         Mock 'Get-LambdaPSHostPwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
@@ -1221,7 +1220,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
     ) {
         # Arrange
         $proj = [System.IO.Path]::Combine($TestDrive, "ctx-host-$Fetched")
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         $hostArch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
         $other = if ($hostArch -eq 'arm64') { 'x86_64' } else { 'arm64' }
         # The build deletes a downloaded tarball, so hand it a copy.
@@ -1253,7 +1252,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
     It 'Should throw ContextCompileFailed when the host build starts but PowerShellLambdaContext.cs does not compile' -Skip:(-not $IsLinux) {
         # Arrange
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-host-badsource')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
         Set-Content -LiteralPath ([System.IO.Path]::Combine($proj, 'PowerShellLambdaContext.cs')) -Value 'not C#'
         $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
         $bundled = [System.IO.Path]::Combine($TestDrive, 'bundled-badsource.tar.gz')
