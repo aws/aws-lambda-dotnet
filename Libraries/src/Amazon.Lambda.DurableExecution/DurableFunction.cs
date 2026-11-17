@@ -258,6 +258,25 @@ public static class DurableFunction
         return output;
     }
 
+    /// <summary>
+    /// Merges the operations a checkpoint response returned and tells the plugins which of them changed.
+    /// Runs on the checkpoint worker, and plugin exceptions are contained by the runner.
+    /// </summary>
+    private static void MergeAndReportChanges(
+        IReadOnlyList<Operation> newOperations, ExecutionState state, PluginRunner plugins, string executionArn)
+    {
+        var changed = state.AddOperationsReportingChanges(newOperations);
+        if (changed.Count == 0)
+            return;
+
+        plugins.OperationChange(new OperationChangeInfo
+        {
+            ExecutionArn = executionArn,
+            UpdatedOperations = PluginInfoConverter.ToOperationMap(changed),
+            Operations = PluginInfoConverter.ToOperationMap(state.GetAllOperations()),
+        });
+    }
+
     private static InvocationEndInfo CreateEndInfo(
         DurableExecutionInvocationInput invocationInput,
         ILambdaContext lambdaContext,
@@ -306,7 +325,9 @@ public static class DurableFunction
                 // The service stamps a freshly-allocated CallbackId onto a started
                 // CALLBACK op (and may emit terminal-state callbacks/timers); merge
                 // those back into ExecutionState so the next ExecuteAsync sees them.
-                onNewOperations: state.AddOperations,
+                onNewOperations: plugins == null
+                    ? state.AddOperations
+                    : newOperations => MergeAndReportChanges(newOperations, state, plugins, invocationInput.DurableExecutionArn),
                 cancellationToken: ct),
             termination: terminationManager);
 
