@@ -69,6 +69,8 @@ limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Con
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
+`New-LambdaPSFunctionDeployment` stops before it creates or updates the function: with `PackageTooLarge`
+over 50 MB zipped, and with `UnzippedPackageTooLarge` over 250 MB unzipped.
 
 ## Quick start (high-level)
 
@@ -146,9 +148,10 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
-days later. A `-ProjectPath` project is built as is, with the release its `Dockerfile` names, so patch
-it by deploying without `-ProjectPath`, or by changing its `Dockerfile`.
+image, then `7.6.10-1`) and moves the alias. A removed version's name is not reused: its image tag
+stays in the repository, and the deploy never pushes over a tag. A `-ProjectPath` project is built as
+is, with the release its `Dockerfile` names, so patch it by deploying without `-ProjectPath`, or by
+changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
@@ -168,9 +171,10 @@ Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
 A deploy that can only install the module's pinned release (an unreadable repository on x86_64, or
 arm64) stops with `PwshReleaseOlderThanAlias` when the alias runs a newer release of the same line and
 architecture, rather than downgrade it. Pass `-PwshVersion` to choose the release.
-Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass
-`-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
-on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.
+Naming a version lists the runtime's versions and the repository's images, so the deploy needs
+`lambda:ListRuntimeVersions` and `ecr:DescribeImages`. Pass `-PwshVersion` or `-RuntimeVersion` to pin
+either choice; for example, to put x86_64 and arm64 runtimes on the same release, pass the arm64 one's
+`PwshVersion` to the x86_64 deploy.
 
 After a patch that changes the pwsh release, the first cold start of a bound function can take about
 15 seconds while Lambda loads the new image, and the request still succeeds.
@@ -310,7 +314,9 @@ on this runtime with these differences:
 - **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
   CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
 - **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
-  them, and empty when the caller sent none. Parse them with `ConvertFrom-Json`, for example
+  them. When the caller sent none, `Identity` is empty, and `ClientContext` is `{}` from AWS.Tools
+  (`Invoke-LMFunction` and `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so
+  test its fields, not the string. Parse them with `ConvertFrom-Json`, for example
   `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
 
 ## Attribution
@@ -324,8 +330,8 @@ Run the offline test suite (all AWS and container seams are mocked) with coverag
 checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
 exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
 directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
-PSScriptAnalyzer 1.21.0 or later:
+needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage

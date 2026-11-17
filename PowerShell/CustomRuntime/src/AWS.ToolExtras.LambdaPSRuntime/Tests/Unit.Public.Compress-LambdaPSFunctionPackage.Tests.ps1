@@ -124,6 +124,17 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
             ($warnings -join ' ') | Should -BeLike '*old.zip*earlier package*'
         }
 
+        It 'warns about a bootstrap file at the top of the folder, which replaces a layer runtime' {
+            $project = [System.IO.Path]::Combine($TestDrive, 'fn-bootstrap')
+            $null = New-Item -ItemType Directory -Path $project -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'handler.ps1')) -Value 'param($LambdaInput, $LambdaContext)'
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'bootstrap')) -Value '#!/bin/sh'
+
+            $null = Compress-LambdaPSFunctionPackage -Path $project -OutFile ([System.IO.Path]::Combine($TestDrive, 'fn-bootstrap.zip')) -WarningVariable warnings -WarningAction SilentlyContinue
+
+            ($warnings -join ' ') | Should -BeLike "*'bootstrap' file at its root*instead of the layer's bootstrap*"
+        }
+
         It 'keeps the execute bit of an executable file' -Skip:$IsWindows {
             $project = [System.IO.Path]::Combine($TestDrive, 'fn-exec')
             $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($project, 'bin')) -Force

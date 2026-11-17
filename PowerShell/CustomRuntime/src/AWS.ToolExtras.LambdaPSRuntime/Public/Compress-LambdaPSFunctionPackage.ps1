@@ -330,6 +330,12 @@ function Compress-LambdaPSFunctionPackage {
                 Copy-LambdaPSFunctionSource -Path $source.FullName -Destination $stage -ExcludePath (@($destination) + $partials)
             }
 
+            # Lambda runs /var/task/bootstrap in preference to a layer's /opt/bootstrap.
+            if (@(Get-ChildItem -LiteralPath $stage -File -Force | Where-Object Name -CEQ 'bootstrap').Count -gt 0) {
+                Write-Warning ("'$Path' has a 'bootstrap' file at its root. On a function that uses the Layer runtime, Lambda " +
+                    "runs it instead of the layer's bootstrap. Rename or move it unless it is meant to replace the runtime.")
+            }
+
             # The handler is checked again in what was staged: one that is a link leaving the source is
             # skipped by the copy, and the package would ship without its entry point.
             if ($handlerPath -and -not $isFile) {

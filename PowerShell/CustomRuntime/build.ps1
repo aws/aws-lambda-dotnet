@@ -225,9 +225,9 @@ function Invoke-Test {
     param([switch]$Integration)
     $minPester = [version]'5.5.0'
     $pester = Get-Module -ListAvailable Pester |
-        Where-Object Version -ge $minPester | Sort-Object Version -Descending | Select-Object -First 1
+        Where-Object { $_.Version -ge $minPester -and $_.Version.Major -lt 6 } | Sort-Object Version -Descending | Select-Object -First 1
     if (-not $pester) {
-        throw "Pester >= $minPester is required. Install with: Install-PSResource Pester -Scope CurrentUser"
+        throw "Pester 5.x ($minPester or later) is required. Install with: Install-PSResource Pester -Version '[$minPester,6.0)' -Scope CurrentUser"
     }
     Import-Module $pester.Path -Force
 

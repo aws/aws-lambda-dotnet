@@ -441,6 +441,12 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'breakscript.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '1..3 | ForEach-Object { if ($_ -eq 2) { break } }', '''never'''
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'quiet.ps1')) -Value '$ErrorActionPreference = ''SilentlyContinue''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'exitscript.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '''done''', 'exit 0'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'exit3.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '''partial''', 'exit 3'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativefail.ps1')) -Value 'param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 2''', '''native done'''
+        $writeError = '$PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new([System.Exception]::new(''soft''), ''Soft'', ''NotSpecified'', $null))'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', '''written''', $writeError
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativewriteerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 5''', '''native written''', $writeError
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerrorfn.ps1')) -Value "function Handle { [CmdletBinding()] param(`$LambdaInput, `$LambdaContext) pwsh -NoProfile -Command 'exit 2'; 'fn written'; $writeError }"
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'topbreak.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toplabel.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break nowhere } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toploop.ps1')) -Value '$script:seen = foreach ($i in 1..3) { if ($i -eq 2) { break }; $i }', 'function Handle { param($LambdaInput, $LambdaContext) "loaded:$script:seen" }'
@@ -732,11 +738,44 @@ public class InvokeBin : PSCmdlet {
         $posts[0].Body | Should -Be '3'
     }
 
-    It 'lets a Script handler exit, which ends only its own script' {
+    It 'sends what a Script handler wrote before exit 0 as the response' {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'exitscript.ps1' -EventBody '{}', '{}')
 
         $posts.Path | Should -Be @('/2018-06-01/runtime/invocation/req-1/response', '/2018-06-01/runtime/invocation/req-2/response')
         $posts[0].Body | Should -Be 'done'
+    }
+
+    It 'fails the invocation when a Script handler exits non-zero (AWS_LAMBDA_LOG_FORMAT <Format>), and runs the next one' -ForEach @(
+        @{ Format = $null }
+        @{ Format = 'JSON' }
+    ) {
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'exit3.ps1' -EventBody '{}', '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts.Path | Should -Be @('/2018-06-01/runtime/invocation/req-1/error', '/2018-06-01/runtime/invocation/req-2/error')
+        $errorBody = $posts[0].Body | ConvertFrom-Json
+        $errorBody.errorMessage | Should -BeExactly 'The handler script exited with code 3.'
+        $errorBody.errorType | Should -Be 'InvalidOperationException'
+    }
+
+    It 'sends the response of <Name>' -ForEach @(
+        @{ Name = 'a Script handler that leaves a native command''s non-zero exit code'; Handler = 'nativefail.ps1'; Body = 'native done' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError'; Handler = 'writeerror.ps1'; Body = 'written' }
+        @{ Name = 'an advanced handler function that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'writeerrorfn.ps1::Handle'; Body = 'fn written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'nativewriteerror.ps1'; Body = 'native written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails, with AWS_LAMBDA_LOG_FORMAT=JSON'; Handler = 'nativewriteerror.ps1'; Body = 'native written'; Format = 'JSON' }
+    ) {
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts[0].Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
+        $posts[0].Body | Should -Be $Body
     }
 
     It 'loads a handler module whose top-level code breaks out of a loop of its own' {
@@ -782,6 +821,34 @@ public class InvokeBin : PSCmdlet {
         $log.Contains([char]27) | Should -BeFalse
     }
 
+    It 'logs a handler''s Write-Error as one line with the handler''s stack, not pwsh''s block at the runtime''s call' {
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'fn.ps1::Warn' -EventBody '{}' -LogVariable log)
+
+        $posts[0].Body | Should -Be 'ok'
+        $errorLine = @($log -split '\n' | Where-Object { $_ -like '*soft*' })
+        $errorLine.Count | Should -Be 1
+        $errorLine[0] | Should -BeLike "``[Error``] - soft`rat Warn, *fn.ps1: line *"
+        $log | Should -Not -Match 'Invoke-FunctionHandler\.ps1:\d|Line \|'
+    }
+
+    It 'logs the start-up code''s Write-Error as one labelled line in the text log format (<Handler>)' -ForEach @(
+        @{ Handler = 'startup.ps1::Handle' }
+        @{ Handler = 'Module::StartMod::Handle' }
+    ) {
+        $code = 'Write-Error ''startup-error''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'startup.ps1')) -Value $code
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'modules', 'StartMod', 'StartMod.psm1')) -Value $code
+
+        $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}' -LogVariable log)
+
+        $posts[0].Body | Should -Be 'ok'
+        $errorLine = @($log -split '\n' | Where-Object { $_ -like '*startup-error*' })
+        $errorLine.Count | Should -Be 1
+        $errorLine[0] | Should -BeLike '`[Error`] - startup-error*'
+        $log | Should -Not -Match 'Line \|'
+    }
+
     It 'posts a handler''s exception to /error and goes on to the next event' {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'fn.ps1::Fail' -EventBody '{}', '{}')
 
@@ -804,7 +871,7 @@ public class InvokeBin : PSCmdlet {
         $lines = $log -split '\n'
         $lines | Where-Object { $_ -like 'END RequestId*' -or $_ -like '`[RUNTIME`]forged*' } | Should -BeNullOrEmpty
         # The message, where it was thrown and the stack, on the one line.
-        $errorLine = @($lines | Where-Object { $_ -like 'bad name: x*' })
+        $errorLine = @($lines | Where-Object { $_ -like '`[Error`] - bad name: x*' })
         $errorLine.Count | Should -Be 1
         $errorLine[0] | Should -BeLike "*`rEND RequestId: req-1`r``[RUNTIME``]forged line*fn.ps1*"
     }
@@ -1136,15 +1203,25 @@ public class InvokeBin : PSCmdlet {
         $records.level | Should -Be 'WARN', 'ERROR'
     }
 
-    It 'sends <Handler> as the text log format does, with AWS_LAMBDA_LOG_FORMAT=JSON' -ForEach @(
-        @{ Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
-        @{ Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+    It 'sends <Handler> the same way with AWS_LAMBDA_LOG_FORMAT=<Format>' -ForEach @(
+        foreach ($format in 'Text', 'JSON') {
+            @{ Format = $format; Handler = 'Guid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
+            @{ Format = $format; Handler = 'CmdletGuid'; Expected = '"11111111-1111-1111-1111-111111111111"' }
+            @{ Format = $format; Handler = 'Tagged'; Expected = '{"value":"11111111-1111-1111-1111-111111111111","Tag":"t","Guid":"11111111-1111-1111-1111-111111111111"}' }
+            # A value whose type name the handler changed, after a plain value of the same .NET type.
+            @{ Format = $format; Handler = 'RenamedHashtable'; Expected = '[{"a":1},{"b":2}]' }
+            @{ Format = $format; Handler = 'RenamedInt'; Expected = '[5,7]' }
+        }
     ) {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'values.ps1')) -Value @(
+            'Update-TypeData -TypeName My.Renamed -MemberType ScriptProperty -MemberName X -Value { 42 } -Force'
             'function Guid { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' }'
+            'function CmdletGuid { param($LambdaInput, $LambdaContext) Write-Output ([guid]''11111111-1111-1111-1111-111111111111'') }'
             'function Tagged { param($LambdaInput, $LambdaContext) [guid]''11111111-1111-1111-1111-111111111111'' | Add-Member -NotePropertyName Tag -NotePropertyValue t -PassThru }'
+            'function RenamedHashtable { param($LambdaInput, $LambdaContext) @{ a = 1 }; $h = @{ b = 2 }; $h.PSTypeNames.Insert(0, ''My.Renamed''); $h }'
+            'function RenamedInt { param($LambdaInput, $LambdaContext) 5; $i = [psobject]7; $i.PSTypeNames.Insert(0, ''My.Renamed''); $i }'
         )
-        $env:AWS_LAMBDA_LOG_FORMAT = 'JSON'
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
         try {
             $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler "values.ps1::$Handler" -EventBody '{}')
         }
