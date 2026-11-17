@@ -532,7 +532,7 @@ function Build-LambdaPSRuntimePackage {
             }
 
             # 4. Zip the stage. Lambda runs bootstrap and powershell/pwsh directly, so both are executable.
-            Write-LambdaPSZipArchive -Path $stage -DestinationPath $destination -ExecutableEntry 'bootstrap', 'powershell/pwsh'
+            Write-LambdaPSZipArchive -Path $stage -DestinationPath $destination -ExecutableEntry 'bootstrap', 'powershell/pwsh' -Layer:($effectiveTarget -eq 'Layer')
         }
         finally {
             Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue

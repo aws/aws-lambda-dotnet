@@ -39,8 +39,10 @@ function Write-LambdaPSZipArchive {
         Top-level file names to leave out of the archive.
     .PARAMETER ExecutableEntry
         Entry names (forward-slash relative paths) to mark executable.
+    .PARAMETER Layer
+        The package is a layer, so the 50 MB warning names Publish-LMLayerVersion's S3 parameters.
     .EXAMPLE
-        Write-LambdaPSZipArchive -Path $stage -DestinationPath ./layer.zip -ExecutableEntry 'bootstrap', 'powershell/pwsh'
+        Write-LambdaPSZipArchive -Path $stage -DestinationPath ./layer.zip -ExecutableEntry 'bootstrap', 'powershell/pwsh' -Layer
 
         Zips $stage into ./layer.zip with bootstrap and pwsh executable.
     #>
@@ -62,7 +64,10 @@ function Write-LambdaPSZipArchive {
         [Parameter()]
         [AllowNull()]
         [AllowEmptyCollection()]
-        [string[]]$ExecutableEntry = @()
+        [string[]]$ExecutableEntry = @(),
+
+        [Parameter()]
+        [switch]$Layer
     )
 
     Add-Type -AssemblyName System.IO.Compression
@@ -196,8 +201,9 @@ function Write-LambdaPSZipArchive {
 
         $zippedBytes = ([System.IO.FileInfo]::new($destination)).Length
         if ($zippedBytes -gt 50 * $mb) {
+            $s3Parameters = if ($Layer) { '-Content_S3Bucket and -Content_S3Key to Publish-LMLayerVersion' } else { '-Code_S3Bucket and -Code_S3Key to Publish-LMFunction, or -S3Bucket and -S3Key to Update-LMFunctionCode' }
             Write-Warning ("'$name' is $([math]::Round($zippedBytes / $mb, 1)) MB, over the 50 MB Lambda accepts in a direct upload. " +
-                'Upload it to S3 and pass -Code_S3Bucket and -Code_S3Key (-Content_S3Bucket and -Content_S3Key for Publish-LMLayerVersion).')
+                "Upload it to S3 and pass $s3Parameters.")
         }
     }
     finally {
