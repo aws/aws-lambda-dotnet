@@ -29,7 +29,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Mock 'Get-LMCRuntimeVersionList' -MockWith { }
             Mock 'Get-LMCRuntimeAlias' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
             Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { $script:Config.pwsh.DefaultPatch[$PowerShellVersion] }
-            Mock 'Get-ECRImageMetadata' -MockWith { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') }
+            Mock 'Get-ECRImageMetadata' -MockWith { if ($ImageId) { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') } }
             Mock 'New-LambdaPSRuntimeProject' -MockWith { }
             Mock 'Initialize-LambdaPSEcrRepository' -MockWith { $RepositoryName }
             Mock 'Build-LambdaPSRuntimeImage' -MockWith {
