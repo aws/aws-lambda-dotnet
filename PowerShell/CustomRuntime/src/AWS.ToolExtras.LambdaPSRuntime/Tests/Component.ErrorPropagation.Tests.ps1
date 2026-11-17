@@ -58,7 +58,7 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
             function script:Initialize-LambdaPSEcrRepository { [CmdletBinding(SupportsShouldProcess)] param($RepositoryName, $AccountId, $RuntimeArn, $Region, $CredentialParameter) }
             function script:Get-LMCRuntime { [CmdletBinding()] param($RuntimeName, $Region, $ClientConfig) [PSCustomObject]@{} }
             # The version does not exist until it is created (so the preflight passes), then settles to FAILED.
-            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig)
+            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $ReleaseNote, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeVersion')
                 [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' } }
             function script:Get-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig)

@@ -20,7 +20,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v1' } }
@@ -41,7 +41,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName -Parameters @{ Note = $Note } {
             param($Note)
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $ReleaseNote, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps/version/v1' } }
@@ -65,7 +65,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -84,7 +84,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -114,7 +114,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'DELETING' } }
@@ -135,7 +135,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -160,7 +160,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -181,7 +181,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -204,7 +204,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Start-Sleep' -MockWith { }
@@ -226,7 +226,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeVersion') }
@@ -247,7 +247,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.AccessDeniedException]::new('not authorized to perform lambda:GetRuntimeVersion') }
@@ -268,7 +268,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'CREATING' } }
@@ -287,7 +287,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
             Mock 'Get-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ State = 'CREATING' } }
@@ -308,7 +308,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntimeVersion' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Could not create version! Version already exists.') }
             Mock 'Get-LMCRuntimeVersion' -MockWith { }
@@ -330,7 +330,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Runtime already exists')
@@ -351,7 +351,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps' } }
             Mock 'New-LMCRuntime' -MockWith { throw [System.InvalidOperationException]::new('Runtime already exists !') }
@@ -385,7 +385,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             # The message deliberately contains the word 'exists': a permission failure must surface
             # even when its wording looks like an already-exists condition.
@@ -405,7 +405,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction, $ProfileName) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
             Mock 'New-LMCRuntime' -MockWith { }
@@ -423,7 +423,7 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
         InModuleScope $script:moduleName {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { }
@@ -444,45 +444,20 @@ Describe 'Publish-LambdaPSRuntimeVersion' -Tag 'Unit' {
     }
 }
 
-# The runtime version must DECLARE its architecture, or the function deploy has nothing to check a
-# mismatch against before Lambda rejects the function at creation.
-Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
+Describe 'Publish-LambdaPSRuntimeVersion architecture check' -Tag 'Unit' {
     BeforeEach {
         Mock 'Get-LambdaPSClientConfig' -ModuleName $script:moduleName -MockWith {
             [PSCustomObject]@{ ClientAppId = 'AWS.ToolExtras.LambdaPSRuntime#test' }
         }
     }
 
-    It 'passes -Architecture to New-LMCRuntimeVersion as Compatibility_Architecture' {
+    It 'does not warn when the service reports the requested architecture' {
         InModuleScope $script:moduleName {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction) }
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
-            function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
-            Mock 'New-LMCRuntime' -MockWith { }
-            Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
-            Mock 'Get-LMCRuntimeVersion' -MockWith {
-                [PSCustomObject]@{ State = 'ACTIVE'; Compatibility = [PSCustomObject]@{ Architectures = @('arm64') } }
-            }
-
-            $result = Publish-LambdaPSRuntimeVersion -RuntimeName 'my-ps' -ImageUri 'uri:v1' -RuntimeVersion 'v1' -Architecture arm64 -Region 'us-east-1'
-
-            $result.Architecture | Should -Be 'arm64'
-            Should -Invoke 'New-LMCRuntimeVersion' -Times 1 -Exactly -ParameterFilter {
-                @($Compatibility_Architecture).Count -eq 1 -and $Compatibility_Architecture[0] -eq 'arm64'
-            }
-        }
-    }
-
-    It 'does not warn when the service echoes the declared architecture' {
-        InModuleScope $script:moduleName {
-            function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction) }
-            # The runtime is looked up before it is created; by default it does not exist yet.
-            function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
-            Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -496,16 +471,16 @@ Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
         }
     }
 
-    # The service reports the architecture it reads from the image MANIFEST and ignores
-    # the declared value. So a mismatch means the image was built for the wrong platform, and aliasing
-    # it would put every adopting function on the wrong architecture.
+    # The service reports the architecture it reads from the image MANIFEST. So a mismatch means the
+    # image was built for the wrong platform, and aliasing it would put every adopting function on the
+    # wrong architecture.
     It 'throws RuntimeImageArchitectureMismatch when the image is not the requested architecture' {
         InModuleScope $script:moduleName {
             function New-LMCRuntime { param($Name, $Region, $ClientConfig, $ErrorAction) }
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -524,7 +499,7 @@ Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -551,7 +526,7 @@ Describe 'Publish-LambdaPSRuntimeVersion architecture declaration' -Tag 'Unit' {
             # The runtime is looked up before it is created; by default it does not exist yet.
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime does not exist') }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'New-LMCRuntime' -MockWith { }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
@@ -581,7 +556,7 @@ Describe 'Publish-LambdaPSRuntimeVersion errors through a calling cmdlet' -Tag '
         InModuleScope $script:moduleName -Parameters @{ ErrorId = $ErrorId; State = $State; Architectures = $Architectures } {
             param($ErrorId, $State, $Architectures)
             function Get-LMCRuntime { param($RuntimeName, $Region, $ClientConfig, $ErrorAction) }
-            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Compatibility_Architecture, $Region, $ClientConfig, $ErrorAction) }
+            function New-LMCRuntimeVersion { param($RuntimeName, $ImageUri, $Name, $Region, $ClientConfig, $ErrorAction) }
             function Get-LMCRuntimeVersion { param($RuntimeName, $Name, $Region, $ClientConfig, $ErrorAction) }
             Mock 'Get-LMCRuntime' -MockWith { [PSCustomObject]@{} }
             Mock 'New-LMCRuntimeVersion' -MockWith { [PSCustomObject]@{ Arn = 'arn:x' } }
