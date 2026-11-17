@@ -98,7 +98,7 @@ BeforeDiscovery {
 
         # --- ECR image tag preflight (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-ECRImageMetadata'; Module = 'AWS.Tools.ECR'
-           Parameters = @('RepositoryName', 'ImageId', 'Region', 'ClientConfig') }
+           Parameters = @('RepositoryName', 'ImageId', 'Filter_TagStatus', 'Filter_ImageStatus', 'MaxResult', 'Region', 'ClientConfig') }
 
         # --- STS (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-STSCallerIdentity'; Module = 'AWS.Tools.SecurityToken'

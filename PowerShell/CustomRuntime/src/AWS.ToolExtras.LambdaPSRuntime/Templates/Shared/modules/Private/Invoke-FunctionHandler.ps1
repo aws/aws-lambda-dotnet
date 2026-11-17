@@ -52,7 +52,11 @@ function private:Invoke-FunctionHandler {
     # and reported as an error, rather than ending some loop of the runtime's and losing the handler's
     # result unreported. A labelled one whose label matches no loop, like exit in a handler function,
     # goes past this loop and ends the runtime; the finally in runtime.ps1's event loop reports that on
-    # /error and exits 1. (exit in a <script>.ps1 handler ends only that script.)
+    # /error and exits 1. exit in a <script>.ps1 handler ends only that script, and a non-zero code fails
+    # the invocation, as pwsh -File does. $? is false after it, and $LASTEXITCODE holds the code, but an
+    # advanced script's $PSCmdlet.WriteError also clears $? and may follow a failed native command, so
+    # the check also needs the script to have recorded no error, which exit doesn't. Exiting after such
+    # an error is therefore sent as a response.
     #
     # The handler's records are logged one per line, as Amazon.Lambda.PowerShellHost logs each stream:
     # with AWS_LAMBDA_LOG_FORMAT=JSON every stream at its level, and in text mode its errors, which pwsh
@@ -82,6 +86,7 @@ function private:Invoke-FunctionHandler {
                 [ref]($private:item.PSObject.BaseObject)
             }
         }
+        $private:handlerSucceeded = $?
     }
     $private:logRecord = {
         process {
@@ -89,6 +94,7 @@ function private:Invoke-FunctionHandler {
             & $script:__LambdaPSRuntimeWriteLambdaLog -Record $_
         }
     }
+    $private:lastError = $global:Error[0]
     $private:handlerCompleted = $false
     do {
         $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:handlerRun 2>&1 | & $private:logRecord }
@@ -98,6 +104,10 @@ function private:Invoke-FunctionHandler {
     if (-not $private:handlerCompleted) {
         throw [System.InvalidOperationException]::new(
             'The handler used break or continue outside a loop of its own, so it stopped before returning. Use return to leave the handler early.')
+    }
+    if (-not $private:handlerSucceeded -and $private:HandlerArray.handlerType -eq 'Script' -and $global:LASTEXITCODE -and
+        [object]::ReferenceEquals($global:Error[0], $private:lastError)) {
+        throw [System.InvalidOperationException]::new("The handler script exited with code $global:LASTEXITCODE.")
     }
 
     # The serialization depth: POWERSHELL_RUNTIME_JSON_DEPTH (1-100) lowers it from 100. A value that is

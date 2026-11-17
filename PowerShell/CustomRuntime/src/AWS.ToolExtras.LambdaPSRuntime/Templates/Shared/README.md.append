@@ -58,7 +58,8 @@ the handler's own, ends the runtime: the invocation fails and Lambda starts the 
 top-level code of a `<script>.ps1::<function>` script or a handler module, such a labelled `break` or
 `continue` fails start-up, but `exit` stops only that script or module import, and start-up goes on
 without the rest of it, so do not use `exit` there. In a `<script>.ps1` handler, `exit` ends only the
-script: its exit code is ignored, and what it wrote before is sent as the response.
+script: a non-zero exit code fails the invocation, and `exit 0` sends what the script wrote before as the
+response.
 
 The Layer and SelfContainedZip targets run pwsh in invariant-globalization mode, because the
 `provided.al2023` base has no ICU library, so culture-specific code fails there: a named culture such

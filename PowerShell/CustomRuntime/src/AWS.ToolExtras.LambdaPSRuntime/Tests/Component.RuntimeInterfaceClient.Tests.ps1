@@ -441,6 +441,12 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'breakscript.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '1..3 | ForEach-Object { if ($_ -eq 2) { break } }', '''never'''
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'quiet.ps1')) -Value '$ErrorActionPreference = ''SilentlyContinue''', 'function Handle { param($LambdaInput, $LambdaContext) ''ok'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'exitscript.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '''done''', 'exit 0'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'exit3.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '''partial''', 'exit 3'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativefail.ps1')) -Value 'param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 2''', '''native done'''
+        $writeError = '$PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new([System.Exception]::new(''soft''), ''Soft'', ''NotSpecified'', $null))'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', '''written''', $writeError
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'nativewriteerror.ps1')) -Value '[CmdletBinding()] param($LambdaInput, $LambdaContext)', 'pwsh -NoProfile -Command ''exit 5''', '''native written''', $writeError
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'writeerrorfn.ps1')) -Value "function Handle { [CmdletBinding()] param(`$LambdaInput, `$LambdaContext) pwsh -NoProfile -Command 'exit 2'; 'fn written'; $writeError }"
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'topbreak.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toplabel.ps1')) -Value '1..3 | ForEach-Object { if ($_ -eq 2) { break nowhere } }', 'function Handle { param($LambdaInput, $LambdaContext) ''never'' }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'toploop.ps1')) -Value '$script:seen = foreach ($i in 1..3) { if ($i -eq 2) { break }; $i }', 'function Handle { param($LambdaInput, $LambdaContext) "loaded:$script:seen" }'
@@ -732,11 +738,44 @@ public class InvokeBin : PSCmdlet {
         $posts[0].Body | Should -Be '3'
     }
 
-    It 'lets a Script handler exit, which ends only its own script' {
+    It 'sends what a Script handler wrote before exit 0 as the response' {
         $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'exitscript.ps1' -EventBody '{}', '{}')
 
         $posts.Path | Should -Be @('/2018-06-01/runtime/invocation/req-1/response', '/2018-06-01/runtime/invocation/req-2/response')
         $posts[0].Body | Should -Be 'done'
+    }
+
+    It 'fails the invocation when a Script handler exits non-zero (AWS_LAMBDA_LOG_FORMAT <Format>), and runs the next one' -ForEach @(
+        @{ Format = $null }
+        @{ Format = 'JSON' }
+    ) {
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'exit3.ps1' -EventBody '{}', '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts.Path | Should -Be @('/2018-06-01/runtime/invocation/req-1/error', '/2018-06-01/runtime/invocation/req-2/error')
+        $errorBody = $posts[0].Body | ConvertFrom-Json
+        $errorBody.errorMessage | Should -BeExactly 'The handler script exited with code 3.'
+        $errorBody.errorType | Should -Be 'InvalidOperationException'
+    }
+
+    It 'sends the response of <Name>' -ForEach @(
+        @{ Name = 'a Script handler that leaves a native command''s non-zero exit code'; Handler = 'nativefail.ps1'; Body = 'native done' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError'; Handler = 'writeerror.ps1'; Body = 'written' }
+        @{ Name = 'an advanced handler function that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'writeerrorfn.ps1::Handle'; Body = 'fn written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails'; Handler = 'nativewriteerror.ps1'; Body = 'native written' }
+        @{ Name = 'an advanced Script handler that ends with $PSCmdlet.WriteError after a native command fails, with AWS_LAMBDA_LOG_FORMAT=JSON'; Handler = 'nativewriteerror.ps1'; Body = 'native written'; Format = 'JSON' }
+    ) {
+        $env:AWS_LAMBDA_LOG_FORMAT = $Format
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler $Handler -EventBody '{}')
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts[0].Path | Should -Be '/2018-06-01/runtime/invocation/req-1/response'
+        $posts[0].Body | Should -Be $Body
     }
 
     It 'loads a handler module whose top-level code breaks out of a loop of its own' {
