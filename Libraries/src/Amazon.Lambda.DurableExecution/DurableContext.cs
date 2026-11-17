@@ -41,8 +41,10 @@ internal sealed class DurableContext : IDurableContext
         _durableExecutionArn = durableExecutionArn;
         _batcher = batcher;
         LambdaContext = lambdaContext;
-        _logger = new ReplayAwareLogger(new LambdaCoreLogger(), state, modeAware: true);
+        _logger = new ReplayAwareLogger(new LambdaCoreLogger(), state, modeAware: true, ScopeFields);
     }
+
+    private Func<IReadOnlyDictionary<string, object>?>? ScopeFields => _plugins == null ? null : _plugins.GetLogScope;
 
     public ILogger Logger => _logger;
     public IExecutionContext ExecutionContext => new DurableExecutionContext(_durableExecutionArn);
@@ -57,7 +59,7 @@ internal sealed class DurableContext : IDurableContext
         // so toggling ModeAware works without losing the previous custom logger.
         var inner = config.CustomLogger
             ?? (_logger is ReplayAwareLogger existing ? existing.Inner : _logger);
-        _logger = new ReplayAwareLogger(inner, _state, config.ModeAware);
+        _logger = new ReplayAwareLogger(inner, _state, config.ModeAware, ScopeFields);
     }
 
     public Task<T> StepAsync<T>(

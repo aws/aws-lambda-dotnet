@@ -4,6 +4,7 @@
 using System.IO;
 using System.Text;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.Instrumentation;
 using SdkChainedInvokeOptions = Amazon.Lambda.Model.ChainedInvokeOptions;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
@@ -79,6 +80,17 @@ internal sealed class InvokeOperation<TPayload, TResult> : DurableOperation<TRes
 
         var serializedPayload = SerializeValue(_payload);
 
+        // The invoked function's trace continues from the header a plugin builds for this call. Asked after the
+        // payload is serialized (a payload failure should not run plugin code) and only here, so replaying an
+        // invoke that already has its START does not ask again.
+        var traceHeader = Plugins?.ProvidePropagationMetadata(new PropagationInput
+        {
+            ExecutionArn = DurableExecutionArn,
+            OperationId = OperationId,
+            ParentOperationId = ParentId,
+            TargetFunctionName = _functionName,
+        });
+
         // The service is what actually invokes the chained function, so it
         // must receive this START before we suspend. If we only batched it
         // locally and the parent process were recycled at suspend, the START
@@ -95,7 +107,8 @@ internal sealed class InvokeOperation<TPayload, TResult> : DurableOperation<TRes
             ChainedInvokeOptions = new SdkChainedInvokeOptions
             {
                 FunctionName = _functionName,
-                TenantId = _config?.TenantId
+                TenantId = _config?.TenantId,
+                XAmznTraceId = traceHeader
             }
         }, cancellationToken);
 

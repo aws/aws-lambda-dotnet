@@ -20,6 +20,7 @@ internal sealed class PluginRunner
     private readonly IDurableInstrumentationPlugin[] _plugins;
     private readonly ILogger _logger;
     private readonly Func<TimeSpan?> _remainingTime;
+    private int _logScopeFailureLogged;
 
     private PluginRunner(IDurableInstrumentationPlugin[] plugins, ILogger logger, Func<TimeSpan?> remainingTime)
     {
@@ -240,7 +241,9 @@ internal sealed class PluginRunner
             }
             catch (Exception ex)
             {
-                LogHookFailure(plugin, nameof(IDurableInstrumentationPlugin.GetLogScope), ex);
+                // Called for every log entry, so report a failing plugin once instead of once per entry.
+                if (Interlocked.Exchange(ref _logScopeFailureLogged, 1) == 0)
+                    LogHookFailure(plugin, nameof(IDurableInstrumentationPlugin.GetLogScope), ex);
                 continue;
             }
 
