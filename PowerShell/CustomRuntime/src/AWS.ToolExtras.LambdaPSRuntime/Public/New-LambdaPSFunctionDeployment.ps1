@@ -427,8 +427,8 @@ function New-LambdaPSFunctionDeployment {
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.ArgumentException]::new(
                         ("Function '$FunctionName' does not exist in region '$Region', so nothing was packaged or deployed. " +
-                         'Pass -Role with the execution role ARN (arn:aws:iam::<account>:role/<name>) to create it, ' +
-                         'or -Region if the function is in another region.')),
+                         'Pass -Role with the execution role ARN (arn:aws:iam::<account>:role/<name>) to create it' +
+                         $(if ($functionParts.Region) { '.' } else { ', or -Region if the function is in another region.' }))),
                     'RoleRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
         }
 

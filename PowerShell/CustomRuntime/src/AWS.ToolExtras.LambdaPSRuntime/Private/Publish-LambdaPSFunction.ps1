@@ -185,6 +185,7 @@ function Publish-LambdaPSFunction {
     $clientConfig = Get-LambdaPSClientConfig -Service Lambda
     $created = $null
     $updated = $false
+    $configure = $false
     # Lambda takes environment values as strings only. Environment_IsVariablesSet sends an empty
     # table too, so @{} clears the environment. The table is enumerated rather than read through
     # .Keys, which a variable named Keys would answer instead.
@@ -401,15 +402,15 @@ function Publish-LambdaPSFunction {
         }
         $configure = $configurationParams.Count -gt 0
 
-        # Lambda refuses a configuration update while the code update is InProgress.
-        # FunctionNotActive here means the code update itself failed: Lambda keeps the previous code.
-        $timeoutNote = if ($configure) { " The configuration was not applied. $notAppliedState Run the deploy again once the function settles to apply it." } else { '' }
-        $null = & $waitUntilReady -TimeoutNote $timeoutNote `
-            -NotActiveNote ' The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
+        # FunctionNotActive after the code update means the code update itself failed: Lambda keeps the previous code.
+        $codeFailedNote = ' The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
         if (-not $configure) {
             Write-Verbose "Function '$FunctionName' already has the configuration asked for; skipping the configuration update."
         }
         else {
+            # Lambda refuses a configuration update while the code update is InProgress.
+            $null = & $waitUntilReady -NotActiveNote $codeFailedNote `
+                -TimeoutNote " The configuration was not applied. $notAppliedState Run the deploy again once the function settles to apply it."
             try {
                 $created = & $withRoleRetry { Update-LMFunctionConfiguration -FunctionName $FunctionName -Region $Region -ClientConfig $clientConfig @configurationParams @CredentialParameter -ErrorAction Stop }
             }
@@ -432,7 +433,7 @@ function Publish-LambdaPSFunction {
     # Wait until the function can be invoked: a new function is Pending, and a code update is
     # InProgress, until Lambda settles it. Returning earlier hands the caller a function whose first
     # invoke is refused with ResourceConflictException.
-    $null = & $waitUntilReady
+    $null = & $waitUntilReady -NotActiveNote $(if ($updated -and -not $configure) { $codeFailedNote } else { '' })
 
     # On the update path, report the configuration Lambda returns (the code and configuration updates
     # both return it) rather than echo the requested values back.
@@ -448,7 +449,7 @@ function Publish-LambdaPSFunction {
         Architecture = if ($liveArchitecture) { $liveArchitecture } elseif ($updated -and -not $applyArchitecture) { @($current.Architectures | ForEach-Object { [string]$_ }) | Select-Object -First 1 } else { $Architecture }
         Timeout      = if ($live -and $created.Timeout) { [int]$created.Timeout } elseif ($updated -and $UpdateSetting -notcontains 'Timeout') { [int]$current.Timeout } else { $Timeout }
         MemorySize   = if ($live -and $created.MemorySize) { [int]$created.MemorySize } elseif ($updated -and $UpdateSetting -notcontains 'MemorySize') { [int]$current.MemorySize } else { $MemorySize }
-        Role         = if ($live -and $created.Role) { $created.Role } elseif ($updated -and -not $configurationParams.Role) { [string]$current.Role } else { $Role }
+        Role         = if ($live -and $created.Role) { $created.Role } else { $Role }
         Updated      = $updated
         Arn          = $created.FunctionArn
     }

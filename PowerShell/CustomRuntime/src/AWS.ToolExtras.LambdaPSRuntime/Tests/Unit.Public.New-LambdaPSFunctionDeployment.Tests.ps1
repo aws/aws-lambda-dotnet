@@ -1029,6 +1029,16 @@ Describe 'New-LambdaPSFunctionDeployment -Role' -Tag 'Unit' {
         $err.Exception.Message | Should -BeLike "Function 'fn' does not exist in region 'us-east-1'*Pass -Role*or -Region*"
     }
 
+    It 'leaves out the -Region hint when the region comes from a function ARN' {
+        Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { 'arn:aws:lambda:us-west-2:111122223333:runtime/rt' }
+        Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@('x86_64') }
+        Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { $null }
+        $err = { New-LambdaPSFunctionDeployment -FunctionName arn:aws:lambda:us-west-2:111122223333:function:fn -ProjectPath $script:handlerFile -RuntimeName rt } |
+            Should -Throw -ErrorId 'RoleRequired,New-LambdaPSFunctionDeployment' -PassThru
+        $err.Exception.Message | Should -BeLike "*in region 'us-west-2'*to create it."
+        $err.Exception.Message | Should -Not -BeLike '*-Region*'
+    }
+
     # \d also matches other scripts' digits, such as Arabic-Indic ones; an account ID is ASCII digits only.
     It 'refuses a role ARN whose account is in non-ASCII digits' {
         Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { throw 'must not read the runtime' }
@@ -1077,11 +1087,16 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
                 Architectures = @($script:tuned.Architecture); Runtime = $script:tuned.Runtime; PackageType = $script:tuned.PackageType
                 RuntimeConfig = if ($script:tuned.RuntimeArn) { [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } } }
         }
+        # Lambda applies what was sent and returns the whole configuration, from both updates.
+        $script:liveConfiguration = {
+            [PSCustomObject]@{ FunctionArn = 'arn:f'; Handler = $script:tuned.Handler; Timeout = $script:tuned.Timeout
+                MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @($script:tuned.Architecture)
+                RuntimeConfig = [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } }
+        }
         Mock 'Update-LMFunctionCode' -ModuleName $m -MockWith {
             if ($Architecture) { $script:tuned.Architecture = $Architecture }
-            [PSCustomObject]@{ FunctionArn = 'arn:f' }
+            & $script:liveConfiguration
         }
-        # Lambda applies what was sent and returns the whole configuration.
         Mock 'Update-LMFunctionConfiguration' -ModuleName $m -MockWith {
             if ($Handler) { $script:tuned.Handler = $Handler }
             if ($Timeout) { $script:tuned.Timeout = $Timeout }
@@ -1091,9 +1106,7 @@ Describe 'New-LambdaPSFunctionDeployment redeploy of a tuned function' -Tag 'Uni
                 $script:tuned.RuntimeArn = $RuntimeConfig_RuntimeArn
                 $script:tuned.RuntimeAlias = $RuntimeConfig_RuntimeAlias
             }
-            [PSCustomObject]@{ FunctionArn = 'arn:f'; Handler = $script:tuned.Handler; Timeout = $script:tuned.Timeout
-                MemorySize = $script:tuned.MemorySize; Role = $script:tuned.Role; Architectures = @($script:tuned.Architecture)
-                RuntimeConfig = [PSCustomObject]@{ RuntimeArn = $script:tuned.RuntimeArn; RuntimeAlias = $script:tuned.RuntimeAlias } }
+            & $script:liveConfiguration
         }
         # A redeploy needs no -Role: the function keeps its own.
         $script:redeploy = @{

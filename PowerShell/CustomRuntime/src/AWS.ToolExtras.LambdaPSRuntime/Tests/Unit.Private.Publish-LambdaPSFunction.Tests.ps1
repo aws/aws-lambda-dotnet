@@ -163,8 +163,12 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
-    It 'says the code update failed, and the function keeps its previous code, when that wait ends in FunctionNotActive' {
-        InModuleScope $script:moduleName {
+    It 'says the code update failed, and the function keeps its previous code, when the wait after it ends in FunctionNotActive, <Case>' -ForEach @(
+        @{ Case = 'before a configuration update'; Live = @{} }
+        @{ Case = 'with no configuration to change'; Live = @{ Handler = 'handler.ps1'; Role = 'arn:role'; Timeout = 60; MemorySize = 1024 } }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Live = $Live } {
+            param($Live)
             function Publish-LMFunction {
                 param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
                     $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
@@ -174,9 +178,9 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             # Lambda rejects the new code asynchronously: its last update ends Failed.
             $script:codeUpdated = $false
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'Failed' } else { 'Successful' })
+                [PSCustomObject](@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'Failed' } else { 'Successful' })
                     LastUpdateStatusReason = 'code update failed'
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } + $Live) }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { $script:codeUpdated = $true; [PSCustomObject]@{ FunctionArn = 'arn:f' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { }
@@ -193,6 +197,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             $err.Exception.Message | Should -BeLike '*will not become ready on its own*The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
             $err.Exception.Message | Should -Not -BeLike '*has its new code*'
             $err.Exception.Message | Should -Not -BeLike '*settles*'
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 0 -Exactly
         }
     }
 
