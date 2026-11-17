@@ -68,7 +68,7 @@ function private:Write-LambdaLog {
     }
     if ($env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID) { $private:record.requestId = $env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID }
     if ($env:_X_AMZN_TRACE_ID) { $private:record.traceId = $env:_X_AMZN_TRACE_ID }
-    if ($env:AWS_LAMBDA_RUNTIME_TENANT_ID) { $private:record.tenantId = $env:AWS_LAMBDA_RUNTIME_TENANT_ID }
+    if ($script:__LambdaPSRuntimeTenantId) { $private:record.tenantId = $script:__LambdaPSRuntimeTenantId }
     $private:record.message = $Message
     if ($ErrorRecord) {
         $private:record.errorType = $ErrorRecord.CategoryInfo.Reason
