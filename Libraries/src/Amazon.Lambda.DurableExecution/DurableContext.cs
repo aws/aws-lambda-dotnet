@@ -20,6 +20,7 @@ internal sealed class DurableContext : IDurableContext
     private readonly OperationIdGenerator _idGenerator;
     private readonly string _durableExecutionArn;
     private readonly CheckpointBatcher? _batcher;
+    private readonly PluginRunner? _plugins;
     private ILogger _logger;
 
     public DurableContext(
@@ -29,8 +30,10 @@ internal sealed class DurableContext : IDurableContext
         OperationIdGenerator idGenerator,
         string durableExecutionArn,
         ILambdaContext lambdaContext,
-        CheckpointBatcher? batcher = null)
+        CheckpointBatcher? batcher = null,
+        PluginRunner? plugins = null)
     {
+        _plugins = plugins;
         _state = state;
         _terminationManager = terminationManager;
         _workflowCancellation = workflowCancellation;
@@ -91,7 +94,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
             operationId, name, _idGenerator.ParentId, func, config, serializer, Logger,
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -115,7 +118,7 @@ internal sealed class DurableContext : IDurableContext
         var waitSeconds = (int)Math.Max(1, Math.Ceiling(duration.TotalSeconds));
         var op = new WaitOperation(
             operationId, name, _idGenerator.ParentId, waitSeconds,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -156,7 +159,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -175,7 +178,7 @@ internal sealed class DurableContext : IDurableContext
         var op = new ChildContextOperation<T>(
             operationId, name, _idGenerator.ParentId, func, config, serializer, MakeChildFactory(),
             _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher,
-            isVirtual: config?.NestingType == NestingType.Flat);
+            isVirtual: config?.NestingType == NestingType.Flat) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -196,7 +199,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new CallbackOperation<T>(
             operationId, name, _idGenerator.ParentId, config, serializer,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -230,7 +233,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         return new Internal.IncrementalParallelOperation(
             operationId, name, _idGenerator.ParentId, effectiveConfig, defaultSerializerFactory, MakeChildFactory(),
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher, _plugins);
     }
 
     public Task<IBatchResult<T>> ParallelAsync<T>(
@@ -294,7 +297,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new Internal.ParallelOperation<T>(
             operationId, name, _idGenerator.ParentId, branches, effectiveConfig, serializer, MakeChildFactory(),
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -329,7 +332,7 @@ internal sealed class DurableContext : IDurableContext
         var operationId = _idGenerator.NextId();
         var op = new Internal.MapOperation<TItem, TResult>(
             operationId, name, _idGenerator.ParentId, items, func, effectiveConfig, serializer, MakeChildFactory(),
-            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -554,7 +557,7 @@ internal sealed class DurableContext : IDurableContext
         var op = new InvokeOperation<TPayload, TResult>(
             operationId, name, _idGenerator.ParentId, functionName, payload, config,
             serializer,
-            _state, _terminationManager, _durableExecutionArn, _batcher);
+            _state, _terminationManager, _durableExecutionArn, _batcher) { Plugins = _plugins };
         return op.ExecuteAsync(cancellationToken);
     }
 
@@ -591,7 +594,7 @@ internal sealed class DurableContext : IDurableContext
             isVirtual
                 ? _idGenerator.CreateVirtualChild(operationId, reportedParentId)
                 : _idGenerator.CreateChild(operationId),
-            _durableExecutionArn, LambdaContext, _batcher);
+            _durableExecutionArn, LambdaContext, _batcher, _plugins);
     }
 }
 

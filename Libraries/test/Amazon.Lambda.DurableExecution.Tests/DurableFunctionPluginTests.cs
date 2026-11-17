@@ -182,7 +182,7 @@ public class DurableFunctionPluginTests
         Assert.False(started.IsFirstInvocation);
         Assert.Equal(3, started.Operations.Count);
         Assert.Equal("first", started.Operations["a"].Name);
-        Assert.Equal(2, started.Operations["a"].Attempt);
+        Assert.Equal(3, started.Operations["a"].Attempt); // one more than the 2 attempts the service recorded
         var updated = Assert.Single(started.UpdatedOperations);
         Assert.Equal("b", updated.Key);
         Assert.Equal(OperationTypes.Wait, updated.Value.Type);

@@ -84,6 +84,8 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
 
     protected override string OperationType => OperationTypes.Callback;
 
+    protected override string? OperationSubType => _subType;
+
     /// <summary>
     /// Set when an existing terminal-state checkpoint was observed during
     /// dispatch. <see cref="GetResultAsync"/> reads this directly to short-

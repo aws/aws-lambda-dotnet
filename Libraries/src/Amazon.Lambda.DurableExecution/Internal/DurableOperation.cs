@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.DurableExecution.Instrumentation;
 using SdkOperationUpdate = Amazon.Lambda.Model.OperationUpdate;
 
 namespace Amazon.Lambda.DurableExecution.Internal;
@@ -39,13 +40,17 @@ internal abstract class DurableOperation<TResult>
         Batcher = batcher;
     }
 
-    /// <summary>The wire-format operation type (e.g. "STEP", "WAIT").</summary>
     protected abstract string OperationType { get; }
 
+    /// <summary>The checkpoint sub-type, reported to instrumentation plugins. Null when the operation has none.</summary>
+    protected virtual string? OperationSubType => null;
+
     /// <summary>
-    /// Looks up any prior checkpoint for this op and dispatches to
-    /// <see cref="StartAsync"/> (none) or <see cref="ReplayAsync"/> (some).
+    /// The plugins of this invocation, or null when none is registered. Set by whoever creates the operation,
+    /// so the constructors stay unchanged.
     /// </summary>
+    internal PluginRunner? Plugins { get; init; }
+
     public Task<TResult> ExecuteAsync(CancellationToken cancellationToken)
     {
         State.ValidateReplayConsistency(OperationId, OperationType, Name);
@@ -55,25 +60,145 @@ internal abstract class DurableOperation<TResult>
         State.TrackReplay(OperationId);
 
         var existing = State.GetOperation(OperationId);
+        if (Plugins != null)
+            return ExecuteWithPluginsAsync(Plugins, existing, cancellationToken);
+
         return existing == null
             ? StartAsync(cancellationToken)
             : ReplayAsync(existing, cancellationToken);
     }
 
-    /// <summary>First-time execution path: no prior checkpoint exists.</summary>
     protected abstract Task<TResult> StartAsync(CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Replay path: a checkpoint from a prior invocation exists. Subclasses
-    /// switch on <paramref name="existing"/>.<see cref="Operation.Status"/>
-    /// against <see cref="OperationStatuses"/> constants.
-    /// </summary>
     protected abstract Task<TResult> ReplayAsync(Operation existing, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Enqueues an outbound checkpoint and awaits its batch flush. No-op when
-    /// no batcher is wired (e.g. unit tests that don't exercise flushing).
-    /// </summary>
     protected Task EnqueueAsync(SdkOperationUpdate update, CancellationToken cancellationToken = default)
         => Batcher?.EnqueueAsync(update, cancellationToken) ?? Task.CompletedTask;
+
+    /// <summary>
+    /// Runs the operation and reports its start and, when it reaches a terminal state, its end to the plugins.
+    /// An operation that suspends the invocation never completes, so it reports no end. Neither does one
+    /// cancelled by the workflow or stopped by the invocation deadline: those are not operation outcomes.
+    /// </summary>
+    private async Task<TResult> ExecuteWithPluginsAsync(
+        PluginRunner plugins, Operation? existing, CancellationToken cancellationToken)
+    {
+        // An operation is replayed when the workflow reaches it again after it already finished.
+        var isReplay = existing != null && PluginInfoConverter.IsTerminal(existing.Status);
+
+        plugins.OperationStart(PluginInfoConverter.ToOperationInfo(
+            existing, OperationId, Name, OperationType, OperationSubType, ParentId, isReplay,
+            fallbackStatus: OperationStatuses.Started));
+
+        TResult result;
+        try
+        {
+            result = await (existing == null ? StartAsync(cancellationToken) : ReplayAsync(existing, cancellationToken));
+        }
+        catch (Exception ex) when (IsOperationFailure(ex))
+        {
+            plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Failed, ex));
+            throw;
+        }
+
+        plugins.OperationEnd(CreateEndInfo(existing, isReplay, OperationStatuses.Succeeded, null));
+        return result;
+    }
+
+    private OperationEndInfo CreateEndInfo(Operation? existing, bool isReplay, string status, Exception? exception)
+    {
+        // The checkpoint response may have stamped the terminal record with the service's timestamps.
+        var latest = State.GetOperation(OperationId) ?? existing;
+        return PluginInfoConverter.ToOperationEndInfo(
+            latest, OperationId, Name, OperationType, OperationSubType, ParentId, isReplay, status, exception);
+    }
+
+    /// <summary>The exceptions that mean the operation itself failed, as opposed to the invocation.</summary>
+    private static bool IsOperationFailure(Exception ex) =>
+        ex is StepException or ChildContextException or InvokeException or CallbackException or WaitForConditionException;
+
+    /// <summary>
+    /// Runs one execution of an operation's user function and reports it to the plugins: attempt start, the
+    /// user function inside the plugins' <c>WrapAsync</c>, attempt end. Cancellation is not an attempt outcome.
+    /// </summary>
+    /// <param name="attemptNumber">The 1-based attempt number.</param>
+    /// <param name="body">The user function.</param>
+    protected async Task<T> RunAttemptAsync<T>(int attemptNumber, Func<Task<T>> body)
+    {
+        var plugins = Plugins;
+        if (plugins == null)
+            return await body();
+
+        var info = new AttemptInfo
+        {
+            Id = OperationId,
+            Name = Name,
+            Type = OperationType,
+            SubType = OperationSubType,
+            ParentId = ParentId,
+            Status = OperationStatuses.Started,
+            Attempt = attemptNumber,
+            IsReplay = false,
+        };
+        plugins.AttemptStart(info);
+
+        T result = default!;
+        try
+        {
+            await plugins.WrapAsync(
+                new UserCodeInfo { Kind = UserCodeKind.Attempt, Operation = info },
+                async () => result = await body());
+        }
+        catch (Exception ex)
+        {
+            if (ex is not OperationCanceledException)
+                plugins.AttemptEnd(CreateAttemptEndInfo(info, AttemptOutcome.Failed, ex));
+            throw;
+        }
+
+        plugins.AttemptEnd(CreateAttemptEndInfo(info, AttemptOutcome.Succeeded, null));
+        return result;
+    }
+
+    private static AttemptEndInfo CreateAttemptEndInfo(AttemptInfo started, AttemptOutcome outcome, Exception? exception) => new()
+    {
+        Id = started.Id,
+        Name = started.Name,
+        Type = started.Type,
+        SubType = started.SubType,
+        ParentId = started.ParentId,
+        Status = outcome == AttemptOutcome.Succeeded ? OperationStatuses.Succeeded : OperationStatuses.Failed,
+        Attempt = started.Attempt,
+        IsReplay = false,
+        Outcome = outcome,
+        Exception = exception,
+    };
+
+    /// <summary>
+    /// Runs a child context's function inside the plugins' <c>WrapAsync</c> so their ambient context is in
+    /// effect while it runs.
+    /// </summary>
+    protected Task<T> RunChildContextAsync<T>(Func<Task<T>> body)
+    {
+        var plugins = Plugins;
+        if (plugins == null)
+            return body();
+
+        return WrapChildContextAsync(plugins, body);
+    }
+
+    private async Task<T> WrapChildContextAsync<T>(PluginRunner plugins, Func<Task<T>> body)
+    {
+        T result = default!;
+        await plugins.WrapAsync(
+            new UserCodeInfo
+            {
+                Kind = UserCodeKind.ChildContext,
+                Operation = PluginInfoConverter.ToOperationInfo(
+                    State.GetOperation(OperationId), OperationId, Name, OperationType, OperationSubType, ParentId,
+                    isReplay: false, fallbackStatus: OperationStatuses.Started),
+            },
+            async () => result = await body());
+        return result;
+    }
 }

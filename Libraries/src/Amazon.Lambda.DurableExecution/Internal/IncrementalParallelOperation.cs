@@ -343,6 +343,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
     private readonly WorkflowCancellation _workflowCancellation;
     private readonly string _durableExecutionArn;
     private readonly CheckpointBatcher? _batcher;
+    private readonly PluginRunner? _plugins;
 
     private readonly object _lock = new();
     private readonly List<IParallelBranchController> _branches = new();
@@ -373,8 +374,10 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
         TerminationManager termination,
         WorkflowCancellation workflowCancellation,
         string durableExecutionArn,
-        CheckpointBatcher? batcher = null)
+        CheckpointBatcher? batcher = null,
+        PluginRunner? plugins = null)
     {
+        _plugins = plugins;
         _operationId = operationId;
         _name = name;
         _parentId = parentId;
@@ -442,6 +445,11 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                         $"'{existing.Status}' on replay.");
             }
         }
+
+        _plugins?.OperationStart(PluginInfoConverter.ToOperationInfo(
+            existing, _operationId, _name, OperationTypes.Context, OperationSubTypes.Parallel, _parentId,
+            isReplay: existing != null && PluginInfoConverter.IsTerminal(existing.Status),
+            fallbackStatus: OperationStatuses.Started));
     }
 
     public IParallelBranch<T> Branch<T>(
@@ -567,6 +575,10 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
             ? BuildTerminalResult(controllers)
             : await BuildAndCheckpointRunResultAsync(controllers, cancellationToken).ConfigureAwait(false);
 
+        _plugins?.OperationEnd(PluginInfoConverter.ToOperationEndInfo(
+            _state.GetOperation(_operationId), _operationId, _name, OperationTypes.Context, OperationSubTypes.Parallel,
+            _parentId, isReplay: _mode == ParallelExecutionMode.Terminal, OperationStatuses.Succeeded, exception: null));
+
         return result;
     }
 
@@ -657,7 +669,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
                     _durableExecutionArn,
                     _batcher,
                     bailToken,
-                    isVirtual: _isVirtual);
+                    isVirtual: _isVirtual) { Plugins = _plugins };
 
                 // Branch child ops receive CancellationToken.None here — they re-link
                 // workflow-shutdown and the cooperative-bail token internally, and

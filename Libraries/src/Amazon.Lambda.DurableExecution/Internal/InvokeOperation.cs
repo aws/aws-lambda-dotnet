@@ -71,6 +71,8 @@ internal sealed class InvokeOperation<TPayload, TResult> : DurableOperation<TRes
 
     protected override string OperationType => OperationTypes.ChainedInvoke;
 
+    protected override string? OperationSubType => OperationSubTypes.ChainedInvoke;
+
     protected override async Task<TResult> StartAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

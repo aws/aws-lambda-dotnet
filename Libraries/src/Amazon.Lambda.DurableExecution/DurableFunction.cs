@@ -312,7 +312,7 @@ public static class DurableFunction
 
         var context = new DurableContext(
             state, terminationManager, workflowCancellation, idGenerator,
-            invocationInput.DurableExecutionArn, lambdaContext, batcher);
+            invocationInput.DurableExecutionArn, lambdaContext, batcher, plugins);
 
         HandlerResult<TOutput> result;
         try

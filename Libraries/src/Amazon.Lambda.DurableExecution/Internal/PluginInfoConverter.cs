@@ -9,19 +9,63 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <summary>Builds the immutable info objects handed to plugins from the SDK's checkpoint model.</summary>
 internal static class PluginInfoConverter
 {
-    internal static OperationInfo ToOperationInfo(Operation op, bool isReplay = false) => new()
+    internal static bool IsTerminal(string? status) =>
+        status == OperationStatuses.Succeeded
+        || status == OperationStatuses.Failed
+        || status == OperationStatuses.Cancelled
+        || status == OperationStatuses.Stopped;
+
+    /// <summary>Describes a checkpointed operation, for the snapshots in invocation and change info.</summary>
+    internal static OperationInfo ToOperationInfo(Operation op) =>
+        ToOperationInfo(op, op.Id ?? string.Empty, op.Name, op.Type ?? string.Empty, op.SubType, op.ParentId,
+            isReplay: false, fallbackStatus: null);
+
+    /// <summary>
+    /// Describes an operation the workflow is running. <paramref name="existing"/> is its checkpoint record, if
+    /// it has one; the identity arguments are what the SDK knows even before the first checkpoint.
+    /// </summary>
+    internal static OperationInfo ToOperationInfo(
+        Operation? existing, string id, string? name, string type, string? subType, string? parentId,
+        bool isReplay, string? fallbackStatus) => new()
     {
-        Id = op.Id ?? string.Empty,
-        Name = op.Name,
-        Type = op.Type ?? string.Empty,
-        SubType = op.SubType,
-        ParentId = op.ParentId,
-        Status = op.Status,
-        StartTimestamp = FromEpochMilliseconds(op.StartTimestamp),
-        EndTimestamp = FromEpochMilliseconds(op.EndTimestamp),
-        Attempt = op.StepDetails?.Attempt,
+        Id = id,
+        Name = name ?? existing?.Name,
+        Type = type,
+        SubType = subType ?? existing?.SubType,
+        ParentId = parentId,
+        Status = existing?.Status ?? fallbackStatus,
+        StartTimestamp = FromEpochMilliseconds(existing?.StartTimestamp),
+        EndTimestamp = existing != null && IsTerminal(existing.Status) ? FromEpochMilliseconds(existing.EndTimestamp) : null,
+        Attempt = AttemptOf(type, existing),
         IsReplay = isReplay,
     };
+
+    /// <summary>Describes an operation that reached a terminal state with the given outcome.</summary>
+    internal static OperationEndInfo ToOperationEndInfo(
+        Operation? latest, string id, string? name, string type, string? subType, string? parentId,
+        bool isReplay, string status, Exception? exception) => new()
+    {
+        Id = id,
+        Name = name ?? latest?.Name,
+        Type = type,
+        SubType = subType ?? latest?.SubType,
+        ParentId = parentId,
+        Status = status,
+        StartTimestamp = FromEpochMilliseconds(latest?.StartTimestamp),
+        // Only the service's own end time. A plugin that needs one when it is missing reads its own clock.
+        EndTimestamp = latest != null && IsTerminal(latest.Status) ? FromEpochMilliseconds(latest.EndTimestamp) : null,
+        Attempt = AttemptOf(type, latest),
+        IsReplay = isReplay,
+        Error = exception != null ? ErrorObject.FromException(exception) : null,
+        Exception = isReplay ? null : exception,
+    };
+
+    /// <summary>
+    /// The 1-based number of the latest attempt of a step. The service records how many attempts came before
+    /// (<c>StepDetails.Attempt</c>), and the SDK numbers the next one from it.
+    /// </summary>
+    private static int? AttemptOf(string type, Operation? op) =>
+        type == OperationTypes.Step ? (op?.StepDetails?.Attempt ?? 0) + 1 : null;
 
     internal static IReadOnlyDictionary<string, OperationInfo> ToOperationMap(IEnumerable<Operation> operations, ISet<string>? onlyIds = null)
     {
