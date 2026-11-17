@@ -80,6 +80,13 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 1 -Exactly -ParameterFilter { $BuildMethod -eq 'NoDocker' -and $Architecture -eq 'arm64' }
         }
 
+        It 'Should keep both builds on Docker under -BuildMethod Docker when docker''s builder lists no linux/arm64 platform' {
+            Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -MockWith { 'linux/amd64', 'linux/386' }
+            $null = New-LambdaPSRuntimeDeployment @script:splat -Architecture arm64 -BuildMethod Docker
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -Times 2 -Exactly -ParameterFilter { $BuildMethod -eq 'Docker' }
+        }
+
         Context 'a kept runtime project' {
             BeforeEach {
                 $script:keptPath = [System.IO.Path]::Combine($TestDrive, 'kept')
