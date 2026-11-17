@@ -65,6 +65,8 @@ limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Con
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
+`New-LambdaPSFunctionDeployment` stops before it creates or updates the function: with `PackageTooLarge`
+over 50 MB zipped, and with `UnzippedPackageTooLarge` over 250 MB unzipped.
 
 ## Quick start (high-level)
 
@@ -308,7 +310,9 @@ on this runtime with these differences:
 - **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
   CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
 - **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
-  them, and empty when the caller sent none. Parse them with `ConvertFrom-Json`, for example
+  them. When the caller sent none, `Identity` is empty, and `ClientContext` is `{}` from AWS.Tools
+  (`Invoke-LMFunction` and `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so
+  test its fields, not the string. Parse them with `ConvertFrom-Json`, for example
   `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
 
 ## Attribution
@@ -322,8 +326,8 @@ Run the offline test suite (all AWS and container seams are mocked) with coverag
 checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
 exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
 directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
-PSScriptAnalyzer 1.21.0 or later:
+needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage
