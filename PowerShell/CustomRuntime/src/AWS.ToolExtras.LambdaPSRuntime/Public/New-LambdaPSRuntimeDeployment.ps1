@@ -125,8 +125,8 @@ function New-LambdaPSRuntimeDeployment {
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
-        '-', starting and ending with a letter or digit, and at most 63 characters together with the
-        version name (56 with a default name such as 7.6.9-1).
+        '-', starting and ending with a letter or digit, and at most 63 characters minus the length of
+        the version name.
     .PARAMETER PowerShellVersion
         The PowerShell version the runtime image targets, in major.minor form (for example 7.4).
     .PARAMETER PwshVersion
@@ -341,7 +341,8 @@ function New-LambdaPSRuntimeDeployment {
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # The API takes 128 characters for each name, but Lambda leaves a version or alias CREATING when
-        # it and the runtime name are longer than this together.
+        # it and the runtime name are longer than this together. Remove the alias check once Lambda creates
+        # aliases up to the 128-character limit (PowerShell-NNN).
         $assertNameLength = {
             param([string]$Kind, [string]$Name, [int]$Max, [string]$Parameter, [string]$ErrorId)
             $total = $RuntimeName.Length + $Name.Length
