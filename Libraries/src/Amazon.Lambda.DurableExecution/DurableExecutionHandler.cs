@@ -14,6 +14,13 @@ internal sealed class HandlerResult<TResult>
     public TResult? Result { get; init; }
     public string? Message { get; init; }
     public Exception? Exception { get; init; }
+
+    /// <summary>
+    /// True when the invocation deadline passed before the workflow completed.
+    /// <see cref="Status"/> is meaningless in that case: the wrapper fails the
+    /// invocation so Lambda retries it, rather than recording a durable outcome.
+    /// </summary>
+    public bool DeadlineExceeded { get; init; }
 }
 
 /// <summary>
@@ -23,6 +30,9 @@ internal sealed class HandlerResult<TResult>
 /// </summary>
 internal static class DurableExecutionHandler
 {
+    // Stands in for the deadline when the caller passes no WorkflowCancellation.
+    private static readonly Task NeverCompletes = new TaskCompletionSource().Task;
+
     /// <summary>
     /// Runs the user's workflow function within the durable execution engine.
     /// </summary>
@@ -49,8 +59,10 @@ internal static class DurableExecutionHandler
     /// Key insight: <c>WaitAsync</c> never returns a completed Task — it hands back
     /// a TaskCompletionSource that is never resolved. The user's <c>await</c> blocks
     /// indefinitely. The escape signal is <c>terminationManager.Terminate()</c>,
-    /// which <c>Task.WhenAny</c> picks up. We return Pending; the dangling user
-    /// Task is GC'd. The service flushes checkpoints, fires the wait timer, then
+    /// which <c>Task.WhenAny</c> picks up. We return Pending and observe the
+    /// abandoned user Task's eventual fault; <see cref="DurableFunction"/> then
+    /// cancels the workflow token so any user work still running unwinds. The
+    /// service flushes checkpoints, fires the wait timer, then
     /// re-invokes Lambda — on replay, <c>WaitAsync</c> sees the matching SUCCEED
     /// checkpoint and returns <c>Task.CompletedTask</c> normally.
     /// </para>
@@ -63,21 +75,61 @@ internal static class DurableExecutionHandler
     /// <param name="executionState">Hydrated execution state from prior invocations.</param>
     /// <param name="terminationManager">Manages the suspension signal.</param>
     /// <param name="userHandler">The user's workflow function receiving a DurableContext.</param>
+    /// <param name="workflowCancellation">
+    /// Optional workflow cancellation for this invocation. When it carries a
+    /// deadline (Lambda Managed Instances only), the deadline joins the race.
+    /// </param>
     /// <returns>The handler result indicating SUCCEEDED, FAILED, or PENDING.</returns>
     internal static async Task<HandlerResult<TResult>> RunAsync<TResult>(
         ExecutionState executionState,
         TerminationManager terminationManager,
-        Func<Task<TResult>> userHandler)
+        Func<Task<TResult>> userHandler,
+        WorkflowCancellation? workflowCancellation = null)
     {
         // Run user code on a threadpool thread so it executes independently of
         // the termination signal. When TerminationManager fires (e.g., WaitAsync),
         // we need the WhenAny race below to resolve immediately without waiting
         // for the user task to reach an await point.
-        var userTask = Task.Run(userHandler);
+        //
+        // The workflow is only queued here; under load it may start after the
+        // deadline passed or after this invocation already returned. Check again
+        // when it actually starts so a late start runs no workflow code.
+        var userTask = Task.Run(() =>
+        {
+            workflowCancellation?.ThrowIfTornDown();
+            return userHandler();
+        });
 
-        // Race: user code completing vs. termination signal (wait/callback/retry).
-        // If termination wins, we return PENDING and the abandoned userTask is never awaited.
-        var winner = await Task.WhenAny(userTask, terminationManager.TerminationTask);
+        // Race: user code completing vs. termination signal (wait/callback/retry)
+        // vs. the invocation deadline. DeadlineTask never completes when there is
+        // no deadline, so on-demand Lambda races only the first two.
+        var deadlineTask = workflowCancellation?.DeadlineTask ?? NeverCompletes;
+        var winner = await Task.WhenAny(userTask, terminationManager.TerminationTask, deadlineTask);
+
+        // Once the deadline has passed, it decides the outcome whichever task won.
+        // A workflow can catch the cancellation and return a fallback value, or a
+        // termination can race the deadline; neither is a real result, and the
+        // service must re-invoke the execution.
+        var deadlineExceeded = workflowCancellation?.IsDeadlineExceeded == true;
+
+        if (winner != userTask || deadlineExceeded)
+        {
+            // userTask is abandoned or its outcome is ignored. Observe its fault so
+            // it never surfaces through TaskScheduler.UnobservedTaskException, which
+            // in a shared process (Lambda Managed Instances) would be reported
+            // against whichever invocation happens to be running when the GC
+            // finalizes it.
+            ObserveAbandoned(userTask);
+        }
+
+        if (deadlineExceeded)
+        {
+            return new HandlerResult<TResult>
+            {
+                Status = InvocationStatus.Failed,
+                DeadlineExceeded = true,
+            };
+        }
 
         if (winner == terminationManager.TerminationTask)
         {
@@ -111,6 +163,18 @@ internal static class DurableExecutionHandler
         }
         catch (Exception ex)
         {
+            // A workflow that faulted because the deadline cancelled it did not
+            // really fail. Report the deadline instead, so the invocation is
+            // retried rather than the execution being failed permanently.
+            if (workflowCancellation?.IsDeadlineExceeded == true)
+            {
+                return new HandlerResult<TResult>
+                {
+                    Status = InvocationStatus.Failed,
+                    DeadlineExceeded = true,
+                };
+            }
+
             return new HandlerResult<TResult>
             {
                 Status = InvocationStatus.Failed,
@@ -119,4 +183,11 @@ internal static class DurableExecutionHandler
             };
         }
     }
+
+    private static void ObserveAbandoned(Task task) =>
+        task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 }

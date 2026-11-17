@@ -1,0 +1,12 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Cancel user work that is still running when an invocation ends, and reject new durable operations started after that point.",
+        "On Lambda Managed Instances, stop durable work at the invocation deadline and throw TimeoutException so the invocation is retried instead of left running."
+      ]
+    }
+  ]
+}

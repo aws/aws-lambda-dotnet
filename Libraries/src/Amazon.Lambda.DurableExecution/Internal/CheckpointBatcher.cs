@@ -16,7 +16,7 @@ namespace Amazon.Lambda.DurableExecution.Internal;
 /// <remarks>
 /// Fire-and-forget semantics are achieved by simply not awaiting the returned
 /// Task. Errors still surface deterministically via <c>_terminalError</c>: the
-/// next sync <see cref="EnqueueAsync"/> or <see cref="DrainAsync"/> rethrows.
+/// next sync <see cref="EnqueueAsync"/> or <see cref="DrainAsync()"/> rethrows.
 /// Callers using fire-and-forget should observe the discarded Task's exception
 /// (see <c>StepOperation.FireAndForget</c>) so it doesn't trip the runtime's
 /// <c>UnobservedTaskException</c> event.
@@ -31,9 +31,15 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
     private readonly Task _worker;
     private readonly CancellationTokenSource _shutdownCts = new();
 
+    // Cancelled only when the worker is abandoned (Lambda Managed Instances
+    // cleanup budget exceeded). Never disposed: it is cheap, and abandoned
+    // awaiters may still be registered on it.
+    private readonly CancellationTokenSource _abandonCts = new();
+
     private string? _checkpointToken;
     private Exception? _terminalError;
     private int _disposed;
+    private int _abandoned;
     private int _tokenMissing;
 
     // Per-update wire-footprint estimate constants. Deliberate over-estimates:
@@ -116,8 +122,31 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         }
 
         // After a missing token this never completes (the invocation is suspended).
-        await tcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // It is also released when the worker is abandoned: a stalled flush may
+        // never return, and the waiting workflow must still be able to unwind
+        // rather than being kept alive by that request.
+        var completion = tcs.Task.WaitAsync(cancellationToken);
+        try
+        {
+            await completion.WaitAsync(_abandonCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_abandonCts.IsCancellationRequested)
+        {
+            // The worker may fail this item later, or may have just failed it after
+            // the abandonment won the wait. Either way nothing else awaits it, so
+            // always observe it; it never reaches TaskScheduler.UnobservedTaskException.
+            ObserveFault(completion);
+            throw new OperationCanceledException(
+                "The checkpoint was not confirmed before the invocation's cleanup budget ran out.", _abandonCts.Token);
+        }
     }
+
+    private static void ObserveFault(Task task) =>
+        task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     /// <summary>
     /// Closes the channel and awaits the worker. Any items already enqueued are
@@ -139,11 +168,66 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
         if (terminal != null) ExceptionDispatchInfo.Throw(terminal);
     }
 
+    /// <summary>
+    /// Like <see cref="DrainAsync()"/>, but gives up after <paramref name="timeout"/>.
+    /// Used for Lambda Managed Instances, where a stalled checkpoint call must not
+    /// hold the invocation open past its deadline.
+    /// </summary>
+    /// <returns>
+    /// <c>true</c> when the worker finished. <c>false</c> when the timeout elapsed:
+    /// the in-flight flush is cancelled and the worker is abandoned, so any
+    /// checkpoint it had not yet sent is not persisted (replay re-runs that work).
+    /// </returns>
+    public async Task<bool> DrainAsync(TimeSpan timeout)
+    {
+        _channel.Writer.TryComplete();
+        try
+        {
+            await _worker.WaitAsync(timeout).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Abandon();
+            return false;
+        }
+        catch
+        {
+            // Surfaced via _terminalError below.
+        }
+
+        var terminal = Volatile.Read(ref _terminalError);
+        if (terminal != null) ExceptionDispatchInfo.Throw(terminal);
+        return true;
+    }
+
+    private void Abandon()
+    {
+        if (Interlocked.Exchange(ref _abandoned, 1) != 0) return;
+
+        // Release every EnqueueAsync awaiter, in flight or queued. Only the SDK's
+        // own WaitAsync promises are registered on this token, so cancelling it
+        // synchronously runs no foreign code.
+        _abandonCts.Cancel();
+
+        // Ask the in-flight flush to stop. CancelAsync runs the callbacks the
+        // service client registered on the threadpool, so a callback that blocks
+        // or throws cannot stall the drain past its budget. A flush that ignores
+        // the token keeps running until it returns; its outcome is not awaited.
+        // The source is never disposed once abandoned: the worker may still read it.
+        ObserveFault(_shutdownCts.CancelAsync());
+        ObserveFault(_worker);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
 
         _channel.Writer.TryComplete();
+
+        // An abandoned worker may never finish. Don't wait for it, and leave its
+        // cancellation source undisposed because the worker may still read the token.
+        if (Volatile.Read(ref _abandoned) == 1) return;
+
         _shutdownCts.Cancel();
         try { await _worker.ConfigureAwait(false); }
         catch { /* swallow on dispose */ }
@@ -254,6 +338,13 @@ internal sealed class CheckpointBatcher : IAsyncDisposable
 
         try
         {
+            // Never start a new request once the worker is shut down or abandoned.
+            // If an abandoned flush ignored cancellation and later returned, the
+            // worker would otherwise go on to send queued batches with this
+            // invocation's checkpoint token, racing the invocation that replays it.
+            // Throwing here routes through the catch below, which fails the batch.
+            cancellationToken.ThrowIfCancellationRequested();
+
             var newToken = await _flushAsync(_checkpointToken, updates, cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _checkpointToken, newToken);
 
