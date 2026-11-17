@@ -187,11 +187,12 @@ function New-LambdaPSRuntimeDeployment {
         ending with '.' or '-'. Alias names are case-sensitive.
     .PARAMETER RuntimeVersion
         The runtime version label / image tag to publish. Defaults to <pwsh release>-<n>, for example
-        7.6.9-1, where n is one more than the highest n the runtime already has for that release (1 for
-        a new runtime), so every run publishes a new version. A deleted version keeps its name until
-        Lambda purges it, days later. Naming it lists the runtime's versions, which needs
-        lambda:ListRuntimeVersions. A name you give is used as is, and one the runtime
-        already has stops the deploy with RuntimeVersionExists. It must be valid as both a runtime
+        7.6.9-1, where n is one more than the highest n for that release among the runtime's versions
+        and the repository's image tags (1 when there is none), so every run publishes a new version and
+        never reuses the name of a removed version, whose image tag stays. Naming it lists the
+        runtime's versions and the repository's images, which needs lambda:ListRuntimeVersions and
+        ecr:DescribeImages. A name you give is used as is, and one the runtime already has stops the
+        deploy with RuntimeVersionExists. It must be valid as both a runtime
         version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128 characters,
         not starting or ending with '.' or '-'. Version names are case-sensitive: 'V1' and 'v1' are
         different versions.
@@ -496,8 +497,8 @@ function New-LambdaPSRuntimeDeployment {
         #   ResourceNotFoundException, so one read answers the question.
         # - Alias: moving the alias to a version of another architecture breaks the functions bound to it,
         #   so the alias is read and the move is warned about before anything is created.
-        # - Version name: the default <pwsh release>-<n> is one past the highest n the runtime has, so
-        #   running the same command again publishes a new version.
+        # - Version name: the default <pwsh release>-<n> is one past the highest n the runtime or its
+        #   repository's image tags have, so running the same command again publishes a new version.
         $lambdaCoreConfig = Get-LambdaPSClientConfig -Service LambdaCore
         $runtimeVersionDefaulted = -not $PSBoundParameters.ContainsKey('RuntimeVersion')
         if ($runtimeVersionDefaulted) { $RuntimeVersion = "$resolvedPwshVersion-1" }
@@ -518,6 +519,7 @@ function New-LambdaPSRuntimeDeployment {
                 throw
             }
         }
+        $versionNames = @()
         if ($runtimeExists -and $runtimeVersionDefaulted) {
             try {
                 $versionNames = @(Get-LMCRuntimeVersionList -RuntimeName $RuntimeName -Region $Region -ClientConfig $lambdaCoreConfig @credentialParameter -ErrorAction Stop |
@@ -533,6 +535,27 @@ function New-LambdaPSRuntimeDeployment {
                             ("Could not list the versions of runtime '$RuntimeName' in region '$Region' to name the new " +
                              "one$serviceDetail Pass -RuntimeVersion to name it yourself. Nothing was built or pushed."), $_.Exception),
                         'RuntimeVersionListFailed', [System.Management.Automation.ErrorCategory]::ReadError, $RuntimeName))
+            }
+        }
+        if ($runtimeVersionDefaulted) {
+            # Removing a version leaves its image tag, and the deploy never pushes over a tag. An
+            # archived image keeps its tag too.
+            try {
+                $versionNames += @(Get-ECRImageMetadata -RepositoryName $effectiveRepository -Filter_TagStatus TAGGED -Filter_ImageStatus ANY -MaxResult 1000 -Region $Region -ClientConfig (Get-LambdaPSClientConfig -Service ECR) @credentialParameter -ErrorAction Stop |
+                        ForEach-Object { $_.ImageTags })
+            }
+            catch {
+                if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'RepositoryNotFoundException')) {
+                    $serviceText = $_.Exception.Message.Trim()
+                    if ($serviceText -and $serviceText -notmatch '[.!?]["'')\]]*\z') { $serviceText += '.' }
+                    $serviceDetail = if ($serviceText) { ": $serviceText" } else { '.' }
+                    $PSCmdlet.ThrowTerminatingError(
+                        [System.Management.Automation.ErrorRecord]::new(
+                            [System.InvalidOperationException]::new(
+                                ("Could not list the image tags of ECR repository '$effectiveRepository' in region '$Region' to name " +
+                                 "the new version$serviceDetail Nothing was built or pushed."), $_.Exception),
+                            'RuntimeImageTagCheckFailed', [System.Management.Automation.ErrorCategory]::ReadError, $effectiveRepository))
+                }
             }
             # Version names are case-sensitive. Up to 9 digits, so n stays an [int].
             $versionPattern = "\A$([regex]::Escape($resolvedPwshVersion))-([0-9]{1,9})\z"
