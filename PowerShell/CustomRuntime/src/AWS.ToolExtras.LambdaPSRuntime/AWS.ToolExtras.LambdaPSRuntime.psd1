@@ -1,6 +1,6 @@
 @{
     RootModule        = 'AWS.ToolExtras.LambdaPSRuntime.psm1'
-    ModuleVersion     = '0.1.0'
+    ModuleVersion     = '1.0.0'
     GUID              = '1d3067bc-4650-4c14-b36c-11563ec12158'
     Author            = 'AWS Tools for PowerShell'
     CompanyName       = 'Amazon Web Services'
@@ -27,10 +27,10 @@
     # "exports command X", so an AWS.Tools build at or above the floor that lacks one of them fails at
     # the point of call.
     RequiredModules   = @(
-        @{ ModuleName = 'AWS.Tools.Lambda'; ModuleVersion = '5.0.1001'; GUID = '240bbccc-f270-44af-8e80-bb4ebe8614ab' }
-        @{ ModuleName = 'AWS.Tools.LambdaCore'; ModuleVersion = '5.0.1001'; GUID = '76c3e742-7ab9-4d8d-94e8-902df9225ae3' }
-        @{ ModuleName = 'AWS.Tools.ECR'; ModuleVersion = '5.0.1001'; GUID = '58bb5011-59c3-41ea-ba12-45c3813db939' }
-        @{ ModuleName = 'AWS.Tools.SecurityToken'; ModuleVersion = '5.0.1001'; GUID = 'b760f2e8-291f-4df4-bd69-3a615b47c8d4' }
+        @{ ModuleName = 'AWS.Tools.Lambda'; ModuleVersion = '5.0.336'; GUID = '240bbccc-f270-44af-8e80-bb4ebe8614ab' }
+        @{ ModuleName = 'AWS.Tools.LambdaCore'; ModuleVersion = '5.0.336'; GUID = '76c3e742-7ab9-4d8d-94e8-902df9225ae3' }
+        @{ ModuleName = 'AWS.Tools.ECR'; ModuleVersion = '5.0.336'; GUID = '58bb5011-59c3-41ea-ba12-45c3813db939' }
+        @{ ModuleName = 'AWS.Tools.SecurityToken'; ModuleVersion = '5.0.336'; GUID = 'b760f2e8-291f-4df4-bd69-3a615b47c8d4' }
     )
 
     FunctionsToExport = @(
@@ -55,7 +55,7 @@
             LicenseUri   = 'https://aws.amazon.com/apache-2-0/'
             IconUri      = 'https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png'
             ProjectUri   = 'https://github.com/aws/aws-lambda-dotnet/tree/HEAD/PowerShell/CustomRuntime'
-            ReleaseNotes = 'Initial release.'
+            ReleaseNotes = 'Initial release. See https://github.com/aws/aws-lambda-dotnet/blob/master/CHANGELOG.md'
         }
     }
 }
