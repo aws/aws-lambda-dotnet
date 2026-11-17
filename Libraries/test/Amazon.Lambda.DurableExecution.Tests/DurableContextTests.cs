@@ -740,6 +740,128 @@ public class DurableContextTests
         Assert.Equal("permanent", ex.Message);
     }
 
+    /// <summary>
+    /// A serializer that serializes fine but throws on deserialize — models an
+    /// asymmetric / broken <see cref="StepConfig.Serializer"/> whose fresh-success
+    /// round-trip fails. Counts calls so the test can assert the step body ran once.
+    /// </summary>
+    private sealed class DeserializeThrowsSerializer : ILambdaSerializer
+    {
+        private readonly ILambdaSerializer _inner = new DefaultLambdaJsonSerializer();
+        public int SerializeCount { get; private set; }
+        public int DeserializeCount { get; private set; }
+
+        public void Serialize<T>(T response, Stream responseStream)
+        {
+            SerializeCount++;
+            _inner.Serialize(response, responseStream);
+        }
+
+        public T Deserialize<T>(Stream requestStream)
+        {
+            DeserializeCount++;
+            throw new InvalidOperationException("asymmetric serializer: cannot read back its own output");
+        }
+    }
+
+    [Fact]
+    public async Task StepAsync_FreshSuccessRoundTripThrows_FailsTerminally_DoesNotRetryOrRerunBody()
+    {
+        // Regression: the fresh-success round-trip DeserializeResult must NOT be routed
+        // through the retry strategy. The side-effecting body has already succeeded, so
+        // retrying would re-invoke it (duplicate side effects) and loop until attempts
+        // exhaust. It must fail TERMINALLY (FAIL checkpoint + StepException, no RETRY).
+        var tm = new TerminationManager();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+        var recorder = new RecordingBatcher();
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, recorder.Batcher);
+
+        var brokenSerializer = new DeserializeThrowsSerializer();
+        var bodyRuns = 0;
+
+        var ex = await Assert.ThrowsAsync<StepException>(() =>
+            context.StepAsync<string>(
+                async (_, _) => { bodyRuns++; await Task.CompletedTask; return "ok"; },
+                name: "roundtrip_step",
+                config: new StepConfig
+                {
+                    Serializer = brokenSerializer,
+                    // A strategy that WOULD retry if consulted. The whole point of the
+                    // fix is that this is NOT consulted for a post-success failure.
+                    RetryStrategy = RetryStrategy.Exponential(
+                        maxAttempts: 3,
+                        initialDelay: TimeSpan.FromSeconds(5),
+                        jitter: JitterStrategy.None)
+                }));
+
+        // Body ran exactly once — no retry re-invoked the succeeded, side-effecting body.
+        Assert.Equal(1, bodyRuns);
+        // The round-trip actually happened once (serialize + the throwing deserialize).
+        Assert.Equal(1, brokenSerializer.SerializeCount);
+        Assert.Equal(1, brokenSerializer.DeserializeCount);
+        // Terminal, not suspended-for-retry.
+        Assert.False(tm.IsTerminated);
+        Assert.Equal("asymmetric serializer: cannot read back its own output", ex.Message);
+
+        // A single terminal FAIL checkpoint was recorded — never a RETRY.
+        await recorder.Batcher.DrainAsync();
+        Assert.DoesNotContain(recorder.Flushed, o => o.Action == "RETRY");
+        Assert.Contains(recorder.Flushed, o => o.Action == "FAIL");
+    }
+
+    [Fact]
+    public async Task StepAsync_SuccessCheckpointEnqueueFails_NotRetried_PropagatesWithoutRecursing()
+    {
+        // Comment 2: the post-round-trip SUCCEED enqueue sits AFTER the retryable
+        // try/catch. A failure there must be routed through the terminal path
+        // (FailStepTerminallyAsync), NOT the retry strategy — the side-effecting body
+        // has already succeeded, so it must not be re-invoked. And because
+        // CheckpointBatcher is terminal-on-failure, the follow-on terminal FAIL emit
+        // fast-fails with the same error; that failure must PROPAGATE rather than
+        // re-entering the SUCCEED path (the recursion guard), and must not loop.
+        var tm = new TerminationManager();
+        var state = new ExecutionState();
+        state.LoadFromCheckpoint(null);
+        var idGen = new OperationIdGenerator();
+        var lambdaContext = CreateLambdaContext();
+
+        // Flush fails only on the STEP SUCCEED; the fire-and-forget START (AtLeastOnce
+        // semantics) flushes fine first.
+        var batcher = new CheckpointBatcher("token", (token, ops, ct) =>
+            ops.Any(o => o.Type == "STEP" && o.Action == "SUCCEED")
+                ? Task.FromException<string?>(new InvalidOperationException("succeed-enqueue boom"))
+                : Task.FromResult<string?>(token));
+        var context = new DurableContext(state, tm, new WorkflowCancellation(tm), idGen, "arn:test", lambdaContext, batcher);
+
+        var bodyRuns = 0;
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            context.StepAsync<string>(
+                async (_, _) => { bodyRuns++; await Task.CompletedTask; return "ok"; },
+                name: "succeed_enqueue_fails",
+                config: new StepConfig
+                {
+                    // A strategy that WOULD retry if (wrongly) consulted for this
+                    // post-success enqueue failure.
+                    RetryStrategy = RetryStrategy.Exponential(
+                        maxAttempts: 3,
+                        initialDelay: TimeSpan.FromSeconds(5),
+                        jitter: JitterStrategy.None)
+                }));
+
+        // The broken terminal-FAIL emit's error propagated (recursion guard's
+        // "propagate" branch) rather than looping.
+        Assert.Equal("succeed-enqueue boom", ex.Message);
+        // Body ran exactly once — not routed through retry, no recursive re-run.
+        Assert.Equal(1, bodyRuns);
+        // Not suspended for a retry.
+        Assert.False(tm.IsTerminated);
+
+        await batcher.DisposeAsync();
+    }
+
     [Fact]
     public async Task StepAsync_RetryExhausted_CheckpointsFail()
     {

@@ -97,6 +97,19 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         $names | Should -Contain 'runtime.ps1'
     }
 
+    It 'tells the zip writer whether the package is a layer, for its upload hint: <Target>' -ForEach @(
+        @{ Target = 'Layer'; IsLayer = $true }, @{ Target = 'SelfContainedZip'; IsLayer = $false }
+    ) {
+        $proj = [System.IO.Path]::Combine($TestDrive, "hint-$Target")
+        if ($Target -eq 'Layer') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer }
+        else { $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target $Target -PowerShellVersion '7.4' }
+        Mock 'Write-LambdaPSZipArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
+
+        $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, "hint-$Target.zip")) -PwshArchivePath $script:fakeTarball
+
+        Should -Invoke 'Write-LambdaPSZipArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -Times 1 -Exactly -ParameterFilter { [bool]$Layer -eq $IsLayer }
+    }
+
     It 'ships the project''s other files, and leaves out scaffolding, .git and outside links, as Compress does' -Skip:$IsWindows {
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-files')
         $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
@@ -461,6 +474,18 @@ Describe 'Build-LambdaPSRuntimePackage handler modules' -Tag 'Unit' {
         { Build-LambdaPSRuntimePackage -Path $script:reqProj -OutFile $out -PwshArchivePath $script:fakeTarball -MissingModuleAction Stop -WhatIf } |
             Should -Throw -ErrorId 'ModuleNotFoundLocally,Build-LambdaPSRuntimePackage'
         Test-Path -LiteralPath $out | Should -BeFalse
+    }
+
+    It 'names the project''s modules/ folder in ModuleNotFoundLocally under Stop when the module is only there' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'scz-req-vendored')
+        $null = Copy-Item -LiteralPath $script:reqProj -Destination $proj -Recurse
+        $null = New-FakeModule -Root ([System.IO.Path]::Combine($proj, 'modules')) -Name 'LambdaPSFake.Req' -Version '1.0.0'
+
+        $err = $null
+        try { $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-req-vendored.zip')) -PwshArchivePath $script:fakeTarball -MissingModuleAction Stop -WarningAction SilentlyContinue }
+        catch { $err = $_ }
+        $err.FullyQualifiedErrorId | Should -Be 'ModuleNotFoundLocally,Build-LambdaPSRuntimePackage'
+        $err.Exception.Message | Should -BeLike "*'LambdaPSFake.Req' 1.0.0 is in '*scz-req-vendored*modules*LambdaPSFake.Req', which is packaged as it is but not searched*"
     }
 
     It 'builds under -MissingModuleAction Stop when the required module is installed locally' {

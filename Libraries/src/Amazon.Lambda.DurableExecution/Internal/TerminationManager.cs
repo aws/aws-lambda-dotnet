@@ -12,7 +12,8 @@ internal enum TerminationReason
     RetryScheduled,
     CallbackPending,
     InvokePending,
-    CheckpointFailed
+    CheckpointFailed,
+    CheckpointTokenMissing
 }
 
 /// <summary>

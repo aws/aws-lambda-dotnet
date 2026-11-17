@@ -39,6 +39,8 @@ function Copy-LambdaPSModuleSet {
         Extra folders, laid out as <Name>/<Version>/, to resolve modules from after the PSModulePath.
     .PARAMETER Pending
         'Name Version' keys of modules a -WhatIf run would have downloaded. Ignored outside -WhatIf.
+    .PARAMETER SourceModulesPath
+        The source's modules/ folder, passed to New-LambdaPSModuleNotFoundError.
     .OUTPUTS
         System.String[]
     .EXAMPLE
@@ -73,7 +75,10 @@ function Copy-LambdaPSModuleSet {
 
         [Parameter()]
         [AllowEmptyCollection()]
-        [string[]]$Pending = @()
+        [string[]]$Pending = @(),
+
+        [Parameter()]
+        [string]$SourceModulesPath
     )
 
     $target = Resolve-LambdaPSPath -Path $Path
@@ -83,7 +88,7 @@ function Copy-LambdaPSModuleSet {
     # unpinned dependency never leaves a partly staged modules folder behind.
     # Only a -WhatIf preview may stand in for a module that is not on disk.
     $previewed = if ($WhatIfPreference) { $Pending } else { @() }
-    $closure = Get-LambdaPSModuleClosure -Module $Module -SearchPath $SearchPath -Pending $previewed -RequireAll
+    $closure = Get-LambdaPSModuleClosure -Module $Module -SearchPath $SearchPath -Pending $previewed -RequireAll -SourceModulesPath $SourceModulesPath
     if ($null -ne $closure.Error) {
         # `throw`, not $PSCmdlet.ThrowTerminatingError: the public cmdlet that called this rethrows the error
         # with its own $PSCmdlet, and an error raised through this helper's $PSCmdlet would also reach the

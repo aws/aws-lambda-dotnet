@@ -53,9 +53,46 @@ function private:Invoke-FunctionHandler {
     # result unreported. A labelled one whose label matches no loop, like exit in a handler function,
     # goes past this loop and ends the runtime; the finally in runtime.ps1's event loop reports that on
     # /error and exits 1. (exit in a <script>.ps1 handler ends only that script.)
+    #
+    # The handler's records are logged one per line, as Amazon.Lambda.PowerShellHost logs each stream:
+    # with AWS_LAMBDA_LOG_FORMAT=JSON every stream at its level, and in text mode its errors, which pwsh
+    # would otherwise print over several lines naming this file. The handler's output is wrapped first,
+    # so a record it returns stays in the response.
+    # The pipeline wraps each value in a PSObject, which ConvertTo-Json writes with its type's extended
+    # properties ([guid] gains Guid); the wrapper is kept only for members the handler added. Only values
+    # whose type names carry extended properties are checked, found once per list of type names (type
+    # data attaches by name, and a value's names can be changed): listing a value's properties costs
+    # about 30 us, and even reading .PSObject 20 us.
+    $script:__LambdaPSRuntimeTypeExtended = @{}
+    $private:handlerRun = {
+        & $private:handlerCommand $LambdaInput $LambdaContext | & {
+            process {
+                $private:item = $_
+                if ($null -eq $private:item) { return , [ref]$private:item }
+                $private:typeNames = $private:item.PSTypeNames -join '|'
+                $private:extended = $script:__LambdaPSRuntimeTypeExtended[$private:typeNames]
+                if ($null -eq $private:extended) {
+                    $private:extended = $script:__LambdaPSRuntimeTypeExtended[$private:typeNames] =
+                        [bool]@($private:item.PSObject.Properties | Microsoft.PowerShell.Core\Where-Object { -not $_.IsInstance -and $_.MemberType -ne 'Property' }).Count
+                }
+                if (-not $private:extended) { return , [ref]$private:item }
+                foreach ($private:property in $private:item.PSObject.Properties) {
+                    if ($private:property.IsInstance -and $private:property.MemberType -ne 'Property') { return , [ref]$private:item }
+                }
+                [ref]($private:item.PSObject.BaseObject)
+            }
+        }
+    }
+    $private:logRecord = {
+        process {
+            if ($_ -is [ref]) { return , $_.Value }
+            & $script:__LambdaPSRuntimeWriteLambdaLog -Record $_
+        }
+    }
     $private:handlerCompleted = $false
     do {
-        $private:functionInvocationResponse = & $private:handlerCommand $LambdaInput $LambdaContext
+        $private:functionInvocationResponse = if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') { . $private:handlerRun 2>&1 | & $private:logRecord }
+        else { . $private:handlerRun *>&1 | & $private:logRecord }
         $private:handlerCompleted = $true
     } while ($false)
     if (-not $private:handlerCompleted) {
@@ -77,7 +114,7 @@ function private:Invoke-FunctionHandler {
         }
         elseif ($script:LambdaPSRuntimeDepthWarnedFor -cne $private:depthValue) {
             $script:LambdaPSRuntimeDepthWarnedFor = $private:depthValue
-            Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
+            & $script:__LambdaPSRuntimeWriteLambdaLog WARN "[RUNTIME-Invoke-FunctionHandler]POWERSHELL_RUNTIME_JSON_DEPTH is '$private:depthValue', which is not a whole number from 1 to 100; using 100."
         }
     }
 

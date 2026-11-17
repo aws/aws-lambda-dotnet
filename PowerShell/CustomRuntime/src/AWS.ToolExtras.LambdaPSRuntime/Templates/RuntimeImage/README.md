@@ -24,7 +24,8 @@ loop in `runtime.ps1`, the image's entrypoint `lambda-entrypoint.sh` (it sets th
 `New-LambdaPSRuntimeDeployment` builds this image, pushes it to Amazon ECR, publishes it as a
 runtime version and points an alias at it. To do the steps yourself:
 
-1. Create the repository with `New-ECRRepository`, and grant Lambda pull access. Read the
+1. Create the repository with `New-ECRRepository -ImageTagMutability IMMUTABLE`, so a push can't
+   move a tag a runtime version was published from, and grant Lambda pull access. Read the
    repository's policy with `Get-ECRRepositoryPolicy` (a new repository has none) and add a statement
    allowing principal `lambda.amazonaws.com` the actions `ecr:BatchGetImage` and
    `ecr:GetDownloadUrlForLayer`, with a `Condition` that `aws:SourceAccount` is your account and

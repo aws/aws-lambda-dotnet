@@ -1,0 +1,82 @@
+# Mints a short-lived nuget.org key and returns it to the release pipeline through Secrets Manager.
+# Canonical copy; scripts/enroll-repo.sh copies it into each library repo.
+name: Mint NuGet key
+# The build id lets the release step find its own run. A correlation aid, not a trust signal.
+run-name: Mint NuGet key ${{ inputs.build_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      secret_id:
+        description: Secrets Manager secret to write the key into
+        type: string
+        required: true
+      build_id:
+        description: CODEBUILD_BUILD_ID of the requesting release
+        type: string
+        required: true
+      region:
+        description: Region of the secret to write into
+        type: string
+        required: true
+
+# No contents: read — the job never checks out.
+permissions:
+  id-token: write
+
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    # Pinned by the nuget.org policy and the role trust policy. Its deployment branch policy is the
+    # only branch control, so do not change this name.
+    environment: nuget-key-mint
+    steps:
+      # First, because a later step's group header prints its env map. Read from the event payload so no
+      # expression puts the value in this step's own header.
+      - name: Mask the target secret name
+        run: |
+          secret_id=$(jq -r '.inputs.secret_id // empty' "$GITHUB_EVENT_PATH")
+          if [ -n "$secret_id" ]; then echo "::add-mask::$secret_id"; fi
+
+      # Before NuGet/login: an empty user fails on something unrelated, and an empty input would strand a
+      # minted key, which cannot be returned or revoked from here.
+      - name: Require everything the mint needs
+        env:
+          NUGET_USER: ${{ secrets.NUGET_USER }}
+          SECRET_ID: ${{ inputs.secret_id }}
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          test -n "$NUGET_USER" || { echo "::error::the NUGET_USER environment secret is not set"; exit 1; }
+          test -n "$SECRET_ID"  || { echo "::error::no secret_id"; exit 1; }
+          test -n "$BUILD_ID"   || { echo "::error::no build_id"; exit 1; }
+
+      # v1.2.0
+      - uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # v6.3.0
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd
+        with:
+          role-to-assume: ${{ secrets.NUGET_KEY_WRITER_ROLE_ARN }}
+          aws-region: ${{ inputs.region }}
+          role-session-name: mint-${{ github.run_id }}
+
+      - name: Write key to Secrets Manager
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          SECRET_ID: ${{ inputs.secret_id }}
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          # Must be first: masking is not retroactive.
+          echo "::add-mask::$NUGET_API_KEY"
+          test -n "$NUGET_API_KEY" || { echo "::error::no key minted"; exit 1; }
+          test -n "$SECRET_ID"     || { echo "::error::no secret_id"; exit 1; }
+          test -n "$BUILD_ID"      || { echo "::error::no build_id"; exit 1; }
+          jq -nc --arg k "$NUGET_API_KEY" --arg r "$BUILD_ID" \
+            '{key:$k, codeBuildBuildId:$r, mintedAt:(now|todate)}' \
+          | aws secretsmanager put-secret-value \
+              --secret-id "$SECRET_ID" --secret-string file:///dev/stdin > /dev/null
+
+# No concurrency block: concurrent releases each mint their own key into their own secret.

@@ -177,13 +177,34 @@ public static class HttpContextExtensions
             pathParameters = encodedPathParameters;
         }
 
+        var pathValue = path ?? "/";
+        var resourceValue = apiGatewayRouteConfig.Path ?? "";
+        var httpMethodValue = request.Method ?? "GET";
+        var userAgent = request.Headers.UserAgent.ToString();
+
         var proxyRequest = new APIGatewayProxyRequest
         {
-            Resource = apiGatewayRouteConfig.Path,
-            Path = path,
-            HttpMethod = request.Method,
+            Resource = resourceValue,
+            Path = pathValue,
+            HttpMethod = httpMethodValue,
             Body = body,
-            IsBase64Encoded = false
+            IsBase64Encoded = false,
+            RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
+            {
+                Path = pathValue,
+                AccountId = "123456789012",
+                ResourceId = "test-invoke-resource-id",
+                Stage = "test-invoke-stage",
+                RequestId = HttpRequestUtility.GenerateRequestId(),
+                Identity = new APIGatewayProxyRequest.RequestIdentity
+                {
+                    SourceIp = "127.0.0.1",
+                    UserAgent = userAgent
+                },
+                ResourcePath = resourceValue,
+                HttpMethod = httpMethodValue,
+                ApiId = "test-invoke-api-id"
+            }
         };
 
         if (headers.Any())

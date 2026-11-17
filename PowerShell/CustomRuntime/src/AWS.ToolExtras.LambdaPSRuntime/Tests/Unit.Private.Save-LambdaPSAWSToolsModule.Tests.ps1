@@ -237,6 +237,23 @@ function Install-AWSToolsModule {
         Get-Content -LiteralPath ([System.IO.Path]::Combine($common, 'AWS.Tools.Common.psd1')) | Should -Be '# already here'
     }
 
+    It 'drops the installer''s skipped warning for a module it installed under another case, and keeps the others' {
+        # As AWS.Tools.Installer 2.0.5 does for 'aws.tools.sqs': it warns, then installs AWS.Tools.SQS.
+        $body = 'foreach ($n in "AWS.Tools.SQS", "AWS.Tools.Common") { $d = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($Path, $n, $Version)) -Force; Set-Content -LiteralPath ([System.IO.Path]::Combine($d.FullName, "$n.psd1")) -Value "# downloaded" }; foreach ($n in $Name) { Write-Warning "Module ''$n'' is not available in this version and was skipped." }'
+        $installer = New-FakeInstaller -Path (Join-Path $TestDrive 'installed-case') -Version '2.0.6' -Body $body
+
+        $warnings = InModuleScope $script:moduleName -Parameters @{ installer = $installer; dl = (Join-Path $TestDrive 'aws-dl-case') } {
+            param($installer, $dl)
+            Mock 'Get-Module' -ParameterFilter { $ListAvailable -and $Name -eq 'AWS.Tools.Installer' } -MockWith {
+                [PSCustomObject]@{ Name = 'AWS.Tools.Installer'; Version = [version]'2.0.6'; Path = $installer }
+            }
+            Save-LambdaPSAWSToolsModule -Name 'aws.tools.sqs', 'AWS.Tools.Bogus' -Version '9.9.1' -Path $dl -InstallerPath (Join-Path $TestDrive 'unused') -WarningVariable w -WarningAction SilentlyContinue
+            $w
+        }
+
+        @($warnings | ForEach-Object { "$_" }) | Should -Be @("Module 'AWS.Tools.Bogus' is not available in this version and was skipped.")
+    }
+
     It 'wraps an installer failure as ModuleDownloadFailed' {
         $installer = New-FakeInstaller -Path (Join-Path $TestDrive 'installed-failing') -Version '2.0.6' -Body 'throw "CloudFront unreachable"'
 

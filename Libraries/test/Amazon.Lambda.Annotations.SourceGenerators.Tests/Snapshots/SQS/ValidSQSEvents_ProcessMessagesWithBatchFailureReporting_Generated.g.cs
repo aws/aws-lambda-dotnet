@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.SQSEventExamples
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.SQSEventExamples.ValidSQSEvents"/>.
+    /// </summary>
     public class ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated
     {
         private readonly ValidSQSEvents validSQSEvents;

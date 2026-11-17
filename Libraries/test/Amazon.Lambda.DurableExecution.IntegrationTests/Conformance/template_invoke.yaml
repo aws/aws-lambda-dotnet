@@ -69,9 +69,6 @@ Resources:
     Type: AWS::Serverless::Function
     TestingMetadata:
       TestDescription: ["5-1"]
-      NotImplemented:
-        - id: "5-16"
-          reason: "Invoke with custom result serdes: .NET has no per-operation serdes slot; the invoke result is deserialized via the one registered ILambdaSerializer (matches the Java approach)."
     Metadata:
       BuildMethod: makefile
     Properties:
@@ -404,6 +401,28 @@ Resources:
       CodeUri: publish/InvokeCustomPayloadSerdes/
       Handler: bootstrap
       Description: Invoke with custom payload serdes (uppercases outgoing payload)
+      Role:
+        Fn::GetAtt:
+        - DurableFunctionRole
+        - Arn
+      DurableConfig:
+        RetentionPeriodInDays: 7
+        ExecutionTimeout: 300
+      Environment:
+        Variables:
+          TARGET_FUNCTION_NAME:
+            !Sub "${InvokeEchoTarget.Arn}:$LATEST"
+
+  InvokeCustomResultSerdes:
+    Type: AWS::Serverless::Function
+    TestingMetadata:
+      TestDescription: ["5-16"]
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/InvokeCustomResultSerdes/
+      Handler: bootstrap
+      Description: Invoke with a custom result serdes (uppercases the deserialized result)
       Role:
         Fn::GetAtt:
         - DurableFunctionRole

@@ -50,10 +50,10 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         }
     }
 
-    It 'creates a missing repository, sets a Lambda-pull policy without reading one, and logs in' {
+    It 'creates a missing repository with immutable tags, sets a Lambda-pull policy without reading one, and logs in' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig) }
@@ -69,7 +69,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
             }
 
             Initialize-LambdaPSEcrRepository -RepositoryName 'rt' -AccountId '111122223333' -RuntimeArn 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' -Region 'us-east-1' | Should -BeNullOrEmpty
-            Should -Invoke 'New-ECRRepository' -Times 1 -Exactly -ParameterFilter { $RepositoryName -eq 'rt' -and $ImageScanningConfiguration_ScanOnPush -eq $true }
+            Should -Invoke 'New-ECRRepository' -Times 1 -Exactly -ParameterFilter { $RepositoryName -eq 'rt' -and $ImageScanningConfiguration_ScanOnPush -eq $true -and $ImageTagMutability -eq 'IMMUTABLE' }
             # A repository created just now has no policy, so there is nothing to read.
             Should -Invoke 'Get-ECRRepositoryPolicy' -Times 0 -Exactly
             Should -Invoke 'Set-ECRRepositoryPolicy' -Times 1 -Exactly -ParameterFilter {
@@ -88,7 +88,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         BeforeEach {
             InModuleScope $script:moduleName {
                 function script:Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-                function script:New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+                function script:New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
                 function script:Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
                 function script:Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
                 function script:Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -318,7 +318,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'does not create the repository when it already exists' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig) }
@@ -345,7 +345,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'keeps existing statements when adding the Lambda grant to an existing policy' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig) }
@@ -371,7 +371,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'writes nothing when the existing policy already grants Lambda image pull' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig) }
@@ -396,7 +396,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'rethrows a non-not-found repository error instead of creating the repository' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -417,7 +417,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'rethrows a non-not-found policy read error instead of overwriting the policy' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -440,7 +440,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'tolerates a repository created concurrently between the probe and the create' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig) }
@@ -467,7 +467,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'passes the region, client config and credentials to every ECR call' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ProfileName, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ProfileName, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ProfileName, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ProfileName, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ProfileName, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ProfileName, $ErrorAction) }
@@ -496,7 +496,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'skips the grant and docker login when -WhatIf skips the create' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -523,7 +523,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
         Set-LambdaPSTestDocker -Output 'Error: denied' -ExitCode 1
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -547,7 +547,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'reads the policy of an existing repository under -WhatIf, but writes nothing and does not log in' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }
@@ -571,7 +571,7 @@ Describe 'Initialize-LambdaPSEcrRepository' -Tag 'Unit' {
     It 'rethrows a create error other than already-exists, and writes no policy' {
         InModuleScope $script:moduleName {
             function Get-ECRRepository { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
-            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $Region, $ClientConfig, $ErrorAction) }
+            function New-ECRRepository { param($RepositoryName, $ImageScanningConfiguration_ScanOnPush, $ImageTagMutability, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRRepositoryPolicy { param($RepositoryName, $Region, $ClientConfig, $ErrorAction) }
             function Set-ECRRepositoryPolicy { param($RepositoryName, $PolicyText, $Region, $ClientConfig, $ErrorAction) }
             function Get-ECRLoginCommand { param($Region, $ClientConfig, $ErrorAction) }

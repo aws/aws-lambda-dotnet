@@ -10,6 +10,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.IntrinsicExample"/>.
+    /// </summary>
     public class IntrinsicExample_HasIntrinsic_Generated
     {
         private readonly IntrinsicExample intrinsicExample;

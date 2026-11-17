@@ -34,7 +34,7 @@ $requiredSetting = [ordered]@{
     pwsh      = 'ReleaseUrl', 'Download.RetryCount', 'Download.RetryDelaySeconds', 'Download.ConnectTimeoutSeconds',
                 'Download.OperationTimeoutSeconds', 'PackageRepository.Url', 'PackageRepository.OperationTimeoutSeconds',
                 'DefaultPatch', 'ArchiveSha256'
-    wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds'
+    wait      = 'Function.Attempts', 'Function.IntervalSeconds', 'RuntimeVersion.Attempts', 'RuntimeVersion.IntervalSeconds', 'Role.Attempts', 'Role.IntervalSeconds'
     function  = 'Timeout', 'MemorySize'
     installer = 'Version', 'FilesSha256'
 }
@@ -66,6 +66,13 @@ foreach ($file in @($private + $public)) {
 }
 
 Export-ModuleMember -Function $public.BaseName
+
+# Registered here rather than as an [ArgumentCompleter()] attribute, whose script block runs outside
+# the module and can't call its private functions.
+Register-ArgumentCompleter -CommandName New-LambdaPSRuntimeDeployment -ParameterName RuntimeAlias -ScriptBlock {
+    # Arguments: command name, parameter name, word to complete, command AST, bound parameters.
+    Get-LambdaPSRuntimeAliasCompletion -WordToComplete $args[2] -FakeBoundParameters $args[4]
+}
 
 # The loader's variables would otherwise stay visible to every function in the module.
 Remove-Variable -Name configPath, newConfigError, file, requiredSetting, missingConfig, area, setting, node, segment, missingSetting, private, public -ErrorAction SilentlyContinue

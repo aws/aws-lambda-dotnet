@@ -21,10 +21,57 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     internal static class Utils
     {
+        // The event name emitted in the worker pool initialization debug log. This matches the event name used by the
+        // Java and Python Lambda runtimes so the log is queryable consistently across languages.
+        internal const string WorkerPoolInitializingEvent = "runtime_worker_pool_initializing";
+
+        // The message template used for the worker pool initialization debug log. The named properties are emitted as
+        // top level fields in the structured JSON log (event, workerCount, executionEnvironmentMaxConcurrency).
+        internal const string WorkerPoolInitializingLogTemplate = "{event} workerCount={workerCount} executionEnvironmentMaxConcurrency={executionEnvironmentMaxConcurrency}";
+
         public static bool IsRunningNativeAot()
         {
-            // If dynamic code is not supported we are most likely running in an AOT environment. 
+            // If dynamic code is not supported we are most likely running in an AOT environment.
             return !RuntimeFeature.IsDynamicCodeSupported;
+        }
+
+        /// <summary>
+        /// Determines if the customer configured the Lambda function to use the JSON log format. This mirrors the
+        /// resolution done by <see cref="LogLevelLoggerWriter"/>: the .NET runtime specific environment variable is
+        /// checked first, falling back to the Lambda platform environment variable.
+        /// </summary>
+        internal static bool IsJsonLogFormat(IEnvironmentVariables environmentVariables)
+        {
+            var logFormat = environmentVariables.GetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE);
+            if (string.IsNullOrEmpty(logFormat))
+            {
+                logFormat = environmentVariables.GetEnvironmentVariable(Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
+            }
+
+            return string.Equals(logFormat, Constants.LAMBDA_LOG_FORMAT_JSON, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Emits a one time DEBUG log during init reporting the number of worker (processing) tasks and the execution
+        /// environment max concurrency. This is only emitted when the function is running in multi concurrency mode
+        /// (Lambda managed instances) and the JSON log format is configured. The DEBUG level means the log is only
+        /// surfaced when the function log level is set to Debug or Trace; that filtering is handled by the console
+        /// logger writer so it is not re-checked here.
+        /// </summary>
+        internal static void EmitWorkerPoolInitializingLog(IConsoleLoggerWriter consoleLogger, IEnvironmentVariables environmentVariables, int workerCount, int maxConcurrency)
+        {
+            if (consoleLogger == null)
+                return;
+
+            if (!IsUsingMultiConcurrency(environmentVariables) || !IsJsonLogFormat(environmentVariables))
+                return;
+
+            consoleLogger.FormattedWriteLine(
+                LogLevelLoggerWriter.LogLevel.Debug.ToString(),
+                WorkerPoolInitializingLogTemplate,
+                WorkerPoolInitializingEvent,
+                workerCount,
+                maxConcurrency);
         }
 
         /// <summary>

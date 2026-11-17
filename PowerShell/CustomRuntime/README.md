@@ -65,6 +65,8 @@ limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Con
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
+`New-LambdaPSFunctionDeployment` stops before it creates or updates the function: with `PackageTooLarge`
+over 50 MB zipped, and with `UnzippedPackageTooLarge` over 250 MB unzipped.
 
 ## Quick start (high-level)
 
@@ -74,8 +76,9 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'default' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+#    publish version -> point the 'default' alias at it). -RuntimeAlias is required, as every function
+#    bound to the alias runs the new version; Tab offers 'default' and the runtime's aliases.
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -141,8 +144,9 @@ Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime.
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy.
+image, then `7.6.10-1`) and moves the alias. A deleted version keeps its name until Lambda purges it,
+days later. A `-ProjectPath` project is built as is, with the release its `Dockerfile` names, so patch
+it by deploying without `-ProjectPath`, or by changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
@@ -154,7 +158,7 @@ the alias already pointed at a version, the result's `PreviousRuntimeVersion` sa
 can be rolled back:
 
 ```powershell
-$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1
 Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
 ```
@@ -209,10 +213,11 @@ On Linux and macOS, an existing target directory owned by a user other than you,
 writable by group or others, is refused with `TargetOwnedByAnotherUser`, even with `-Force` (no check
 when running as root). `-Force` does not replace a non-empty target that is a link
 (`TargetIsLink`), a drive root, or the current location or your home folder or a folder that contains
-either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
-`-ProjectPath` the same way, but only when it holds a runtime-image project this module scaffolded
-(a `lambdaps-runtime.json` marker with target CMR); any other non-empty directory is refused with
-`TargetNotEmpty` before anything is created.
+either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` never replaces a
+folder. Without `-ProjectPath`, it scaffolds in a new temp folder and removes it at the end. A
+`-ProjectPath` that holds a runtime-image project this module scaffolded (a `lambdaps-runtime.json`
+marker with target CMR) is built as is, so edits to its `Dockerfile`, `runtime.ps1` or `modules/`
+ship. Any other non-empty directory is refused with `TargetNotEmpty` before anything is created.
 
 `-WhatIf` runs the same local checks as a real run — module pins and availability, the pwsh version,
 the handler, the architecture — and the deploy cmdlets also run their read-only AWS checks, so a
@@ -248,6 +253,10 @@ cmdlets:
 | `Save` (default) | Download into a temporary folder, stage from there, delete the folder. The local PowerShell environment is not changed. |
 | `Install` | Download the same way, and also install into the CurrentUser module folder (never over an existing version). |
 | `Stop` | Fail with `ModuleNotFoundLocally`. |
+
+A source's own `modules/` folder is packaged as it is, but not searched for the modules to stage. When the folder also holds a
+`#Requires` module, the packagers warn, since the staged copy is written over the folder's or ships beside its other
+copy, and under `Stop` the error names the folder when it holds the missing version.
 
 Downloads use **AWS.Tools.Installer** 2.0.5 or a later 2.x for `AWS.Tools.*` modules (the AWS.Tools.zip from
 CloudFront, one download per version; the Installer checks it against the SHA512 published beside it, which detects a
@@ -299,7 +308,9 @@ on this runtime with these differences:
 - **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
   CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
 - **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
-  them, and empty when the caller sent none. Parse them with `ConvertFrom-Json`, for example
+  them. When the caller sent none, `Identity` is empty, and `ClientContext` is `{}` from AWS.Tools
+  (`Invoke-LMFunction` and `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so
+  test its fields, not the string. Parse them with `ConvertFrom-Json`, for example
   `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
 
 ## Attribution
@@ -313,13 +324,14 @@ Run the offline test suite (all AWS and container seams are mocked) with coverag
 checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
 exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
 directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
-PSScriptAnalyzer 1.21.0 or later:
+needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage
 pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
 pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+pwsh ./build.ps1 -Task Package     # stage the module to publish (no Tests/) in Deployment/LambdaPSRuntime
 ```
 
 The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory

@@ -11,6 +11,9 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
+    /// <summary>
+    /// The generated Lambda function handler for <see cref="TestServerlessApp.Greeter"/>.
+    /// </summary>
     public class Greeter_SayHelloAsync_Generated
     {
         private readonly ServiceProvider serviceProvider;

@@ -92,7 +92,7 @@ function Test-LambdaPSRuntimeProject {
     .PARAMETER Path
         The project directory to lint. Must contain a bootstrap file. Accepts pipeline input: a path
         string, a directory from Get-Item (FullName), or a New-LambdaPSRuntimeDeployment result
-        (ProjectPath). An empty path, a missing directory (or a file in its place, or a path on
+        given -ProjectPath (ProjectPath). An empty path, a missing directory (or a file in its place, or a path on
         another provider such as Env:), a missing bootstrap (or a link to nothing), a bootstrap that
         cannot be read (empty, larger than 1 MB, not a regular file, such as a FIFO or a device, a
         link loop, or a file you may not read), or a lambdaps-runtime.json that is not valid is a

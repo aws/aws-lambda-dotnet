@@ -124,6 +124,17 @@ Describe 'Compress-LambdaPSFunctionPackage' -Tag 'Unit' {
             ($warnings -join ' ') | Should -BeLike '*old.zip*earlier package*'
         }
 
+        It 'warns about a bootstrap file at the top of the folder, which replaces a layer runtime' {
+            $project = [System.IO.Path]::Combine($TestDrive, 'fn-bootstrap')
+            $null = New-Item -ItemType Directory -Path $project -Force
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'handler.ps1')) -Value 'param($LambdaInput, $LambdaContext)'
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'bootstrap')) -Value '#!/bin/sh'
+
+            $null = Compress-LambdaPSFunctionPackage -Path $project -OutFile ([System.IO.Path]::Combine($TestDrive, 'fn-bootstrap.zip')) -WarningVariable warnings -WarningAction SilentlyContinue
+
+            ($warnings -join ' ') | Should -BeLike "*'bootstrap' file at its root*instead of the layer's bootstrap*"
+        }
+
         It 'keeps the execute bit of an executable file' -Skip:$IsWindows {
             $project = [System.IO.Path]::Combine($TestDrive, 'fn-exec')
             $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($project, 'bin')) -Force
@@ -737,6 +748,23 @@ param($LambdaInput, $LambdaContext)
 
             { Compress-LambdaPSFunctionPackage -Path $dir -OutFile (Join-Path $TestDrive 'deps-bare.zip') -MissingModuleAction Stop } |
                 Should -Throw -ErrorId 'ModuleVersionRequired,Compress-LambdaPSFunctionPackage'
+        }
+    }
+
+    # The source's modules/ folder is copied into the package and the #Requires copy is staged over it.
+    Context 'a #Requires module the source also keeps in modules/' {
+        BeforeAll {
+            $script:vendoredSource = Join-Path $TestDrive 'vendored'
+            $null = New-FakeModule -Root (Join-Path $script:vendoredSource 'modules') -Name 'LambdaPSFake.Vendored' -Version '1.2.0'
+            Set-Content -LiteralPath (Join-Path $script:vendoredSource 'handler.ps1') -Value "#Requires -Modules @{ ModuleName = 'LambdaPSFake.Vendored'; RequiredVersion = '1.2.0' }", 'param($LambdaInput, $LambdaContext)'
+        }
+
+        It 'names the folder in ModuleNotFoundLocally under -MissingModuleAction Stop' {
+            $err = $null
+            try { $null = Compress-LambdaPSFunctionPackage -Path $script:vendoredSource -OutFile (Join-Path $TestDrive 'vendored-stop.zip') -MissingModuleAction Stop -WarningAction SilentlyContinue }
+            catch { $err = $_ }
+            $err.FullyQualifiedErrorId | Should -Be 'ModuleNotFoundLocally,Compress-LambdaPSFunctionPackage'
+            $err.Exception.Message | Should -BeLike "*'LambdaPSFake.Vendored' 1.2.0 is in '*vendored*modules*LambdaPSFake.Vendored', which is packaged as it is but not searched*"
         }
     }
 

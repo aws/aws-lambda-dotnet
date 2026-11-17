@@ -84,7 +84,8 @@ internal sealed class DurableContext : IDurableContext
         StepConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new StepOperation<T>(
@@ -147,7 +148,8 @@ internal sealed class DurableContext : IDurableContext
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(config.WaitStrategy);
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config.Serializer ?? defaultSerializer, defaultSerializer);
         var operationId = _idGenerator.NextId();
         var op = new WaitForConditionOperation<TState>(
             operationId, name, _idGenerator.ParentId, check, config, serializer, Logger,
@@ -161,7 +163,8 @@ internal sealed class DurableContext : IDurableContext
         ChildContextConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(config?.Serializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
 
@@ -183,13 +186,45 @@ internal sealed class DurableContext : IDurableContext
         CallbackConfig? config,
         CancellationToken cancellationToken)
     {
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         var operationId = _idGenerator.NextId();
         var op = new CallbackOperation<T>(
             operationId, name, _idGenerator.ParentId, config, serializer,
             _state, _terminationManager, _durableExecutionArn, _batcher);
         return op.ExecuteAsync(cancellationToken);
+    }
+
+    public IDurableParallel CreateParallel(
+        string? name = null,
+        ParallelConfig? config = null)
+    {
+        var effectiveConfig = config ?? new ParallelConfig();
+        // Operation-level default for per-branch result serialization: the config's
+        // ItemSerializer if set, else the globally-registered serializer. Individual
+        // branches may still override this via Branch's serializer parameter.
+        //
+        // Resolved LAZILY: a workflow that overrides the serializer on every Branch
+        // call (the AOT/per-branch scenario) must not be forced to register a global
+        // serializer. GetRequired is deferred to the factory below and invoked only
+        // when a branch actually falls back to this operation-level default.
+        var lambdaContext = LambdaContext;
+        Func<Amazon.Lambda.Core.ILambdaSerializer> defaultSerializerFactory = () =>
+        {
+            // Match the other serializer-resolving dispatchers (ParallelAsync, MapAsync,
+            // etc.): bind the globally-registered serializer as the inner of an
+            // IDefaultInnerSerializer (e.g. the inner-less FileSystemSerializer) so
+            // ParallelConfig.ItemSerializer behaves the same on CreateParallel as on
+            // batch ParallelAsync.
+            var defaultSerializer = LambdaSerializerHelper.GetRequired(lambdaContext);
+            return LambdaSerializerHelper.WithDefaultInner(
+                effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
+        };
+
+        var operationId = _idGenerator.NextId();
+        return new Internal.IncrementalParallelOperation(
+            operationId, name, _idGenerator.ParentId, effectiveConfig, defaultSerializerFactory, MakeChildFactory(),
+            _state, _terminationManager, _workflowCancellation, _durableExecutionArn, _batcher);
     }
 
     public Task<IBatchResult<T>> ParallelAsync<T>(
@@ -242,11 +277,12 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new ParallelConfig();
 
-        var serializer = LambdaContext.Serializer
-            ?? throw new InvalidOperationException(
-                "No ILambdaSerializer is registered on ILambdaContext.Serializer. " +
-                "Register a serializer via LambdaBootstrapBuilder.Create(handler, serializer) " +
-                "(or in tests, set TestLambdaContext.Serializer).");
+        // Per-branch result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.ParallelOperation<T>(
@@ -275,7 +311,12 @@ internal sealed class DurableContext : IDurableContext
 
         var effectiveConfig = config ?? new MapConfig<TItem>();
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        // Per-item result serialization: the config's ItemSerializer if set, else the
+        // globally-registered serializer. This is the only serializer ConcurrentOperation
+        // uses (per-unit child results + inline summary results); the aggregate batch
+        // envelope is a source-generated structure and is unaffected.
+        var defaultSerializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = LambdaSerializerHelper.WithDefaultInner(effectiveConfig.ItemSerializer ?? defaultSerializer, defaultSerializer);
 
         var operationId = _idGenerator.NextId();
         var op = new Internal.MapOperation<TItem, TResult>(
@@ -318,6 +359,7 @@ internal sealed class DurableContext : IDurableContext
         {
             Timeout = config.Timeout,
             HeartbeatTimeout = config.HeartbeatTimeout,
+            SubType = config.SubType,
         };
 
         var stepConfig = config?.RetryStrategy == null
@@ -495,7 +537,7 @@ internal sealed class DurableContext : IDurableContext
         if (string.IsNullOrWhiteSpace(functionName))
             throw new ArgumentException("Function name must not be empty or whitespace.", nameof(functionName));
 
-        var serializer = LambdaSerializerHelper.GetRequired(LambdaContext);
+        var serializer = config?.Serializer ?? LambdaSerializerHelper.GetRequired(LambdaContext);
 
         cancellationToken.ThrowIfCancellationRequested();
 

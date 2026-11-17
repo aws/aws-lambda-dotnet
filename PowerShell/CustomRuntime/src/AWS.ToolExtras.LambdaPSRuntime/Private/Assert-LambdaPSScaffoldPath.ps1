@@ -82,7 +82,13 @@ function Assert-LambdaPSScaffoldPath {
         # users can write to it too (/tmp, /var/tmp, a shared drop folder). A caller running as root
         # (sudo, a CI container) is not refused its own user's checkout.
         # Run by its resolved path, so a function or alias named 'id' in the session cannot answer.
-        $idCommand = Get-Command -Name 'id' -CommandType Application -ErrorAction Stop | Select-Object -First 1
+        $idCommand = Get-Command -Name 'id' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -eq $idCommand) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.Management.Automation.CommandNotFoundException]::new(
+                    "The 'id' command is not on PATH, and it is needed to check who owns '$Path'. Add the folder that holds it (usually /usr/bin) to PATH."),
+                'IdCommandNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, 'id')
+        }
         $currentUserId = [long](& $idCommand.Source -u)
         $ownerId = [long]$directory.UnixStat.UserId
         $sharedWrite = [System.IO.UnixFileMode]::GroupWrite -bor [System.IO.UnixFileMode]::OtherWrite

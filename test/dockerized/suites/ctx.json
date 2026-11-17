@@ -1,0 +1,31 @@
+{
+  "name": "ctx",
+  "tests": [
+    {
+      "name": "client_context_is_echoed_when_no_w3c_key",
+      "handler": "w3c.echo_client_context",
+      "request": {},
+      "clientContext": {
+        "custom": { "value": "hello" },
+        "env": { "stage": "beta" }
+      },
+      "assertions": [
+        {
+          "response": {
+            "custom": { "value": "hello" },
+            "env": { "stage": "beta" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "client_context_is_null_when_header_absent",
+      "handler": "w3c.echo_client_context",
+      "request": {},
+      "assertions": [
+        { "response": null }
+      ]
+    }
+  ]
+}
