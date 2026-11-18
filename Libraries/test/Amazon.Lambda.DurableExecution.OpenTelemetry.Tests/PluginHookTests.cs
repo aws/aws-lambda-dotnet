@@ -103,6 +103,30 @@ public class PluginHookTests
     }
 
     [Fact]
+    public async Task StepResumedAfterARetry_GetsANewSpanThatLinksItsFirstSegment()
+    {
+        using var spans = new SpanCollector();
+        var plugin = Start(spans, Info());
+        var step = Op("step-1", OperationTypes.Step, OperationStatuses.Ready, "flaky", replay: true);
+
+        // An earlier invocation started this step and scheduled a retry. This one runs the second attempt.
+        plugin.OnOperationStart(step);
+        plugin.OnOperationEnd(new OperationEndInfo
+        {
+            Id = "step-1", Type = OperationTypes.Step, Name = "flaky", Status = OperationStatuses.Succeeded, Attempt = 2, IsReplay = false,
+        });
+        await Finish(plugin);
+
+        var segment = Assert.Single(spans.All("flaky"));
+        var firstSegmentId = DeterministicIds.SpanIdFromOperationId("step-1", Arn);
+        // The derived id belongs to the first segment, exported by the invocation that started the step.
+        Assert.NotEqual(firstSegmentId, segment.SpanId.ToHexString());
+        Assert.Equal(firstSegmentId, segment.Links.First().Context.SpanId.ToHexString());
+        Assert.Equal("SUCCEEDED", Tag(segment, "durable.operation.status"));
+        Assert.Equal("2", Tag(segment, "durable.attempt.number"));
+    }
+
+    [Fact]
     public async Task ReplayedWaitWithNoCompletionNews_IsNotExported()
     {
         using var spans = new SpanCollector();

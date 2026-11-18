@@ -228,6 +228,35 @@ public class InvocationTraceTests
     }
 
     [Fact]
+    public async Task RetriedStep_NeverReusesASpanIdAcrossInvocations()
+    {
+        using var spans = new SpanCollector();
+        var attempts = 0;
+
+        var result = await Run(spans, ctx => ctx.StepAsync((_, _) =>
+        {
+            if (++attempts < 3) throw new InvalidOperationException("transient");
+            return Task.FromResult("ok");
+        }, name: "flaky", config: new StepConfig
+        {
+            RetryStrategy = RetryStrategy.FromDelegate((_, attempt) => RetryDecision.RetryAfter(TimeSpan.FromSeconds(1))),
+        }), RemoteParent());
+
+        result.EnsureSucceeded();
+        Assert.Equal(3, result.InvocationCount);
+        // Every span in the trace has its own id, including the segments of the retried step.
+        Assert.Equal(spans.Spans.Count, spans.Spans.Select(s => s.SpanId).Distinct().Count());
+
+        var segments = spans.All("flaky").OrderBy(s => s.StartTimeUtc).ToList();
+        Assert.Equal(3, segments.Count);
+        var firstSegmentId = segments[0].SpanId;
+        Assert.All(segments.Skip(1), s => Assert.Equal(firstSegmentId, s.Links.First().Context.SpanId));
+        // The attempt number is set when the operation finishes, so only the last segment has one.
+        Assert.Equal("3", Tag(segments[2], "durable.attempt.number"));
+        Assert.Equal("SUCCEEDED", Tag(segments[2], "durable.operation.status"));
+    }
+
+    [Fact]
     public async Task UpstreamNotSampled_ExportsNothingAndStillRuns()
     {
         using var spans = new SpanCollector();
