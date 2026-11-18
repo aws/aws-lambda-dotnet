@@ -729,6 +729,48 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
         }
     }
 
+    Context '-TenantIsolationMode' {
+        BeforeEach {
+            $script:tenantSplat = @{
+                FunctionName = 'hello'; ProjectPath = $script:handlerFile
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+            }
+        }
+
+        It 'passes -TenantIsolationMode to the create' {
+            $null = New-LambdaPSFunctionDeployment @script:tenantSplat -TenantIsolationMode PER_TENANT
+
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $TenantIsolationMode -eq 'PER_TENANT' }
+        }
+
+        It 'redeploys a PER_TENANT function given <Case>' -ForEach @(
+            @{ Case = 'a lower-case mode'; Given = @{ TenantIsolationMode = 'per_tenant' } }
+            @{ Case = 'no mode'; Given = @{} }
+        ) {
+            Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Handler = 'handler.ps1'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
+                    RuntimeAlias = 'default'; Architecture = 'x86_64'; TenantIsolationMode = 'PER_TENANT' }
+            }
+
+            $null = New-LambdaPSFunctionDeployment @script:tenantSplat @Given
+
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        It 'refuses, before packaging, a redeploy that gives a mode the function does not have' {
+            Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Handler = 'handler.ps1'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
+                    RuntimeAlias = 'default'; Architecture = 'x86_64'; TenantIsolationMode = '' }
+            }
+
+            { New-LambdaPSFunctionDeployment @script:tenantSplat -TenantIsolationMode PER_TENANT } |
+                Should -Throw -ErrorId 'TenantIsolationModeMismatch,New-LambdaPSFunctionDeployment' -ExpectedMessage "Function 'hello' has no tenant isolation, and Lambda sets the mode only when it creates a function*"
+
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+    }
+
     # Behaviour that depends on how Lambda answers.
     Context 'service behaviour' {
         It 'reports the configuration Lambda returns after an update, not the requested one' {

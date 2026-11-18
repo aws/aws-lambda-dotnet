@@ -14,7 +14,8 @@ Set these as environment variables on the function:
   `System.Collections.Hashtable`).
 - The function's log format and application log level (Lambda sets `AWS_LAMBDA_LOG_FORMAT` and
   `AWS_LAMBDA_LOG_LEVEL` from them). With the JSON format, each record the handler or its start-up code
-  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId` and `message`, plus
+  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId`, `tenantId` (on a
+  multi-tenant function) and `message`, plus
   `errorType`, `errorMessage` and `stackTrace` for an error: `Write-Error` is `ERROR`, `Write-Warning`
   `WARN`, `Write-Host`, `Write-Information` (unless `$InformationPreference` is `Ignore`) and start-up output
   `INFO`, and `Write-Verbose` and `Write-Debug` `DEBUG` (when `$VerbosePreference` or `$DebugPreference`
@@ -31,7 +32,8 @@ part of an array. A handler that writes nothing to the pipeline returns an empty
 the response. A `throw`, or a command run with `-ErrorAction Stop` that fails, fails the invocation and
 reports the error. `$LambdaContext` has `AwsRequestId`, `ClientContext`, `FunctionName`,
 `FunctionVersion`, `Identity`, `InvokedFunctionArn`, `LogGroupName`, `LogStreamName`,
-`MemoryLimitInMB`, `RemainingTime` and `GetRemainingTimeInMillis()`.
+`MemoryLimitInMB`, `RemainingTime`, `TenantId` (the invoke's tenant on a multi-tenant function, otherwise
+`$null`) and `GetRemainingTimeInMillis()`.
 
 A handler receives the event and the context as its first two arguments, so start a handler function
 with `param($LambdaInput, $LambdaContext)`. A `<script>.ps1` handler can declare the same block, or

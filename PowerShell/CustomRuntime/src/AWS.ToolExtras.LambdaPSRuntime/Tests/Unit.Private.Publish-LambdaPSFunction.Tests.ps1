@@ -60,6 +60,51 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
+    It 'creates the function with -TenantIsolationMode, in upper case, as its TenancyConfig' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction {
+                param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
+                    $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $TenancyConfig_TenantIsolationMode, $Region, $ClientConfig, $ErrorAction)
+            }
+            Mock 'Publish-LMFunction' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:aws:lambda:us-east-1:111122223333:function:hello' } }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful' } }
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            $null = Publish-LambdaPSFunction @splat -TenantIsolationMode per_tenant
+
+            Should -Invoke 'Publish-LMFunction' -Times 1 -Exactly -ParameterFilter { $TenancyConfig_TenantIsolationMode -ceq 'PER_TENANT' }
+        }
+    }
+
+    It 'refuses, before replacing its code, a function another deploy created without -TenantIsolationMode' {
+        InModuleScope $script:moduleName {
+            function Publish-LMFunction { param($FunctionName, $ErrorAction) }
+            Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
+            function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = 'handler.ps1'
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+            function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
+            Mock 'Update-LMFunctionCode'
+            $splat = @{
+                FunctionName = 'hello'; Handler = 'handler.ps1'; Role = 'arn:role'
+                RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default'
+                Architecture = 'x86_64'; Timeout = 30; MemorySize = 512
+                ZipPath = $env:LAMBDAPS_SEAM_TEST_ZIP; Region = 'us-east-1'
+            }
+
+            { Publish-LambdaPSFunction @splat -TenantIsolationMode PER_TENANT } |
+                Should -Throw -ErrorId 'TenantIsolationModeMismatch' -ExpectedMessage "Function 'hello' already exists with no tenant isolation*"
+
+            Should -Invoke 'Update-LMFunctionCode' -Times 0 -Exactly
+        }
+    }
+
     It 'updates the code, then the configuration, of a function that already exists' {
         InModuleScope $script:moduleName {
             function Publish-LMFunction {

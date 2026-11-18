@@ -184,6 +184,13 @@ function New-LambdaPSFunctionDeployment {
         to the function log) and POWERSHELL_RUNTIME_JSON_DEPTH (1-100, the depth to which the handler's
         output is serialized to JSON; 100 by default, and an invalid value uses 100 and writes a warning
         to the function log).
+    .PARAMETER TenantIsolationMode
+        PER_TENANT creates a multi-tenant function: each invoke names a tenant
+        (Invoke-LambdaPSFunction -TenantId), and Lambda never shares an execution environment between
+        tenants. Lambda sets the mode only when it creates the function, so a redeploy that gives a
+        mode the function does not have stops with TenantIsolationModeMismatch before anything is
+        packaged. When omitted, a new function has no tenant isolation, and a redeploy keeps the
+        function's mode.
     .PARAMETER PackagePath
         Where to write the packaged .zip. Defaults to ./<FunctionName>.zip under the current location.
         An existing .zip there is replaced. A path that is the single-file source, or an existing file
@@ -293,6 +300,10 @@ function New-LambdaPSFunctionDeployment {
         [Parameter()]
         [ValidateNotNull()]
         [hashtable]$EnvironmentVariable,
+
+        [Parameter()]
+        [ValidateSet('PER_TENANT')]
+        [string]$TenantIsolationMode,
 
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
@@ -421,6 +432,15 @@ function New-LambdaPSFunctionDeployment {
                         ("Function '$FunctionName' $existingKind and is not bound to a customer-managed runtime, so " +
                          'nothing was packaged or deployed. Use a new -FunctionName, or delete the function first.')),
                     'FunctionNotRuntimeBound', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
+        }
+        if ($null -ne $existing -and $PSBoundParameters.ContainsKey('TenantIsolationMode') -and $existing.TenantIsolationMode -ne $TenantIsolationMode) {
+            $existingMode = if ($existing.TenantIsolationMode) { "tenant isolation mode $($existing.TenantIsolationMode)" } else { 'no tenant isolation' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("Function '$FunctionName' has $existingMode, and Lambda sets the mode only when it creates a function, " +
+                         'so nothing was packaged or deployed. Omit -TenantIsolationMode to keep the mode, or use a new -FunctionName.')),
+                    'TenantIsolationModeMismatch', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
         }
 
         # Resolve the handler string from the source itself rather than assuming a file name: the
@@ -686,6 +706,7 @@ function New-LambdaPSFunctionDeployment {
                 Region       = $Region
             }
             if ($PSBoundParameters.ContainsKey('EnvironmentVariable')) { $publishParams.EnvironmentVariable = $EnvironmentVariable }
+            if ($TenantIsolationMode) { $publishParams.TenantIsolationMode = $TenantIsolationMode }
             # On a redeploy, only the settings the caller gave (or manifest.json recorded) are applied;
             # the rest keep the existing function's values rather than reset to this cmdlet's defaults.
             $publishParams.UpdateSetting = @(

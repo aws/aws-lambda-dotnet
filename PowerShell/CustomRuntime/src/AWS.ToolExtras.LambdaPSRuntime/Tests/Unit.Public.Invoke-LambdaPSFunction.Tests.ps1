@@ -2,6 +2,7 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PayloadStream.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1'))
 }
 
 AfterAll {
@@ -123,11 +124,11 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $null -eq $Region }
         }
 
-        It 'threads -Region and -Qualifier through to Invoke-LMFunction' {
-            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod
+        It 'threads -Region, -Qualifier and -TenantId through to Invoke-LMFunction' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod -TenantId tenant-a
 
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' }
+                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' -and $TenantId -eq 'tenant-a' }
         }
     }
 
@@ -388,6 +389,16 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $piped = 'missing', 'good' | ForEach-Object { [PSCustomObject]@{ FunctionName = $_ } }
             { $piped | Invoke-LambdaPSFunction -ErrorAction SilentlyContinue } | Should -Throw '*Function not found: missing*'
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        # Lambda's message, from a live invoke of a PER_TENANT function without a tenant ID.
+        It 'fails with TenantIdRequired when a multi-tenant function is invoked without -TenantId' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                throw [LambdaPSTests.Fakes.ServiceException]::new('The invoked function is enabled with tenancy configuration. Add a valid tenant ID in your request and try again.', 'InvalidParameterValueException')
+            }
+
+            { Invoke-LambdaPSFunction -FunctionName hello } |
+                Should -Throw -ErrorId 'TenantIdRequired,Invoke-LambdaPSFunction' -ExpectedMessage "Function 'hello' isolates tenants (PER_TENANT), so each invoke needs -TenantId.*"
         }
     }
 }

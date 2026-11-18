@@ -470,6 +470,7 @@ Describe 'runtime.ps1 event loop' -Tag 'Component' -Skip:$IsWindows {
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'noparamfn.ps1')) -Value 'function Handle { "fn:[$LambdaInput][$LambdaContext]" }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'execenv.ps1')) -Value '$env:AWS_EXECUTION_ENV'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'trace.ps1')) -Value 'param($LambdaInput, $LambdaContext)', '[string]$env:_X_AMZN_TRACE_ID'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'tenant.ps1')) -Value 'param($LambdaInput, $LambdaContext)', 'Write-Host ''tenant-line''', 'if ($null -eq $LambdaContext.TenantId) { ''null'' } else { $LambdaContext.TenantId }'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'syntax.ps1')) -Value 'function Handle {'
         Set-Content -LiteralPath ([System.IO.Path]::Combine($script:taskRoot, 'initthrows.ps1')) -Value 'throw ''init failed''', 'function Handle { ''unreachable'' }'
         $moduleRoot = [System.IO.Path]::Combine($script:taskRoot, 'modules', 'MyMod')
@@ -1058,6 +1059,20 @@ public class InvokeBin : PSCmdlet {
         $posts[1].Body | Should -BeNullOrEmpty
     }
 
+    It 'sets $LambdaContext.TenantId from Lambda-Runtime-Aws-Tenant-Id, $null without it, and logs it as tenantId in JSON' {
+        $env:AWS_LAMBDA_LOG_FORMAT = 'JSON'
+        try {
+            $posts = @(Invoke-LambdaPSRuntimeLoop -TaskRoot $script:taskRoot -Handler 'tenant.ps1' -EventBody '{}', '{}' -TenantId 'tenant-a', '' -LogVariable log)
+        }
+        finally { $env:AWS_LAMBDA_LOG_FORMAT = $null }
+
+        $posts.Body | Should -Be 'tenant-a', 'null'
+        $records = @($log -split '\r?\n' | Where-Object { $_ -like '{*"tenant-line"*' } | ConvertFrom-Json)
+        $records.Count | Should -Be 2
+        $records[0].tenantId | Should -BeExactly 'tenant-a'
+        $records[1].PSObject.Properties.Name | Should -Not -Contain 'tenantId'
+    }
+
     # The first event leaves something behind; the second reports what it finds, which must be what
     # the first found.
     It 'clears what a handler leaves behind (<Case>) before the next invocation' -ForEach @(
@@ -1256,7 +1271,7 @@ Describe 'PowerShellLambdaContext.cs' -Tag 'Component' {
         $command = @"
 Add-Type -TypeDefinition ([System.IO.File]::ReadAllText('$source'))
 `$deadline = [DateTimeOffset]::UtcNow.AddSeconds(5).ToUnixTimeMilliseconds()
-`$context = [Amazon.Lambda.PowerShell.Internal.LambdaContext]::new('fn', '1', 'arn:fn', 512, 'req-1', 'group', 'stream', '', '', `$deadline)
+`$context = [Amazon.Lambda.PowerShell.Internal.LambdaContext]::new('fn', '1', 'arn:fn', 512, 'req-1', 'group', 'stream', '', '', `$deadline, `$null)
 '{0}|{1}|{2}' -f `$context.FunctionName, `$context.MemoryLimitInMB, [int]`$context.GetRemainingTimeInMillis()
 "@
         $pwshPath = [System.IO.Path]::Combine($PSHOME, $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' }))
