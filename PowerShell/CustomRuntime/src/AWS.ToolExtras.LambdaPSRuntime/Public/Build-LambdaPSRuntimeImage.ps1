@@ -48,17 +48,15 @@ function Build-LambdaPSRuntimeImage {
         whose Dockerfile was edited, and it can only push (-ImageUri). It reads an ECR authorization
         token with Get-ECRAuthorizationToken, honouring -Region, -ProfileName, -ProfileLocation and
         -Credential, instead of using docker login. It adds Microsoft's ICU libraries next to pwsh, so
-        cultures work as in the Docker image, which installs libicu. Before it pushes a runtime image,
-        it reads the base image's layers and stops when they have files in /opt, /var/task or /tmp, which
-        Lambda hides at run time; when it cannot read them, it warns and the build goes on.
+        cultures work as in the Docker image, which installs libicu.
 
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
         PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound, DockerBuildxNotFound and
         DockerDaemonNotRunning (the preflight, Test-LambdaPSContainerRuntime), ExternalToolFailed (docker exited with a non-zero code),
         and ReservedPathNotEmpty (the built runtime image has files in /opt, /var/task or /tmp); for
         a no-Docker build NoDockerLocalBuild, DockerfileModified, PwshX64HashNotPinned (an x86_64 build of a
-        pwsh release with no pinned x64 hash), IcuPackageHashMismatch, OciBuilderNotFound, OciBuilderConflict,
-        ReservedPathNotEmpty and OciImagePushFailed.
+        pwsh release with no pinned x64 hash), IcuPackageHashMismatch, OciBuilderNotFound, OciBuilderConflict
+        and OciImagePushFailed.
     .PARAMETER Path
         The project directory containing the Dockerfile. Alias: -ProjectPath.
     .PARAMETER Tag
