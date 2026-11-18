@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution\Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DurableExecution.OpenTelemetry\Amazon.Lambda.DurableExecution.OpenTelemetry.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
