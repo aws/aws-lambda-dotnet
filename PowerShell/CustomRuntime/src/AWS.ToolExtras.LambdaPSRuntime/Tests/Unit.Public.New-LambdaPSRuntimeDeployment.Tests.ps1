@@ -21,6 +21,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
     BeforeEach {
         # Run each test from TestDrive, so a relative -ProjectPath stays there.
         Push-Location $TestDrive
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith {
             [PSCustomObject]@{
                 PSTypeName = 'AWS.ToolExtras.LambdaPSRuntime.ContainerRuntime'
@@ -850,9 +851,10 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
     Context 'architecture mapping' {
         It 'maps arm64 to linux/arm64 for the build' {
+            # Docker, since Auto builds without it on an x86_64 Linux host with no arm64 emulator.
             $splat = @{
                 RuntimeName = 'my-ps'; PowerShellVersion = '7.4'
-                Region = 'us-east-1'; RepositoryName = 'rt'; Architecture = 'arm64'
+                Region = 'us-east-1'; RepositoryName = 'rt'; Architecture = 'arm64'; BuildMethod = 'Docker'
             }
             $result = New-LambdaPSRuntimeDeployment @splat
 
@@ -1654,6 +1656,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'warns before anything is confirmed, and declining the first stage runs nothing' {
             $stub = {
                 function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker' } }
+                function script:Get-LambdaPSDockerBuilderPlatform { }
                 function script:Get-STSCallerIdentity { [PSCustomObject]@{ Account = '111122223333' } }
                 function script:Get-ECRImageMetadata { }
                 function script:Get-LMCRuntime { [PSCustomObject]@{ Name = 'my-ps' } }

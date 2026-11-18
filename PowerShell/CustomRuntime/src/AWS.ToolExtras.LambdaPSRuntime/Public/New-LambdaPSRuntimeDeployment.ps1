@@ -29,6 +29,8 @@ function New-LambdaPSRuntimeDeployment {
         Docker is the only supported container CLI: the build depends on buildx flags that have no
         equivalent in podman, finch, or nerdctl. The Layer and self-contained .zip targets are the
         container-free path (New-LambdaPSRuntimeProject -Target Layer, Build-LambdaPSRuntimePackage).
+        Where Docker is missing, -BuildMethod Auto (the default) or NoDocker builds and pushes the image
+        without it (see Build-LambdaPSRuntimeImage): there is then no local build and no docker login.
 
         The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-STSCallerIdentity,
         Get-ECRImageMetadata, Get-ECRRepository, Get-ECRRepositoryPolicy, Get-ECRLoginCommand,
@@ -80,8 +82,8 @@ function New-LambdaPSRuntimeDeployment {
 
         Progress lines (the Docker toolchain found, the target image URI, and each stage as it
         completes) are written to the Information stream with the tag LambdaPSDeploy, so they are
-        shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release
-        is shown unless -InformationAction is given.
+        shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release,
+        and a no-Docker build that -BuildMethod Auto chose, are shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  RuntimeVersionNameTooLong, RuntimeAliasNameTooLong,
@@ -93,14 +95,17 @@ function New-LambdaPSRuntimeDeployment {
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 ProjectParameterConflict,
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
+                                DockerDaemonNotRunning,
                                 RuntimeServiceAccessDenied, RuntimeVersionListFailed (the
                                 runtime's versions could not be listed to name a new one),
                                 RuntimeVersionCheckFailed, RuntimeVersionExists, RuntimeImageTagExists,
                                 RuntimeImageTagCheckFailed, RuntimeAliasCheckFailed,
                                 RuntimeAliasPendingDeletion, PwshArm64HashNotPinned
                                 (-Architecture arm64 for a pwsh version with no pinned arm64 hash),
-                                PwshReleaseOlderThanAlias (the pinned release is older than the
-                                one the alias runs, on the same line and architecture)
+                                PwshX64HashNotPinned (a no-Docker x86_64 build of a pwsh version
+                                with no pinned x64 hash), PwshReleaseOlderThanAlias (the pinned
+                                release is older than the one the alias runs, on the same line
+                                and architecture)
           scaffold and modules  TargetOwnedByAnotherUser, IdCommandNotFound, TemplateNotFound,
                                 AWSPowerShellModuleNotSupported (AWSPowerShell or
                                 AWSPowerShell.NetCore in -IncludeModule), ModuleNameInvalid (an
@@ -132,8 +137,9 @@ function New-LambdaPSRuntimeDeployment {
     .PARAMETER PwshVersion
         The full pwsh version to install (x.y.z, for example 7.4.20), forwarded to
         New-LambdaPSRuntimeProject. When omitted, the newest release of -PowerShellVersion the build
-        can verify is used: on x86_64 the newest in Microsoft's RPM repository (the module's pinned
-        release if the repository cannot be read), on arm64 the newest with a pinned tarball SHA256.
+        can verify is used: for a Docker x86_64 build the newest in Microsoft's RPM repository (the
+        module's pinned release if the repository cannot be read), for arm64 or a no-Docker build the
+        newest with a pinned tarball SHA256.
         If that pinned release is older than the one the alias runs, on the same line and
         architecture, the deploy stops with PwshReleaseOlderThanAlias.
         Give it to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release.
@@ -212,6 +218,10 @@ function New-LambdaPSRuntimeDeployment {
         does not, the alias is still moved, with a warning given before anything is created or
         confirmed, and under -WhatIf: functions bound to it that were built for that architecture fail
         to invoke from their next cold start until they are redeployed.
+    .PARAMETER BuildMethod
+        Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
+        no-Docker builder. It also uses the no-Docker builder when docker's buildx builder lists
+        no -Architecture platform, for example with no emulator registered. Docker or NoDocker: that one only.
     .PARAMETER ProjectPath
         Where to scaffold the runtime-image project (alias -Path). Without it, the project is scaffolded
         in a new temp folder, removed when the deploy ends, and the result's ProjectPath is empty.
@@ -224,6 +234,7 @@ function New-LambdaPSRuntimeDeployment {
         Refreshes the base image from its registry in both image builds, as Build-LambdaPSRuntimeImage
         -Pull does. A project this deploy scaffolds is always built with -Pull, so a new runtime
         version gets the current base image; -Pull matters only for an existing -ProjectPath project.
+        A no-Docker build always reads the base image from its registry.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment
 
@@ -327,6 +338,9 @@ function New-LambdaPSRuntimeDeployment {
         [string]$ProjectPath,
 
         [Parameter()]
+        [ValidateSet('Auto', 'Docker', 'NoDocker')]
+        [string]$BuildMethod = 'Auto',
+
         [switch]$Pull
     )
 
@@ -467,10 +481,13 @@ function New-LambdaPSRuntimeDeployment {
 
         # Preflight (read-only; always runs, even under -WhatIf).
         # The pwsh lookup reads Microsoft's package repository, so it runs after the local checks.
+        Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
+        $buildMethodResolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -Architecture $Architecture
+        $noDocker = $buildMethodResolved.Method -eq 'NoDocker'
         $releaseParams = @{
             PowerShellVersion = $PowerShellVersion
             PwshVersion       = $PwshVersion
-            InstallSource     = if ($Architecture -eq 'arm64') { 'PinnedArchive' } else { 'PackageRepository' }
+            InstallSource     = if ($Architecture -eq 'arm64' -or $noDocker) { 'PinnedArchive' } else { 'PackageRepository' }
             Architecture      = $Architecture
         }
         $pwshRelease = if ($existingProject) { [PSCustomObject]@{ Version = $projectPwshVersion; Source = 'Project' } } else { Resolve-LambdaPSPwshRelease @releaseParams }
@@ -484,8 +501,8 @@ function New-LambdaPSRuntimeDeployment {
         # An arm64 image installs pwsh from a tarball checked against a pinned SHA256. Without one the
         # build can only fail, after Stage 1 has scaffolded, so refuse here, under -WhatIf too.
         # A kept project's Dockerfile carries its own arm64 hash, which Build-LambdaPSRuntimeImage checks
-        # before anything is created.
-        if ($Architecture -eq 'arm64' -and -not $existingProject -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
+        # before anything is created; the no-Docker build uses the module's pinned hashes, so it is checked here.
+        if ($Architecture -eq 'arm64' -and -not ($existingProject -and -not $noDocker) -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture arm64))) {
             # Only versions of the same line: -PowerShellVersion refuses any other with PwshVersionMismatch.
             $pinnedArm64 = @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
                     $_.StartsWith("$PowerShellVersion.") -and
@@ -500,14 +517,28 @@ function New-LambdaPSRuntimeDeployment {
                          "arm64 hash$pinnedList. Nothing was created.")),
                     'PwshArm64HashNotPinned', [System.Management.Automation.ErrorCategory]::InvalidArgument, $resolvedPwshVersion))
         }
+        if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $resolvedPwshVersion -Architecture x86_64))) {
+            $PSCmdlet.ThrowTerminatingError((New-LambdaPSPwshX64HashNotPinnedError -PwshVersion $resolvedPwshVersion))
+        }
         # The release is shown even without -InformationAction Continue, since an unchanged command can
         # install a new release; an -InformationAction the caller gives still applies.
         $shownInformation = @{}
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
-        Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
-        $runtimeProbe = Test-LambdaPSContainerRuntime
-        Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
+        if ($noDocker) {
+            # Shown by default when Auto chose it, since the image differs from a Docker build.
+            $noDockerInformation = if ($BuildMethod -eq 'Auto') { $shownInformation } else { @{} }
+            Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy' @noDockerInformation
+            # Load the library now, so a missing or conflicting copy fails before anything is created.
+            $null = Import-LambdaPSOciBuilder
+            # A kept project is built as is, so an edited Dockerfile fails DockerfileModified here, not after
+            # the ECR repository exists.
+            if ($existingProject) { $null = Get-LambdaPSOciImagePlan -Path $ProjectPath -Architecture $Architecture }
+        }
+        else {
+            $runtimeProbe = $buildMethodResolved.ContainerRuntime
+            Write-Information "Preflight: using '$($runtimeProbe.Name)' at '$($runtimeProbe.Path)' ($($runtimeProbe.BuildxVersion))." -Tags 'LambdaPSDeploy'
+        }
 
         # Account id + image URI (read-only; safe to resolve for the -WhatIf preview).
         $stsConfig = Get-LambdaPSClientConfig -Service STS
@@ -741,12 +772,17 @@ function New-LambdaPSRuntimeDeployment {
                     if ($aliasRelease -and -not $aliasRelease.StartsWith("$PowerShellVersion.", [System.StringComparison]::Ordinal)) { $aliasRelease = $null }
                 }
                 if ($aliasRelease -and [version]$aliasRelease -gt [version]$resolvedPwshVersion) {
+                    # A no-Docker x86_64 build can install only pinned tarballs, so it cannot keep an RPM-only release.
+                    $keep = if ($noDocker -and $Architecture -eq 'x86_64' -and [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $aliasRelease -Architecture x86_64))) {
+                        'Build with Docker (-BuildMethod Docker) to keep it'
+                    }
+                    else { "Pass -PwshVersion $aliasRelease to keep it" }
                     $PSCmdlet.ThrowTerminatingError(
                         [System.Management.Automation.ErrorRecord]::new(
                             [System.InvalidOperationException]::new(
                                 ("Alias '$RuntimeAlias' of runtime '$RuntimeName' runs pwsh $aliasRelease, newer than the " +
-                                 "pinned release $resolvedPwshVersion this deploy would install. Pass -PwshVersion $aliasRelease " +
-                                 "to keep it, or -PwshVersion $resolvedPwshVersion to move back. Nothing was built or pushed.")),
+                                 "pinned release $resolvedPwshVersion this deploy would install. $keep, or pass -PwshVersion " +
+                                 "$resolvedPwshVersion to move back. Nothing was built or pushed.")),
                             'PwshReleaseOlderThanAlias', [System.Management.Automation.ErrorCategory]::InvalidOperation, $resolvedPwshVersion))
                 }
             }
@@ -853,12 +889,20 @@ function New-LambdaPSRuntimeDeployment {
             Write-Warning "Skipped building and pushing the image, because the $declinedStage stage was declined."
         }
         elseif ($PSCmdlet.ShouldProcess($imageUri, "Build image, ensure ECR repository '$effectiveRepository' and its Lambda pull grant, and push image")) {
-            # A project scaffolded here builds FROM the public Lambda base image, which can't be local-only,
-            # and the deploy is online anyway, so pulling only stops a stale cached base from shipping.
-            $pullBase = $Pull -or -not $existingProject
-            $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -Pull:$pullBase -Confirm:$false
-            $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
-            $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -Pull:$pullBase -Confirm:$false
+            if ($noDocker) {
+                # No local build to stop on first: preflight checked that the project fits the recipe.
+                $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -SkipDockerLogin -Confirm:$false
+                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod NoDocker -Region $Region @credentialParameter -Confirm:$false
+            }
+            else {
+                # A project scaffolded here builds FROM the public Lambda base image, which can't be local-only,
+                # and the deploy is online anyway, so pulling only stops a stale cached base from shipping.
+                $pullBase = $Pull -or -not $existingProject
+                # Preflight resolved Docker; resolving Auto again could pick NoDocker past its no-Docker checks.
+                $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -BuildMethod Docker -Pull:$pullBase -Confirm:$false
+                $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
+                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod Docker -Pull:$pullBase -Confirm:$false
+            }
             # Publish exactly the image just pushed: by digest, so a tag moved in between cannot change
             # what the version runs. The tag is the fallback when buildx reported no digest.
             if ($null -ne $pushed -and $pushed.ImageDigest) {

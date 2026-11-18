@@ -5,11 +5,14 @@ BeforeAll {
 
     # A stand-in docker program: a script that writes its arguments next to itself, prints -Output and
     # exits with -ExitCode. The probe runs it by the path Get-Command returns.
+    # 'docker version' (the daemon probe) exits with -VersionExitCode.
     function script:New-FakeDockerProgram {
-        param([string]$Name, [string]$Output, [int]$ExitCode)
+        param([string]$Name, [string]$Output, [int]$ExitCode, [int]$VersionExitCode)
         $path = [System.IO.Path]::Combine($TestDrive, $Name)
+        Remove-Item -LiteralPath "$path.args" -ErrorAction Ignore
         Set-Content -LiteralPath $path -Value @(
-            "Set-Content -LiteralPath '$path.args' -Value (`$args -join ' ')"
+            "Add-Content -LiteralPath '$path.args' -Value (`$args -join ' ')"
+            "if (`$args[0] -eq 'version') { 'Cannot connect to the Docker daemon. Is the docker daemon running?'; exit $VersionExitCode }"
             "'$($Output -replace "'", "''")'"
             "exit $ExitCode")
         $path
@@ -56,7 +59,7 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
         It 'probes buildx rather than assuming it' {
             $null = Test-LambdaPSContainerRuntime
 
-            @(Get-Content -LiteralPath "$script:fakeDocker.args") | Should -Be @('buildx version')
+            @(Get-Content -LiteralPath "$script:fakeDocker.args") | Should -Be @('buildx version', 'version --format {{.Server.Version}}')
         }
 
         # The probe runs the program it found, so a docker function or alias cannot answer for it.
@@ -80,7 +83,7 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 Should -Throw -ErrorId 'DockerNotFound,Test-LambdaPSContainerRuntime'
         }
 
-        It 'points at the container-free alternative and the Docker install docs' {
+        It 'points at the no-Docker build, the container-free alternative and the Docker install docs' {
             $threw = $false
             try {
                 Test-LambdaPSContainerRuntime
@@ -90,6 +93,7 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'Build-LambdaPSRuntimePackage'
                 $_.Exception.Message | Should -Match 'https://docs\.docker\.com/engine/install/'
                 $_.Exception.Message | Should -Match 'Layer or self-contained \.zip target'
+                $_.Exception.Message | Should -Match '-BuildMethod Auto \(the default\) or NoDocker'
                 $_.CategoryInfo.Category | Should -Be 'NotInstalled'
             }
             $threw | Should -BeTrue
@@ -122,6 +126,17 @@ Describe 'Test-LambdaPSContainerRuntime' -Tag 'Unit' {
                 $_.Exception.Message | Should -Match 'exited with 1'
             }
             $threw | Should -BeTrue
+        }
+    }
+
+    Context 'when the Docker daemon cannot be reached' {
+        It 'throws DockerDaemonNotRunning with docker''s message' {
+            $script:fakeDocker = New-FakeDockerProgram -Name 'docker-stopped.ps1' -Output 'github.com/docker/buildx v0.17.1' -ExitCode 0 -VersionExitCode 1
+            Mock 'Get-Command' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' `
+                -ParameterFilter { $Name -eq 'docker' -and $CommandType -eq 'Application' } `
+                -MockWith { [PSCustomObject]@{ Name = 'docker'; Source = $script:fakeDocker } }
+            { Test-LambdaPSContainerRuntime } | Should -Throw -ErrorId 'DockerDaemonNotRunning,Test-LambdaPSContainerRuntime' `
+                -ExpectedMessage '*cannot reach the Docker daemon*Cannot connect to the Docker daemon*-BuildMethod Auto*'
         }
     }
 
