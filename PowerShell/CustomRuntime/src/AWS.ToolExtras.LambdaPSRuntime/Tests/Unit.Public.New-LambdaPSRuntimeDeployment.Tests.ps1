@@ -337,6 +337,28 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
     }
 
+    Context 'base image refresh' {
+        It 'pulls the base image in both builds of a project it scaffolds, without -Pull' {
+            $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 2 -Exactly -ParameterFilter { $Pull }
+        }
+
+        It 'pulls in both builds of an existing -ProjectPath project only under -Pull (Pull: <Pull>)' -ForEach @(
+            @{ Pull = $true }
+            @{ Pull = $false }
+        ) {
+            $project = [System.IO.Path]::Combine($TestDrive, [System.IO.Path]::GetRandomFileName())
+            $null = New-Item -ItemType Directory -Path $project
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'lambdaps-runtime.json')) -Value '{"Target":"CMR","PowerShellVersion":"7.4"}'
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($project, 'Dockerfile')) -Value "FROM x`nARG PWSH_VERSION=7.4.2`n"
+
+            $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -ProjectPath $project -Pull:$Pull
+
+            $expected = $Pull
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 2 -Exactly -ParameterFilter { [bool]$Pull -eq $expected }
+        }
+    }
+
     Context 'module repository' {
         It 'forwards -ModuleRepository to the scaffolder' {
             $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4 -RepositoryName rt -Region us-east-1 -ModuleRepository Internal
