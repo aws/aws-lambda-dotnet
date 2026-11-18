@@ -115,7 +115,7 @@ function New-LambdaPSRuntimeDeployment {
                                 module's name and version exist only with another GUID than the one
                                 -IncludeModule names),
                                 ModuleInstallerNotFound, AWSToolsInstallerImportFailed
-          build and push        ExternalToolFailed, EcrDockerLoginFailed
+          build and push        ExternalToolFailed, EcrDockerLoginFailed, ReservedPathNotEmpty
           publish               RuntimeVersionExists (a concurrent deploy published the same
                                 version name), RuntimeVersionNotActive, RuntimeVersionTimeout,
                                 RuntimeVersionWaitFailed
@@ -226,6 +226,11 @@ function New-LambdaPSRuntimeDeployment {
         modules. A -PowerShellVersion or -PwshVersion it doesn't match, or -IncludeModule, is a
         ProjectParameterConflict error. Any other non-empty directory is refused with TargetNotEmpty and
         left untouched.
+    .PARAMETER Pull
+        Refreshes the base image from its registry in both image builds, as Build-LambdaPSRuntimeImage
+        -Pull does. A project this deploy scaffolds is always built with -Pull, so a new runtime
+        version gets the current base image; -Pull matters only for an existing -ProjectPath project.
+        A no-Docker build always reads the base image from its registry.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment
 
@@ -330,7 +335,9 @@ function New-LambdaPSRuntimeDeployment {
 
         [Parameter()]
         [ValidateSet('Auto', 'Docker', 'NoDocker')]
-        [string]$BuildMethod = 'Auto'
+        [string]$BuildMethod = 'Auto',
+
+        [switch]$Pull
     )
 
     # AWS is reached only through AWS.Tools cmdlets: the state-changing calls are wrapped in small
@@ -864,10 +871,13 @@ function New-LambdaPSRuntimeDeployment {
                 $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod NoDocker -Region $Region @credentialParameter -Confirm:$false
             }
             else {
+                # A project scaffolded here builds FROM the public Lambda base image, which can't be local-only,
+                # and the deploy is online anyway, so pulling only stops a stale cached base from shipping.
+                $pullBase = $Pull -or -not $existingProject
                 # Preflight resolved Docker; resolving Auto again could pick NoDocker past its no-Docker checks.
-                $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -BuildMethod Docker -Confirm:$false
+                $null = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -Tag "$effectiveRepository`:$RuntimeVersion" -BuildMethod Docker -Pull:$pullBase -Confirm:$false
                 $null = Initialize-LambdaPSEcrRepository -RepositoryName $effectiveRepository -AccountId $accountId -RuntimeArn $runtimeArnForGrant -Region $Region -CredentialParameter $credentialParameter -Confirm:$false
-                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod Docker -Confirm:$false
+                $pushed = Build-LambdaPSRuntimeImage -Path $ProjectPath -Architecture $Architecture -ImageUri $imageUri -BuildMethod Docker -Pull:$pullBase -Confirm:$false
             }
             # Publish exactly the image just pushed: by digest, so a tag moved in between cannot change
             # what the version runs. The tag is the fallback when buildx reported no digest.
