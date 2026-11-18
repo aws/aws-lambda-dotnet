@@ -59,6 +59,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         // Determine if the authorizer request type is V2 (has Headers as IDictionary<string,string>)
         var isV2Request = httpApiAuthorizerAttribute != null && httpApiAuthorizerAttribute.Data.AuthorizerPayloadFormatVersion == Amazon.Lambda.Annotations.APIGateway.AuthorizerPayloadFormatVersion.V2;
 
+        // Track client supplied values that fail to convert so the authorizer fails closed instead of
+        // invoking the user's method with default values.
+        var hasBoundParameters = HasBoundParameters();
+        if (hasBoundParameters)
+        {
+
+            
+            #line default
+            #line hidden
+            this.Write("            var __bindingFailed__ = false;\r\n");
+            
+            #line 42 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+
+        }
+
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
             if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.AuthorizerRequests.Contains(parameter.Type.FullName))
@@ -73,21 +88,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 44 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 54 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = scope.ServiceProvider.GetRequiredService<");
             
-            #line 44 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 54 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(">();\r\n");
             
-            #line 45 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 55 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
@@ -118,14 +133,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 70 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 80 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 70 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 80 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
@@ -133,21 +148,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(");\r\n            if (!string.IsNullOrEmpty(__request__.AuthorizationToken))\r\n     " +
                     "       {\r\n                try\r\n                {\r\n                    ");
             
-            #line 75 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 85 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 75 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 85 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__request__.AuthorizationToken, typeof(");
             
-            #line 75 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 85 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
@@ -156,7 +171,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "tException || e is FormatException || e is OverflowException || e is ArgumentExc" +
                     "eption)\r\n                {\r\n");
             
-            #line 79 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 89 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
@@ -164,7 +179,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.LogError(e, \"Failed to extract authoriza" +
                     "tion token.\");\r\n");
             
-            #line 81 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 91 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
             
             #line default
@@ -172,14 +187,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.Log(\"Failed to extract authorization tok" +
                     "en. Exception: \" + e.ToString());\r\n");
             
-            #line 83 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 93 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
             
             #line default
             #line hidden
-            this.Write("\r\n                }\r\n            }\r\n");
+            this.Write("\r\n                    __bindingFailed__ = true;\r\n                }\r\n            }\r\n");
             
-            #line 86 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
                 }
                 else
@@ -191,21 +206,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 92 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 103 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 92 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 103 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(");\r\n            if (__request__.Headers?.Any(x => string.Equals(x.Key, \"");
             
-            #line 93 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 104 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
@@ -213,28 +228,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\", StringComparison.OrdinalIgnoreCase)) == true)\r\n            {\r\n                " +
                     "try\r\n                {\r\n                    ");
             
-            #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 108 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 108 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__request__.Headers.First(x => string.Equals(x.Key, \"");
             
-            #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 108 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
             this.Write("\", StringComparison.OrdinalIgnoreCase)).Value, typeof(");
             
-            #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 108 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
@@ -243,42 +258,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "tException || e is FormatException || e is OverflowException || e is ArgumentExc" +
                     "eption)\r\n                {\r\n");
             
-            #line 101 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 112 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
             #line hidden
             this.Write("\r\n                    __context__.Logger.LogError(e, \"Failed to extract header \'");
             
-            #line 102 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 113 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
             this.Write("\'.\");\r\n");
             
-            #line 103 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 114 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
             
             #line default
             #line hidden
             this.Write("\r\n                    __context__.Logger.Log(\"Failed to extract header \'");
             
-            #line 104 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 115 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
             this.Write("\'. Exception: \" + e.ToString());\r\n");
             
-            #line 105 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 116 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
             
             #line default
             #line hidden
-            this.Write("\r\n                }\r\n            }\r\n");
+            this.Write("\r\n                    __bindingFailed__ = true;\r\n                }\r\n            }\r\n");
             
-            #line 108 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 120 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
                 }
 
@@ -287,7 +302,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n");
             
-            #line 112 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
@@ -300,21 +315,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 119 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 131 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 119 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 131 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(");\r\n            if (__request__.QueryStringParameters?.ContainsKey(\"");
             
-            #line 120 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 132 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
             
             #line default
@@ -322,28 +337,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\") == true)\r\n            {\r\n                try\r\n                {\r\n             " +
                     "       ");
             
-            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 136 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 136 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__request__.QueryStringParameters[\"");
             
-            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 136 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
             
             #line default
             #line hidden
             this.Write("\"], typeof(");
             
-            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 136 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
@@ -352,7 +367,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "tException || e is FormatException || e is OverflowException || e is ArgumentExc" +
                     "eption)\r\n                {\r\n");
             
-            #line 128 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 140 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
@@ -360,14 +375,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.LogError(e, \"Failed to extract query par" +
                     "ameter \'");
             
-            #line 129 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 141 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
             
             #line default
             #line hidden
             this.Write("\'.\");\r\n");
             
-            #line 130 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 142 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
             
             #line default
@@ -375,21 +390,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.Log(\"Failed to extract query parameter \'" +
                     "");
             
-            #line 131 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 143 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
             
             #line default
             #line hidden
             this.Write("\'. Exception: \" + e.ToString());\r\n");
             
-            #line 132 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 144 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
             
             #line default
             #line hidden
-            this.Write("\r\n                }\r\n            }\r\n\r\n");
+            this.Write("\r\n                    __bindingFailed__ = true;\r\n                }\r\n            }\r\n\r\n");
             
-            #line 136 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 149 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute))
@@ -402,21 +417,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 143 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 156 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 143 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 156 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(");\r\n            if (__request__.PathParameters?.ContainsKey(\"");
             
-            #line 144 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 157 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
@@ -424,28 +439,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\") == true)\r\n            {\r\n                try\r\n                {\r\n             " +
                     "       ");
             
-            #line 148 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 161 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 148 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 161 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__request__.PathParameters[\"");
             
-            #line 148 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 161 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
             this.Write("\"], typeof(");
             
-            #line 148 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 161 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
@@ -454,7 +469,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "tException || e is FormatException || e is OverflowException || e is ArgumentExc" +
                     "eption)\r\n                {\r\n");
             
-            #line 152 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 165 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#if NET8_0_OR_GREATER"));
             
             #line default
@@ -462,14 +477,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.LogError(e, \"Failed to extract route par" +
                     "ameter \'");
             
-            #line 153 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 166 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
             this.Write("\'.\");\r\n");
             
-            #line 154 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 167 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
             
             #line default
@@ -477,27 +492,47 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n                    __context__.Logger.Log(\"Failed to extract route parameter \'" +
                     "");
             
-            #line 155 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 168 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
             this.Write("\'. Exception: \" + e.ToString());\r\n");
             
-            #line 156 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 169 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
             
             #line default
             #line hidden
-            this.Write("\r\n                }\r\n            }\r\n\r\n");
+            this.Write("\r\n                    __bindingFailed__ = true;\r\n                }\r\n            }\r\n\r\n");
             
-            #line 160 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 174 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
             }
             else
             {
                 throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported for authorizer functions.");
             }
+        }
+
+        if (hasBoundParameters)
+        {
+
+            
+            #line default
+            #line hidden
+            this.Write("            // Deny the request if any client supplied value failed to convert to" +
+                    " its parameter type.\r\n            if (__bindingFailed__)\r\n            {\r\n");
+            
+            #line 188 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(GenerateBindingFailureResponse()));
+            
+            #line default
+            #line hidden
+            this.Write("            }\r\n\r\n");
+            
+            #line 190 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+
         }
 
             

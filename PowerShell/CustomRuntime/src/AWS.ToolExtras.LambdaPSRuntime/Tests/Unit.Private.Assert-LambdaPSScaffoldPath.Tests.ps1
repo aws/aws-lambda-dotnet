@@ -81,7 +81,7 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
                 $null = New-Item -ItemType Directory -Path $dir -Force
                 function global:id { '0' }
                 try { { Assert-LambdaPSScaffoldPath -Path $dir } | Should -Throw -ErrorId 'TargetOwnedByAnotherUser' }
-                finally { Remove-Item -LiteralPath 'Function:\global:id' -ErrorAction SilentlyContinue }
+                finally { Remove-Item -LiteralPath 'Function:\id' -ErrorAction SilentlyContinue }
             }
         }
 
@@ -123,6 +123,16 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
                 param($Path)
                 Mock Get-Command { [PSCustomObject]@{ Source = [System.IO.Path]::Combine($TestDrive, 'fake-id', '0') } } -ParameterFilter { $Name -eq 'id' }
                 (Assert-LambdaPSScaffoldPath -Path $Path).Count | Should -Be 0
+            }
+        }
+
+        It 'throws IdCommandNotFound when id is not on PATH' {
+            $dir = [System.IO.Path]::Combine($TestDrive, 'no-id')
+            $null = New-Item -ItemType Directory -Path $dir
+            InModuleScope $script:moduleName -Parameters @{ Path = $dir } {
+                param($Path)
+                Mock Get-Command { } -ParameterFilter { $Name -eq 'id' }
+                { Assert-LambdaPSScaffoldPath -Path $Path } | Should -Throw -ErrorId 'IdCommandNotFound'
             }
         }
     }
@@ -168,7 +178,8 @@ Describe 'Assert-LambdaPSScaffoldPath' -Tag 'Unit' {
     }
 
     # Another user's directory is simulated by reporting a different current user ID.
-    Context 'a directory another user owns' -Skip:$IsWindows {
+    # Root may write to any directory, so the check passes it.
+    Context 'a directory another user owns' -Skip:($IsWindows -or $script:runAsRoot) {
         It 'refuses it with TargetOwnedByAnotherUser, <Case>' -ForEach @(
             @{ Case = 'even when it is empty'; Force = $false; Link = $false }
             @{ Case = 'even with -Force'; Force = $true; Link = $false }
@@ -297,6 +308,7 @@ Describe 'Assert-LambdaPSScaffoldPath raised through a calling cmdlet' -Tag 'Uni
         @{ ErrorId = 'TargetOwnedByAnotherUser'; Kind = 'owned' }
     ) {
         if ($Kind -eq 'owned' -and $IsWindows) { Set-ItResult -Skipped -Because 'the owner check is Linux and macOS only'; return }
+        if ($Kind -eq 'owned' -and (id -u) -eq '0') { Set-ItResult -Skipped -Because 'root passes the owner check'; return }
         $target = [System.IO.Path]::Combine($TestDrive, "caller-$Kind")
         if ($Kind -eq 'file') { Set-Content -LiteralPath $target -Value 'x' }
         else { $null = New-Item -ItemType Directory -Path $target -Force; Set-Content -LiteralPath ([System.IO.Path]::Combine($target, 'x')) -Value 'x' }

@@ -2,6 +2,7 @@ BeforeAll {
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'Module.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'PayloadStream.ps1'))
     . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FreshRunspace.ps1'))
+    . ([System.IO.Path]::Combine($PSScriptRoot, 'Helpers', 'FakeTypes.ps1'))
 }
 
 AfterAll {
@@ -123,11 +124,11 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $FunctionName -eq 'hello' -and $null -eq $Region }
         }
 
-        It 'threads -Region and -Qualifier through to Invoke-LMFunction' {
-            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod
+        It 'threads -Region, -Qualifier and -TenantId through to Invoke-LMFunction' {
+            $null = Invoke-LambdaPSFunction -FunctionName hello -Region us-west-2 -Qualifier prod -TenantId tenant-a
 
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
-                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' }
+                -ParameterFilter { $Region -eq 'us-west-2' -and $Qualifier -eq 'prod' -and $TenantId -eq 'tenant-a' }
         }
     }
 
@@ -155,14 +156,27 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $result.Count | Should -Be $Count
         }
 
+        It 'returns a response nested more than 64 levels deep as an object' {
+            $script:deepBody = ('{"n":' * 70) + '1' + ('}' * 70)
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream $script:deepBody); LogResult = $null; FunctionError = $null }
+            }
+
+            $result = Invoke-LambdaPSFunction -FunctionName hello
+
+            $result.n.n | Should -Not -BeNullOrEmpty
+        }
+
         It 'returns the raw string when the payload is not JSON' {
             Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
                 [PSCustomObject]@{ Payload = (New-PayloadStream 'plain text'); LogResult = $null; FunctionError = $null }
             }
 
+            $Error.Clear()
             $result = Invoke-LambdaPSFunction -FunctionName hello
 
             $result | Should -Be 'plain text'
+            $Error.Count | Should -Be 0
         }
 
         # A caller that checks -ErrorVariable must not see a successful invoke as a failed one.
@@ -236,6 +250,17 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly `
                 -ParameterFilter { $LogType -eq 'Tail' }
             ($info | ForEach-Object { $_.MessageData }) -join "`n" | Should -Match 'START RequestId'
+        }
+
+        It 'shows the lines of an error record the runtime joined with CR on their own lines' {
+            $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("boom`rAt /var/task/handler.ps1:10 char:19`r`nEND RequestId: abc`n"))
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Payload = (New-PayloadStream '{}'); LogResult = $encoded; FunctionError = $null }
+            }
+
+            $null = Invoke-LambdaPSFunction -FunctionName hello -IncludeLog -InformationVariable info
+
+            $info[0].MessageData | Should -BeExactly "boom`nAt /var/task/handler.ps1:10 char:19`r`nEND RequestId: abc`n"
         }
 
         It 'does not request the log by default' {
@@ -364,6 +389,16 @@ Describe 'Invoke-LambdaPSFunction' -Tag 'Unit' {
             $piped = 'missing', 'good' | ForEach-Object { [PSCustomObject]@{ FunctionName = $_ } }
             { $piped | Invoke-LambdaPSFunction -ErrorAction SilentlyContinue } | Should -Throw '*Function not found: missing*'
             Should -Invoke 'Invoke-LMFunction' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        # Lambda's message, from a live invoke of a PER_TENANT function without a tenant ID.
+        It 'fails with TenantIdRequired when a multi-tenant function is invoked without -TenantId' {
+            Mock 'Invoke-LMFunction' -ModuleName $script:moduleName -MockWith {
+                throw [LambdaPSTests.Fakes.ServiceException]::new('The invoked function is enabled with tenancy configuration. Add a valid tenant ID in your request and try again.', 'InvalidParameterValueException')
+            }
+
+            { Invoke-LambdaPSFunction -FunctionName hello } |
+                Should -Throw -ErrorId 'TenantIdRequired,Invoke-LambdaPSFunction' -ExpectedMessage "Function 'hello' isolates tenants (PER_TENANT), so each invoke needs -TenantId.*"
         }
     }
 }

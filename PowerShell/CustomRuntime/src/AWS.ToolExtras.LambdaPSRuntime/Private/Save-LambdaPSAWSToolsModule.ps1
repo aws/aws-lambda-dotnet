@@ -164,7 +164,7 @@ function Save-LambdaPSAWSToolsModule {
     }
     try {
         try {
-            $null = & $install @installParams 6>$null
+            $installerWarnings = @(& $install @installParams 3>&1 6>$null | Where-Object { $_ -is [System.Management.Automation.WarningRecord] })
         }
         catch {
             $message = "Could not download $($Name -join ', ') $Version with AWS.Tools.Installer: $($_.Exception.Message)"
@@ -185,6 +185,13 @@ function Save-LambdaPSAWSToolsModule {
                     $null = [System.IO.Directory]::CreateDirectory([System.IO.Path]::Combine($Path, $nameDir.Name))
                     Copy-LambdaPSModuleFolder -Path $versionDir.FullName -Destination $destination
                 }
+            }
+        }
+        # AWS.Tools.Installer 2.0.5 says a module named in another case was skipped, then installs it.
+        $installedNames = @(Get-ChildItem -LiteralPath $staging -Directory -Force | ForEach-Object Name)
+        foreach ($warning in $installerWarnings) {
+            if ("$warning" -notmatch "\AModule '(.+)' is not available in this version and was skipped\.\z" -or $installedNames -notcontains $Matches[1]) {
+                Write-Warning "$warning"
             }
         }
     }

@@ -1,3 +1,110 @@
+### AWS.ToolExtras.LambdaPSRuntime PowerShell Module (1.0.0)
+* Initial release. Scaffolds, builds, deploys and invokes PowerShell Lambda functions on a custom runtime, as a Layer, a self-contained .zip, a container image or a Lambda customer-managed runtime.
+
+## Release 2026-11-06
+
+### Amazon.Lambda.AspNetCoreServer (10.3.1)
+* ** Breaking Change ** Only set an authenticated HttpContext.User from the API Gateway request context authorizer when the authorizer supplies at least one claim with a non-null value. Requests whose authorizer context has no such claims, for example an HTTP API route using payload format 1.0 with no authorizer, previously appeared authenticated (User.Identity.IsAuthenticated was true with zero claims) and will now appear anonymous, so a bare [Authorize] denies them.
+* For HTTP API payload format 2.0, marshal Lambda authorizer context and IAM caller details into claims.
+### Amazon.Lambda.RuntimeSupport (2.3.1)
+* Reduce the memory allocated and CPU time used to process each invocation.
+
+## Release 2026-10-20
+
+### Amazon.Lambda.PowerShellHost (4.1.1)
+* Update System.Security.Cryptography.Xml to 8.0.5 (net8.0) and 10.0.13 (net10.0) to address a security vulnerability in the transitive dependency.
+
+### AWSLambdaPSCore PowerShell Module (5.0.3)
+* For PowerShell Lambda function deployment bundle update to version 4.1.1 of Amazon.Lambda.PowerShellHost
+* For PowerShell Lambda function deployment bundle update to version 3.4.0 of Amazon.Lambda.Core
+* Update default version of Microsoft.PowerShell.SDK used in deployment bundle to 7.6.7
+
+## Release 2026-10-09
+
+### Amazon.Lambda.Annotations (2.4.2)
+* Generated API Gateway authorizer handlers now deny the request without invoking the authorizer method when a [FromHeader], [FromQuery] or [FromRoute] value cannot be converted to the parameter type, instead of invoking the method with the parameter set to its default value.
+
+## Release 2026-10-08
+
+### Amazon.Lambda.DurableExecution (2.2.0)
+* Return Pending when a checkpoint response has no checkpoint token, instead of failing the execution.
+* Treat the service's 'Invalid checkpoint token' error as transient (case-insensitive) so a stale token retries the invocation instead of failing the execution.
+* Add SubType to StepConfig and CallbackConfig, and validate SubType values (1 to 32 characters from [a-zA-Z0-9-_]) including ChildContextConfig.SubType.
+### Amazon.Lambda.DurableExecution.Testing (1.1.0)
+* Add TestRunnerOptions.OmitCheckpointToken to simulate a checkpoint response without a token.
+### Amazon.Lambda.Core (3.4.0)
+* Add ILambdaContext.W3C to expose the W3C trace-context fields (traceparent, tracestate, baggage) carried on clientContext.w3c at invoke time.
+### Amazon.Lambda.RuntimeSupport (2.3.0)
+* Implement ILambdaContext.W3C in LambdaContext, surfacing the allowlisted W3C trace-context fields (traceparent, tracestate, baggage) parsed from the client context header.
+### Amazon.Lambda.TestUtilities (4.3.0)
+* Add W3C trace-context support to TestLambdaContext via the settable W3CFields property and the W3C property.
+### Amazon.Lambda.AspNetCoreServer (10.3.0)
+* Implement ILambdaContext.W3C on the SnapStart empty context, returning an empty trace-context during initialization.
+
+## Release 2026-10-05
+
+### Amazon.Lambda.Logging.AspNetCore (5.1.0)
+* Added structured scope support to Lambda JSON logging with safe handling of invalid, colliding, and duplicate scope keys
+
+## Release 2026-10-01
+
+### Amazon.Lambda.Annotations (2.4.1)
+* Add a class-level XML documentation comment to the generated Lambda function handler class so projects that enable GenerateDocumentationFile no longer get a CS1591 warning for the generated class.
+
+## Release 2026-09-25
+
+### Amazon.Lambda.RuntimeSupport (2.2.3)
+* Fix LambdaLogger.ConfigureStructuredLogging custom JsonSerializerOptions being ignored when JSON log format is enabled. The stdout and stderr log writers each created their own JsonLogMessageFormatter, and the second registration overwrote the first's structured logging callback, so the customer's options never reached the formatter used for stdout. Both writers now share a single formatter instance.
+
+## Release 2026-09-23
+
+### Amazon.Lambda.DurableExecution (2.1.0)
+* Added an incremental, branch-oriented parallel API (IDurableContext.CreateParallel, IDurableParallel, IParallelBranch<T>) supporting heterogeneous per-branch result types and incremental branch registration, alongside the existing homogeneous ParallelAsync<T> overloads. Each branch declares its own result type and returns an awaitable typed handle; branches start on registration (respecting MaxConcurrency) and the operation is sealed with CompleteAsync. Honors the existing MaxConcurrency, CompletionConfig, NestingType, cancellation, deterministic replay, and ILambdaSerializer behavior.
+* CreateParallel supports per-operation and per-branch result serialization: ParallelConfig.ItemSerializer sets the operation-level serializer for all branch results, and IDurableParallel.Branch accepts an optional per-branch ILambdaSerializer override, falling back to ItemSerializer and then the globally-registered serializer.
+### Amazon.Lambda.TestTool (0.16.1)
+* Report missing Test Tool startup options as a user error
+
+## Release 2026-09-17
+
+### Amazon.Lambda.AspNetCoreServer (10.2.2)
+* Null-safe marshalling for Path, HttpMethod, path parameters, and headers to avoid NullReferenceException with incomplete API Gateway events
+### Amazon.Lambda.TestTool (0.16.0)
+* Populate RequestContext (and Path/HttpMethod defaults) when the API Gateway emulator builds REST APIGatewayProxyRequest events
+* API Gateway emulator: optional IntegrationType=Http to reverse-proxy requests to a non-Lambda HTTP Endpoint while keeping the emulator origin
+### Amazon.Lambda.RuntimeSupport (2.2.2)
+* Bypass any customer-configured proxy (e.g. HTTP_PROXY/HTTPS_PROXY environment variables) for internal Lambda Runtime API calls. The HttpClient used to communicate with the Runtime API now sets UseProxy = false so requests to the RAPID endpoint are not routed through a customer proxy, which would fail when RAPID is not on a loopback address. Customer handler HTTP calls are unaffected.
+
+## Release 2026-09-15
+
+### Amazon.Lambda.RuntimeSupport (2.2.1)
+* In Lambda managed instances (multi-concurrency) mode, emit a structured DEBUG log during init reporting the worker count and execution environment max concurrency when the JSON log format is enabled.
+
+## Release 2026-09-08
+
+### Amazon.Lambda.DurableExecution (2.0.0)
+* Behavior change: steps and child contexts now round-trip their result through the configured serializer on a fresh (non-replay) success, deserializing the just-written checkpoint before returning — matching replay semantics. A custom per-operation serializer's transform is now reflected in the operation result on the first execution, not only on replay. The returned value is a fresh deserialized instance rather than the exact object the step/child body produced. Overflow (replay-children) results are unaffected.
+* Behavior change: when a step's fresh-success serializer round-trip fails (e.g. an asymmetric/broken StepConfig.Serializer that cannot deserialize its own output), the step now fails TERMINALLY (FAIL checkpoint + StepException) instead of being routed through the configured RetryStrategy. Previously a non-null RetryStrategy would re-invoke the already-succeeded, side-effecting step body on each attempt (duplicating side effects) until attempts exhausted. This mirrors ChildContextOperation's terminal handling of a round-trip failure.
+* Add FileSystemSerializer for offloading large durable operation results to a filesystem (e.g. EFS/S3 Files), keeping only a small pointer in the checkpoint. It wraps an inner ILambdaSerializer, so callers control the on-the-wire format (JSON, compressed, etc.). Introduces the optional IDurableResultSerializer interface and DurableSerializationContext (EntityId + DurableExecutionArn); when an operation's configured serializer implements it, the durable runtime supplies operation/execution identity so external storage can be keyed safely. Applied to Step, ChildContext, WaitForCondition, and Map/Parallel per-item results. Plain ILambdaSerializer serializers are unaffected.
+* Add optional per-item serializer override (ItemSerializer) on MapConfig and ParallelConfig; when null the globally-registered ILambdaSerializer is used for item/branch results.
+* Add optional per-operation serializer override (Serializer) on StepConfig, CallbackConfig, InvokeConfig, WaitForConditionConfig, and ChildContextConfig; when null the globally-registered ILambdaSerializer is used.
+* Behavior change: when a step post-round-trip SUCCEED-checkpoint enqueue fails (e.g. a broken CheckpointBatcher), the failure is now routed through the terminal path (FAIL checkpoint plus StepException) rather than propagating raw, consistent with the fresh-success round-trip failure handling. The side-effecting body is never re-invoked, and if emitting the terminal FAIL itself throws, the error propagates without recursion.
+* Behavior change: under NestingType.Flat, Map and Parallel per-item/branch results are now round-tripped through the configured ItemSerializer on a fresh (non-replay) success -- deserializing the just-serialized inline payload before it enters the result -- matching what replay reconstructs from that payload. A non-round-tripping ItemSerializer transform is now reflected in the item/branch result on the first execution, not only on replay, eliminating a fresh-vs-replay divergence. As with steps and child contexts, the returned value is a fresh deserialized instance, and overflow (replay-children) results are unaffected (recovered by re-running the body).
+* Behavior change: a fresh-success serializer round-trip DESERIALIZE failure is now terminal on the child-context and Flat Map/Parallel paths, matching StepOperation. (Child) ChildContextOperation now emits a CONTEXT FAIL for a non-virtual, non-suppressed child whose round-trip deserialize throws, instead of throwing with no terminal checkpoint (which left the child STARTED and re-ran its side-effecting body on replay). (Flat Map/Parallel) a per-item round-trip deserialize failure now records that unit's terminal Error inline and still emits the parent SUCCEED, instead of propagating raw with no parent checkpoint (which re-ran every virtual unit body on replay, a poison loop, and bypassed the record-failure contract). Replay reconstructs the terminal failure without re-running or re-deserializing.
+* Behavior change (Map/Parallel, NestingType.Nested default): the parent now inlines each Nested unit's ORIGINAL child SUCCEED-checkpoint payload (S(body)) verbatim on the parent summary, and reconstructs it on replay with the child's own operation id, instead of re-serializing the already-round-tripped return value at the parent's per-unit id. This removes a fresh-vs-replay divergence with a non-round-tripping ItemSerializer (fresh vs replay values now match) and, for a context-aware serializer such as FileSystemSerializer, stops the parent writing a second file that orphaned the child's file. Round-tripping (symmetric) serializers and the default JSON serializer are unaffected; the Flat path is unchanged.
+
+## Release 2026-09-01
+
+### Amazon.Lambda.TestTool (0.15.1)
+* Fix Blazor web UI being non-interactive on .NET 9+/net10.0. Framework static assets (_framework/blazor.web.js) and the scoped-CSS bundle are now served via MapStaticAssets, the static web assets manifest is composed regardless of hosting environment, and the content root is pinned to the tool's install directory so the assets resolve correctly when running as an installed global tool.
+* Fix Razor class library content (e.g. the BlazorMonaco code-editor assets under _content/**) returning 404 on .NET 8 when running from a build output (dotnet run), which left the request/response editor uninitialized so selecting an example request could not populate the input. The static web assets manifest is now composed on all target frameworks, and .NET 8 additionally serves static files from the web root file provider so manifest-mapped _content/** assets resolve. Verified across .NET 8/.NET 10, Development/Production, and dotnet-run/installed-tool.
+### Amazon.Lambda.Logging.AspNetCore (5.0.1)
+* Fixed the JSON log formatter ignoring IncludeCategory
+
+## Release 2026-08-27
+
+### Amazon.Lambda.CloudWatchEvents (5.1.0)
+* Add Step Functions Execution Status Change event model (StepFunctionsExecutionStatusChangeEvent) for EventBridge-delivered Step Functions execution events
+
 ## Release 2026-08-17
 
 ### Amazon.Lambda.Serialization.SystemTextJson (3.0.1)

@@ -39,8 +39,10 @@ function Write-LambdaPSZipArchive {
         Top-level file names to leave out of the archive.
     .PARAMETER ExecutableEntry
         Entry names (forward-slash relative paths) to mark executable.
+    .PARAMETER Layer
+        The package is a layer, so the 50 MB warning names Publish-LMLayerVersion's S3 parameters.
     .EXAMPLE
-        Write-LambdaPSZipArchive -Path $stage -DestinationPath ./layer.zip -ExecutableEntry 'bootstrap', 'powershell/pwsh'
+        Write-LambdaPSZipArchive -Path $stage -DestinationPath ./layer.zip -ExecutableEntry 'bootstrap', 'powershell/pwsh' -Layer
 
         Zips $stage into ./layer.zip with bootstrap and pwsh executable.
     #>
@@ -62,17 +64,16 @@ function Write-LambdaPSZipArchive {
         [Parameter()]
         [AllowNull()]
         [AllowEmptyCollection()]
-        [string[]]$ExecutableEntry = @()
+        [string[]]$ExecutableEntry = @(),
+
+        [Parameter()]
+        [switch]$Layer
     )
 
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
 
     $destination = Resolve-LambdaPSPath -Path $DestinationPath
-    $parent = [System.IO.Path]::GetDirectoryName($destination)
-    if (-not [string]::IsNullOrEmpty($parent) -and -not (Test-Path -LiteralPath $parent)) {
-        $null = New-Item -ItemType Directory -Path $parent -Force -Confirm:$false -WhatIf:$false
-    }
 
     $comparer = if ($IsLinux) { [System.StringComparer]::Ordinal } else { [System.StringComparer]::OrdinalIgnoreCase }
     $excluded = [System.Collections.Generic.HashSet[string]]::new([string[]]@($ExcludeTopLevel | Where-Object { $_ }), $comparer)
@@ -164,7 +165,16 @@ function Write-LambdaPSZipArchive {
                     "together, which leaves $([math]::Round((250 * $mb - $unzippedBytes) / $mb, 1)) MB for the code or layers deployed with it.$detail")
             }
 
-            $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+            try {
+                $null = [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($destination))
+                $archive = [System.IO.Compression.ZipFile]::Open($partial, [System.IO.Compression.ZipArchiveMode]::Create)
+            }
+            catch [System.UnauthorizedAccessException], [System.IO.IOException] {
+                $reason = $_.Exception.Message.Replace($partial, $destination)
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.IOException]::new("Could not write the package to '$destination': $reason Write it to a folder you can write to.", $_.Exception),
+                    'PackageWriteFailed', [System.Management.Automation.ErrorCategory]::WriteError, $destination)
+            }
             $entryTime = [System.DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
             foreach ($pair in $files.GetEnumerator()) {
                 $entryName = $pair.Key
@@ -191,8 +201,9 @@ function Write-LambdaPSZipArchive {
 
         $zippedBytes = ([System.IO.FileInfo]::new($destination)).Length
         if ($zippedBytes -gt 50 * $mb) {
+            $s3Parameters = if ($Layer) { '-Content_S3Bucket and -Content_S3Key to Publish-LMLayerVersion' } else { '-Code_S3Bucket and -Code_S3Key to Publish-LMFunction, or -S3Bucket and -S3Key to Update-LMFunctionCode' }
             Write-Warning ("'$name' is $([math]::Round($zippedBytes / $mb, 1)) MB, over the 50 MB Lambda accepts in a direct upload. " +
-                'Upload it to S3 and pass -Code_S3Bucket and -Code_S3Key (-Content_S3Bucket and -Content_S3Key for Publish-LMLayerVersion).')
+                "Upload it to S3 and pass $s3Parameters.")
         }
     }
     finally {

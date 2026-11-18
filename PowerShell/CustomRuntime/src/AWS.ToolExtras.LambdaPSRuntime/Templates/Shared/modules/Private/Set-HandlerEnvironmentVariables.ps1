@@ -8,7 +8,8 @@ function private:Set-HandlerEnvironmentVariables {
 
         .DESCRIPTION
             Points TEMP, TMP and TMPDIR at /tmp and sets the invocation's request ID, client context,
-            Cognito identity, deadline, function ARN and trace ID from the event's headers.
+            Cognito identity, deadline, function ARN and trace ID from the event's headers, and keeps its
+            tenant ID and invocation ID as module state.
     #>
     [CmdletBinding()]
     param (
@@ -32,4 +33,8 @@ function private:Set-HandlerEnvironmentVariables {
     $env:AWS_LAMBDA_RUNTIME_DEADLINE_MS = $Headers['Lambda-Runtime-Deadline-Ms']
     $env:AWS_LAMBDA_RUNTIME_INVOKED_FUNCTION_ARN = $Headers['Lambda-Runtime-Invoked-Function-Arn']
     $env:_X_AMZN_TRACE_ID = $Headers['Lambda-Runtime-Trace-Id']
+    # Module state, so a handler that changes environment variables leaves it alone. The tenant ID stays
+    # out of the environment, which concurrent invocations would share.
+    $script:__LambdaPSRuntimeTenantId = [string]$Headers['Lambda-Runtime-Aws-Tenant-Id']
+    $script:__LambdaPSRuntimeInvocationId = [string]$Headers['Lambda-Runtime-Invocation-Id']
 }

@@ -56,9 +56,9 @@ function Compress-LambdaPSFunctionPackage {
           - The source: ProjectNotFound, SourceNotPowerShell, NotAFunctionProject, InvalidProjectMarker,
             InvalidProjectManifest, HandlerScriptNotFound, InvalidHandlerPath, BackslashInFileName (off Windows,
             a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, PackageWriteFailed, OutFileIsSource (-OutFile
             is the single-file -Path).
-          - Modules (-IncludeModule and the handler's #Requires): ModuleNameInvalid (-IncludeModule or a
+          - Modules (-IncludeModule and the handler's #Requires): InvalidRequiresStatement, ModuleNameInvalid (-IncludeModule or a
             #Requires naming a wildcard or a path), ModuleVersionRequired (a #Requires that does not pin
             an exact RequiredVersion), AWSPowerShellModuleNotSupported (-IncludeModule or a #Requires
             that names the AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
@@ -328,6 +328,12 @@ function Compress-LambdaPSFunctionPackage {
                 # The partial .zip an interrupted run left beside -OutFile is never part of the code.
                 $partials = @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetDirectoryName($destination)) -Filter "$([System.IO.Path]::GetFileName($destination)).*.partial" -File -Force -ErrorAction SilentlyContinue | ForEach-Object FullName)
                 Copy-LambdaPSFunctionSource -Path $source.FullName -Destination $stage -ExcludePath (@($destination) + $partials)
+            }
+
+            # Lambda runs /var/task/bootstrap in preference to a layer's /opt/bootstrap.
+            if (@(Get-ChildItem -LiteralPath $stage -File -Force | Where-Object Name -CEQ 'bootstrap').Count -gt 0) {
+                Write-Warning ("'$Path' has a 'bootstrap' file at its root. On a function that uses the Layer runtime, Lambda " +
+                    "runs it instead of the layer's bootstrap. Rename or move it unless it is meant to replace the runtime.")
             }
 
             # The handler is checked again in what was staged: one that is a link leaving the source is

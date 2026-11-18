@@ -32,6 +32,16 @@
         // Determine if the authorizer request type is V2 (has Headers as IDictionary<string,string>)
         var isV2Request = httpApiAuthorizerAttribute != null && httpApiAuthorizerAttribute.Data.AuthorizerPayloadFormatVersion == Amazon.Lambda.Annotations.APIGateway.AuthorizerPayloadFormatVersion.V2;
 
+        // Track client supplied values that fail to convert so the authorizer fails closed instead of
+        // invoking the user's method with default values.
+        var hasBoundParameters = HasBoundParameters();
+        if (hasBoundParameters)
+        {
+#>
+            var __bindingFailed__ = false;
+<#
+        }
+
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
             if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.AuthorizerRequests.Contains(parameter.Type.FullName))
@@ -81,6 +91,7 @@
 <#= "#else" #>
                     __context__.Logger.Log("Failed to extract authorization token. Exception: " + e.ToString());
 <#= "#endif" #>
+                    __bindingFailed__ = true;
                 }
             }
 <#
@@ -103,6 +114,7 @@
 <#= "#else" #>
                     __context__.Logger.Log("Failed to extract header '<#= headerKey #>'. Exception: " + e.ToString());
 <#= "#endif" #>
+                    __bindingFailed__ = true;
                 }
             }
 <#
@@ -130,6 +142,7 @@
 <#= "#else" #>
                     __context__.Logger.Log("Failed to extract query parameter '<#= parameterKey #>'. Exception: " + e.ToString());
 <#= "#endif" #>
+                    __bindingFailed__ = true;
                 }
             }
 
@@ -154,6 +167,7 @@
 <#= "#else" #>
                     __context__.Logger.Log("Failed to extract route parameter '<#= routeKey #>'. Exception: " + e.ToString());
 <#= "#endif" #>
+                    __bindingFailed__ = true;
                 }
             }
 
@@ -163,5 +177,16 @@
             {
                 throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported for authorizer functions.");
             }
+        }
+
+        if (hasBoundParameters)
+        {
+#>
+            // Deny the request if any client supplied value failed to convert to its parameter type.
+            if (__bindingFailed__)
+            {
+<#= GenerateBindingFailureResponse() #>            }
+
+<#
         }
 #>

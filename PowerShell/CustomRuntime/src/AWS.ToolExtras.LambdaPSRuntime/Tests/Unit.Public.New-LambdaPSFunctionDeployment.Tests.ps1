@@ -255,6 +255,20 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
         }
 
+        It 'throws InvalidHandler for a handler with whitespace, before packaging' {
+            $source = Join-Path $TestDrive 'fn-space-case'
+            $null = New-Item -ItemType Directory -Path (Join-Path $source 'sub dir') -Force
+            Set-Content -LiteralPath (Join-Path $source 'sub dir' 'h.ps1') -Value 'param($LambdaInput, $LambdaContext)'
+            $splat = @{
+                FunctionName = 'hello'; ProjectPath = $source; Handler = 'sub dir/h.ps1'
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+            }
+
+            { New-LambdaPSFunctionDeployment @splat } |
+                Should -Throw -ErrorId 'InvalidHandler,New-LambdaPSFunctionDeployment' -ExpectedMessage '*contains whitespace*'
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
         # These scripts are in the source, but Lambda would not find them under the handler as written.
         It 'refuses a handler naming a script in a folder source as <Case>, saying what to write instead' -ForEach @(
             @{ Case = 'an absolute path'; Handler = '<absolute>'; Message = '*is an absolute path*relative to the function source*' }
@@ -712,6 +726,48 @@ Describe 'New-LambdaPSFunctionDeployment' -Tag 'Unit' {
             Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
                 -not $PSBoundParameters.ContainsKey('EnvironmentVariable')
             }
+        }
+    }
+
+    Context '-TenantIsolationMode' {
+        BeforeEach {
+            $script:tenantSplat = @{
+                FunctionName = 'hello'; ProjectPath = $script:handlerFile
+                RuntimeName = 'my-ps'; Role = 'arn:aws:iam::111122223333:role/r'; Region = 'us-east-1'
+            }
+        }
+
+        It 'passes -TenantIsolationMode to the create' {
+            $null = New-LambdaPSFunctionDeployment @script:tenantSplat -TenantIsolationMode PER_TENANT
+
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $TenantIsolationMode -eq 'PER_TENANT' }
+        }
+
+        It 'redeploys a PER_TENANT function given <Case>' -ForEach @(
+            @{ Case = 'a lower-case mode'; Given = @{ TenantIsolationMode = 'per_tenant' } }
+            @{ Case = 'no mode'; Given = @{} }
+        ) {
+            Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Handler = 'handler.ps1'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
+                    RuntimeAlias = 'default'; Architecture = 'x86_64'; TenantIsolationMode = 'PER_TENANT' }
+            }
+
+            $null = New-LambdaPSFunctionDeployment @script:tenantSplat @Given
+
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly
+        }
+
+        It 'refuses, before packaging, a redeploy that gives a mode the function does not have' {
+            Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith {
+                [PSCustomObject]@{ Handler = 'handler.ps1'; RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
+                    RuntimeAlias = 'default'; Architecture = 'x86_64'; TenantIsolationMode = '' }
+            }
+
+            { New-LambdaPSFunctionDeployment @script:tenantSplat -TenantIsolationMode PER_TENANT } |
+                Should -Throw -ErrorId 'TenantIsolationModeMismatch,New-LambdaPSFunctionDeployment' -ExpectedMessage "Function 'hello' has no tenant isolation, and Lambda sets the mode only when it creates a function*"
+
+            Should -Invoke 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -Times 0 -Exactly
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 0 -Exactly
         }
     }
 

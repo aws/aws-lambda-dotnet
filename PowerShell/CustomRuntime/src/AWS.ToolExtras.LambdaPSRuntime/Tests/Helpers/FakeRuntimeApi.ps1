@@ -50,9 +50,13 @@ function Invoke-LambdaPSRuntimeLoop {
     .PARAMETER TenantId
         The Lambda-Runtime-Aws-Tenant-Id header to send with each event, in order, as for a function
         with tenant isolation. An empty or missing entry sends no header.
+    .PARAMETER InvocationId
+        The Lambda-Runtime-Invocation-Id header to send with each event, in order. An empty or missing
+        entry sends no header.
     .OUTPUTS
         One object per post, in order: Path (the path posted to: an invocation's /response or /error,
-        or /init/error), Body and Status (the status it was answered with).
+        or /init/error), Body, Status (the status it was answered with) and InvocationId (the post's
+        Lambda-Runtime-Invocation-Id header).
     .NOTES
         If the runtime exits while an event is still open (without -ExpectExit or -NextStatus), this throws
         with the runtime's exit code and stderr instead of waiting out the timeout.
@@ -71,6 +75,7 @@ function Invoke-LambdaPSRuntimeLoop {
         [string[]]$ClientContext = @(),
         [string[]]$CognitoIdentity = @(),
         [string[]]$TenantId = @(),
+        [string[]]$InvocationId = @(),
         [switch]$ExpectExit,
         [int]$StartupTimeoutSeconds = 120,
         [string]$ExitCodeVariable,
@@ -145,6 +150,9 @@ function Invoke-LambdaPSRuntimeLoop {
                 if ($served -le $TenantId.Count -and $TenantId[$served - 1]) {
                     $context.Response.Headers['Lambda-Runtime-Aws-Tenant-Id'] = $TenantId[$served - 1]
                 }
+                if ($served -le $InvocationId.Count -and $InvocationId[$served - 1]) {
+                    $context.Response.Headers['Lambda-Runtime-Invocation-Id'] = $InvocationId[$served - 1]
+                }
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($pending.Dequeue())
                 $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
                 $context.Response.Close()
@@ -160,7 +168,7 @@ function Invoke-LambdaPSRuntimeLoop {
                     if ($responses -lt $ResponseStatus.Count) { $status = $ResponseStatus[$responses] }
                     $responses++
                 }
-                $posts.Add([PSCustomObject]@{ Path = $path; Body = $reader.ReadToEnd(); Status = $status })
+                $posts.Add([PSCustomObject]@{ Path = $path; Body = $reader.ReadToEnd(); Status = $status; InvocationId = $context.Request.Headers['Lambda-Runtime-Invocation-Id'] })
                 if ($path -match '/invocation/[^/]+/(response|error)$' -and $status -ge 200 -and $status -lt 300) { $done++ }
                 $context.Response.StatusCode = $status
                 $context.Response.Close()

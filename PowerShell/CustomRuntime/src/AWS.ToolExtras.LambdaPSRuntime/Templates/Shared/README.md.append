@@ -14,7 +14,8 @@ Set these as environment variables on the function:
   `System.Collections.Hashtable`).
 - The function's log format and application log level (Lambda sets `AWS_LAMBDA_LOG_FORMAT` and
   `AWS_LAMBDA_LOG_LEVEL` from them). With the JSON format, each record the handler or its start-up code
-  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId` and `message`, plus
+  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId`, `tenantId` (on a
+  multi-tenant function) and `message`, plus
   `errorType`, `errorMessage` and `stackTrace` for an error: `Write-Error` is `ERROR`, `Write-Warning`
   `WARN`, `Write-Host`, `Write-Information` (unless `$InformationPreference` is `Ignore`) and start-up output
   `INFO`, and `Write-Verbose` and `Write-Debug` `DEBUG` (when `$VerbosePreference` or `$DebugPreference`
@@ -31,7 +32,8 @@ part of an array. A handler that writes nothing to the pipeline returns an empty
 the response. A `throw`, or a command run with `-ErrorAction Stop` that fails, fails the invocation and
 reports the error. `$LambdaContext` has `AwsRequestId`, `ClientContext`, `FunctionName`,
 `FunctionVersion`, `Identity`, `InvokedFunctionArn`, `LogGroupName`, `LogStreamName`,
-`MemoryLimitInMB`, `RemainingTime` and `GetRemainingTimeInMillis()`.
+`MemoryLimitInMB`, `RemainingTime`, `TenantId` (the invoke's tenant on a multi-tenant function, otherwise
+`$null`) and `GetRemainingTimeInMillis()`.
 
 A handler receives the event and the context as its first two arguments, so start a handler function
 with `param($LambdaInput, $LambdaContext)`. A `<script>.ps1` handler can declare the same block, or
@@ -58,7 +60,8 @@ the handler's own, ends the runtime: the invocation fails and Lambda starts the 
 top-level code of a `<script>.ps1::<function>` script or a handler module, such a labelled `break` or
 `continue` fails start-up, but `exit` stops only that script or module import, and start-up goes on
 without the rest of it, so do not use `exit` there. In a `<script>.ps1` handler, `exit` ends only the
-script: its exit code is ignored, and what it wrote before is sent as the response.
+script: a non-zero exit code fails the invocation, and `exit 0` sends what the script wrote before as the
+response.
 
 The Layer and SelfContainedZip targets run pwsh in invariant-globalization mode, because the
 `provided.al2023` base has no ICU library, so culture-specific code fails there: a named culture such
@@ -71,3 +74,7 @@ restores `$LASTEXITCODE` and `$env:PSModulePath` to their values at the end of s
 the handler changes, such as a global variable, an environment variable the runtime does not set, the
 current location or an imported module, is still there for the next invocation. So are the jobs,
 event subscriptions (`-Action`) and remoting sessions that the handler's start-up code created.
+
+The runtime sets `AWS_EXECUTION_ENV` to `AWS_Lambda_lambdapsruntime_pwsh_<pwsh version>_ric_<runtime client
+version>`, or appends the part from `_lambdapsruntime` to a value already set. The AWS SDK sends it in the
+user agent of each call the function makes.

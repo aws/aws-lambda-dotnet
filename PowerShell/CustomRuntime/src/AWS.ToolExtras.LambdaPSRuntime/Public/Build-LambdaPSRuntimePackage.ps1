@@ -55,12 +55,12 @@ function Build-LambdaPSRuntimePackage {
             InvalidProjectMarker, TargetNotResolved, TargetMismatch, UnsupportedTarget,
             PowerShellVersionRequired, HandlerNotResolved, HandlerScriptNotFound, InvalidHandlerPath,
             BackslashInFileName (off Windows, a file with '\' in its name).
-          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, OutFileIsSource (-OutFile
+          - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, PackageWriteFailed, OutFileIsSource (-OutFile
             is the -PwshArchivePath tarball).
           - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
             ContextCompileFailed, PackageEntryIsLink (a link in the tarball).
-          - The handler's modules (SelfContainedZip only): ModuleNameInvalid (a #Requires naming a wildcard
+          - The handler's modules (SelfContainedZip only): InvalidRequiresStatement, ModuleNameInvalid (a #Requires naming a wildcard
             or a path), ModuleVersionRequired (a #Requires that does not pin an exact RequiredVersion), AWSPowerShellModuleNotSupported (a #Requires on the
             AWSPowerShell or AWSPowerShell.NetCore module), ModuleVersionSpelling (versions that differ only in a trailing .0),
             ModuleVersionConflict, ModuleClosureNotSettled, DependencyNameMissing, DependencyNameIsPath,
@@ -532,7 +532,7 @@ function Build-LambdaPSRuntimePackage {
             }
 
             # 4. Zip the stage. Lambda runs bootstrap and powershell/pwsh directly, so both are executable.
-            Write-LambdaPSZipArchive -Path $stage -DestinationPath $destination -ExecutableEntry 'bootstrap', 'powershell/pwsh'
+            Write-LambdaPSZipArchive -Path $stage -DestinationPath $destination -ExecutableEntry 'bootstrap', 'powershell/pwsh' -Layer:($effectiveTarget -eq 'Layer')
         }
         finally {
             Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue

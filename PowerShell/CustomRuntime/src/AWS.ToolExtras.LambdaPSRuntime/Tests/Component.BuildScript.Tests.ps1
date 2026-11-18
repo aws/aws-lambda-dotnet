@@ -287,3 +287,89 @@ Describe 'build.ps1 AWS.Tools module path' -Tag 'Component' {
         { Initialize-AWSToolsModulePath 6>&1 } | Should -Not -Throw
     }
 }
+
+Describe 'build.ps1 -Task Package' -Tag 'Component' {
+    BeforeAll {
+        $script:pwsh = (Get-Process -Id $PID).Path
+        $stagedRoot = [System.IO.Path]::Combine($TestDrive, 'package')
+        $null = & $script:pwsh -NoProfile -NonInteractive -File $script:buildScript -Task Package -OutputPath $stagedRoot 2>&1
+        $script:packageExitCode = $LASTEXITCODE
+        $script:staged = [System.IO.Path]::Combine($stagedRoot, 'AWS.ToolExtras.LambdaPSRuntime')
+        $script:stagedFiles = @(Get-ChildItem -LiteralPath $script:staged -File -Recurse -Force |
+                ForEach-Object { [System.IO.Path]::GetRelativePath($script:staged, $_.FullName) } | Sort-Object)
+    }
+
+    It 'stages every module file except Tests/, plus LICENSE' {
+        $separator = [regex]::Escape([System.IO.Path]::DirectorySeparatorChar)
+        $expected = @(@(Get-ChildItem -LiteralPath $script:moduleRoot -File -Recurse -Force |
+                    ForEach-Object { [System.IO.Path]::GetRelativePath($script:moduleRoot, $_.FullName) } |
+                    Where-Object { $_ -notmatch "^Tests$separator|(^|$separator)(bin|obj)$separator" }) + 'LICENSE' | Sort-Object)
+
+        $script:packageExitCode | Should -Be 0
+        $script:stagedFiles | Should -Be $expected
+        $script:stagedFiles | Should -Contain 'NOTICE'
+    }
+
+    # Publish-Module, which the release pipeline publishes with, leaves dot-files out of the package.
+    It 'stages no dot-file' {
+        $script:stagedFiles | Where-Object { $_ -match '(^|[\\/])\.' } | Should -BeNullOrEmpty
+    }
+
+    # Run on a copy of build.ps1 next to a module of the test's own, so a failure can't delete the real source.
+    It 'refuses an -OutputPath of <Name>, which would stage the module over its own source' -ForEach @(
+        @{ Name = 'the module''s parent'; Relative = 'src' }
+        @{ Name = 'the module folder'; Relative = [System.IO.Path]::Combine('src', 'AWS.ToolExtras.LambdaPSRuntime') }
+    ) {
+        $runtime = [System.IO.Path]::Combine($TestDrive, "overwrite-repo-$($Relative.Length)")
+        $source = [System.IO.Path]::Combine($runtime, 'src')
+        $manifest = [System.IO.Path]::Combine($source, 'AWS.ToolExtras.LambdaPSRuntime', 'AWS.ToolExtras.LambdaPSRuntime.psd1')
+        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $manifest) -Force
+        Set-Content -LiteralPath $manifest -Value '@{}'
+        Copy-Item -LiteralPath $script:buildScript -Destination $runtime
+
+        $output = & $script:pwsh -NoProfile -NonInteractive -File ([System.IO.Path]::Combine($runtime, 'build.ps1')) -Task Package -OutputPath ([System.IO.Path]::Combine($runtime, $Relative)) 2>&1 | Out-String
+
+        $LASTEXITCODE | Should -Not -Be 0
+        $output | Should -BeLike '*over its own source*'
+        Test-Path -LiteralPath $manifest | Should -BeTrue
+    }
+
+    It 'stages a module that passes Test-ModuleManifest and imports' {
+        $manifest = [System.IO.Path]::Combine($script:staged, 'AWS.ToolExtras.LambdaPSRuntime.psd1')
+
+        $tested = Test-ModuleManifest -Path $manifest
+        $exported = & $script:pwsh -NoProfile -NonInteractive -Command "`$WarningPreference = 'SilentlyContinue'; (Import-Module '$manifest' -PassThru).ExportedFunctions.Count"
+
+        $tested.Name | Should -Be 'AWS.ToolExtras.LambdaPSRuntime'
+        $exported | Should -Be $tested.ExportedFunctions.Count
+    }
+
+    # The release pipeline signs the root .psd1 and .psm1, Config/*.psd1, Private/*.ps1 and Public/*.ps1. Templates/ is
+    # not signed: customers edit the copies they scaffold.
+    It 'puts every PowerShell file outside Templates/ where the signing globs find it' {
+        $separator = [regex]::Escape([System.IO.Path]::DirectorySeparatorChar)
+        $signed = "^([^$separator]+\.ps[dm]1|Config$separator[^$separator]+\.psd1|(Private|Public)$separator[^$separator]+\.ps1)$"
+
+        $unsigned = @($script:stagedFiles | Where-Object { $_ -match '\.ps[dm]?1$' -and $_ -notmatch "^Templates$separator" -and $_ -notmatch $signed })
+
+        $unsigned | Should -BeNullOrEmpty
+    }
+
+    # A relative -OutputPath, given after Set-Location, is under the current location, not the folder pwsh started in.
+    It 'leaves out the bin and obj folders of a local template build, staging into a relative -OutputPath' {
+        $repo = [System.IO.Path]::Combine($TestDrive, 'leftovers-repo')
+        $runtime = [System.IO.Path]::Combine($repo, 'PowerShell', 'CustomRuntime')
+        $template = [System.IO.Path]::Combine($runtime, 'src', 'AWS.ToolExtras.LambdaPSRuntime', 'Templates', 'Sample')
+        foreach ($folder in 'bin', 'obj') { $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($template, $folder)) -Force }
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($template, 'handler.ps1')) -Value "'handler'"
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($template, 'bin', 'leftover.dll')) -Value 'leftover'
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($repo, 'LICENSE')) -Value 'license'
+        Copy-Item -LiteralPath $script:buildScript -Destination $runtime
+        $output = [System.IO.Path]::Combine($TestDrive, 'leftovers-out')
+
+        $null = & $script:pwsh -NoProfile -NonInteractive -Command "Set-Location -LiteralPath '$TestDrive'; & '$([System.IO.Path]::Combine($runtime, 'build.ps1'))' -Task Package -OutputPath leftovers-out" 2>&1
+
+        $LASTEXITCODE | Should -Be 0
+        @(Get-ChildItem -LiteralPath $output -Recurse -Force -File | ForEach-Object Name | Sort-Object) | Should -Be @('handler.ps1', 'LICENSE')
+    }
+}

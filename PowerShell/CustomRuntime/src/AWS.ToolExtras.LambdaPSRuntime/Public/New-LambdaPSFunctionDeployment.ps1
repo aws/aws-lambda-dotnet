@@ -26,8 +26,8 @@ function New-LambdaPSFunctionDeployment {
 
         Before packaging, the runtime and its alias are read to check the function's architecture
         against the runtime's (see -Architecture). A missing runtime (RuntimeArnNotFound) or alias
-        (RuntimeAliasNotFound) is also caught here, rather than producing a function that fails on
-        every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
+        (RuntimeAliasNotFound), or an alias scheduled for deletion (RuntimeAliasPendingDeletion), is also
+        caught here, rather than producing a function that fails on every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
         RuntimeAliasCheckFailed, which wraps the service's error.
 
@@ -62,7 +62,8 @@ function New-LambdaPSFunctionDeployment {
 
         Each state-changing stage is guarded by ShouldProcess, so -WhatIf previews the plan (including
         the resolved runtime ARN) without packaging or creating anything, while still running the
-        packaging checks, and -Confirm asks once per stage: the steps inside a confirmed stage do not
+        packaging checks. The package size limits are the exception: they need the built package, so
+        only a real run checks them. -Confirm asks once per stage: the steps inside a confirmed stage do not
         ask again, and declining the packaging skips the create, which would deploy that package.
     .PARAMETER FunctionName
         The Lambda function name to create or update, or its full or partial ARN. When -Region is
@@ -89,6 +90,7 @@ function New-LambdaPSFunctionDeployment {
         source (for example '../outside.ps1'). For a folder source the handler is a path relative to
         the folder, written with '/': an absolute path, or one containing '\', fails with
         InvalidHandlerPath, because Lambda joins the handler to its task root as written.
+        A handler with whitespace in it fails with InvalidHandler.
     .PARAMETER RuntimeName
         The customer-managed runtime the function binds to. Its ARN is resolved automatically. A runtime
         name is 2 to 128 lowercase ASCII letters, digits, '_', '.' and '-', starting and ending with a
@@ -97,9 +99,9 @@ function New-LambdaPSFunctionDeployment {
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
         manifest.json records another). Otherwise it defaults to the alias recorded in a scaffolded
-        project's manifest.json, or else 'default', matching New-LambdaPSRuntimeDeployment's default
-        alias. An alias name is up to 128 ASCII letters, digits, '_', '.' and '-', not starting or
-        ending with '.' or '-', as Lambda requires, and is case-sensitive ('Staging' is not 'staging').
+        project's manifest.json, or else 'default'. An alias name is up to 128 ASCII letters, digits,
+        '_', '.' and '-', not starting or ending with '.' or '-', as Lambda requires, and is
+        case-sensitive ('Staging' is not 'staging').
         An alias read from manifest.json is checked the same way, and one that does not match is an
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
@@ -183,6 +185,13 @@ function New-LambdaPSFunctionDeployment {
         to the function log) and POWERSHELL_RUNTIME_JSON_DEPTH (1-100, the depth to which the handler's
         output is serialized to JSON; 100 by default, and an invalid value uses 100 and writes a warning
         to the function log).
+    .PARAMETER TenantIsolationMode
+        PER_TENANT creates a multi-tenant function: each invoke names a tenant
+        (Invoke-LambdaPSFunction -TenantId), and Lambda never shares an execution environment between
+        tenants. Lambda sets the mode only when it creates the function, so a redeploy that gives a
+        mode the function does not have stops with TenantIsolationModeMismatch before anything is
+        packaged. When omitted, a new function has no tenant isolation, and a redeploy keeps the
+        function's mode.
     .PARAMETER PackagePath
         Where to write the packaged .zip. Defaults to ./<FunctionName>.zip under the current location.
         An existing .zip there is replaced. A path that is the single-file source, or an existing file
@@ -292,6 +301,10 @@ function New-LambdaPSFunctionDeployment {
         [Parameter()]
         [ValidateNotNull()]
         [hashtable]$EnvironmentVariable,
+
+        [Parameter()]
+        [ValidateSet('PER_TENANT')]
+        [string]$TenantIsolationMode,
 
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
@@ -421,6 +434,15 @@ function New-LambdaPSFunctionDeployment {
                          'nothing was packaged or deployed. Use a new -FunctionName, or delete the function first.')),
                     'FunctionNotRuntimeBound', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
         }
+        if ($null -ne $existing -and $PSBoundParameters.ContainsKey('TenantIsolationMode') -and $existing.TenantIsolationMode -ne $TenantIsolationMode) {
+            $existingMode = if ($existing.TenantIsolationMode) { "tenant isolation mode $($existing.TenantIsolationMode)" } else { 'no tenant isolation' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("Function '$FunctionName' has $existingMode, and Lambda sets the mode only when it creates a function, " +
+                         'so nothing was packaged or deployed. Omit -TenantIsolationMode to keep the mode, or use a new -FunctionName.')),
+                    'TenantIsolationModeMismatch', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
+        }
         # Lambda needs a role to create a function; a redeploy keeps the function's own.
         if ($null -eq $existing -and -not $PSBoundParameters.ContainsKey('Role')) {
             $PSCmdlet.ThrowTerminatingError(
@@ -474,6 +496,16 @@ function New-LambdaPSFunctionDeployment {
                         'HandlerNotResolved', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ProjectPath))
             }
             $Handler = $resolved
+        }
+
+        # Lambda refuses whitespace in a handler: on create with a raw error, and on a redeploy only after
+        # the code is updated.
+        if ($Handler -match '\s') {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Handler '$Handler' contains whitespace, which Lambda does not accept in a handler. Remove it from -Handler, or rename the script or the folder it is in.", 'Handler'),
+                    'InvalidHandler', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Handler))
         }
 
         # The script whose #Requires -Modules to read is the leading token before '::' when it is a .ps1
@@ -685,6 +717,7 @@ function New-LambdaPSFunctionDeployment {
             }
             if ($PSBoundParameters.ContainsKey('EnvironmentVariable')) { $publishParams.EnvironmentVariable = $EnvironmentVariable }
             if ($PSBoundParameters.ContainsKey('Role')) { $publishParams.Role = $Role }
+            if ($TenantIsolationMode) { $publishParams.TenantIsolationMode = $TenantIsolationMode }
             # On a redeploy, only the settings the caller gave (or manifest.json recorded) are applied;
             # the rest keep the existing function's values rather than reset to this cmdlet's defaults.
             $publishParams.UpdateSetting = @(

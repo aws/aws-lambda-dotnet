@@ -50,12 +50,19 @@ internal class MockLambdaClient : AmazonLambdaClient
     /// </summary>
     public Func<CheckpointDurableExecutionRequest, CheckpointDurableExecutionResponse>? CheckpointHandler { get; set; }
 
+    /// <summary>
+    /// When set, the checkpoint call with this 1-based number returns no token.
+    /// </summary>
+    public int? OmitTokenOnCall { get; set; }
+
     public override Task<CheckpointDurableExecutionResponse> CheckpointDurableExecutionAsync(
         CheckpointDurableExecutionRequest request,
         CancellationToken cancellationToken = default)
     {
         CheckpointCalls.Add(request);
         if (CheckpointThrows != null) throw CheckpointThrows;
+        if (OmitTokenOnCall == CheckpointCalls.Count)
+            return Task.FromResult(new CheckpointDurableExecutionResponse());
         if (CheckpointHandler != null)
         {
             var resp = CheckpointHandler(request);

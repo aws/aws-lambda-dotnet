@@ -1,14 +1,16 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=10.0.11
-ARG ASPNET_SHA512=4c6be0623330074e699dab8084be15a1baebb7a518c0dd8ce99f93cf79777cd46f3a38ef9d25edc152ed606f084b63736bd9e4082eb32d188fc357bf6ac4d1d6
+ARG ASPNET_VERSION=10.0.15
+ARG ASPNET_SHA512=704751c6d671b720935a18849e8f10cdb6938549e9cf25493050ebc838a95eb5cb1caa9936d2edae3b85c5975778ed926e9b736e3a2582d861411babba3229c3
 
 ARG LAMBDA_RUNTIME_NAME=dotnet10
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-RUN dnf install libicu-67.1-7.amzn2023.0.4.x86_64 --assumeyes
+RUN dnf install libicu-67.1-7.amzn2023.0.4.x86_64 --assumeyes && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf /var/cache/yum
 
 FROM base AS builder-net10
 ARG ASPNET_VERSION

@@ -49,15 +49,16 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
         # The real Publish-LambdaPSRuntimeVersion and Set-LambdaPSRuntimeAlias run; only the
         # local tooling and the AWS cmdlets are stubbed.
         $stub = {
-            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker' } }
+            # Path is set to a docker that does not exist, so the builder-platform probe reports none and Auto keeps Docker.
+            function script:Test-LambdaPSContainerRuntime { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
             function script:Get-STSCallerIdentity { [CmdletBinding()] param($Region, $ClientConfig) [PSCustomObject]@{ Account = '111122223333' } }
             # Advanced functions, so a parameter the caller passes but the stub does not declare fails the test.
             function script:New-LambdaPSRuntimeProject { [CmdletBinding(SupportsShouldProcess)] param($Path, $PowerShellVersion, $PwshVersion, $IncludeModule, $MissingModuleAction, $ModuleRepository, [switch]$Force) }
-            function script:Build-LambdaPSRuntimeImage { [CmdletBinding(SupportsShouldProcess)] param($Path, $Tag, $Architecture, $ImageUri) }
+            function script:Build-LambdaPSRuntimeImage { [CmdletBinding(SupportsShouldProcess)] param($Path, $Tag, $Architecture, $ImageUri, $BuildMethod, [switch]$Pull) }
             function script:Initialize-LambdaPSEcrRepository { [CmdletBinding(SupportsShouldProcess)] param($RepositoryName, $AccountId, $RuntimeArn, $Region, $CredentialParameter) }
             function script:Get-LMCRuntime { [CmdletBinding()] param($RuntimeName, $Region, $ClientConfig) [PSCustomObject]@{} }
             # The version does not exist until it is created (so the preflight passes), then settles to FAILED.
-            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $Compatibility_Architecture, $ReleaseNote, $Region, $ClientConfig)
+            function script:New-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $ImageUri, $ReleaseNote, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeVersion')
                 [PSCustomObject]@{ Arn = 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' } }
             function script:Get-LMCRuntimeVersion { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig)
@@ -66,14 +67,14 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
                 }
                 [PSCustomObject]@{ State = 'FAILED' } }
             function script:Get-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $Region, $ClientConfig) [PSCustomObject]@{} }
-            function script:Get-ECRImageMetadata { [CmdletBinding()] param($RepositoryName, $ImageId, $Region, $ClientConfig) }
+            function script:Get-ECRImageMetadata { [CmdletBinding()] param($RepositoryName, $ImageId, $Filter_TagStatus, $Filter_ImageStatus, $MaxResult, $Region, $ClientConfig) }
             function script:New-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('New-LMCRuntimeAlias') }
             function script:Update-LMCRuntimeAlias { [CmdletBinding()] param($RuntimeName, $Name, $RuntimeVersion, $Region, $ClientConfig)
                 $script:LambdaPSCalls.Add('Update-LMCRuntimeAlias') }
         }
         $projectPath = [System.IO.Path]::Combine($TestDrive, 'rt')
-        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$projectPath' -Confirm:`$false"
+        $command = "New-LambdaPSRuntimeDeployment -RuntimeName rt -RuntimeAlias default -PowerShellVersion 7.4 -Region us-east-1 -ProjectPath '$projectPath' -Confirm:`$false"
 
         $result = Invoke-InFreshRunspace -Stub $stub.ToString() -Command $command
 
@@ -117,6 +118,32 @@ Describe 'Deploy cmdlets stop at the failing stage (no enclosing try)' -Tag 'Com
         $result.Calls | Should -Not -Contain 'Publish-LambdaPSFunction'
         $result.Output | Should -BeNullOrEmpty
         $result.Errors.FullyQualifiedErrorId | Should -Contain "$ErrorId,New-LambdaPSFunctionDeployment"
+    }
+
+    It 'New-LambdaPSFunctionDeployment does not publish a function package over 250 MB unzipped' {
+        # The real Compress-LambdaPSFunctionPackage runs, so the deploy stops on the size check itself
+        # before Stage 2 creates or updates anything.
+        $stub = {
+            function script:Get-LambdaPSRuntimeArn { 'arn:aws:lambda:us-east-1:111122223333:runtime/rt' }
+            function script:Get-LambdaPSRuntimeAliasArchitecture { , [string[]]@('x86_64') }
+            function script:Get-LambdaPSFunctionBinding { $null }
+            function script:Publish-LambdaPSFunction { $script:LambdaPSCalls.Add('Publish-LambdaPSFunction') }
+        }
+        $source = [System.IO.Path]::Combine($TestDrive, 'too-large')
+        $null = New-Item -ItemType Directory -Path ([System.IO.Path]::Combine($source, 'modules', 'Huge', '1.0.0')) -Force
+        Set-Content -LiteralPath ([System.IO.Path]::Combine($source, 'handler.ps1')) -Value 'param($LambdaInput, $LambdaContext) "ok"'
+        $file = [System.IO.File]::Create([System.IO.Path]::Combine($source, 'modules', 'Huge', '1.0.0', 'huge.bin'))
+        try { $file.SetLength(251MB) } finally { $file.Dispose() }
+        $package = "$source.zip"
+        $command = ("New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath '$source' -Handler handler.ps1 " +
+            "-RuntimeName rt -Role 'arn:aws:iam::111122223333:role/r' -Region us-east-1 -PackagePath '$package' -Confirm:`$false")
+
+        $result = Invoke-InFreshRunspace -Stub $stub.ToString() -Command $command
+
+        $result.Calls | Should -Not -Contain 'Publish-LambdaPSFunction'
+        $result.Output | Should -BeNullOrEmpty
+        $result.Errors.FullyQualifiedErrorId | Should -Contain 'UnzippedPackageTooLarge,New-LambdaPSFunctionDeployment'
+        Test-Path -LiteralPath $package | Should -BeFalse
     }
 
     It 'Compress-LambdaPSFunctionPackage emits no package and keeps no stale .zip when staging fails' {

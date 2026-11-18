@@ -33,7 +33,7 @@ BeforeDiscovery {
            Parameters = @('Name', 'Region', 'ClientConfig') }
         # -Name is the version label; the runtime is -RuntimeName.
         @{ Cmdlet = 'New-LMCRuntimeVersion'; Module = 'AWS.Tools.LambdaCore'
-           Parameters = @('RuntimeName', 'Name', 'ImageUri', 'Compatibility_Architecture', 'ReleaseNote', 'Region', 'ClientConfig') }
+           Parameters = @('RuntimeName', 'Name', 'ImageUri', 'ReleaseNote', 'Region', 'ClientConfig') }
         # Also the version preflight (Public/New-LambdaPSRuntimeDeployment.ps1).
         @{ Cmdlet = 'Get-LMCRuntimeVersion'; Module = 'AWS.Tools.LambdaCore'
            Parameters = @('RuntimeName', 'Name', 'Region', 'ClientConfig') }
@@ -51,6 +51,10 @@ BeforeDiscovery {
         @{ Cmdlet = 'Get-LMCRuntimeAlias'; Module = 'AWS.Tools.LambdaCore'
            Parameters = @('RuntimeName', 'Name', 'Region', 'ClientConfig') }
 
+        # --- Runtime alias completion (Private/Get-LambdaPSRuntimeAliasCompletion.ps1) ---
+        @{ Cmdlet = 'Get-LMCRuntimeAliasList'; Module = 'AWS.Tools.LambdaCore'
+           Parameters = @('RuntimeName', 'Region', 'ClientConfig') }
+
         # --- Runtime ARN resolution (Private/Get-LambdaPSRuntimeArn.ps1) ---
         # -RuntimeName, NOT -Name. New-LMCRuntime is the odd one out in the family.
         @{ Cmdlet = 'Get-LMCRuntime'; Module = 'AWS.Tools.LambdaCore'
@@ -61,7 +65,8 @@ BeforeDiscovery {
         @{ Cmdlet = 'Publish-LMFunction'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'Handler', 'Runtime', 'Role', 'Architecture', 'Code_ZipFile',
                           'Timeout', 'MemorySize', 'Environment_Variable', 'Environment_IsVariablesSet',
-                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'Region', 'ClientConfig')
+                          'RuntimeConfig_RuntimeArn', 'RuntimeConfig_RuntimeAlias', 'TenancyConfig_TenantIsolationMode',
+                          'Region', 'ClientConfig')
            Types = @{ Code_ZipFile = 'System.Byte[]' } }
         @{ Cmdlet = 'Update-LMFunctionCode'; Module = 'AWS.Tools.Lambda'
            Parameters = @('FunctionName', 'ZipFile', 'Architecture', 'Region', 'ClientConfig')
@@ -72,7 +77,7 @@ BeforeDiscovery {
         # --- Invoke (Public/Invoke-LambdaPSFunction.ps1) ---
         # -Payload is sent as the JSON text the cmdlet serialized.
         @{ Cmdlet = 'Invoke-LMFunction'; Module = 'AWS.Tools.Lambda'
-           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'Region', 'ClientConfig')
+           Parameters = @('FunctionName', 'Payload', 'LogType', 'Qualifier', 'TenantId', 'Region', 'ClientConfig')
            Types = @{ Payload = 'System.String' } }
 
         # --- Configuration update of an existing function (Private/Publish-LambdaPSFunction.ps1) ---
@@ -94,7 +99,10 @@ BeforeDiscovery {
 
         # --- ECR image tag preflight (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-ECRImageMetadata'; Module = 'AWS.Tools.ECR'
-           Parameters = @('RepositoryName', 'ImageId', 'Region', 'ClientConfig') }
+           Parameters = @('RepositoryName', 'ImageId', 'Filter_TagStatus', 'Filter_ImageStatus', 'MaxResult', 'Region', 'ClientConfig') }
+        # --- ECR token for the no-Docker push (Private/Get-LambdaPSEcrAuthorizationToken.ps1) ---
+        @{ Cmdlet = 'Get-ECRAuthorizationToken'; Module = 'AWS.Tools.ECR'
+           Parameters = @('Region', 'ClientConfig') }
 
         # --- STS (Public/New-LambdaPSRuntimeDeployment.ps1) ---
         @{ Cmdlet = 'Get-STSCallerIdentity'; Module = 'AWS.Tools.SecurityToken'

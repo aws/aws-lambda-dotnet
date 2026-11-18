@@ -14,6 +14,7 @@ AfterAll {
 Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
     BeforeEach {
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
             [PSCustomObject]@{ Name = 'docker'; Path = '/opt/found/bin/docker'; BuildxVersion = 'v0.0.0' }
         }
@@ -57,8 +58,117 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
             $result.Architecture | Should -Be 'arm64'
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
-                $ArgumentList -contains '--platform' -and $ArgumentList -contains 'linux/arm64'
+                $ArgumentList[0] -eq 'buildx' -and $ArgumentList -contains '--platform' -and $ArgumentList -contains 'linux/arm64'
             }
+        }
+    }
+
+    Context 'the base image refresh' {
+        It 'passes --pull under -Pull' {
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1' -Pull
+
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList[0] -eq 'buildx' -and @($ArgumentList | Where-Object { $_ -eq '--pull' }).Count -eq 1 -and
+                [array]::IndexOf($ArgumentList, '--pull') -lt [array]::IndexOf($ArgumentList, $script:projectPath)
+            }
+        }
+
+        It 'omits --pull by default' {
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1'
+
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList -notcontains '--pull' -and $ArgumentList -contains '--load'
+            }
+        }
+    }
+
+    Context 'the reserved paths check' {
+        BeforeAll {
+            $script:runFails = {
+                param([string[]]$Output)
+                $exception = [System.InvalidOperationException]::new("External tool 'docker' exited with code 3.")
+                $exception.Data['Output'] = $Output
+                throw [System.Management.Automation.ErrorRecord]::new($exception, 'ExternalToolFailed', [System.Management.Automation.ErrorCategory]::OperationStopped, 'docker')
+            }
+        }
+
+        It 'lists /opt, /var/task and /tmp in the built image, with no network, for a <Case>' -ForEach @(
+            @{ Case = 'local build'; Splat = @{ Tag = 'rt:v1' }; Ref = 'rt:v1'; Pull = 'never' }
+            @{ Case = 'push'; Splat = @{ ImageUri = '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1' }; Ref = '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1'; Pull = 'always' }
+        ) {
+            $script:ref = $Ref
+            $script:pull = $Pull
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -Architecture arm64 @Splat
+
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList[0] -eq 'run' -and $ArgumentList -contains '--rm' -and
+                $ArgumentList[[array]::IndexOf($ArgumentList, '--network') + 1] -eq 'none' -and
+                $ArgumentList[[array]::IndexOf($ArgumentList, '--user') + 1] -eq '0' -and
+                $ArgumentList[[array]::IndexOf($ArgumentList, '--pull') + 1] -eq $script:pull -and
+                $ArgumentList[[array]::IndexOf($ArgumentList, '--platform') + 1] -eq 'linux/arm64' -and
+                $ArgumentList[[array]::IndexOf($ArgumentList, '--entrypoint') + 1] -eq '/bin/sh' -and
+                $ArgumentList -contains $script:ref -and
+                $ArgumentList[-1] -match '/opt /var/task /tmp'
+            }
+        }
+
+        It 'throws ReservedPathNotEmpty naming what it found, and emits no success object' {
+            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $ArgumentList[0] -eq 'run' } -MockWith {
+                & $script:runFails @('LAMBDAPS_RESERVED /tmp: .dotnet ', 'LAMBDAPS_RESERVED /opt: tools ')
+            }
+
+            $result = $null
+            $err = $null
+            try { $result = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1' } catch { $err = $_ }
+
+            $result | Should -BeNullOrEmpty
+            $err.FullyQualifiedErrorId | Should -Be 'ReservedPathNotEmpty,Build-LambdaPSRuntimeImage'
+            $err.CategoryInfo.Category | Should -Be 'InvalidData'
+            $err.Exception.Message | Should -BeLike "Image 'rt:v1' has files in /tmp: .dotnet; /opt: tools.*"
+            $err.Exception.Message | Should -Not -BeLike '*already pushed*'
+        }
+
+        It 'says a pushed image is already pushed when it fails the check' {
+            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $ArgumentList[0] -eq 'run' } -MockWith {
+                & $script:runFails @('LAMBDAPS_RESERVED /var/task: handler.ps1 ')
+            }
+            $uri = '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1'
+
+            $err = $null
+            try { $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $uri } catch { $err = $_ }
+
+            $err.Exception.Message | Should -BeLike "*/var/task: handler.ps1*already pushed to '$uri'*"
+        }
+
+        It 'warns and still returns the image when the check cannot run' {
+            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $ArgumentList[0] -eq 'run' } -MockWith {
+                & $script:runFails @('docker: Error response from daemon: exec: "/bin/sh": stat /bin/sh: no such file or directory')
+            }
+
+            $result = Build-LambdaPSRuntimeImage -Path $script:projectPath -Tag 'rt:v1' -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $result.Tag | Should -Be 'rt:v1'
+            @($warnings) | Should -HaveCount 1
+            "$warnings" | Should -BeLike "Could not list /opt, /var/task and /tmp in image 'rt:v1'*: docker: Error response from daemon: exec: *"
+        }
+
+        It 'does not check a Dockerfile project that has no lambdaps-runtime.json' {
+            $bare = [System.IO.Path]::Combine($TestDrive, 'bare-image')
+            $null = New-Item -ItemType Directory -Path $bare
+            Set-Content -LiteralPath ([System.IO.Path]::Combine($bare, 'Dockerfile')) -Value 'FROM public.ecr.aws/lambda/provided:al2023'
+
+            $null = Build-LambdaPSRuntimeImage -Path $bare -Tag 'bare:v1'
+
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 0 -Exactly -ParameterFilter { $ArgumentList[0] -eq 'run' }
+        }
+
+        It 'does not check a Container function image, whose code belongs in /var/task' {
+            $functionPath = [System.IO.Path]::Combine($TestDrive, 'fn-image')
+            $null = New-LambdaPSFunctionProject -Path $functionPath -Handler handler -Target Container -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+
+            $null = Build-LambdaPSRuntimeImage -Path $functionPath -Tag 'fn:v1'
+
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 0 -Exactly -ParameterFilter { $ArgumentList[0] -eq 'run' }
         }
     }
 
@@ -87,7 +197,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
     Context 'the pushed digest' {
         It 'asks buildx for a metadata file and reports the digest it records' {
-            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
+            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $ArgumentList[0] -eq 'buildx' } -MockWith {
                 $index = [array]::IndexOf($ArgumentList, '--metadata-file')
                 Set-Content -LiteralPath $ArgumentList[$index + 1] -Value '{"containerimage.digest":"sha256:abc123"}'
             }
@@ -96,6 +206,9 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             $result = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $uri
 
             $result.ImageDigest | Should -Be 'sha256:abc123'
+            Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList[0] -eq 'run' -and $ArgumentList -contains "$uri@sha256:abc123"
+            }
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
                 $index = [array]::IndexOf($ArgumentList, '--metadata-file')
                 $index -ge 0 -and -not (Test-Path -LiteralPath $ArgumentList[$index + 1])
@@ -108,7 +221,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             @{ Case = 'missing the digest'; Content = '{}' }
         ) {
             $script:metadataContent = $Content
-            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
+            Mock 'Invoke-LambdaPSExternalTool' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $ArgumentList[0] -eq 'buildx' } -MockWith {
                 $index = [array]::IndexOf($ArgumentList, '--metadata-file')
                 Set-Content -LiteralPath $ArgumentList[$index + 1] -Value $script:metadataContent
             }
@@ -118,6 +231,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             $result.Pushed | Should -BeTrue
             $result.ImageDigest | Should -BeNullOrEmpty
             Should -Invoke -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -CommandName 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter {
+                $ArgumentList[0] -eq 'buildx' -and
                 -not (Test-Path -LiteralPath $ArgumentList[[array]::IndexOf($ArgumentList, '--metadata-file') + 1])
             }
         }
@@ -169,6 +283,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
     Context 'error handling' {
         It 'throws the container-runtime preflight error before building, under -WhatIf too' {
+            Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
             Mock 'Test-LambdaPSContainerRuntime' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith {
                 throw [System.Management.Automation.ErrorRecord]::new(
                     [System.InvalidOperationException]::new('The docker CLI was not found on PATH.'),
@@ -258,6 +373,15 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
                 $err.Exception.Message | Should -Match "If docker reported 'exec format error'"
                 $err.Exception.Message | Should -Match 'binfmt'
                 $err.Exception.Message | Should -Match 'Docker Desktop includes emulation'
+                $err.Exception.Message | Should -Not -Match '-BuildMethod NoDocker'
+            }
+
+            It 'Should name -BuildMethod NoDocker in the emulation hint of a push' {
+                $err = $null
+                try { Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1' -Architecture $script:otherArchitecture -BuildMethod Docker }
+                catch { $err = $_ }
+                $err.FullyQualifiedErrorId | Should -BeLike 'ExternalToolFailed*'
+                $err.Exception.Message | Should -Match 'Or build with -BuildMethod NoDocker, which needs no emulator\.'
             }
 
             # A broken Dockerfile on an arm64 Mac (the default build is cross-architecture there) must not

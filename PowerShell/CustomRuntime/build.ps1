@@ -17,12 +17,20 @@
     Test  - run the Pester suite (default).
     Lint  - run PSScriptAnalyzer: strict over the module source, relaxed over Tests/ and Templates/.
     All   - Lint then Test.
+    Package - stage the module to publish, without Tests/, plus the repository's LICENSE, into
+            -OutputPath. The release pipeline signs and publishes what it stages.
+    Library - build AWS.OCI.Builder (Libraries/src/AWS.OCI.Builder, net8.0, Release) with the .NET SDK and
+            copy it into the module's lib/ folder, where the no-Docker image build loads it from. The
+            Test task does not need it: the no-Docker seam is mocked.
     Integration - run only the integration suite (every test under Tests/ tagged 'Integration'),
             which deploys each target to AWS and removes it again. The suite's file header says
             what it creates and what it costs. It needs AWS credentials, docker, AWS.Tools.S3 and
             AWS.Tools.CloudWatchLogs, and the environment variables LAMBDAPS_INTEGRATION_REGION,
             LAMBDAPS_INTEGRATION_ACCOUNT and LAMBDAPS_INTEGRATION_ROLE_ARN (the region, the account
             it must run in, and the function role to deploy with).
+.PARAMETER OutputPath
+    The folder -Task Package stages the module folder into. Default: Deployment/LambdaPSRuntime at the
+    repository root.
 .PARAMETER SkipCoverage
     Run tests without collecting code coverage (faster).
 .EXAMPLE
@@ -32,13 +40,18 @@
     pwsh ./build.ps1 -Task All
     Runs PSScriptAnalyzer, then the test suite.
 .EXAMPLE
+    pwsh ./build.ps1 -Task Package -OutputPath ./out
+    Stages the module to publish into ./out/AWS.ToolExtras.LambdaPSRuntime.
+.EXAMPLE
     pwsh ./build.ps1 -Task Integration
     Runs the integration suite against AWS.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Lint', 'All', 'Integration')]
+    [ValidateSet('Test', 'Lint', 'All', 'Integration', 'Package', 'Library')]
     [string]$Task = 'Test',
+
+    [string]$OutputPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'Deployment', 'LambdaPSRuntime')),
 
     [switch]$SkipCoverage
 )
@@ -212,9 +225,9 @@ function Invoke-Test {
     param([switch]$Integration)
     $minPester = [version]'5.5.0'
     $pester = Get-Module -ListAvailable Pester |
-        Where-Object Version -ge $minPester | Sort-Object Version -Descending | Select-Object -First 1
+        Where-Object { $_.Version -ge $minPester -and $_.Version.Major -lt 6 } | Sort-Object Version -Descending | Select-Object -First 1
     if (-not $pester) {
-        throw "Pester >= $minPester is required. Install with: Install-PSResource Pester -Scope CurrentUser"
+        throw "Pester 5.x ($minPester or later) is required. Install with: Install-PSResource Pester -Version '[$minPester,6.0)' -Scope CurrentUser"
     }
     Import-Module $pester.Path -Force
 
@@ -250,6 +263,41 @@ function Invoke-Test {
     finally { $env:LAMBDAPS_INTEGRATION_TESTS = $callerSetting }
 }
 
+function Invoke-Package {
+    $destination = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        [System.IO.Path]::Combine($OutputPath, 'AWS.ToolExtras.LambdaPSRuntime'))
+    $source = [System.IO.Path]::GetFullPath($moduleRoot)
+    if ($destination -eq $source -or $destination.StartsWith($source + [System.IO.Path]::DirectorySeparatorChar)) {
+        throw "-OutputPath '$OutputPath' would stage the module over its own source."
+    }
+    if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+    $null = New-Item -ItemType Directory -Path $destination
+    Get-ChildItem -LiteralPath $moduleRoot -Force | Where-Object Name -ne 'Tests' |
+        Copy-Item -Destination $destination -Recurse -Force
+    # bin/ and obj/ are left by local builds of a template project.
+    Get-ChildItem -LiteralPath $destination -Directory -Recurse -Force | Where-Object Name -in 'bin', 'obj' | Remove-Item -Recurse -Force
+    Copy-Item -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'LICENSE')) -Destination $destination
+    Write-Host "Module staged in $destination"
+}
+
+# net8.0 loads on every supported pwsh (7.4 = .NET 8, 7.5 = .NET 9, 7.6 = .NET 10). The library is built
+# from the same commit as the module, so there is no version to pin.
+function Invoke-LibraryBuild {
+    $dotnet = Get-Command -Name 'dotnet' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $dotnet) { throw 'The Library task needs the .NET SDK (8.0 or later) on PATH: https://dot.net/download.' }
+    $project = Join-Path $PSScriptRoot '..' '..' 'Libraries' 'src' 'AWS.OCI.Builder' 'AWS.OCI.Builder.csproj'
+    $output = Join-Path ([System.IO.Path]::GetTempPath()) "lambdaps-oci-builder-$([System.IO.Path]::GetRandomFileName())"
+    try {
+        & $dotnet.Source build $project -c Release -f net8.0 -o $output -nologo
+        if ($LASTEXITCODE -ne 0) { throw "dotnet build of '$project' failed (exit code $LASTEXITCODE)." }
+        $lib = Join-Path $moduleRoot 'lib'
+        $null = New-Item -ItemType Directory -Path $lib -Force
+        Copy-Item -LiteralPath (Join-Path $output 'AWS.OCI.Builder.dll') -Destination $lib -Force
+        Write-Host "AWS.OCI.Builder $([System.Reflection.AssemblyName]::GetAssemblyName((Join-Path $lib 'AWS.OCI.Builder.dll')).Version) copied to $lib"
+    }
+    finally { Remove-Item -LiteralPath $output -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 # Before anything else runs: whatever AWS.Tools build loads first is what the tests get.
 if ($Task -in 'Test', 'All', 'Integration') {
     Initialize-AWSToolsModulePath
@@ -259,6 +307,8 @@ switch ($Task) {
     'Lint' { Invoke-Lint }
     'Test' { Invoke-Test }
     'Integration' { Invoke-Test -Integration }
+    'Package' { Invoke-Package }
+    'Library' { Invoke-LibraryBuild }
     'All'  {
         # Lint runs in its own pwsh: PSScriptAnalyzer loads AWS.Tools assemblies while it resolves
         # commands, and an assembly loaded into this process cannot be replaced by the build the tests

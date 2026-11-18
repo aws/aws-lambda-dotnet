@@ -21,14 +21,15 @@
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
 #   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with a version named
-#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
-#     deployed twice;
+#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), a function bound to it
+#     (<prefix>cmr-fn), which is deployed twice, and a PER_TENANT function bound to it (<prefix>cmr-tenant);
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, removes the log groups again after 30 seconds in case a late log delivery
-# created one again, and fails listing anything it could not remove. Nothing whose name does not start
+# created one again, and fails listing anything it could not remove. Lambda deletes a runtime's alias and
+# versions days later, so the runtime is left, with a warning naming it. Nothing whose name does not start
 # with this run's prefix is changed.
 #
-# What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
+# What it costs: six invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
 # AfterAll, with the requests to upload and remove it. At on-demand prices that is under
 # US$0.01 a run; data transfer into AWS (the image pushes and the .zip uploads) is not charged. The
 # image and package builds run on the build host.
@@ -253,7 +254,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $response.Echo.name | Should -BeExactly 'live'
     }
 
-    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke, and a redeploy keeps its handler and alias' {
+    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke, a redeploy keeps its handler and alias, and a PER_TENANT function sees the invoke''s tenant' {
         $region = $script:Region
         # Region names are lowercase. The runtime deploy is given its region in upper case, and every
         # ARN that follows must carry it in lower case.
@@ -265,25 +266,35 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
             Remove-ECRRepository -RepositoryName $runtimeName -IgnoreExistingImages $true -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime' -Name $runtimeName -Remove {
-            # Lambda deletes a runtime's versions in the background, and refuses to delete a runtime that
-            # still lists one, so wait (up to two minutes) until none is listed.
+            # Lambda refuses to delete a runtime that still lists a version or alias, and a deleted alias
+            # stays listed for days. Wait (up to two minutes) for other deletes to finish.
             for ($wait = 0; $wait -lt 24; $wait++) {
-                if (@(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop).Count -eq 0) { break }
+                $left = @(Get-LMCRuntimeAliasList -RuntimeName $runtimeName -Region $region -ErrorAction Stop) +
+                    @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)
+                if (-not @($left | Where-Object { [string]$_.State -eq 'DELETING' })) { break }
                 Start-Sleep -Seconds 5
+            }
+            if ($left) {
+                Write-Warning "Runtime '$runtimeName' in $region and its versions are left, since its alias is scheduled for deletion. Remove them once Lambda has purged it."
+                return
             }
             Remove-LMCRuntime -RuntimeName $runtimeName -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
         # The deploy names the version after the pwsh release it installs, so every version the run's
-        # own runtime lists is removed.
+        # own runtime lists is removed, except one already scheduled for deletion or one an alias scheduled
+        # for deletion points at: Lambda refuses that delete, and the runtime is left with it either way.
         Add-IntegrationResource -Kind 'runtime versions of' -Name $runtimeName -Remove {
+            $pendingAliasVersions = @(Get-LMCRuntimeAliasList -RuntimeName $runtimeName -Region $region -ErrorAction Stop |
+                    Where-Object { [string]$_.State -eq 'PENDING_DELETION' } | ForEach-Object { [string]$_.RuntimeVersion })
             foreach ($version in @(Get-LMCRuntimeVersionList -RuntimeName $runtimeName -Region $region -ErrorAction Stop)) {
+                if ([string]$version.State -eq 'PENDING_DELETION' -or $pendingAliasVersions -ccontains $version.Name) { continue }
                 Remove-LMCRuntimeVersion -RuntimeName $runtimeName -Name $version.Name -Region $region -Force -ErrorAction Stop
             }
         }.GetNewClosure()
         Add-IntegrationResource -Kind 'runtime alias default of' -Name $runtimeName -Remove {
             Remove-LMCRuntimeAlias -RuntimeName $runtimeName -Name 'default' -Region $region -Force -ErrorAction Stop
         }.GetNewClosure()
-        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -Region $script:Region.ToUpperInvariant() `
+        $runtime = New-LambdaPSRuntimeDeployment -RuntimeName $runtimeName -PowerShellVersion 7.4 -RuntimeAlias default -Region $script:Region.ToUpperInvariant() `
             -ProjectPath ([System.IO.Path]::Combine($script:Work, 'cmr')) -Confirm:$false
         $runtime.Region | Should -BeExactly $lowerRegion
         $runtime.RuntimeArn | Should -MatchExactly $inRegion
@@ -342,5 +353,19 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
 
         $response.message | Should -BeExactly 'Hello again, live'
         $response.function | Should -BeExactly $functionName
+
+        $tenantFunction = $script:Prefix + 'cmr-tenant'
+        $tenantScript = [System.IO.Path]::Combine($script:Work, 'tenant.ps1')
+        [System.IO.File]::WriteAllText($tenantScript, "param(`$LambdaInput, `$LambdaContext)`n@{ tenantId = `$LambdaContext.TenantId }`n")
+        Add-IntegrationResource -Kind 'function' -Name $tenantFunction -Remove {
+            Remove-LMFunction -FunctionName $tenantFunction -Region $region -Force -ErrorAction Stop
+        }.GetNewClosure()
+        $null = New-LambdaPSFunctionDeployment -FunctionName $tenantFunction -ProjectPath $tenantScript -RuntimeName $runtimeName `
+            -Role $script:Role -Region $script:Region -TenantIsolationMode PER_TENANT `
+            -PackagePath ([System.IO.Path]::Combine($script:Work, 'cmr-tenant.zip')) -Confirm:$false
+
+        $response = Invoke-LambdaPSFunction -FunctionName $tenantFunction -TenantId 'tenant-a' -Region $script:Region -ErrorAction Stop
+
+        $response.tenantId | Should -BeExactly 'tenant-a'
     }
 }

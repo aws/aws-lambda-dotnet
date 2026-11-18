@@ -120,7 +120,8 @@ public static class DurableFunction
                 // CALLBACK op (and may emit terminal-state callbacks/timers); merge
                 // those back into ExecutionState so the next ExecuteAsync sees them.
                 onNewOperations: state.AddOperations,
-                cancellationToken: ct));
+                cancellationToken: ct),
+            termination: terminationManager);
 
         var context = new DurableContext(
             state, terminationManager, workflowCancellation, idGenerator,
@@ -148,6 +149,9 @@ public static class DurableFunction
             }
 
             await batcher.DrainAsync();
+
+            if (batcher.IsCheckpointTokenMissing)
+                result = new HandlerResult<TOutput> { Status = InvocationStatus.Pending };
         }
         catch (DurableExecutionException ex) when (ex.InnerException is AmazonServiceException sdkEx && IsTerminalCheckpointError(sdkEx))
         {
@@ -176,8 +180,8 @@ public static class DurableFunction
     ///   - 429 / 5xx / no status (network or SDK-internal) → not terminal: transient,
     ///     allow the exception to escape so Lambda retries the invocation.
     ///   - Carve-out: <c>InvalidParameterValueException</c> with a message starting with
-    ///     "Invalid Checkpoint Token" is treated as transient — the service rejects a
-    ///     stale token but a retry with a fresh token will succeed.
+    ///     "Invalid checkpoint token" (case-insensitive) is treated as transient — the
+    ///     service rejects a stale token but a retry with a fresh token will succeed.
     ///
     /// Only checkpoint-flush errors flow through this catch. There are two paths:
     ///   1. A flush triggered synchronously from inside a user <c>StepAsync</c> call
@@ -201,7 +205,7 @@ public static class DurableFunction
 
         if (ex.ErrorCode == "InvalidParameterValueException"
             && ex.Message != null
-            && ex.Message.StartsWith("Invalid Checkpoint Token", StringComparison.Ordinal))
+            && ex.Message.StartsWith("Invalid checkpoint token", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }

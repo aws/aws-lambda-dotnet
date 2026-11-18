@@ -84,6 +84,9 @@ function Publish-LambdaPSFunction {
         The function's environment variables. When given, they replace the function's environment, on
         create and on update, and each value is sent as a string. When omitted, an update leaves the
         environment as it is.
+    .PARAMETER TenantIsolationMode
+        The tenant isolation mode to create the function with. Lambda sets it only on create, so an
+        existing function without it is refused with TenantIsolationModeMismatch before its code is touched.
     .PARAMETER UpdateSetting
         Which of Role, Handler, Timeout, MemorySize and RuntimeAlias an update of an existing function
         applies. The rest keep the function's existing values. All five when omitted, as on a create.
@@ -142,6 +145,10 @@ function Publish-LambdaPSFunction {
         [Parameter()]
         [ValidateNotNull()]
         [hashtable]$EnvironmentVariable,
+
+        [Parameter()]
+        [ValidateSet('PER_TENANT')]
+        [string]$TenantIsolationMode,
 
         [Parameter()]
         [ValidateSet('Role', 'Handler', 'Timeout', 'MemorySize', 'RuntimeAlias')]
@@ -297,6 +304,8 @@ function Publish-LambdaPSFunction {
             ClientConfig             = $clientConfig
             ErrorAction              = 'Stop'
         }
+        # ValidateSet ignores case; Lambda does not.
+        if ($TenantIsolationMode) { $publishParams.TenancyConfig_TenantIsolationMode = $TenantIsolationMode.ToUpperInvariant() }
         try { $created = & $withRoleRetry { Publish-LMFunction @publishParams @environment @CredentialParameter } }
         catch {
             if (-not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'ResourceConflictException')) { throw }
@@ -324,6 +333,14 @@ function Publish-LambdaPSFunction {
                     ("Function '$FunctionName' $existing and is not bound to a customer-managed runtime, so " +
                      'its code was not replaced. Use a new -FunctionName, or delete the function first.')),
                 'FunctionNotRuntimeBound', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName)
+        }
+        $currentMode = if ($null -ne $current.TenancyConfig) { [string]$current.TenancyConfig.TenantIsolationMode } else { '' }
+        if ($TenantIsolationMode -and $currentMode -ne $TenantIsolationMode) {
+            throw [System.Management.Automation.ErrorRecord]::new(
+                [System.InvalidOperationException]::new(
+                    ("Function '$FunctionName' already exists with $(if ($currentMode) { "tenant isolation mode $currentMode" } else { 'no tenant isolation' }), " +
+                     'and Lambda sets the mode only when it creates a function, so its code was not replaced.')),
+                'TenantIsolationModeMismatch', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName)
         }
 
         # The binding moves to the requested one when the caller named the alias, or when the function

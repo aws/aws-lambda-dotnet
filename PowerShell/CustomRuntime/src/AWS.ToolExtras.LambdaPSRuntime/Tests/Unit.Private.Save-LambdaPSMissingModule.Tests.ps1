@@ -278,6 +278,21 @@ Describe 'Save-LambdaPSMissingModule' -Tag 'Unit' {
         }
     }
 
+    It 'throws ModuleDownloadFailed naming the AWS.Tools release when it has no such module' {
+        InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
+            param($dl)
+            # The installer writes only AWS.Tools.Common for a name the release does not have.
+            Mock 'Save-LambdaPSAWSToolsModule' -MockWith {
+                $d = [System.IO.Path]::Combine($Path, 'AWS.Tools.Common', $Version)
+                $null = New-Item -ItemType Directory -Path $d -Force
+                Set-Content -LiteralPath ([System.IO.Path]::Combine($d, 'AWS.Tools.Common.psd1')) -Value "@{ ModuleVersion = '$Version' }"
+            }
+
+            { Save-LambdaPSMissingModule -Module @{ ModuleName = 'AWS.Tools.Bogus'; RequiredVersion = '9.9.1' } -Path $dl -WarningAction SilentlyContinue } |
+                Should -Throw -ErrorId 'ModuleDownloadFailed' -ExpectedMessage "AWS.Tools 9.9.1 has no module named 'AWS.Tools.Bogus'.*"
+        }
+    }
+
     It 'bootstraps the Installer into a temporary folder that is gone afterwards, never into -Path' {
         InModuleScope $script:moduleName -Parameters @{ dl = $script:dl } {
             param($dl)

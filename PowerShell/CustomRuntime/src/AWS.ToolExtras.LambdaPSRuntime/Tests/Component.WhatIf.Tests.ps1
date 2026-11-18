@@ -15,7 +15,8 @@ AfterAll {
 
 Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
     BeforeEach {
-        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker' } }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
+        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
         Mock 'Get-STSCallerIdentity' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Account = '111122223333' } }
         Mock 'Get-LMCRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = $RuntimeName } }
         Mock 'Get-LMCRuntimeVersion' -ModuleName $script:moduleName -MockWith {
@@ -24,14 +25,14 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
         Mock 'Get-LMCRuntimeAlias' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ResourceNotFoundException]::new('Runtime alias does not exist') }
         Mock 'Get-LMCRuntimeVersionList' -ModuleName $script:moduleName -MockWith { }
         Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { $script:pwshConfig.DefaultPatch[$PowerShellVersion] }
-        Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') }
+        Mock 'Get-ECRImageMetadata' -ModuleName $script:moduleName -MockWith { if ($ImageId) { throw [LambdaPSTests.Fakes.ImageNotFoundException]::new('The image does not exist') } }
         # A preview must not reach AWS: every AWS write the deploy makes throws if it is called.
         foreach ($command in 'New-LMCRuntime', 'New-LMCRuntimeVersion', 'New-LMCRuntimeAlias', 'Update-LMCRuntimeAlias',
             'New-ECRRepository', 'Set-ECRRepositoryPolicy', 'Get-ECRLoginCommand') {
             Mock $command -ModuleName $script:moduleName -MockWith { throw 'must not call AWS under -WhatIf' }
         }
         $script:projectPath = Join-Path $TestDrive "rt-$([guid]::NewGuid().ToString('N'))"
-        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
+        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4'; RuntimeAlias = 'default'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
     }
 
     It 'previews a valid deploy without writing anything' {
@@ -147,7 +148,8 @@ Describe 'Build-LambdaPSRuntimePackage -WhatIf' -Tag 'Component' {
 # -WhatIf on the cmdlets that write files or run docker must write nothing and run nothing.
 Describe '-WhatIf writes nothing' -Tag 'Component' {
     It 'Build-LambdaPSRuntimeImage runs no docker build' {
-        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker' } }
+        Mock 'Get-LambdaPSDockerBuilderPlatform' -ModuleName $script:moduleName -MockWith { }
+        Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName $script:moduleName -MockWith { }
         $project = Join-Path $TestDrive 'image-whatif'
         $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion 7.4

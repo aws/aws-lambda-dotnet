@@ -15,14 +15,17 @@ image. This module automates building and deploying it. It lives deliberately ou
 
 - PowerShell 7.4+
 - For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
-  `PATH`. Docker is the only container CLI this module supports. A customer-managed runtime needs a
+  `PATH`, or no container CLI at all. Where Docker or buildx is missing, or the Docker daemon isn't
+  running, the image build
+  (`-BuildMethod Auto`, the default) builds and pushes the image of a project as scaffolded, without
+  Docker. A local build (`-Tag`) or an edited Dockerfile still needs Docker. Docker is the only
+  container CLI this module supports. A customer-managed runtime needs a
   Docker v2 Schema 2 manifest, which the image build emits with buildx's `--provenance=false`,
   `--sbom=false` and `oci-mediatypes=false`. Other CLIs can produce one too (for example `podman push --format v2s2`),
   but the module builds and tests with Docker only.
   `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
-- The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —
-  that is the path for Docker-averse environments.
-- AWS.Tools 5.0.1001 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
+- The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all.
+- AWS.Tools 5.0.336 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
   `AWS.Tools.SecurityToken`), with an `AWS.Tools.LambdaCore` that exports the Lambda
   customer-managed runtime cmdlets (`New-LMCRuntime`, `New-LMCRuntimeVersion`,
   `New-LMCRuntimeAlias`, …) and an `AWS.Tools.Lambda` whose function cmdlets accept the runtime
@@ -49,15 +52,16 @@ redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by
 `New-LambdaPSRuntimeDeployment` finds a newer one it can verify (see
 [Patching a runtime](#patching-a-runtime)); the
 releases and their tarball SHA256s are listed in `Config/pwsh.psd1`. `-PwshVersion` picks another
-release: an x86_64 image installs any x.y.z from Microsoft's signed RPM repository, while an arm64
-image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
+release: an x86_64 image built with Docker installs any x.y.z from Microsoft's signed RPM repository,
+while an arm64 or no-Docker image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
 each line to its newest servicing release and keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
 PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
 ([lifecycle](https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle)):
 the first module release after that date stops installing them by default, so
 `-PowerShellVersion 7.4` or `7.5` then also needs `-PwshVersion`. Use 7.6 for new projects. The
 container-free targets run in invariant-globalization mode (`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`)
-so no ICU libraries are needed.
+so no ICU libraries are needed. Runtime images have ICU, so cultures such as `de-DE` work: the Docker
+build installs libicu, and the no-Docker build adds Microsoft's ICU package next to pwsh.
 
 The Layer and self-contained `.zip` packages bundle pwsh, so they are large: for PowerShell 7.6, about
 70 MB zipped and 178 MB unzipped on x86_64 (194 MB on arm64), before any modules. That is over Lambda's direct-upload
@@ -65,6 +69,8 @@ limit, so upload the `.zip` to S3 and pass `-Code_S3Bucket`/`-Code_S3Key` (`-Con
 `-Content_S3Key` for `Publish-LMLayerVersion`). The 250 MB unzipped limit leaves roughly 70 MB for modules and code (55 MB on arm64).
 `Build-LambdaPSRuntimePackage` and `Compress-LambdaPSFunctionPackage` stop with `UnzippedPackageTooLarge`
 before writing a package over 250 MB unzipped, warn over 225 MB, and name the largest modules.
+`New-LambdaPSFunctionDeployment` stops before it creates or updates the function: with `PackageTooLarge`
+over 50 MB zipped, and with `UnzippedPackageTooLarge` over 250 MB unzipped.
 
 ## Quick start (high-level)
 
@@ -74,8 +80,9 @@ Deploy the runtime once, then deploy functions bound to its alias.
 Import-Module ./src/AWS.ToolExtras.LambdaPSRuntime/AWS.ToolExtras.LambdaPSRuntime.psd1
 
 # 1. Deploy the runtime (preflight container CLI -> scaffold -> build/push image ->
-#    publish version -> point the 'default' alias at it).
-New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 `
+#    publish version -> point the 'default' alias at it). -RuntimeAlias is required, as every function
+#    bound to the alias runs the new version; Tab offers 'default' and the runtime's aliases.
+New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default `
     -IncludeModule @(
         @{ ModuleName = 'AWS.Tools.S3';         RequiredVersion = '5.0.274' },
         @{ ModuleName = 'AWS.Tools.DynamoDBv2';  RequiredVersion = '5.0.274' }
@@ -135,26 +142,31 @@ than inheriting Lambda's 3 s / 128 MB, which a PowerShell function cannot reliab
 invoke can take about 2 seconds at 128 MB, and pwsh uses about 115–130 MB of memory on startup. Memory
 also scales CPU, so at 512 MB the same warm invoke takes about half a second.
 
+`New-LambdaPSFunctionDeployment -TenantIsolationMode PER_TENANT` creates a multi-tenant function. Invoke it
+with `Invoke-LambdaPSFunction -TenantId`, and the handler reads the tenant as `$LambdaContext.TenantId`.
+
 ### Patching a runtime
 
 Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime. Without
 `-PwshVersion`, it installs the newest pwsh servicing release of `-PowerShellVersion` that the
 image build can verify; without `-RuntimeVersion`, it publishes it as a new version named
 `<pwsh release>-<n>` (`7.6.9-1`, then `7.6.9-2` for a rebuild that only changes modules or the base
-image, then `7.6.10-1`) and moves the alias. Deleting the newest version frees its name for the next
-deploy.
+image, then `7.6.10-1`) and moves the alias. A removed version's name is not reused: its image tag
+stays in the repository, and the deploy never pushes over a tag. A `-ProjectPath` project is built as
+is, with the release its `Dockerfile` names, so patch it by deploying without `-ProjectPath`, or by
+changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
-| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
-| arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
+| x86_64 (Docker) | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
+| arm64, or x86_64 without Docker | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
 
 The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When
 the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which, so a patch
 can be rolled back:
 
 ```powershell
-$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -Region us-east-1
+$patch = New-LambdaPSRuntimeDeployment -RuntimeName my-powershell-runtime -PowerShellVersion 7.6 -RuntimeAlias default -Region us-east-1
 Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $patch.PreviousRuntimeVersion -Region us-east-1
 ```
@@ -162,9 +174,10 @@ Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
 A deploy that can only install the module's pinned release (an unreadable repository on x86_64, or
 arm64) stops with `PwshReleaseOlderThanAlias` when the alias runs a newer release of the same line and
 architecture, rather than downgrade it. Pass `-PwshVersion` to choose the release.
-Naming a version lists the runtime's versions, so the deploy needs `lambda:ListRuntimeVersions`. Pass
-`-PwshVersion` or `-RuntimeVersion` to pin either choice; for example, to put x86_64 and arm64 runtimes
-on the same release, pass the arm64 one's `PwshVersion` to the x86_64 deploy.
+Naming a version lists the runtime's versions and the repository's images, so the deploy needs
+`lambda:ListRuntimeVersions` and `ecr:DescribeImages`. Pass `-PwshVersion` or `-RuntimeVersion` to pin
+either choice; for example, to put x86_64 and arm64 runtimes on the same release, pass the arm64 one's
+`PwshVersion` to the x86_64 deploy.
 
 After a patch that changes the pwsh release, the first cold start of a bound function can take about
 15 seconds while Lambda loads the new image, and the request still succeeds.
@@ -209,10 +222,11 @@ On Linux and macOS, an existing target directory owned by a user other than you,
 writable by group or others, is refused with `TargetOwnedByAnotherUser`, even with `-Force` (no check
 when running as root). `-Force` does not replace a non-empty target that is a link
 (`TargetIsLink`), a drive root, or the current location or your home folder or a folder that contains
-either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` replaces
-`-ProjectPath` the same way, but only when it holds a runtime-image project this module scaffolded
-(a `lambdaps-runtime.json` marker with target CMR); any other non-empty directory is refused with
-`TargetNotEmpty` before anything is created.
+either (`TargetProtected`). `New-LambdaPSRuntimeDeployment` never replaces a
+folder. Without `-ProjectPath`, it scaffolds in a new temp folder and removes it at the end. A
+`-ProjectPath` that holds a runtime-image project this module scaffolded (a `lambdaps-runtime.json`
+marker with target CMR) is built as is, so edits to its `Dockerfile`, `runtime.ps1` or `modules/`
+ship. Any other non-empty directory is refused with `TargetNotEmpty` before anything is created.
 
 `-WhatIf` runs the same local checks as a real run — module pins and availability, the pwsh version,
 the handler, the architecture — and the deploy cmdlets also run their read-only AWS checks, so a
@@ -303,7 +317,9 @@ on this runtime with these differences:
 - **`$LambdaContext` has no `Logger`.** Log with `Write-Host`, which goes to the function's
   CloudWatch log: `$LambdaContext.Logger.LogLine($message)` becomes `Write-Host $message`.
 - **`$LambdaContext.ClientContext` and `$LambdaContext.Identity` are JSON strings**, as Lambda sent
-  them, and empty when the caller sent none. Parse them with `ConvertFrom-Json`, for example
+  them. When the caller sent none, `Identity` is empty, and `ClientContext` is `{}` from AWS.Tools
+  (`Invoke-LMFunction` and `Invoke-LambdaPSFunction` always send one) and empty from the AWS CLI, so
+  test its fields, not the string. Parse them with `ConvertFrom-Json`, for example
   `$identity = $LambdaContext.Identity | ConvertFrom-Json`.
 
 ## Attribution
@@ -314,16 +330,16 @@ calls carry a stable `app/AWS.ToolExtras.LambdaPSRuntime#<version>` token for ad
 ## Testing
 
 Run the offline test suite (all AWS and container seams are mocked) with coverage. The suite also
-checks every AWS cmdlet call against the real cmdlets, so it needs an `AWS.Tools.LambdaCore` that
-exports the Lambda customer-managed runtime cmdlets; set `LAMBDAPS_AWSTOOLS_MODULE_PATH` to a
-directory containing `AWS.Tools.*/<version>/` to use one that is not on `PSModulePath`. The suite
-needs Pester 5.5.0 or later (`Install-PSResource Pester -Scope CurrentUser`), and `-Task Lint` needs
-PSScriptAnalyzer 1.21.0 or later:
+checks every AWS cmdlet call against the real cmdlets, so it needs AWS.Tools 5.0.336 or later; set
+`LAMBDAPS_AWSTOOLS_MODULE_PATH` to a directory containing `AWS.Tools.*/<version>/` to use one that
+is not on `PSModulePath`. The suite needs Pester 5.x, 5.5.0 or later (`Install-PSResource Pester -Version '[5.5.0,6.0)' -Scope CurrentUser`),
+and `-Task Lint` needs PSScriptAnalyzer 1.21.0 or later:
 
 ```powershell
 pwsh ./build.ps1            # Pester suite + code coverage
 pwsh ./build.ps1 -Task All  # PSScriptAnalyzer, then the suite
 pwsh ./build.ps1 -Task Integration # the integration suite only, against AWS
+pwsh ./build.ps1 -Task Package     # stage the module to publish (no Tests/) in Deployment/LambdaPSRuntime
 ```
 
 The variable is read by `build.ps1` and `Contract.AwsCmdlet.Tests.ps1`. To use such a build interactively, put the same directory
@@ -374,7 +390,7 @@ file.
   `Get-LMCRuntime`, …) and the function cmdlets' runtime binding (`-RuntimeConfig_RuntimeArn`,
   `-RuntimeConfig_RuntimeAlias`). The manifest declares
   `AWS.Tools.Lambda`/`.LambdaCore`/`.ECR`/`.SecurityToken` as `RequiredModules` with a **minimum**
-  `ModuleVersion` of `5.0.1001`, the first build with those cmdlets and parameters, not an exact
+  `ModuleVersion` of `5.0.336`, the first build with those cmdlets and parameters, not an exact
   pin, so consumers can take newer AWS.Tools releases without this module re-pinning. All four share
   one `AWS.Tools.Common` build, so they have the same floor. Without them, or with an older build,
   the module does not import. A manifest cannot express "exports command X", so a later build whose
@@ -393,7 +409,9 @@ file.
   where the live ones are kept, a warning says when the manifest's differ. When the alias is kept, a
   stated `-Architecture` is checked against it: one it supports is applied, and one it doesn't is
   refused with `ArchitectureMismatch`. An existing function of the same name that is not
-  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched. If
+  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched.
+  Lambda sets a function's tenant isolation mode only when it creates the function, so a redeploy whose
+  `-TenantIsolationMode` the function doesn't have is refused with `TenantIsolationModeMismatch`. If
   the configuration update fails after the code update, `FunctionConfigurationNotApplied` says what the
   function now has; fix the cause the service reported, then run the deploy again.
 - **A function deploy returns once the function can be invoked.** Lambda creates a function in state

@@ -8,7 +8,7 @@ function private:Write-LambdaLog {
 
         .DESCRIPTION
             Writes the message as one line. With AWS_LAMBDA_LOG_FORMAT=JSON, writes it as a JSON line
-            with timestamp, level, requestId, traceId and message, as the .NET runtime client does, and
+            with timestamp, level, requestId, traceId, tenantId and message, as the .NET runtime client does, and
             drops it when its level is below AWS_LAMBDA_LOG_LEVEL (default INFO).
 
         .PARAMETER ErrorRecord
@@ -51,8 +51,11 @@ function private:Write-LambdaLog {
     # Lambda makes each stdout line its own log event, so a record's newlines become carriage returns,
     # as the Node.js and Python runtimes do: text in a message cannot add lines such as 'END RequestId'.
     if ($env:AWS_LAMBDA_LOG_FORMAT -ne 'JSON') {
-        # A JSON record carries the stack in stackTrace, as the .NET runtime client writes it.
+        # A handler's error says where it failed only in its stack. A JSON record carries the stack in
+        # stackTrace instead, as the .NET runtime client writes it.
         if ($ErrorRecord.ScriptStackTrace) { $Message += "`n" + $ErrorRecord.ScriptStackTrace }
+        # The label Amazon.Lambda.PowerShellHost writes, so an error can be found with a CloudWatch filter.
+        if ($Level -eq 'ERROR') { $Message = "[Error] - $Message" }
         Microsoft.PowerShell.Utility\Write-Host -InformationAction Continue ($Message -replace '\r?\n', "`r")
         return
     }
@@ -68,6 +71,7 @@ function private:Write-LambdaLog {
     }
     if ($env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID) { $private:record.requestId = $env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID }
     if ($env:_X_AMZN_TRACE_ID) { $private:record.traceId = $env:_X_AMZN_TRACE_ID }
+    if ($script:__LambdaPSRuntimeTenantId) { $private:record.tenantId = $script:__LambdaPSRuntimeTenantId }
     $private:record.message = $Message
     if ($ErrorRecord) {
         $private:record.errorType = $ErrorRecord.CategoryInfo.Reason

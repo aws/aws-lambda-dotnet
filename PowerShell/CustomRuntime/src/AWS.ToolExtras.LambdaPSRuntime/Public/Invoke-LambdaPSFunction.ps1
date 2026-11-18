@@ -24,7 +24,8 @@ function Invoke-LambdaPSFunction {
         payload and whose TargetObject is the payload (parsed when it is JSON), rather than returning
         the error payload as if it were a normal result. It is non-terminating, so functions piped in
         after it are still invoked; pass -ErrorAction Stop to stop at the first one. A request that
-        fails (permissions, a missing function) is still a terminating error.
+        fails (permissions, a missing function) is still a terminating error. A multi-tenant function
+        invoked without -TenantId fails with TenantIdRequired.
 
         Each invocation is guarded by ShouldProcess with ConfirmImpact Low, as Invoke-LMFunction is:
         it does not ask by default, -Confirm asks once per function, and -WhatIf names the function
@@ -47,6 +48,9 @@ function Invoke-LambdaPSFunction {
         Request the tail of the execution log and write the decoded log to the Information stream.
     .PARAMETER Qualifier
         An optional function version or alias to invoke.
+    .PARAMETER TenantId
+        The tenant to invoke the function for. A multi-tenant function (New-LambdaPSFunctionDeployment
+        -TenantIsolationMode PER_TENANT) requires one, and the handler reads it as $LambdaContext.TenantId.
     .PARAMETER Region
         The AWS region the function lives in. Accepts pipeline input by property name. When omitted
         and -FunctionName is a function ARN, the region in the ARN is used; otherwise a region set with
@@ -109,6 +113,10 @@ function Invoke-LambdaPSFunction {
         [ValidateNotNullOrWhiteSpace()]
         [string]$Qualifier,
 
+        [Parameter()]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$TenantId,
+
         [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateNotNullOrWhiteSpace()]
         [string]$Region,
@@ -164,6 +172,7 @@ function Invoke-LambdaPSFunction {
             # -LogType Tail returns the tail of the execution log as the base64 LogResult.
             if ($IncludeLog) { $invokeParams['LogType'] = 'Tail' }
             if (-not [string]::IsNullOrWhiteSpace($Qualifier)) { $invokeParams['Qualifier'] = $Qualifier }
+            if ($TenantId) { $invokeParams['TenantId'] = $TenantId }
             # A function ARN names its region; use it when -Region is not given, rather than send the
             # call to the ambient region, where the function cannot be found.
             $arnRegion = (Split-LambdaPSFunctionArn -FunctionName $FunctionName).Region
@@ -195,7 +204,16 @@ function Invoke-LambdaPSFunction {
             # Confirmed once: Invoke-LMFunction must not ask again under -Confirm.
             $ConfirmPreference = 'None'
 
-            $response = Invoke-LMFunction @invokeParams @credentialParameter
+            try { $response = Invoke-LMFunction @invokeParams @credentialParameter }
+            catch {
+                # Lambda's only sign of a PER_TENANT function invoked without a tenant is this message.
+                if ($TenantId -or $_.Exception.Message -notlike '*enabled with tenancy configuration*' -or
+                    -not (Test-LambdaPSServiceError -ErrorRecord $_ -ErrorCode 'InvalidParameterValueException')) { throw }
+                throw [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        "Function '$FunctionName' isolates tenants (PER_TENANT), so each invoke needs -TenantId. Pass -TenantId <tenant>.", $_.Exception),
+                    'TenantIdRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName)
+            }
 
             # Read the response payload. The SDK returns it as a MemoryStream; tolerate a plain string too.
             $responseText = $null
@@ -210,10 +228,20 @@ function Invoke-LambdaPSFunction {
                 $responseText = $responsePayload
             }
 
-            # Whether the payload is JSON. Test-Json with -ErrorAction Ignore records nothing; a parse that
-            # fails, even inside try/catch, would reach the caller's -ErrorVariable.
-            $isJson = -not [string]::IsNullOrEmpty($responseText) -and
-                (Test-Json -Json $responseText -Options IgnoreComments, AllowTrailingCommas -ErrorAction Ignore)
+            # Not Test-Json, which stops at 64 levels. A failed parse, even caught, reaches -ErrorVariable
+            # unless it runs in a nested pipeline, and $Error unless removed.
+            $isJson = $false
+            if (-not [string]::IsNullOrEmpty($responseText)) {
+                $jsonCheck = [powershell]::Create([System.Management.Automation.RunspaceMode]::CurrentRunspace)
+                try {
+                    $isJson = [bool]@($jsonCheck.AddScript({
+                                param([string]$Text)
+                                $options = [System.Text.Json.JsonDocumentOptions]@{ MaxDepth = 1024; CommentHandling = 'Skip'; AllowTrailingCommas = $true }
+                                try { [System.Text.Json.JsonDocument]::Parse($Text, $options).Dispose(); $true } catch { $global:Error.RemoveAt(0); $false }
+                            }).AddArgument($responseText).Invoke())[0]
+                }
+                finally { $jsonCheck.Dispose() }
+            }
 
             # Parses JSON with no error record: ConvertFrom-Json refuses an empty key (as in {"":1}) and
             # keys that differ only in case (as in {"a":1,"A":2}) with an error that reaches the caller's
@@ -245,7 +273,9 @@ function Invoke-LambdaPSFunction {
             # Surface the execution log (base64 in LogResult) on the Information stream when requested.
             if ($IncludeLog -and -not [string]::IsNullOrEmpty($response.LogResult)) {
                 $log = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response.LogResult))
-                Write-Information $log -Tags 'LambdaPSInvokeLog'
+                # The runtime joins an error record's lines with a bare CR, keeping it one CloudWatch event; in
+                # a terminal each CR would return to column 0 and the next line would overwrite the last.
+                Write-Information ($log -replace '\r(?!\n)', "`n") -Tags 'LambdaPSInvokeLog'
             }
 
             # A function error comes back as HTTP 200 with FunctionError set and the error in the payload.
