@@ -334,6 +334,8 @@ function New-LambdaPSRuntimeDeployment {
     try {
         # First, so the finally never reads a caller's variable of the same name.
         $temporaryProject = [string]::IsNullOrWhiteSpace($ProjectPath)
+        $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
+        $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
         # Credential parameters the caller gave, passed to every seam that calls AWS.
         $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
         if (-not $PSBoundParameters.ContainsKey('Region')) {
@@ -343,8 +345,6 @@ function New-LambdaPSRuntimeDeployment {
         # sends, which carries the lowercase name, so a region given in another case is lowercased here,
         # before it is used in any ARN, image URI or call.
         $Region = $Region.ToLowerInvariant()
-        $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
-        $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # The API takes 128 characters for each name, but Lambda leaves a version or alias CREATING when

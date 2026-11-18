@@ -11,7 +11,7 @@ function Get-LambdaPSProjectMarker {
         Returns nothing when -Path has no marker. Otherwise returns an object with Path (the marker
         file), Target, PowerShellVersion and PwshVersion (any may be $null when the marker omits it). A marker
         that is not valid JSON, whose Target is not one of CMR, Layer, SelfContainedZip or Container,
-        or whose PowerShellVersion is not major.minor or PwshVersion not an x.y.z release of it, is a terminating
+        or whose PowerShellVersion is not major.minor or PwshVersion not x.y.z, is a terminating
         InvalidProjectMarker error that names the file, rather than a
         parse error or a parameter-validation error further on. Target is matched without regard to
         case and returned in that canonical spelling, so 'layer' is returned as 'Layer'.
@@ -84,12 +84,6 @@ function Get-LambdaPSProjectMarker {
                     "The project marker '$markerPath' has $($field.Key) '$($field.Value.Value)', which is not $($field.Value.Form). Fix it, or scaffold the project again."),
                 'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $markerPath)
         }
-    }
-    if ($powerShellVersion -and $pwshVersion -and -not $pwshVersion.StartsWith("$powerShellVersion.", [System.StringComparison]::Ordinal)) {
-        throw [System.Management.Automation.ErrorRecord]::new(
-            [System.IO.InvalidDataException]::new(
-                "The project marker '$markerPath' has PwshVersion '$pwshVersion', which is not a PowerShell $powerShellVersion release. Fix it, or scaffold the project again."),
-            'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $markerPath)
     }
 
     [PSCustomObject]@{

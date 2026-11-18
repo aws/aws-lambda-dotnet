@@ -61,9 +61,9 @@ function Resolve-LambdaPSPwshRelease {
                          "can't install it. Its newest PowerShell $PowerShellVersion release is $($listed[-1])."), 'PwshVersion'),
                     'PwshVersionNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $version)
             }
+            return [PSCustomObject]@{ Version = $version; Source = 'Parameter'; Newest = $(if ($listed.Count -gt 0) { $listed[-1] }) }
         }
-        $newest = if ($listed.Count -gt 0) { $listed[-1] }
-        return [PSCustomObject]@{ Version = $version; Source = 'Parameter'; Newest = $newest }
+        return [PSCustomObject]@{ Version = $version; Source = 'Parameter' }
     }
     # UnknownPwshVersion for a line the module does not support, before any network call.
     $default = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion

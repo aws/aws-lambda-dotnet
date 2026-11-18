@@ -4,7 +4,8 @@ function Resolve-LambdaPSPwshVersion {
         Resolves the full pwsh version (x.y.z) to install or bundle.
     .DESCRIPTION
         Pure resolver. The RPM install (dnf install powershell-<version>) and the release tarball both
-        need a full three-part version, but the cmdlets accept a major.minor value (for example 7.4).
+        need a full three-part version, but the cmdlets pass the line (major.minor, for example 7.4) of
+        their -PowerShellVersion.
         This function maps a major.minor version to its default patch release (Config/pwsh.psd1), or
         returns an explicit override when one is supplied. A major.minor with no default, and no
         override, is an UnknownPwshVersion error, which the calling cmdlet reports as its own.

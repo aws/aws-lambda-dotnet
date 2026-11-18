@@ -944,6 +944,18 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
         $result.PwshVersion | Should -Be '7.4.3'
     }
 
+    It 'throws InvalidProjectMarker for a marker whose PwshVersion is on another line than its PowerShellVersion' {
+        $proj = [System.IO.Path]::Combine($TestDrive, 'marker-two-lines')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
+        $markerPath = [System.IO.Path]::Combine($proj, 'lambdaps-runtime.json')
+        $marker = Get-Content -LiteralPath $markerPath -Raw | ConvertFrom-Json
+        $marker.PwshVersion = '7.40.1'
+        $marker | ConvertTo-Json | Set-Content -LiteralPath $markerPath
+
+        { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'two-lines.zip')) -PwshArchivePath $script:fakeTarball } |
+            Should -Throw -ErrorId 'InvalidProjectMarker,Build-LambdaPSRuntimePackage' -ExpectedMessage "*PwshVersion '7.40.1', which is not a PowerShell 7.4 release*"
+    }
+
     # A pattern ending in '$' also matches before a final newline, so the versions are anchored with \z.
     It 'refuses -<Parameter> with a trailing newline at binding' -ForEach @(
         @{ Parameter = 'PowerShellVersion'; Value = "7.4`n" }

@@ -53,18 +53,6 @@ Describe 'Get-LambdaPSProjectMarker' -Tag 'Unit' {
         }
     }
 
-    It 'throws InvalidProjectMarker for a PwshVersion on another line than its PowerShellVersion' {
-        # Arrange
-        $dir = Join-Path $TestDrive 'marker-two-lines'
-        $null = New-Item -ItemType Directory -Path $dir
-        Set-Content -LiteralPath (Join-Path $dir 'lambdaps-runtime.json') -Value (@{ Target = 'Layer'; PowerShellVersion = '7.4'; PwshVersion = '7.40.1' } | ConvertTo-Json)
-        InModuleScope $script:moduleName -Parameters @{ Dir = $dir } {
-            param($Dir)
-            # Act / Assert
-            { Get-LambdaPSProjectMarker -Path $Dir } | Should -Throw -ErrorId 'InvalidProjectMarker' -ExpectedMessage "*PwshVersion '7.40.1', which is not a PowerShell 7.4 release*"
-        }
-    }
-
     It 'returns well-formed versions as written' {
         $dir = Join-Path $TestDrive 'marker-versions-ok'
         $null = New-Item -ItemType Directory -Path $dir

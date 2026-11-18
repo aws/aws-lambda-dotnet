@@ -195,6 +195,15 @@ function Build-LambdaPSRuntimePackage {
 
         # Resolve target and PowerShell version from the marker unless overridden.
         $marker = Get-LambdaPSProjectMarker -Path $root
+        if ($marker -and $marker.PowerShellVersion -and $marker.PwshVersion -and
+            -not $marker.PwshVersion.StartsWith("$($marker.PowerShellVersion).", [System.StringComparison]::Ordinal)) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.IO.InvalidDataException]::new(
+                        ("The project marker '$($marker.Path)' has PwshVersion '$($marker.PwshVersion)', which is not a " +
+                         "PowerShell $($marker.PowerShellVersion) release. Fix it, or scaffold the project again.")),
+                    'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $marker.Path))
+        }
         # A function project (the scaffolder's manifest.json, no marker) is handler code for a runtime deployed
         # separately: it is packaged with Compress-LambdaPSFunctionPackage, not built here.
         if ($null -eq $marker) {
