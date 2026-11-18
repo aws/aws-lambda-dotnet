@@ -55,6 +55,10 @@
       ]
     },
     {
+      "Name": "Amazon.Lambda.DurableExecution.OpenTelemetry",
+      "Path": "Libraries/src/Amazon.Lambda.DurableExecution.OpenTelemetry/Amazon.Lambda.DurableExecution.OpenTelemetry.csproj"
+    },
+    {
       "Name": "Amazon.Lambda.DurableExecution.Testing",
       "Path": "Libraries/src/Amazon.Lambda.DurableExecution.Testing/Amazon.Lambda.DurableExecution.Testing.csproj"
     },
