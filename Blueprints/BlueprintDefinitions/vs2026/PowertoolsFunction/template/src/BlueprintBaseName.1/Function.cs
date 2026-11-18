@@ -9,11 +9,11 @@ using AWS.Lambda.Powertools.Tracing;
 namespace BlueprintBaseName._1;
 
 /// <summary>
-/// Learn more about Powertools for AWS Lambda (.NET) at https://awslabs.github.io/aws-lambda-powertools-dotnet/
-/// Powertools for AWS Lambda (.NET) Logging: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/
-/// Powertools for AWS Lambda (.NET) Tracing: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/tracing/
-/// Powertools for AWS Lambda (.NET) Metrics: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/
-/// Metrics Namespace and Service can be defined through Environment Variables https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/#getting-started
+/// Learn more about Powertools for AWS Lambda (.NET) at https://docs.aws.amazon.com/powertools/dotnet/
+/// Powertools for AWS Lambda (.NET) Logging: https://docs.aws.amazon.com/powertools/dotnet/core/logging/
+/// Powertools for AWS Lambda (.NET) Tracing: https://docs.aws.amazon.com/powertools/dotnet/core/tracing/
+/// Powertools for AWS Lambda (.NET) Metrics: https://docs.aws.amazon.com/powertools/dotnet/core/metrics/
+/// Metrics Namespace and Service can be defined through Environment Variables https://docs.aws.amazon.com/powertools/dotnet/core/metrics/#getting-started
 /// </summary>
 public class Function
 {
