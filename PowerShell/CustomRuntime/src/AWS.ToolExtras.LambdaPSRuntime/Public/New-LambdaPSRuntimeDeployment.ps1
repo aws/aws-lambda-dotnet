@@ -350,7 +350,7 @@ function New-LambdaPSRuntimeDeployment {
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         # The API takes 128 characters for each name, but Lambda leaves a version or alias CREATING when
         # it and the runtime name are longer than this together. Remove the alias check once Lambda creates
-        # aliases up to the 128-character limit (PowerShell-NNN).
+        # aliases up to the 128-character limit (PowerShell-803).
         $assertNameLength = {
             param([string]$Kind, [string]$Name, [int]$Max, [string]$Parameter, [string]$ErrorId)
             $total = $RuntimeName.Length + $Name.Length
