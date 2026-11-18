@@ -17,6 +17,22 @@ CASES = [
     (2, "Otel2WaitResume", {}),
     (3, "Otel3Retry", {}),
     (4, "Otel4TerminalFailure", {}),
+    (5, "Otel5ChildContext", {}),
+    (6, "Otel6Parallel", {}),
+    (7, "Otel7Map", {}),
+    (8, "Otel8HandledFailure", {}),
+    (9, "Otel9WaitForCondition", {}),
+    (10, "Otel10WaitForCallback", {}),
+    (11, "Otel11ChainedInvoke", {"target": "Otel11InvokeTarget"}),
+    (12, "Otel12ChildContextFailure", {}),
+    (13, "Otel13ParallelFailure", {}),
+    (14, "Otel14MapFailure", {}),
+    (15, "Otel15WaitInterrupted", {"timeout": 15}),
+    (16, "Otel16WaitForConditionFailure", {}),
+    (17, "Otel17WaitForCallbackFailure", {}),
+    (18, "Otel18ChainedInvokeFailure", {"target": "Otel18InvokeTarget"}),
+    (19, "Otel19ExecutionFailure", {}),
+    (20, "Otel20VirtualContext", {}),
 ]
 
 VIEWS = (
@@ -126,7 +142,7 @@ Globals:
         OPENTELEMETRY_COLLECTOR_CONFIG_URI: !If
           - HasOtelCollectorLayer
           - /opt/collector-config/config-s3.yaml
-          - !Ref "AWS::NoValue"
+          - /var/task/collector-xray.yaml
 
 Resources:
 """

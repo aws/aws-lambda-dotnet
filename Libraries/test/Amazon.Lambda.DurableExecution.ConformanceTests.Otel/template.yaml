@@ -99,7 +99,7 @@ Globals:
         OPENTELEMETRY_COLLECTOR_CONFIG_URI: !If
           - HasOtelCollectorLayer
           - /opt/collector-config/config-s3.yaml
-          - !Ref "AWS::NoValue"
+          - /var/task/collector-xray.yaml
 
 Resources:
 
@@ -175,6 +175,329 @@ Resources:
           CONFORMANCE_SCENARIO: Otel4TerminalFailure
           OTEL_PLUGIN_MODE: invocation
 
+  InvocationOtel5ChildContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-5
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-5"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel5ChildContext
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel6Parallel:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-6
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-6"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel6Parallel
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel7Map:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-7
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-7"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel7Map
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel8HandledFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-8
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-8"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel8HandledFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel9WaitForCondition:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-9
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-9"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel9WaitForCondition
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel10WaitForCallback:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-10
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-10"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel10WaitForCallback
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel11ChainedInvoke:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-11
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-11"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel11ChainedInvoke
+          OTEL_PLUGIN_MODE: invocation
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${InvocationOtel11InvokeTarget.Arn}:$LATEST"
+
+  InvocationOtel11InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-11-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel11InvokeTarget
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel12ChildContextFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-12
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-12"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel12ChildContextFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel13ParallelFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-13
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-13"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel13ParallelFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel14MapFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-14
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-14"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel14MapFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel15WaitInterrupted:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-15
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-15"
+      Role: !Ref LambdaExecutionRoleArn
+      DurableConfig:
+        ExecutionTimeout: 15
+        RetentionPeriodInDays: 1
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel15WaitInterrupted
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel16WaitForConditionFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-16
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-16"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel16WaitForConditionFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel17WaitForCallbackFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-17
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-17"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel17WaitForCallbackFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel18ChainedInvokeFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-18
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-18"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel18ChainedInvokeFailure
+          OTEL_PLUGIN_MODE: invocation
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${InvocationOtel18InvokeTarget.Arn}:$LATEST"
+
+  InvocationOtel18InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-18-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel18InvokeTarget
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel19ExecutionFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-19
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-19"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel19ExecutionFailure
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel20VirtualContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-20
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-20"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel20VirtualContext
+          OTEL_PLUGIN_MODE: invocation
+
   ExecutionOtel1Success:
     Type: AWS::Serverless::Function
     Condition: DeployExecutionView
@@ -245,4 +568,327 @@ Resources:
       Environment:
         Variables:
           CONFORMANCE_SCENARIO: Otel4TerminalFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel5ChildContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-5
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-5"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel5ChildContext
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel6Parallel:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-6
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-6"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel6Parallel
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel7Map:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-7
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-7"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel7Map
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel8HandledFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-8
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-8"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel8HandledFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel9WaitForCondition:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-9
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-9"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel9WaitForCondition
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel10WaitForCallback:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-10
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-10"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel10WaitForCallback
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel11ChainedInvoke:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-11
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-11"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel11ChainedInvoke
+          OTEL_PLUGIN_MODE: execution
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${ExecutionOtel11InvokeTarget.Arn}:$LATEST"
+
+  ExecutionOtel11InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-11-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel11InvokeTarget
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel12ChildContextFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-12
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-12"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel12ChildContextFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel13ParallelFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-13
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-13"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel13ParallelFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel14MapFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-14
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-14"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel14MapFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel15WaitInterrupted:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-15
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-15"
+      Role: !Ref LambdaExecutionRoleArn
+      DurableConfig:
+        ExecutionTimeout: 15
+        RetentionPeriodInDays: 1
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel15WaitInterrupted
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel16WaitForConditionFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-16
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-16"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel16WaitForConditionFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel17WaitForCallbackFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-17
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-17"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel17WaitForCallbackFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel18ChainedInvokeFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-18
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-18"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel18ChainedInvokeFailure
+          OTEL_PLUGIN_MODE: execution
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${ExecutionOtel18InvokeTarget.Arn}:$LATEST"
+
+  ExecutionOtel18InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-18-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel18InvokeTarget
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel19ExecutionFailure:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-19
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-19"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel19ExecutionFailure
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel20VirtualContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-20
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-20"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel20VirtualContext
           OTEL_PLUGIN_MODE: execution
