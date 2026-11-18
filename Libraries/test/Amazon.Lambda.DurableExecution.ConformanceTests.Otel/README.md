@@ -28,9 +28,20 @@ durable-execution-conformance \
 `--language dotnet` needs the `dotnet` ADOT profile in the OTel conformance package. It uses the ADOT collector layer
 and no exec wrapper.
 
+## Export path
+
+`collector-xray.yaml` configures the collector layer to send spans to X-Ray's OTLP endpoint with SigV4. That endpoint
+keeps the span kind and resource service name the validators check; the layer's default `awsxray` exporter drops them.
+It requires X-Ray Transaction Search in the account, with the indexing rule at 100% so every trace is queryable.
+
 ## Coverage
 
-| Cases | Status |
+Both suites, against X-Ray in us-west-2: 25 passed, 2 not implemented.
+
+| Case | Status |
 |---|---|
-| 1 to 4 | handlers written |
-| 5 to 27 | not yet |
+| 1 to 22, 25 to 27 | pass |
+| 23 | not implemented: needs a with-retry helper for child contexts, which the .NET SDK does not have |
+| 24 | not implemented: needs a public way to request an invocation retry; a workflow exception fails the execution |
+
+Child contexts set `SubType = "RunInChildContext"`, which other SDKs send by default and the requirements expect.
