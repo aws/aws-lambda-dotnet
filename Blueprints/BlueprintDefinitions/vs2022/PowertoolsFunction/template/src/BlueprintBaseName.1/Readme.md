@@ -13,7 +13,7 @@ The generated function handler is a simple method accepting a string argument th
 
 [Powertools for AWS Lambda (.NET)](https://docs.aws.amazon.com/powertools/dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
-This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables defined in the `aws-lambda-tools-defaults.json` file and annotations on methods in `Function.cs`
+This starter project comes with Powertools Logging, Metrics and Tracing configured through environment variables defined in the `aws-lambda-tools-defaults.json` file and annotations on methods in `Function.cs`
 
 **Environment variables:**
 
