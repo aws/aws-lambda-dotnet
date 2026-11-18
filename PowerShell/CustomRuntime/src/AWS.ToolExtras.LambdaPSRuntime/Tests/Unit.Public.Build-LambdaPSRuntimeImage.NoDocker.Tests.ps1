@@ -72,7 +72,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
 
             $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $script:imageUri
 
-            Should -Invoke 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly
+            Should -Invoke 'Invoke-LambdaPSExternalTool' -Times 1 -Exactly -ParameterFilter { $ArgumentList[0] -eq 'buildx' }
             Should -Invoke 'Invoke-LambdaPSOciImageBuild' -Times 0 -Exactly
         }
 
