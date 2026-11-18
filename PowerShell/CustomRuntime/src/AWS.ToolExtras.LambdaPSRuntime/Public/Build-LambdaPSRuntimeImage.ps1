@@ -66,7 +66,8 @@ function Build-LambdaPSRuntimeImage {
     .PARAMETER BuildMethod
         Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
         no-Docker builder (-ImageUri only). It also uses the no-Docker builder when docker's buildx builder
-        lists no -Architecture platform, for example with no emulator registered. Docker: always docker buildx. NoDocker: always the no-Docker builder.
+        lists no -Architecture platform, for example with no emulator registered, and says so on the
+        Information stream (tag LambdaPSBuild) unless -InformationAction is given. Docker: always docker buildx. NoDocker: always the no-Docker builder.
     .PARAMETER Region
         No-Docker push only: the region of the ECR token. Defaults to the region in -ImageUri's host.
     .PARAMETER ProfileName
@@ -196,6 +197,12 @@ function Build-LambdaPSRuntimeImage {
             }
             if (-not $PSCmdlet.ShouldProcess($root, "Build and push image '$ImageUri' without Docker")) {
                 return
+            }
+            if ($BuildMethod -eq 'Auto') {
+                # Shown by default, since the image differs from a Docker build; an -InformationAction the caller gives still applies.
+                $shownInformation = @{}
+                if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
+                Write-Information 'Building without Docker (AWS.OCI.Builder); -Verbose says why.' -Tags 'LambdaPSBuild' @shownInformation
             }
             $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
             $token = Get-LambdaPSEcrAuthorizationToken -Region $tokenRegion -CredentialParameter $credentialParameter

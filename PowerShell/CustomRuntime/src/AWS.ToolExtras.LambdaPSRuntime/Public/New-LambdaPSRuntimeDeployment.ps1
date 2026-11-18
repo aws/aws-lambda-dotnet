@@ -82,8 +82,8 @@ function New-LambdaPSRuntimeDeployment {
 
         Progress lines (the Docker toolchain found, the target image URI, and each stage as it
         completes) are written to the Information stream with the tag LambdaPSDeploy, so they are
-        shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release
-        is shown unless -InformationAction is given.
+        shown only with -InformationAction Continue; -InformationVariable collects them. The pwsh release,
+        and a no-Docker build that -BuildMethod Auto chose, are shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
           inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
@@ -496,7 +496,9 @@ function New-LambdaPSRuntimeDeployment {
         if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource)." -Tags 'LambdaPSDeploy' @shownInformation
         if ($noDocker) {
-            Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy'
+            # Shown by default when Auto chose it, since the image differs from a Docker build.
+            $noDockerInformation = if ($BuildMethod -eq 'Auto') { $shownInformation } else { @{} }
+            Write-Information 'Preflight: building without Docker (AWS.OCI.Builder).' -Tags 'LambdaPSDeploy' @noDockerInformation
             # Load the library now, so a missing or conflicting copy fails before anything is created.
             $null = Import-LambdaPSOciBuilder
             # A kept project is built as is, so an edited Dockerfile fails DockerfileModified here, not after

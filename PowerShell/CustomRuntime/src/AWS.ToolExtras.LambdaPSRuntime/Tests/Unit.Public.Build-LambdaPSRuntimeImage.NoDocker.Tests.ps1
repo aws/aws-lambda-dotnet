@@ -47,6 +47,16 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Should -Invoke 'Invoke-LambdaPSExternalTool' -Times 0 -Exactly
         }
 
+        It 'says by default when Auto builds without Docker, and not for -BuildMethod NoDocker' {
+            Mock 'Write-Information' -MockWith { }
+
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $script:imageUri -Architecture arm64
+            $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $script:imageUri -Architecture arm64 -BuildMethod NoDocker
+
+            Should -Invoke 'Write-Information' -Times 1 -Exactly
+            Should -Invoke 'Write-Information' -Times 1 -Exactly -ParameterFilter { $MessageData -like 'Building without Docker*' -and $InformationAction -eq 'Continue' }
+        }
+
         It 'forwards -Region and the credential parameters to the token call' {
             Mock 'Get-LambdaPSCredentialParameter' -MockWith { @{ ProfileName = 'dev' } }
             $null = Build-LambdaPSRuntimeImage -Path $script:projectPath -ImageUri $script:imageUri -BuildMethod NoDocker -Region us-west-2 -ProfileName dev

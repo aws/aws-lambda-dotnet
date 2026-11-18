@@ -62,6 +62,16 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             }
         }
 
+        It 'says by default that Auto builds without Docker, and not for -BuildMethod NoDocker' {
+            Mock 'Write-Information' -MockWith { }
+
+            $null = New-LambdaPSRuntimeDeployment @script:splat -WarningAction SilentlyContinue
+            $null = New-LambdaPSRuntimeDeployment @script:splat -BuildMethod NoDocker -WarningAction SilentlyContinue
+
+            Should -Invoke 'Write-Information' -Times 2 -Exactly -ParameterFilter { $MessageData -like '*building without Docker*' }
+            Should -Invoke 'Write-Information' -Times 1 -Exactly -ParameterFilter { $MessageData -like '*building without Docker*' -and $InformationAction -eq 'Continue' }
+        }
+
         It 'keeps the Docker flow (local build, login, push) when docker is installed, for an unpinned x86_64 pwsh too' {
             Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
 
