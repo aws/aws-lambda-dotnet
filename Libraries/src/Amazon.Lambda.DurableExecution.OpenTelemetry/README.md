@@ -59,7 +59,7 @@ Execution ancestor                              Execution ancestor
 ### Invocation view
 
 - Spans use the invocation's own clock: the wall clock read at the start, advanced by the monotonic clock.
-- An operation that is still running when the invocation suspends is ended with `durable.operation.status=STARTED`. A step or child context reached again by a later invocation is a new span that links the Workflow and the operation's first segment. A wait, invoke or callback that finished while the execution was suspended is exported once, in the invocation that sees it. A wait that is only replayed is not exported again.
+- An operation that is still running when the invocation suspends is ended with `durable.operation.status=STARTED`. A step or child context that a later invocation reaches again before it finished (a retried step, a suspended context) is a new span that links the Workflow and the operation's first segment. One that already finished is only replayed and is not exported again. A wait, invoke or callback that finished while the execution was suspended is exported once, in the invocation that sees it. A wait that is only replayed is not exported again.
 
 ### Execution view
 

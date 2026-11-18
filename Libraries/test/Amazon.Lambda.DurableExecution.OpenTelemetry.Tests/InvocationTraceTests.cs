@@ -185,7 +185,7 @@ public class InvocationTraceTests
     }
 
     [Fact]
-    public async Task ExecutionSpanningInvocations_ShareOneTrace_AndReplayedStepsLinkTheirFirstSegment()
+    public async Task ExecutionSpanningInvocations_ShareOneTrace_AndFinishedStepsAreNotExportedAgain()
     {
         using var spans = new SpanCollector();
 
@@ -211,15 +211,9 @@ public class InvocationTraceTests
         // Only the invocation that finishes the execution exports the Workflow span.
         Assert.Single(spans.All("Workflow"));
 
-        // "first" ran in invocation 1 under its derived id. Invocation 2 reaches it again by replay: a new span
-        // that links that id and the Workflow span.
-        var segments = spans.All("first").OrderBy(s => s.StartTimeUtc).ToList();
-        Assert.Equal(2, segments.Count);
-        Assert.NotEqual(segments[0].SpanId, segments[1].SpanId);
-        Assert.Equal(invocations[1].SpanId, segments[1].ParentSpanId);
-        Assert.Equal(
-            new[] { segments[0].SpanId, spans.Single("Workflow").SpanId },
-            segments[1].Links.Select(l => l.Context.SpanId).ToArray());
+        // "first" finished in invocation 1. Invocation 2 only replays it, so it is exported once.
+        var first = Assert.Single(spans.All("first"));
+        Assert.Equal(invocations[0].SpanId, first.ParentSpanId);
 
         // The wait started in invocation 1. Invocation 2 reaches it again, but a wait that is only replayed is not
         // exported a second time.

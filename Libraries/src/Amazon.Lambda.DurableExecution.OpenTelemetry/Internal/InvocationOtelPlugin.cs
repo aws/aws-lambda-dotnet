@@ -18,8 +18,9 @@ namespace Amazon.Lambda.DurableExecution.OpenTelemetry;
 ///         +-- attempt     links Workflow
 /// </code>
 /// Spans are timed on the invocation's own clock. The first segment of an operation has an id derived from the
-/// execution ARN and the operation id. An operation that is reached again after it finished is exported as a new
-/// span that links that first segment, because nothing is stored between invocations.
+/// execution ARN and the operation id. An unfinished operation that a later invocation reaches again is exported as a
+/// new span that links that first segment, because nothing is stored between invocations. A finished operation that
+/// is only replayed is not exported again.
 /// </remarks>
 internal sealed class InvocationOtelPlugin : OtelPluginBase
 {
@@ -54,10 +55,11 @@ internal sealed class InvocationOtelPlugin : OtelPluginBase
                 span = Start(info.Name ?? info.Type, ParentContext(info.ParentId), tags, WorkflowLinks(), Clock.Now);
                 ActivityIdOverride.TrySet(span, DeterministicIds.SpanIdFromOperationId(info.Id, ExecutionArn));
             }
-            else if (info.Type is OperationTypes.Context or OperationTypes.Step)
+            else if (info.Type is OperationTypes.Context or OperationTypes.Step && !IsFinished(info.Status))
             {
-                // An operation reached again after an earlier invocation started or finished it. The original span
-                // is not stored anywhere, so this is a new span that links the Workflow and the first segment.
+                // An operation an earlier invocation started and did not finish (a retried step, a context that
+                // suspended). The original span is not stored anywhere, so this is a new span that links the Workflow
+                // and the first segment. One that already finished is only replayed and is not exported again.
                 span = Start(info.Name ?? info.Type, ParentContext(info.ParentId), tags, ReplayLinks(info.Id), Clock.Now);
             }
 
@@ -238,6 +240,10 @@ internal sealed class InvocationOtelPlugin : OtelPluginBase
         parentOperationId != null && _operationSpans.TryGetValue(parentOperationId, out var parent)
             ? parent.Context
             : InvocationSpan?.Context ?? Ancestor;
+
+    private static bool IsFinished(string? status)
+        => status is OperationStatuses.Succeeded or OperationStatuses.Failed or OperationStatuses.Cancelled
+            or OperationStatuses.Stopped or OperationStatuses.TimedOut;
 
     private List<ActivityLink> ReplayLinks(string operationId) => new()
     {
