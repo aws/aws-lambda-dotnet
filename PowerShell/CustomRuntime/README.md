@@ -15,13 +15,16 @@ image. This module automates building and deploying it. It lives deliberately ou
 
 - PowerShell 7.4+
 - For the container-based approaches (CMR, container-per-function): **Docker with `buildx`** on
-  `PATH`. Docker is the only container CLI this module supports. A customer-managed runtime needs a
+  `PATH`, or no container CLI at all. Where Docker or buildx is missing, or the Docker daemon isn't
+  running, the image build
+  (`-BuildMethod Auto`, the default) builds and pushes the image of a project as scaffolded, without
+  Docker. A local build (`-Tag`) or an edited Dockerfile still needs Docker. Docker is the only
+  container CLI this module supports. A customer-managed runtime needs a
   Docker v2 Schema 2 manifest, which the image build emits with buildx's `--provenance=false`,
   `--sbom=false` and `oci-mediatypes=false`. Other CLIs can produce one too (for example `podman push --format v2s2`),
   but the module builds and tests with Docker only.
   `Test-LambdaPSContainerRuntime` preflights both the CLI and the plugin.
-- The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all —
-  that is the path for Docker-averse environments.
+- The container-free approaches (Layer, self-contained `.zip`) need no container runtime at all.
 - AWS.Tools 5.0.336 or later (`AWS.Tools.Lambda`, `AWS.Tools.LambdaCore`, `AWS.Tools.ECR`,
   `AWS.Tools.SecurityToken`), with an `AWS.Tools.LambdaCore` that exports the Lambda
   customer-managed runtime cmdlets (`New-LMCRuntime`, `New-LMCRuntimeVersion`,
@@ -50,15 +53,16 @@ redeploy. Each PowerShell line (7.4, 7.5, 7.6) installs a pinned pwsh release by
 [Patching a runtime](#patching-a-runtime)); the
 releases and their tarball SHA256s are listed in `Config/pwsh.psd1`. `-PowerShellVersion` takes an exact release (`7.6.9`), a line (`7.6.*`) or the
 highest line of a major version (`7.*`); a bare `7.6` is refused. For an exact
-release, an x86_64 image installs any from Microsoft's signed RPM repository, while an arm64
-image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
+release, an x86_64 image built with Docker installs any from Microsoft's signed RPM repository,
+while an arm64 or no-Docker image and the Layer and .zip targets need one whose SHA256 is listed there. A module release moves
 each line to its newest servicing release and keeps the SHA256s of the earlier ones, so a project pinned to an earlier release still builds.
 PowerShell 7.4 and 7.5 reach end of support on 10 November 2026
 ([lifecycle](https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle)):
 the first module release after that date stops installing them by default, so
 `-PowerShellVersion 7.4.*` or `7.5.*` then needs a full release (`7.4.22`) instead. Use 7.6 for new projects. The
 container-free targets run in invariant-globalization mode (`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`)
-so no ICU libraries are needed.
+so no ICU libraries are needed. Runtime images have ICU, so cultures such as `de-DE` work: the Docker
+build installs libicu, and the no-Docker build adds Microsoft's ICU package next to pwsh.
 
 The Layer and self-contained `.zip` packages bundle pwsh, so they are large: for PowerShell 7.6, about
 70 MB zipped and 178 MB unzipped on x86_64 (194 MB on arm64), before any modules. That is over Lambda's direct-upload
@@ -152,8 +156,8 @@ changing its `Dockerfile`.
 
 | Architecture | Installs | Release chosen |
 | --- | --- | --- |
-| x86_64 | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
-| arm64 | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
+| x86_64 (Docker) | Microsoft's GPG-signed RPM | the newest in packages.microsoft.com, read once in preflight so `-WhatIf` shows it, never older than the module's pin; if the repository cannot be read, the pinned release, with a warning, unless the alias runs a newer release of the line (see below) |
+| arm64, or x86_64 without Docker | the release tarball, checked against a SHA256 pinned in `Config/pwsh.psd1` | the newest release with a pinned hash, with a warning when a newer release exists |
 
 The deploy prints the release it installs, and the version's release note is `pwsh <release>`. When
 the alias already pointed at a version, the result's `PreviousRuntimeVersion` says which, so a patch

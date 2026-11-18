@@ -42,10 +42,21 @@ function Build-LambdaPSRuntimeImage {
         ECR repository, set its policy or log docker in to it: New-LambdaPSRuntimeDeployment does
         all three, or use New-ECRRepository, Set-ECRRepositoryPolicy and Get-ECRLoginCommand.
 
+        -BuildMethod NoDocker (or Auto, when docker or buildx is missing) builds and pushes the image
+        without Docker, with the AWS.OCI.Builder library that ships in the module. It builds the recipe
+        of the Dockerfile the module scaffolds (see Get-LambdaPSOciImagePlan), so it refuses a project
+        whose Dockerfile was edited, and it can only push (-ImageUri). It reads an ECR authorization
+        token with Get-ECRAuthorizationToken, honouring -Region, -ProfileName, -ProfileLocation and
+        -Credential, instead of using docker login. It adds Microsoft's ICU libraries next to pwsh, so
+        cultures work as in the Docker image, which installs libicu.
+
         Errors it can raise, by error ID: ProjectNotFound, DockerfileNotFound, DriveNotFound,
-        PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound and DockerBuildxNotFound (the preflight,
-        Test-LambdaPSContainerRuntime), ExternalToolFailed (docker exited with a non-zero code), and
-        ReservedPathNotEmpty (the built runtime image has files in /opt, /var/task or /tmp).
+        PathNotFileSystem, PwshArm64HashNotPinned, DockerNotFound, DockerBuildxNotFound and
+        DockerDaemonNotRunning (the preflight, Test-LambdaPSContainerRuntime), ExternalToolFailed (docker exited with a non-zero code),
+        and ReservedPathNotEmpty (the built runtime image has files in /opt, /var/task or /tmp); for
+        a no-Docker build NoDockerLocalBuild, DockerfileModified, PwshX64HashNotPinned (an x86_64 build of a
+        pwsh release with no pinned x64 hash), IcuPackageHashMismatch, OciBuilderNotFound, OciBuilderConflict
+        and OciImagePushFailed.
     .PARAMETER Path
         The project directory containing the Dockerfile. Alias: -ProjectPath.
     .PARAMETER Tag
@@ -58,9 +69,23 @@ function Build-LambdaPSRuntimeImage {
     .PARAMETER ImageUri
         The fully-qualified image reference to push the image to (for example an ECR URI). Use
         -ImageUri or -Tag.
+    .PARAMETER BuildMethod
+        Auto (default): Docker when docker and buildx are installed and the daemon answers, else the
+        no-Docker builder (-ImageUri only). It also uses the no-Docker builder when docker's buildx builder
+        lists no -Architecture platform, for example with no emulator registered, and says so on the
+        Information stream (tag LambdaPSBuild) unless -InformationAction is given. Docker: always docker buildx. NoDocker: always the no-Docker builder.
+    .PARAMETER Region
+        No-Docker push only: the region of the ECR token. Defaults to the region in -ImageUri's host.
+    .PARAMETER ProfileName
+        No-Docker push only: the AWS credential profile to read the ECR token with.
+    .PARAMETER ProfileLocation
+        No-Docker push only: the credential file that holds -ProfileName.
+    .PARAMETER Credential
+        No-Docker push only: an Amazon.Runtime.AWSCredentials object to read the ECR token with.
     .PARAMETER Pull
         Passes --pull, so docker refreshes the base image from its registry rather than building from
-        a copy it already has. Off by default, as with docker build.
+        a copy it already has. Off by default, as with docker build. A no-Docker build always reads the
+        base image from its registry, so it ignores -Pull.
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeImage
 
@@ -77,6 +102,11 @@ function Build-LambdaPSRuntimeImage {
     #>
     [CmdletBinding(SupportsShouldProcess, PositionalBinding = $false, DefaultParameterSetName = 'Local')]
     [OutputType('AWS.ToolExtras.LambdaPSRuntime.RuntimeImage')]
+    # -Credential is an Amazon.Runtime.AWSCredentials, as on every AWS.Tools cmdlet, not a PSCredential.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUsePSCredentialType', '',
+        Justification = 'AWS.Tools -Credential takes an AWSCredentials object, not a PSCredential.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '',
+        Justification = 'AWS.Tools -Credential takes an AWSCredentials object, not a password string.')]
     param(
         [Parameter(Mandatory, Position = 0)]
         [Alias('ProjectPath')]
@@ -96,6 +126,25 @@ function Build-LambdaPSRuntimeImage {
         [string]$ImageUri,
 
         [Parameter()]
+        [ValidateSet('Auto', 'Docker', 'NoDocker')]
+        [string]$BuildMethod = 'Auto',
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$Region,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ProfileName,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNullOrWhiteSpace()]
+        [string]$ProfileLocation,
+
+        [Parameter(ParameterSetName = 'Push')]
+        [ValidateNotNull()]
+        [object]$Credential,
+
         [switch]$Pull
     )
 
@@ -145,7 +194,41 @@ function Build-LambdaPSRuntimeImage {
 
         # The same docker and buildx check as the deploy preflight (DockerNotFound / DockerBuildxNotFound).
         # The build runs the docker program it found, so a docker function or alias cannot stand in for it.
-        $containerRuntime = Test-LambdaPSContainerRuntime
+        # Auto falls back to the no-Docker builder only when that check fails and the image is pushed.
+        $resolved = Resolve-LambdaPSBuildMethod -BuildMethod $BuildMethod -Architecture $Architecture -LocalBuild:(-not $push)
+        if ($resolved.Method -eq 'NoDocker') {
+            # Every check that reads only local files runs before ShouldProcess, so -WhatIf fails the same way.
+            $plan = Get-LambdaPSOciImagePlan -Path $root -Architecture $Architecture
+            $tokenRegion = if ($Region) { $Region }
+            elseif ($ImageUri -match '\A[0-9]{12}\.dkr\.ecr\.([a-z0-9-]+)\.') { $Matches[1] }
+            else {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new("'$ImageUri' is not an Amazon ECR image URI. The no-Docker build pushes to Amazon ECR only.", 'ImageUri'),
+                        'NoDockerTargetNotEcr', [System.Management.Automation.ErrorCategory]::InvalidArgument, $ImageUri))
+            }
+            if (-not $PSCmdlet.ShouldProcess($root, "Build and push image '$ImageUri' without Docker")) {
+                return
+            }
+            if ($BuildMethod -eq 'Auto') {
+                # Shown by default, since the image differs from a Docker build; an -InformationAction the caller gives still applies.
+                $shownInformation = @{}
+                if (-not $PSBoundParameters.ContainsKey('InformationAction')) { $shownInformation.InformationAction = 'Continue' }
+                Write-Information 'Building without Docker (AWS.OCI.Builder); -Verbose says why.' -Tags 'LambdaPSBuild' @shownInformation
+            }
+            $credentialParameter = Get-LambdaPSCredentialParameter -BoundParameters $PSBoundParameters -SessionState $PSCmdlet.SessionState
+            $token = Get-LambdaPSEcrAuthorizationToken -Region $tokenRegion -CredentialParameter $credentialParameter
+            $digest = Invoke-LambdaPSOciImageBuild -Plan $plan -ImageUri $ImageUri -AuthorizationToken $token
+            return [PSCustomObject]@{
+                PSTypeName   = 'AWS.ToolExtras.LambdaPSRuntime.RuntimeImage'
+                Tag          = $null
+                ImageUri     = $ImageUri
+                ImageDigest  = $digest
+                Architecture = $Architecture
+                Pushed       = $true
+            }
+        }
+        $containerRuntime = $resolved.ContainerRuntime
 
         $dockerArgs = [System.Collections.Generic.List[string]]::new()
         $dockerArgs.Add('buildx')
@@ -214,6 +297,7 @@ function Build-LambdaPSRuntimeImage {
                 $output = $_.Exception.Data['Output']
                 $emulation = 'on Linux, register QEMU with binfmt_misc (for example: docker run --privileged --rm ' +
                     'tonistiigi/binfmt --install all); Docker Desktop includes emulation.'
+                if ($push) { $emulation += ' Or build with -BuildMethod NoDocker, which needs no emulator.' }
                 $hint = if ($null -eq $output) {
                     "The build targets $platform on a $hostPlatform host. If docker reported 'exec format error', no " +
                     "emulator is registered for ${platform}: $emulation Otherwise, see the docker output above for the failing step."

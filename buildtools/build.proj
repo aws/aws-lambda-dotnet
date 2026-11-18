@@ -27,6 +27,8 @@
     </Target>
     <!-- Stages into its own folder: the release pipeline publishes every module folder under its working directory. -->
     <Target Name="copy-lambdapsruntime-module">
+        <!-- Library first: the no-Docker image build loads lib/AWS.OCI.Builder.dll, which Package stages with the module. -->
+        <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task Library" WorkingDirectory="$(MSBuildThisFileDirectory)" />
         <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task Package" WorkingDirectory="$(MSBuildThisFileDirectory)" />
     </Target>
     <!-- build.ps1 -Task All runs the unit, component and contract tests and the analyzer; it makes no AWS calls.

@@ -19,6 +19,9 @@
     All   - Lint then Test.
     Package - stage the module to publish, without Tests/, plus the repository's LICENSE, into
             -OutputPath. The release pipeline signs and publishes what it stages.
+    Library - build AWS.OCI.Builder (Libraries/src/AWS.OCI.Builder, net8.0, Release) with the .NET SDK and
+            copy it into the module's lib/ folder, where the no-Docker image build loads it from. The
+            Test task does not need it: the no-Docker seam is mocked.
     Integration - run only the integration suite (every test under Tests/ tagged 'Integration'),
             which deploys each target to AWS and removes it again. The suite's file header says
             what it creates and what it costs. It needs AWS credentials, docker, AWS.Tools.S3 and
@@ -45,7 +48,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Test', 'Lint', 'All', 'Integration', 'Package')]
+    [ValidateSet('Test', 'Lint', 'All', 'Integration', 'Package', 'Library')]
     [string]$Task = 'Test',
 
     [string]$OutputPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..', '..', 'Deployment', 'LambdaPSRuntime')),
@@ -277,6 +280,24 @@ function Invoke-Package {
     Write-Host "Module staged in $destination"
 }
 
+# net8.0 loads on every supported pwsh (7.4 = .NET 8, 7.5 = .NET 9, 7.6 = .NET 10). The library is built
+# from the same commit as the module, so there is no version to pin.
+function Invoke-LibraryBuild {
+    $dotnet = Get-Command -Name 'dotnet' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $dotnet) { throw 'The Library task needs the .NET SDK (8.0 or later) on PATH: https://dot.net/download.' }
+    $project = Join-Path $PSScriptRoot '..' '..' 'Libraries' 'src' 'AWS.OCI.Builder' 'AWS.OCI.Builder.csproj'
+    $output = Join-Path ([System.IO.Path]::GetTempPath()) "lambdaps-oci-builder-$([System.IO.Path]::GetRandomFileName())"
+    try {
+        & $dotnet.Source build $project -c Release -f net8.0 -o $output -nologo
+        if ($LASTEXITCODE -ne 0) { throw "dotnet build of '$project' failed (exit code $LASTEXITCODE)." }
+        $lib = Join-Path $moduleRoot 'lib'
+        $null = New-Item -ItemType Directory -Path $lib -Force
+        Copy-Item -LiteralPath (Join-Path $output 'AWS.OCI.Builder.dll') -Destination $lib -Force
+        Write-Host "AWS.OCI.Builder $([System.Reflection.AssemblyName]::GetAssemblyName((Join-Path $lib 'AWS.OCI.Builder.dll')).Version) copied to $lib"
+    }
+    finally { Remove-Item -LiteralPath $output -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 # Before anything else runs: whatever AWS.Tools build loads first is what the tests get.
 if ($Task -in 'Test', 'All', 'Integration') {
     Initialize-AWSToolsModulePath
@@ -287,6 +308,7 @@ switch ($Task) {
     'Test' { Invoke-Test }
     'Integration' { Invoke-Test -Integration }
     'Package' { Invoke-Package }
+    'Library' { Invoke-LibraryBuild }
     'All'  {
         # Lint runs in its own pwsh: PSScriptAnalyzer loads AWS.Tools assemblies while it resolves
         # commands, and an assembly loaded into this process cannot be replaced by the build the tests

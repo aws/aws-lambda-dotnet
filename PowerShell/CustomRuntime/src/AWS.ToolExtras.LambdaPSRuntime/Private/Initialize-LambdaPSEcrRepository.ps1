@@ -44,6 +44,8 @@ function Initialize-LambdaPSEcrRepository {
     .PARAMETER CredentialParameter
         AWS credential parameters (ProfileName, ProfileLocation, Credential) to splat onto every
         AWS.Tools call. Empty by default, so AWS.Tools uses its default credentials.
+    .PARAMETER SkipDockerLogin
+        Skip step 2: the no-Docker build pushes with an ECR token it reads itself, and docker may not exist.
     .OUTPUTS
         None.
     .EXAMPLE
@@ -75,7 +77,10 @@ function Initialize-LambdaPSEcrRepository {
 
         [Parameter()]
         [ValidateNotNull()]
-        [hashtable]$CredentialParameter = @{}
+        [hashtable]$CredentialParameter = @{},
+
+        [Parameter()]
+        [switch]$SkipDockerLogin
     )
 
 
@@ -102,7 +107,7 @@ function Initialize-LambdaPSEcrRepository {
     # (otherwise docker returns "denied: requested access to the resource is denied"). This comes
     # before the create, so a login that fails leaves no new repository behind.
     # Uses the ECR cmdlet for the token and the docker CLI for the login (no SDK binding).
-    if ($PSCmdlet.ShouldProcess($RepositoryName, 'docker login to ECR')) {
+    if (-not $SkipDockerLogin -and $PSCmdlet.ShouldProcess($RepositoryName, 'docker login to ECR')) {
         $login = Get-ECRLoginCommand -Region $Region -ClientConfig $clientConfig @CredentialParameter -ErrorAction Stop
         # Log in against the BARE registry host (strip any https:// scheme). docker stores the
         # credential under the key you pass; buildx --push looks it up by bare host, so a

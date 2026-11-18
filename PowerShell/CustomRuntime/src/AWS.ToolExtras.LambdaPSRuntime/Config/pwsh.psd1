@@ -27,6 +27,18 @@
         OperationTimeoutSeconds = 60
     }
 
+    # The ICU libraries the no-Docker runtime image puts next to pwsh (app-local ICU), so cultures work
+    # as in the Docker image, which installs libicu. They come from Microsoft's
+    # Microsoft.ICU.ICU4C.Runtime.linux-<x64|arm64> NuGet packages; Sha256 is of each .nupkg.
+    Icu           = @{
+        Version    = '72.1.0.3'
+        PackageUrl = 'https://api.nuget.org/v3-flatcontainer'
+        Sha256     = @{
+            x64   = '4afb3b4c2e79909ad7b531135f4b742b199c671ea9396ee4240f77f898ea5207'
+            arm64 = '1f090fc45429292ae21f9199d5b956ad3570c38a7778ea4085258641727eefaf'
+        }
+    }
+
     # The pwsh release each supported PowerShell line installs by default, when -PowerShellVersion names
     # only the line. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
     DefaultPatch  = @{

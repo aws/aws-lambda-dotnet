@@ -78,9 +78,12 @@ function Resolve-LambdaPSPwshRelease {
         try {
             $newest = @(Get-LambdaPSPwshRepositoryRelease -PowerShellVersion $PowerShellVersion)
             if ($newest.Count -gt 0 -and [version]$newest[-1] -gt [version]$version) {
-                Write-Warning ("pwsh $($newest[-1]) is the newest PowerShell $PowerShellVersion release, but an $Architecture build " +
+                # Only a no-Docker build installs the x86_64 tarball; a Docker build would take the newer RPM.
+                $build, $remedy = if ($Architecture -eq 'x86_64') { 'a no-Docker x86_64 build', 'Build with Docker (-BuildMethod Docker), or update AWS.ToolExtras.LambdaPSRuntime,' }
+                else { 'an arm64 build', 'Update AWS.ToolExtras.LambdaPSRuntime' }
+                Write-Warning ("pwsh $($newest[-1]) is the newest PowerShell $PowerShellVersion release, but $build " +
                     "installs pwsh from a tarball checked against a SHA256 this module pins, and the newest pinned is $version. " +
-                    'Update AWS.ToolExtras.LambdaPSRuntime to install the newer release.')
+                    "$remedy to install the newer release.")
             }
         }
         catch { Write-Verbose "Could not check for a pwsh release newer than ${version}: $($_.Exception.Message)" }
