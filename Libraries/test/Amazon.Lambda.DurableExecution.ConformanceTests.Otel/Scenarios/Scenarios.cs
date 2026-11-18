@@ -37,6 +37,12 @@ public static class Scenarios
         Otel18ChainedInvokeFailure.Target,
         Otel19ExecutionFailure.Scenario,
         Otel20VirtualContext.Scenario,
+        Otel21CompletedStepReplay.Scenario,
+        Otel22UserFunctionContext.Scenario,
+        Otel25CaughtCallbackFailureReplay.Scenario,
+        Otel26ExternalCompletionReplay.Scenario,
+        Otel27ChainedInvokeSuspend.Scenario,
+        Otel27ChainedInvokeSuspend.Target,
     }.ToDictionary(scenario => scenario.Name);
 
     /// <summary>The function a chained-invoke case calls, set by template.yaml.</summary>

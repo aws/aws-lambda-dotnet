@@ -111,6 +111,11 @@ Resources:
     TestingMetadata:
       TestDescription:
         - otel-invocation-1
+      NotImplemented:
+        - id: otel-invocation-23
+          reason: Needs a with-retry helper for durable child contexts; the .NET SDK has none.
+        - id: otel-invocation-24
+          reason: Needs a public way for a workflow to request an invocation retry; in .NET a workflow exception fails the execution.
     Properties:
       CodeUri: publish/
       Handler: bootstrap
@@ -498,6 +503,112 @@ Resources:
           CONFORMANCE_SCENARIO: Otel20VirtualContext
           OTEL_PLUGIN_MODE: invocation
 
+  InvocationOtel21CompletedStepReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-21
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-21"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel21CompletedStepReplay
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel22UserFunctionContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-22
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-22"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel22UserFunctionContext
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel25CaughtCallbackFailureReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-25
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-25"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel25CaughtCallbackFailureReplay
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel26ExternalCompletionReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-26
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-26"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel26ExternalCompletionReplay
+          OTEL_PLUGIN_MODE: invocation
+
+  InvocationOtel27ChainedInvokeSuspend:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-invocation-27
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-27"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel27ChainedInvokeSuspend
+          OTEL_PLUGIN_MODE: invocation
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${InvocationOtel27InvokeTarget.Arn}:$LATEST"
+
+  InvocationOtel27InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployInvocationView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-invocation-27-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel27InvokeTarget
+          OTEL_PLUGIN_MODE: invocation
+
   ExecutionOtel1Success:
     Type: AWS::Serverless::Function
     Condition: DeployExecutionView
@@ -506,6 +617,11 @@ Resources:
     TestingMetadata:
       TestDescription:
         - otel-execution-1
+      NotImplemented:
+        - id: otel-execution-23
+          reason: Needs a with-retry helper for durable child contexts; the .NET SDK has none.
+        - id: otel-execution-24
+          reason: Needs a public way for a workflow to request an invocation retry; in .NET a workflow exception fails the execution.
     Properties:
       CodeUri: publish/
       Handler: bootstrap
@@ -891,4 +1007,110 @@ Resources:
       Environment:
         Variables:
           CONFORMANCE_SCENARIO: Otel20VirtualContext
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel21CompletedStepReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-21
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-21"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel21CompletedStepReplay
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel22UserFunctionContext:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-22
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-22"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel22UserFunctionContext
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel25CaughtCallbackFailureReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-25
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-25"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel25CaughtCallbackFailureReplay
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel26ExternalCompletionReplay:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-26
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-26"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel26ExternalCompletionReplay
+          OTEL_PLUGIN_MODE: execution
+
+  ExecutionOtel27ChainedInvokeSuspend:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    TestingMetadata:
+      TestDescription:
+        - otel-execution-27
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-27"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel27ChainedInvokeSuspend
+          OTEL_PLUGIN_MODE: execution
+          OTEL_INVOKE_TARGET_FUNCTION_NAME: !Sub "${ExecutionOtel27InvokeTarget.Arn}:$LATEST"
+
+  ExecutionOtel27InvokeTarget:
+    Type: AWS::Serverless::Function
+    Condition: DeployExecutionView
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      CodeUri: publish/
+      Handler: bootstrap
+      FunctionName: !Sub "${AWS::StackName}-otel-execution-27-target"
+      Role: !Ref LambdaExecutionRoleArn
+      Environment:
+        Variables:
+          CONFORMANCE_SCENARIO: Otel27InvokeTarget
           OTEL_PLUGIN_MODE: execution

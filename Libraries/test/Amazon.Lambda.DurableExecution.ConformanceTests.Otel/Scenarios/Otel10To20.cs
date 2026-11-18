@@ -100,7 +100,7 @@ internal static class Otel20VirtualContext
         await context.RunInChildContextAsync(
             (_, _) => Task.FromResult("virtual-complete"),
             name: "otel-virtual-context",
-            config: new ChildContextConfig { NestingType = NestingType.Flat }));
+            config: new ChildContextConfig { NestingType = NestingType.Flat, SubType = "RunInChildContext" }));
 }
 
 internal static class Otel11ChainedInvoke

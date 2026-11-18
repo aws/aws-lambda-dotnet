@@ -33,7 +33,18 @@ CASES = [
     (18, "Otel18ChainedInvokeFailure", {"target": "Otel18InvokeTarget"}),
     (19, "Otel19ExecutionFailure", {}),
     (20, "Otel20VirtualContext", {}),
+    (21, "Otel21CompletedStepReplay", {}),
+    (22, "Otel22UserFunctionContext", {}),
+    (25, "Otel25CaughtCallbackFailureReplay", {}),
+    (26, "Otel26ExternalCompletionReplay", {}),
+    (27, "Otel27ChainedInvokeSuspend", {"target": "Otel27InvokeTarget"}),
 ]
+
+# Requirements the .NET SDK cannot express, reported NOT_IMPLEMENTED (non-blocking). Declared on case 1's function.
+NOT_IMPLEMENTED = {
+    23: "Needs a with-retry helper for durable child contexts; the .NET SDK has none.",
+    24: "Needs a public way for a workflow to request an invocation retry; in .NET a workflow exception fails the execution.",
+}
 
 VIEWS = (
     ("otel-invocation", "Invocation", "invocation"),
@@ -154,6 +165,11 @@ def function(logical_id, condition, name, scenario, mode, extra, requirement=Non
              "    Metadata:", "      BuildMethod: makefile"]
     if requirement:
         lines += ["    TestingMetadata:", "      TestDescription:", f"        - {requirement}"]
+        if requirement.endswith("-1"):
+            view_id = requirement[: -len("-1")]
+            lines.append("      NotImplemented:")
+            for case, reason in NOT_IMPLEMENTED.items():
+                lines += [f"        - id: {view_id}-{case}", f"          reason: {reason}"]
     lines += ["    Properties:", "      CodeUri: publish/", "      Handler: bootstrap",
               f'      FunctionName: !Sub "${{AWS::StackName}}-{name}"',
               "      Role: !Ref LambdaExecutionRoleArn"]

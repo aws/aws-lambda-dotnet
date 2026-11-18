@@ -18,6 +18,7 @@ public static class Program
     private static readonly TracerProvider Tracer = Sdk.CreateTracerProviderBuilder()
         .AddAWSLambdaConfigurations()
         .AddSource(OtelPlugin.ActivitySourceName)
+        .AddSource(Probes.SourceName)
         .AddOtlpExporter()
         .Build()!;
 
