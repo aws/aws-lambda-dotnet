@@ -90,8 +90,8 @@ function Get-LambdaPSRuntimeAliasArchitecture {
         throw [System.Management.Automation.ErrorRecord]::new(
             [System.InvalidOperationException]::new(
                 ("Runtime alias '$RuntimeAlias' was not found on runtime '$RuntimeName' in region '$Region'. " +
-                 'A function bound to it would deploy and then fail on every invoke. Create or ' +
-                 'point the alias first (for example with New-LambdaPSRuntimeDeployment -RuntimeAlias ' +
+                 'A function bound to it would deploy and then fail on every invoke. Create or point the ' +
+                 "alias first in the runtime's account (for example with New-LambdaPSRuntimeDeployment -RuntimeAlias " +
                  "$RuntimeAlias), or pass the alias that exists.")),
             'RuntimeAliasNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, "$RuntimeName/$RuntimeAlias")
     }

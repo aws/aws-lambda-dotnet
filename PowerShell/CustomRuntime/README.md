@@ -192,6 +192,40 @@ Update-LMCRuntimeAlias -RuntimeName my-powershell-runtime -Name default `
     -RuntimeVersion $test.RuntimeVersion -Region us-east-1
 ```
 
+### Use a runtime from another account
+
+A function can bind to a runtime in another account of the same Region. The runtime's owner grants the
+function's account `lambda:GetRuntimeAlias` (the deploy reads the alias's architecture) and
+`lambda:AssociateRuntimeAlias` (Lambda binds the function) on the runtime's aliases. The policy goes on
+the runtime ARN, not an alias ARN, and replaces any policy the runtime already has:
+
+```powershell
+# In the runtime owner's account (111122223333)
+$runtimeArn = (Get-LMCRuntime -RuntimeName my-powershell-runtime -Region us-east-1).Arn
+$policy = @{
+    Version   = '2012-10-17'
+    Statement = @(@{
+        Effect    = 'Allow'
+        Principal = @{ AWS = 'arn:aws:iam::444455556666:root' }
+        Action    = 'lambda:GetRuntimeAlias', 'lambda:AssociateRuntimeAlias'
+        Resource  = "$runtimeArn/alias/*"
+    })
+} | ConvertTo-Json -Depth 4
+Write-LMResourcePolicy -ResourceArn $runtimeArn -Policy $policy -Region us-east-1
+```
+
+The other account then passes the runtime ARN as `-RuntimeName`. The function takes the ARN's Region
+when `-Region` is omitted:
+
+```powershell
+# In the function's account (444455556666)
+New-LambdaPSFunctionDeployment -FunctionName hello-powershell -ProjectPath ./hello `
+    -RuntimeName arn:aws:lambda:us-east-1:111122223333:runtime/my-powershell-runtime -RuntimeAlias default `
+    -Role arn:aws:iam::444455556666:role/hello-powershell-role
+```
+
+Patching the runtime reaches these functions at their next cold start.
+
 ## Low-level cmdlets
 
 Reach for these to override any of the four decisions the one-command deploy makes for you (packaging
