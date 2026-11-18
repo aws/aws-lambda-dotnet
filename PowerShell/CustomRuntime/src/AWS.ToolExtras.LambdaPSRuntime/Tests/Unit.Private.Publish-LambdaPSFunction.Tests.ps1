@@ -113,9 +113,9 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             }
             function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
             function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
-            # The existing function is bound to the requested runtime and alias unless a test says otherwise.
+            # The existing function is on another alias of the requested runtime, so the binding is sent too.
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'staging' } } }
             Mock 'Publish-LMFunction' -MockWith {
                 throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists')
             }
@@ -208,8 +208,12 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
         }
     }
 
-    It 'says the code update failed, and the function keeps its previous code, when that wait ends in FunctionNotActive' {
-        InModuleScope $script:moduleName {
+    It 'says the code update failed, and the function keeps its previous code, when the wait after it ends in FunctionNotActive, <Case>' -ForEach @(
+        @{ Case = 'before a configuration update'; Live = @{} }
+        @{ Case = 'with no configuration to change'; Live = @{ Handler = 'handler.ps1'; Role = 'arn:role'; Timeout = 60; MemorySize = 1024 } }
+    ) {
+        InModuleScope $script:moduleName -Parameters @{ Live = $Live } {
+            param($Live)
             function Publish-LMFunction {
                 param($FunctionName, $Handler, $Runtime, $Role, $Architecture, $Code_ZipFile, $Timeout, $MemorySize,
                     $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Region, $ClientConfig, $ErrorAction)
@@ -219,9 +223,9 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             # Lambda rejects the new code asynchronously: its last update ends Failed.
             $script:codeUpdated = $false
             function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'Failed' } else { 'Successful' })
+                [PSCustomObject](@{ State = 'Active'; LastUpdateStatus = $(if ($script:codeUpdated) { 'Failed' } else { 'Successful' })
                     LastUpdateStatusReason = 'code update failed'
-                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                    RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } + $Live) }
             Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
             Mock 'Update-LMFunctionCode' -MockWith { $script:codeUpdated = $true; [PSCustomObject]@{ FunctionArn = 'arn:f' } }
             Mock 'Update-LMFunctionConfiguration' -MockWith { }
@@ -238,6 +242,7 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
             $err.Exception.Message | Should -BeLike '*will not become ready on its own*The code update failed, so the function keeps its previous code and configuration. Fix the cause Lambda names, then deploy again.'
             $err.Exception.Message | Should -Not -BeLike '*has its new code*'
             $err.Exception.Message | Should -Not -BeLike '*settles*'
+            Should -Invoke 'Update-LMFunctionConfiguration' -Times 0 -Exactly
         }
     }
 
@@ -549,13 +554,20 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 function Update-LMFunctionCode { param($FunctionName, $ZipFile, $Architecture, $Region, $ClientConfig, $ErrorAction) }
                 function Update-LMFunctionConfiguration { param($FunctionName, $Handler, $Role, $Timeout, $MemorySize, $RuntimeConfig_RuntimeArn, $RuntimeConfig_RuntimeAlias, $Environment_Variable, $Environment_IsVariablesSet, $Region, $ClientConfig, $ErrorAction) }
                 function Get-LMFunctionConfiguration { param($FunctionName, $Region, $ClientConfig, $ErrorAction)
-                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
+                    [PSCustomObject]@{ State = 'Active'; LastUpdateStatus = 'Successful'; Handler = 'handler.ps1'; Environment = [PSCustomObject]@{ Variables = $liveEnvironment }
+                        RuntimeConfig = [PSCustomObject]@{ RuntimeArn = 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'; RuntimeAlias = 'default' } } }
                 Mock 'Publish-LMFunction' -MockWith { throw [LambdaPSTests.Fakes.ResourceConflictException]::new('Function already exists') }
                 Mock 'Update-LMFunctionCode' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
                 Mock 'Update-LMFunctionConfiguration' -MockWith { [PSCustomObject]@{ FunctionArn = 'arn:f' } }
 
+                $liveEnvironment = @{ STAGE = 'beta' }
                 $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ STAGE = 'prod' }
                 $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{}
+                # The environment the function already has is not sent again.
+                $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ STAGE = 'beta' } -UpdateSetting @()
+                # A variable named Count is not read as the table's count: dropping STAGE is still a change.
+                $liveEnvironment = @{ Count = '1'; STAGE = 'beta' }
+                $null = Publish-LambdaPSFunction @splat -EnvironmentVariable @{ Count = '1' } -UpdateSetting @()
 
                 Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter {
                     $Environment_IsVariablesSet -eq $true -and @($Environment_Variable.GetEnumerator()).Count -eq 1 -and $Environment_Variable['STAGE'] -eq 'prod'
@@ -563,6 +575,8 @@ Describe 'Publish-LambdaPSFunction' -Tag 'Unit' {
                 Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter {
                     $Environment_IsVariablesSet -eq $true -and @($Environment_Variable.GetEnumerator()).Count -eq 0
                 }
+                Should -Invoke 'Update-LMFunctionConfiguration' -Times 1 -Exactly -ParameterFilter { $Environment_Variable['Count'] -eq '1' }
+                Should -Invoke 'Update-LMFunctionConfiguration' -Times 3 -Exactly
             }
         }
     }
