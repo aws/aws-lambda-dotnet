@@ -106,6 +106,10 @@ The plugin supplies the `X-Amzn-Trace-Id` the SDK sends with a chained invoke: t
 
 To anchor the execution on a W3C `traceparent` the invoke carried on `clientContext.w3c` (`ILambdaContext.W3C`), set `ContextExtractor = ContextExtractors.W3C`. It returns the trace id, parent span id and sampled flag, and nothing when the header is missing or malformed.
 
+## Lambda Annotations
+
+`[DurableExecution(Tracing = DurableTracing.Execution)]` (or `Invocation`) adds this plugin to the generated handler. The project must reference this package; otherwise the generator reports AWSLambda0147. `Tracing` does not turn on X-Ray Active tracing in `serverless.template`; set `Tracing: Active` yourself so Lambda supplies the trace header.
+
 ## Span ids and `Activity`
 
 `Activity` has no public way to choose its own span id. The plugin sets the private `_spanId` and `_id` fields through `[UnsafeAccessor]`, only for the spans whose ids other invocations must reproduce. It is generated at compile time and works under trimming and Native AOT. The fields are not a contract: if a runtime changes them the override switches itself off and spans get random ids. Parenting inside one invocation still works; references across invocations (the Workflow span, the link from a replayed step to its first segment) then dangle. A test fails when the fields are missing. Listeners notified when a span starts see the random id; export and child spans see the derived one.
@@ -113,4 +117,3 @@ To anchor the execution on a W3C `traceparent` the invoke carried on `clientCont
 ## Not yet available
 
 - Loading the plugin from an environment variable or a Lambda layer without code.
-- `[DurableExecution(Tracing = ...)]` for Amazon.Lambda.Annotations.

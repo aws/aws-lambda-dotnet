@@ -13,6 +13,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     using System.Text;
     using System.Collections.Generic;
     using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
+    using Amazon.Lambda.Annotations;
     using System;
     
     /// <summary>
@@ -91,6 +92,79 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(" serializer;\r\n");
             
             #line 27 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+
+    }
+
+    if (_model.DurablePluginsEnabled)
+    {
+        var durable = _model.DurableExecution;
+
+            
+            #line default
+            #line hidden
+            this.Write(@"
+        // The durable instrumentation plugins are created once, when the function starts. The SDK asks each factory
+        // for a new plugin on every invocation.
+        private static readonly Amazon.Lambda.DurableExecution.DurableExecutionOptions __durableExecutionOptions__ = CreateDurableExecutionOptions();
+
+        private static Amazon.Lambda.DurableExecution.DurableExecutionOptions CreateDurableExecutionOptions()
+        {
+            var options = new Amazon.Lambda.DurableExecution.DurableExecutionOptions();
+");
+            
+            #line 46 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+
+        if (durable.Tracing != DurableTracing.None)
+        {
+
+            
+            #line default
+            #line hidden
+            this.Write("            options.Plugins.Add(Amazon.Lambda.DurableExecution.OpenTelemetry.OtelPlugin.CreateFactory(Amazon.Lambda.DurableExecution.OpenTelemetry.OtelView.");
+            
+            #line 50 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(durable.Tracing));
+            
+            #line default
+            #line hidden
+            this.Write("));\r\n");
+            
+            #line 51 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+
+        }
+
+        if (durable.PluginProvider != null)
+        {
+
+            
+            #line default
+            #line hidden
+            this.Write("            foreach (var factory in ");
+            
+            #line 57 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.FullName));
+            
+            #line default
+            #line hidden
+            this.Write(".");
+            
+            #line 57 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(durable.PluginProvider));
+            
+            #line default
+            #line hidden
+            this.Write("())\r\n                options.Plugins.Add(factory);\r\n");
+            
+            #line 59 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+
+        }
+
+            
+            #line default
+            #line hidden
+            this.Write("            return options;\r\n        }\r\n");
+            
+            #line 65 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
 

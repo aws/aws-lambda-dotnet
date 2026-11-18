@@ -1,0 +1,50 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.Instrumentation;
+
+namespace TestServerlessApp.DurableExecutionExamples
+{
+    // This file represents valid usage of DurableExecutionAttribute.Tracing and .PluginProvider. It is a .txt file
+    // because we do not want to deploy these functions during integration tests; it is only fed to the
+    // source-generator unit tests. Refer to the VerifyDurablePlugins unit test.
+
+    public class TracedDurableExecution
+    {
+        [LambdaFunction]
+        [DurableExecution(300, Tracing = DurableTracing.Execution)]
+        public Task<string> ProcessOrder(string input, IDurableContext context)
+        {
+            return Task.FromResult(input);
+        }
+    }
+
+    public class ProviderDurableExecution
+    {
+        // Internal is enough: the generated class is in the same assembly.
+        internal static IEnumerable<IDurableInstrumentationPluginFactory> GetPlugins() => new IDurableInstrumentationPluginFactory[0];
+
+        [LambdaFunction]
+        [DurableExecution(300, PluginProvider = nameof(GetPlugins))]
+        public Task ProcessOrder(string input, IDurableContext context)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    public class TracedProviderDurableExecution
+    {
+        public static IEnumerable<IDurableInstrumentationPluginFactory> GetPlugins() => new List<IDurableInstrumentationPluginFactory>();
+
+        [LambdaFunction]
+        [DurableExecution(300, Tracing = DurableTracing.Invocation, PluginProvider = nameof(GetPlugins))]
+        public Task<string> ProcessOrder(string input, IDurableContext context)
+        {
+            return Task.FromResult(input);
+        }
+    }
+}

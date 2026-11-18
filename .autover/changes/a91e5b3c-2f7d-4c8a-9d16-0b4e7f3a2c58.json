@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add Tracing and PluginProvider options to [DurableExecution] to add OpenTelemetry or custom instrumentation plugins to the generated durable execution handler."
+      ]
+    }
+  ]
+}

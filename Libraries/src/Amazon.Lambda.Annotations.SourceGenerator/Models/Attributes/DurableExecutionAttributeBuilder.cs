@@ -31,6 +31,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 {
                     data.RetentionPeriodInDays = retentionPeriodInDays;
                 }
+                else if (pair.Key == nameof(data.Tracing) && pair.Value.Value is int tracing)
+                {
+                    data.Tracing = (DurableTracing)tracing;
+                }
+                else if (pair.Key == nameof(data.PluginProvider))
+                {
+                    data.PluginProvider = pair.Value.Value as string;
+                }
             }
 
             return data;

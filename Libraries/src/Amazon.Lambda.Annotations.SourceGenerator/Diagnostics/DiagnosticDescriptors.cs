@@ -324,6 +324,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor DurableExecutionPluginsUnavailable = new DiagnosticDescriptor(id: "AWSLambda0146",
+            title: "Durable execution plugins are not available",
+            messageFormat: "[DurableExecution] sets {0}, but the referenced Amazon.Lambda.DurableExecution package has no instrumentation plugin API ('{1}' was not found). Upgrade the Amazon.Lambda.DurableExecution package.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DurableExecutionTracingPackageMissing = new DiagnosticDescriptor(id: "AWSLambda0147",
+            title: "Durable execution tracing needs the OpenTelemetry package",
+            messageFormat: "[DurableExecution(Tracing = DurableTracing.{0})] registers the OpenTelemetry plugin, but the project does not reference the Amazon.Lambda.DurableExecution.OpenTelemetry package. Add a reference to it, or set Tracing to None.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DurableExecutionInvalidPluginProvider = new DiagnosticDescriptor(id: "AWSLambda0148",
+            title: "Invalid DurableExecution PluginProvider",
+            messageFormat: "[DurableExecution(PluginProvider = \"{0}\")] is not usable: {1}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         public static readonly DiagnosticDescriptor DurableExecutionMissingSerializableEnvelope = new DiagnosticDescriptor(id: "AWSLambda0145",
             title: "Durable execution envelope types not registered with JsonSerializerContext",
             messageFormat: "The [DurableExecution] function uses SourceGeneratorLambdaJsonSerializer<{0}>, but {0} does not register {1} with a [JsonSerializable] attribute. The durable runtime serializes the invocation envelope with this context, so add [JsonSerializable(typeof({1}))] to {0} or the function will fail at invocation time.",

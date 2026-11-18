@@ -4,6 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations" #>
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -24,6 +25,39 @@
 #>
         private readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
         private readonly <#= _model.SerializerInfo.SerializerName #> serializer;
+<#
+    }
+
+    if (_model.DurablePluginsEnabled)
+    {
+        var durable = _model.DurableExecution;
+#>
+
+        // The durable instrumentation plugins are created once, when the function starts. The SDK asks each factory
+        // for a new plugin on every invocation.
+        private static readonly Amazon.Lambda.DurableExecution.DurableExecutionOptions __durableExecutionOptions__ = CreateDurableExecutionOptions();
+
+        private static Amazon.Lambda.DurableExecution.DurableExecutionOptions CreateDurableExecutionOptions()
+        {
+            var options = new Amazon.Lambda.DurableExecution.DurableExecutionOptions();
+<#
+        if (durable.Tracing != DurableTracing.None)
+        {
+#>
+            options.Plugins.Add(Amazon.Lambda.DurableExecution.OpenTelemetry.OtelPlugin.CreateFactory(Amazon.Lambda.DurableExecution.OpenTelemetry.OtelView.<#= durable.Tracing #>));
+<#
+        }
+
+        if (durable.PluginProvider != null)
+        {
+#>
+            foreach (var factory in <#= _model.LambdaMethod.ContainingType.FullName #>.<#= durable.PluginProvider #>())
+                options.Plugins.Add(factory);
+<#
+        }
+#>
+            return options;
+        }
 <#
     }
 #>
