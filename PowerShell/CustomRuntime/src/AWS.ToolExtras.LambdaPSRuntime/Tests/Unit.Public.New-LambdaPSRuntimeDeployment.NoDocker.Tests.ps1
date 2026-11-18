@@ -74,6 +74,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
 
         It 'keeps the Docker flow (local build, login, push) when docker is installed, for an unpinned x86_64 pwsh too' {
             Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { @($script:Config.pwsh.DefaultPatch[$PowerShellVersion], '7.4.99') }
 
             $null = New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99'
 
