@@ -2,7 +2,7 @@
 
 OpenTelemetry tracing for [Amazon.Lambda.DurableExecution](../Amazon.Lambda.DurableExecution/README.md). It is a plugin for the SDK's [instrumentation plugin API](../Amazon.Lambda.DurableExecution/docs/core/instrumentation-plugins.md).
 
-**Preview.** Only the Invocation view is available. `OtelView.Execution` throws `NotSupportedException`.
+**Preview.**
 
 The plugin emits spans through `System.Diagnostics.ActivitySource`, so the package has no OpenTelemetry NuGet dependency. The OpenTelemetry SDK, the ADOT layer and `OpenTelemetry.Instrumentation.AWSLambda` listen to it once you add the source name.
 
@@ -17,7 +17,7 @@ static readonly TracerProvider Tracer = Sdk.CreateTracerProviderBuilder()
     .Build();
 
 static readonly DurableExecutionOptions Options = new DurableExecutionOptions()
-    .AddOpenTelemetry(OtelView.Invocation, new OtelPluginOptions
+    .AddOpenTelemetry(OtelView.Execution, new OtelPluginOptions
     {
         // The plugin cannot flush by itself. Export before Lambda freezes the environment.
         FlushAsync = (timeout, _) => { Tracer.ForceFlush((int)timeout.TotalMilliseconds); return Task.CompletedTask; },
@@ -31,25 +31,44 @@ Create the options once and reuse them. Register exactly one OpenTelemetry view:
 
 With the ADOT Lambda layer, activate it with `AWS_LAMBDA_EXEC_WRAPPER=/opt/otel-instrument` and omit your own provider; the layer listens for the source.
 
-## Trace structure
+## Choosing a view
 
-The whole execution is one trace, whichever invocation a span comes from.
+Register one view. Both emit the same Workflow, Invocation, operation and attempt spans in one trace per execution; they differ in where operations are parented.
+
+| View | Hierarchy | Operations link | Use it to see |
+|---|---|---|---|
+| `Execution` (default) | `Workflow -> operation -> attempt` | Invocation | what the workflow did, start to finish |
+| `Invocation` | `Invocation -> operation -> attempt` | Workflow | what each Lambda invocation did |
 
 ```text
-Execution ancestor (propagated remote parent, or a synthetic root derived from the execution ARN)
-+-- Workflow            exported once, by the invocation that finishes the execution
-+-- Invocation          one per Lambda invocation
-    +-- operation       links Workflow
-        +-- attempt     links Workflow
+Execution view                                  Invocation view
+
+Execution ancestor                              Execution ancestor
++-- Workflow                                    +-- Workflow
+|   +-- operation  (links Invocation)           +-- Invocation
+|       +-- attempt                                 +-- operation  (links Workflow)
++-- Invocation                                          +-- attempt
 ```
 
-- **The ancestor** is the complete `Root` and `Parent` of the X-Ray header the service propagates (`ILambdaContext.TraceId`). Without a parent the plugin exports a synthetic `DurableExecutionRoot` span whose id comes from the execution ARN, once per invocation with the same id. Consumers deduplicate on span id. An ambient span of the same trace (the ADOT handler span) is used as the Invocation's parent instead.
-- **Derived ids.** The Workflow span, the synthetic root and the first segment of every operation have ids derived from the execution ARN, so a span exported by one invocation can name one exported by another. They match the JavaScript, Python and Java SDKs.
-- **Replay.** A step or child context reached again after it finished is exported as a new span that links the Workflow span and the operation's first segment. A wait, invoke or callback that finished while the execution was suspended is exported once, in the invocation that sees it. A wait that is only replayed is not exported again.
-- **Open operations.** An operation still running when the invocation suspends is ended with `durable.operation.status=STARTED`.
-- **Timing.** Spans use the invocation's own clock: the wall clock read at the start, advanced by the monotonic clock.
+### What both views share
 
-### Attributes and status
+- **The ancestor** is the complete `Root` and `Parent` of the X-Ray header the service propagates (`ILambdaContext.TraceId`). Without a parent the plugin exports a synthetic `DurableExecutionRoot` span whose id comes from the execution ARN, once per invocation with the same id. Consumers deduplicate on span id. An ambient span of the same trace (the ADOT handler span) is used as the Invocation's parent instead.
+- **Derived ids.** The Workflow span, the synthetic root and every operation's span (its first segment, in the Invocation view) have ids derived from the execution ARN, so a span exported by one invocation can name one exported by another. They match the JavaScript, Python and Java SDKs.
+- **Workflow** is exported once, by the invocation that finishes the execution.
+
+### Invocation view
+
+- Spans use the invocation's own clock: the wall clock read at the start, advanced by the monotonic clock.
+- An operation that is still running when the invocation suspends is ended with `durable.operation.status=STARTED`. A step or child context reached again by a later invocation is a new span that links the Workflow and the operation's first segment. A wait, invoke or callback that finished while the execution was suspended is exported once, in the invocation that sees it. A wait that is only replayed is not exported again.
+
+### Execution view
+
+- **One span per operation**, exported when the operation finishes, by the invocation where that happens. While it is open only its identity exists, so nothing is left unended when an invocation suspends. Reaching a finished operation again by replay exports nothing.
+- **Times come from the service.** The span starts at the earliest start seen (the service's, or the local clock if the service has none) and ends at the service's end time. A parent starts no later than its earliest child, and an end before the start is raised to the start. The Invocation span ends no earlier than any boundary it observed.
+- **Attempts** are exported by the invocation that ran them, parented on the operation's derived id before the operation's own span exists. A retried step therefore has one operation span and one attempt span per attempt, each linking the invocation that ran it.
+- **Application spans** started inside the workflow, a child context or a step are parented on the Workflow, the child context or the attempt. The first two have no span yet, so a stand-in activity that carries their derived id is current. It is not created by an `ActivitySource`, so no listener sees or exports it.
+
+## Attributes and status
 
 All spans are `SpanKind.Internal`.
 
@@ -91,7 +110,6 @@ The plugin supplies the `X-Amzn-Trace-Id` the SDK sends with a chained invoke: t
 
 ## Not yet available
 
-- The Execution view.
 - Loading the plugin from an environment variable or a Lambda layer without code.
 - The W3C `traceparent` extractor.
 - `[DurableExecution(Tracing = ...)]` for Amazon.Lambda.Annotations.

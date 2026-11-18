@@ -362,11 +362,4 @@ public class InvocationTraceTests
         Assert.False(ran);
         Assert.Empty(spans.Spans);
     }
-
-    [Fact]
-    public void ExecutionView_IsNotAvailableYet()
-    {
-        Assert.Throws<NotSupportedException>(() => OtelPlugin.CreateFactory(OtelView.Execution));
-        Assert.Throws<NotSupportedException>(() => OtelPlugin.CreateFactory());
-    }
 }

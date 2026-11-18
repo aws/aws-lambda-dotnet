@@ -51,10 +51,10 @@ internal sealed class SpanCollector : IDisposable
         FlushAsync = flush,
     };
 
-    internal DurableExecutionOptions ExecutionOptions(OtelPluginOptions options)
+    internal DurableExecutionOptions ExecutionOptions(OtelPluginOptions options, OtelView view = OtelView.Invocation)
     {
         var executionOptions = new DurableExecutionOptions();
-        executionOptions.AddOpenTelemetry(OtelView.Invocation, options);
+        executionOptions.AddOpenTelemetry(view, options);
         return executionOptions;
     }
 

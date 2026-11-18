@@ -8,10 +8,7 @@ namespace Amazon.Lambda.DurableExecution.OpenTelemetry;
 /// <summary>Where operation spans are parented.</summary>
 public enum OtelView
 {
-    /// <summary>
-    /// <c>Workflow -> operation -> attempt</c>. Operations and attempts link the Invocation span.
-    /// Not implemented yet: <see cref="OtelPlugin.CreateFactory"/> throws <see cref="NotSupportedException"/>.
-    /// </summary>
+    /// <summary><c>Workflow -> operation -> attempt</c>. Operations and attempts link the Invocation span.</summary>
     Execution,
 
     /// <summary><c>Invocation -> operation -> attempt</c>. Operations and attempts link the Workflow span.</summary>
@@ -36,17 +33,13 @@ public static class OtelPlugin
     /// </summary>
     /// <param name="view">Where operation spans are parented.</param>
     /// <param name="options">Optional settings.</param>
-    /// <exception cref="NotSupportedException"><paramref name="view"/> is <see cref="OtelView.Execution"/>.</exception>
     public static IDurableInstrumentationPluginFactory CreateFactory(
         OtelView view = OtelView.Execution, OtelPluginOptions? options = null)
     {
-        return view switch
-        {
-            OtelView.Invocation => new InvocationOtelPluginFactory(options ?? new OtelPluginOptions()),
-            OtelView.Execution => throw new NotSupportedException(
-                "OtelView.Execution is not implemented yet. Use OtelView.Invocation."),
-            _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Unknown view."),
-        };
+        if (view is not (OtelView.Execution or OtelView.Invocation))
+            throw new ArgumentOutOfRangeException(nameof(view), view, "Unknown view.");
+
+        return new OtelPluginFactory(view, options ?? new OtelPluginOptions());
     }
 }
 
