@@ -31,13 +31,29 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         Context '-PwshVersion given' {
-            It 'returns it without reading the repository, for <InstallSource>' -ForEach @(
-                @{ InstallSource = 'PackageRepository' }, @{ InstallSource = 'PinnedArchive' }
-            ) {
-                $run = & $script:invokeResolve @{ PowerShellVersion = '7.6'; PwshVersion = '7.6.1'; InstallSource = $InstallSource; Architecture = 'arm64' }
+            It 'returns it without reading the repository for PinnedArchive' {
+                $run = & $script:invokeResolve @{ PowerShellVersion = '7.6'; PwshVersion = '7.6.1'; InstallSource = 'PinnedArchive'; Architecture = 'arm64' }
+
                 $run.Result.Version | Should -Be '7.6.1'
                 $run.Result.Source | Should -Be 'Parameter'
                 Should -Invoke 'Get-LambdaPSPwshRepositoryRelease' -Times 0 -Exactly
+            }
+
+            It 'returns it for PackageRepository when <Case>' -ForEach @(
+                @{ Case = 'the repository lists it'; Listed = { '7.6.8', '7.6.9' } }
+                @{ Case = 'the repository cannot be read'; Listed = { throw 'offline' } }
+            ) {
+                Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith $Listed
+
+                $run = & $script:invokeResolve @{ PowerShellVersion = '7.6'; PwshVersion = '7.6.8'; InstallSource = 'PackageRepository'; Architecture = 'x86_64' }
+
+                $run.Result.Version | Should -Be '7.6.8'
+                Should -Invoke 'Get-LambdaPSPwshRepositoryRelease' -Times 1 -Exactly
+            }
+
+            It 'throws PwshVersionNotFound for PackageRepository when the repository does not list it' {
+                { Resolve-LambdaPSPwshRelease -PowerShellVersion 7.6 -PwshVersion 7.6.99 -InstallSource PackageRepository -Architecture x86_64 } |
+                    Should -Throw -ErrorId 'PwshVersionNotFound' -ExpectedMessage '*newest PowerShell 7.6 release is 7.6.30*'
             }
         }
 
