@@ -214,8 +214,10 @@ $policy = @{
 Write-LMResourcePolicy -ResourceArn $runtimeArn -Policy $policy -Region us-east-1
 ```
 
-The other account then passes the runtime ARN as `-RuntimeName`. The function takes the ARN's Region
-when `-Region` is omitted:
+In the other account, the identity that deploys also needs both actions on the alias ARN in its own
+policy, as [cross-account runtime permissions](https://docs.aws.amazon.com/lambda/latest/dg/cmr-permissions.html)
+describes. It passes the runtime ARN as `-RuntimeName`. The function takes the ARN's Region when
+`-Region` is omitted:
 
 ```powershell
 # In the function's account (444455556666)
