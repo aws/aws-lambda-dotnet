@@ -242,10 +242,31 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         }
 
         It 'accepts a -RuntimeName such as <Value>' -ForEach @(
-            @{ Value = 'rt' }, @{ Value = 'my-ps' }, @{ Value = 'my_ps.7-4' }, @{ Value = '7rt' }, @{ Value = ('r' * 128) }
+            @{ Value = 'rt' }, @{ Value = 'my-ps' }, @{ Value = 'my_ps.7-4' }, @{ Value = '7rt' }, @{ Value = ('r' * 55) }
         ) {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName $Value -PowerShellVersion '7.4.*' -Region us-east-1 -RepositoryName rt -WhatIf
             $result.RuntimeName | Should -Be $Value
+        }
+
+        # Lambda leaves the version or alias CREATING over these totals (measured in eu-west-1).
+        It 'throws <ErrorId> when -RuntimeName and -<Parameter> total more than <Max> characters' -ForEach @(
+            @{ Parameter = 'RuntimeVersion'; Value = '7.6.9-1'; Max = 63; ErrorId = 'RuntimeVersionNameTooLong' }
+            @{ Parameter = 'RuntimeAlias'; Value = ('p' * 91); Max = 147; ErrorId = 'RuntimeAliasNameTooLong' }
+        ) {
+            $splat = @{ RuntimeName = ('r' * 57); PowerShellVersion = '7.4.*'; Region = 'us-east-1'; RepositoryName = 'rt'; $Parameter = $Value }
+
+            { New-LambdaPSRuntimeDeployment @splat } |
+                Should -Throw -ErrorId "$ErrorId,New-LambdaPSRuntimeDeployment" -ExpectedMessage "*total $($Max + 1) characters*"
+            Should -Invoke 'Get-STSCallerIdentity' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'throws RuntimeVersionNameTooLong for a default version name that takes the total over 63 characters' {
+            $result = New-LambdaPSRuntimeDeployment -RuntimeName 'rt' -PowerShellVersion '7.4.*' -Region us-east-1 -RepositoryName rt -WhatIf
+            $name = 'r' * (64 - $result.RuntimeVersion.Length)
+
+            { New-LambdaPSRuntimeDeployment -RuntimeName $name -PowerShellVersion '7.4.*' -Region us-east-1 -RepositoryName rt } |
+                Should -Throw -ErrorId 'RuntimeVersionNameTooLong,New-LambdaPSRuntimeDeployment' -ExpectedMessage "*version name '$($result.RuntimeVersion)' total 64 characters*"
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 0 -Exactly
         }
     }
 
@@ -406,7 +427,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
         It 'accepts a -RuntimeVersion such as <Value>' -ForEach @(
             @{ Value = 'v1' }, @{ Value = '7' }, @{ Value = '_v1' }, @{ Value = '2024.10.01' }, @{ Value = 'release_7-4' }
-            @{ Value = 'V1.2.3-rc.1' }, @{ Value = ('a' * 128) }
+            @{ Value = 'V1.2.3-rc.1' }, @{ Value = ('a' * 58) }
         ) {
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -Region us-east-1 -RuntimeVersion $Value -WhatIf
             $result.ImageUri | Should -BeLike "*:$Value"
@@ -428,15 +449,24 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4.3 -RepositoryName rt -Region us-east-1 -InformationVariable info -WarningVariable warnings -WarningAction SilentlyContinue
             @($info | Where-Object { "$_" -like 'Preflight: the image installs*' } | ForEach-Object { "$_" }) | Should -Be @($Expected)
             $warnings | Should -BeNullOrEmpty
+            # The release list read to check the release is listed is reused, not read again.
+            Should -Invoke 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -Times 1 -Exactly
         }
 
         It 'forwards an x.y.z -PowerShellVersion to the scaffolder and reports it' {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.3' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4.3 -RepositoryName rt -Region us-east-1
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $PowerShellVersion -eq '7.4.3' }
             $result.PwshVersion | Should -Be '7.4.3'
         }
 
-        It 'reports the default pwsh release for an x.y -PowerShellVersion' {
+        It 'throws PwshVersionNotFound for an x86_64 -PowerShellVersion release the package repository does not list, before the build' {
+            { New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4.99 -RepositoryName rt -Region us-east-1 } |
+                Should -Throw -ErrorId 'PwshVersionNotFound,New-LambdaPSRuntimeDeployment'
+            Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
+
+        It 'reports the default pwsh release for an x.y.* -PowerShellVersion' {
             $default = InModuleScope $script:moduleName { $script:Config.pwsh.DefaultPatch['7.4'] }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -RepositoryName rt -Region us-east-1
             $result.PwshVersion | Should -Be $default
@@ -646,6 +676,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             @{ Case = 'arm64 for a pwsh version with a pinned arm64 hash'; PwshVersion = '7.4.20'; Architecture = 'arm64' }
             @{ Case = 'x86_64 for a pwsh version with no pinned arm64 hash'; PwshVersion = '7.4.13'; Architecture = 'x86_64' }
         ) {
+            Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.13', '7.4.20' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion $PwshVersion -Architecture $Architecture -Region us-east-1 -RepositoryName rt -WarningAction SilentlyContinue
             $result.PwshVersion | Should -Be $PwshVersion
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly

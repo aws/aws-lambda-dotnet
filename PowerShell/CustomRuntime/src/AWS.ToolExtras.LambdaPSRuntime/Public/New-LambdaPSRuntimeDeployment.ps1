@@ -84,9 +84,13 @@ function New-LambdaPSRuntimeDeployment {
         is shown unless -InformationAction is given.
 
         Besides parameter validation, the deploy can stop with these errors, by stage:
-          inputs and preflight  InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
-                                PowerShellVersionNotSpecific, UnknownPwshVersion, DriveNotFound and
-                                PathNotFileSystem (for -ProjectPath), TargetIsFile, TargetNotEmpty,
+          inputs and preflight  RuntimeVersionNameTooLong, RuntimeAliasNameTooLong,
+                                InvalidRepositoryName, ProfileNotFound, RegionNotResolved,
+                                PowerShellVersionNotSpecific, UnknownPwshVersion,
+                                PwshVersionNotFound (an x86_64 -PowerShellVersion release the
+                                package repository does not list),
+                                DriveNotFound and PathNotFileSystem (for -ProjectPath),
+                                TargetIsFile, TargetNotEmpty,
                                 TargetNotReadable (a -ProjectPath that cannot be listed),
                                 ProjectParameterConflict,
                                 InvalidProjectMarker, DockerNotFound, DockerBuildxNotFound,
@@ -122,7 +126,8 @@ function New-LambdaPSRuntimeDeployment {
         A call the service refuses at another point surfaces the AWS.Tools error.
     .PARAMETER RuntimeName
         The customer-managed runtime name to create or reuse: lowercase letters, digits, '_', '.' and
-        '-', 2 to 128 characters, starting and ending with a letter or digit.
+        '-', starting and ending with a letter or digit, and at most 63 characters minus the length of
+        the version name.
     .PARAMETER PowerShellVersion
         The PowerShell release the runtime image installs. 7.6.9 installs that exact release (the
         preflight line names a newer 7.6 release when Microsoft's RPM repository has one): give it
@@ -183,8 +188,8 @@ function New-LambdaPSRuntimeDeployment {
         The runtime alias to create or repoint. Required: every function bound to it runs the new
         version from its next cold start. Tab completion offers 'default' (the alias
         New-LambdaPSFunctionDeployment binds to unless told otherwise) and the runtime's existing
-        aliases. ASCII letters, digits, '_', '.' and '-', up to 128 characters, not starting or
-        ending with '.' or '-'. Alias names are case-sensitive.
+        aliases. ASCII letters, digits, '_', '.' and '-', not starting or ending with '.' or '-', and at
+        most 147 characters together with -RuntimeName. Alias names are case-sensitive.
     .PARAMETER RuntimeVersion
         The runtime version label / image tag to publish. Defaults to <pwsh release>-<n>, for example
         7.6.9-1, where n is one more than the highest n for that release among the runtime's versions
@@ -193,9 +198,9 @@ function New-LambdaPSRuntimeDeployment {
         runtime's versions and the repository's images, which needs lambda:ListRuntimeVersions and
         ecr:DescribeImages. A name you give is used as is, and one the runtime already has stops the
         deploy with RuntimeVersionExists. It must be valid as both a runtime
-        version name and an image tag: ASCII letters, digits, '_', '.' and '-', up to 128 characters,
-        not starting or ending with '.' or '-'. Version names are case-sensitive: 'V1' and 'v1' are
-        different versions.
+        version name and an image tag: ASCII letters, digits, '_', '.' and '-', not starting or ending
+        with '.' or '-', and at most 63 characters together with -RuntimeName (the default name too).
+        Version names are case-sensitive: 'V1' and 'v1' are different versions.
     .PARAMETER Architecture
         The target architecture: x86_64 (default, mapped to linux/amd64) or arm64 (linux/arm64). The
         image is built for that platform, and after publishing, the architecture the service reads
@@ -342,6 +347,25 @@ function New-LambdaPSRuntimeDeployment {
         $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
         # An unmapped -PowerShellVersion fails here, before any toolchain or AWS check.
         $null = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
+        # The API takes 128 characters for each name, but Lambda leaves a version or alias CREATING when
+        # it and the runtime name are longer than this together. Remove the alias check once Lambda creates
+        # aliases up to the 128-character limit (PowerShell-803).
+        $assertNameLength = {
+            param([string]$Kind, [string]$Name, [int]$Max, [string]$Parameter, [string]$ErrorId)
+            $total = $RuntimeName.Length + $Name.Length
+            if ($total -gt $Max) {
+                $PSCmdlet.ThrowTerminatingError(
+                    [System.Management.Automation.ErrorRecord]::new(
+                        [System.ArgumentException]::new(
+                            ("Runtime name '$RuntimeName' and $Kind name '$Name' total $total characters, and Lambda " +
+                             "can't create the $Kind when they total more than $Max. Use a shorter -RuntimeName or " +
+                             "-$Parameter. Nothing was created."), $Parameter),
+                        $ErrorId, [System.Management.Automation.ErrorCategory]::InvalidArgument, $Name))
+            }
+        }
+        & $assertNameLength 'alias' $RuntimeAlias 147 'RuntimeAlias' 'RuntimeAliasNameTooLong'
+        if ($PSBoundParameters.ContainsKey('RuntimeVersion')) { & $assertNameLength 'version' $RuntimeVersion 63 'RuntimeVersion' 'RuntimeVersionNameTooLong' }
+
         # The project is scaffolded again on every deploy, so nothing in the current location is kept.
         if ($temporaryProject) {
             $ProjectPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$RuntimeName-runtime-$([System.IO.Path]::GetRandomFileName())")
@@ -481,13 +505,15 @@ function New-LambdaPSRuntimeDeployment {
         # An exact or kept release is not looked up above; say when the line has a newer one.
         $newerRelease = ''
         if ($pwshRelease.Source -in 'Parameter', 'Project') {
-            try {
-                $newest = @(Get-LambdaPSPwshRepositoryRelease -PowerShellVersion $PowerShellVersion)
-                if ($newest.Count -gt 0 -and [version]$newest[-1] -gt [version]$resolvedPwshVersion) {
-                    $newerRelease = " The newest PowerShell $PowerShellVersion release is $($newest[-1])."
-                }
+            # An x86_64 exact release was already looked up, to check that the repository has it.
+            $newest = if ($pwshRelease.PSObject.Properties.Name -contains 'Newest') { $pwshRelease.Newest }
+            else {
+                try { Get-LambdaPSPwshRepositoryRelease -PowerShellVersion $PowerShellVersion | Select-Object -Last 1 }
+                catch { Write-Verbose "Could not check for a pwsh release newer than ${resolvedPwshVersion}: $($_.Exception.Message)" }
             }
-            catch { Write-Verbose "Could not check for a pwsh release newer than ${resolvedPwshVersion}: $($_.Exception.Message)" }
+            if ($newest -and [version]$newest -gt [version]$resolvedPwshVersion) {
+                $newerRelease = " The newest PowerShell $PowerShellVersion release is $newest."
+            }
         }
         Write-Information "Preflight: the image installs pwsh $resolvedPwshVersion ($pwshSource).$newerRelease" -Tags 'LambdaPSDeploy' @shownInformation
         Write-Verbose 'Preflight: check the Docker build toolchain and the runtime.'
@@ -580,6 +606,7 @@ function New-LambdaPSRuntimeDeployment {
             }
             $RuntimeVersion = "$resolvedPwshVersion-$($highest + 1)"
         }
+        if ($runtimeVersionDefaulted) { & $assertNameLength 'version' $RuntimeVersion 63 'RuntimeVersion' 'RuntimeVersionNameTooLong' }
         if ($runtimeExists) {
             $existingVersion = $null
             # Fail closed: a version that could not be read is not proof the version is new, and
