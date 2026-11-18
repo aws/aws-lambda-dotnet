@@ -24,7 +24,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
         }
 
         It 'describes a scaffolded runtime image: base, entrypoint, no CMD, app-local ICU and the runtime files' {
-            $plan = Get-LambdaPSOciImagePlan -Path $script:runtimePath -Architecture arm64
+            $plan = Get-LambdaPSOciImagePlan -Path $script:runtimePath -Architecture arm64 -OnWindows $false
 
             $plan.Target | Should -Be 'CMR'
             $plan.Platform | Should -Be 'linux/arm64'
@@ -130,6 +130,13 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             $plan.Target | Should -Be 'Container'
             $plan.Cmd | Should -Be @('process.ps1')
             $plan.FunctionFiles.ContainerPath | Should -Be @('/var/task/helper.ps1', '/var/task/process.ps1')
+        }
+
+        It 'marks every file executable on Windows, as docker build from Windows adds files as 0755' {
+            $plan = Get-LambdaPSOciImagePlan -Path $script:functionPath -Architecture x86_64 -OnWindows $true
+
+            @($plan.RuntimeFiles + $plan.FunctionFiles | Where-Object { -not $_.Executable }).Count | Should -Be 0
+            ($plan.RuntimeFiles | Where-Object Normalize).Count | Should -Be 2
         }
     }
 }

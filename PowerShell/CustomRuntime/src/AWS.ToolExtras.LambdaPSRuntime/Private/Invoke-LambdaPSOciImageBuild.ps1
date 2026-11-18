@@ -184,7 +184,8 @@ function Invoke-LambdaPSOciImageBuild {
         if ($Plan.FunctionFiles.Count -gt 0) {
             $functionFiles = [AWS.OCI.Builder.FileManifest]::new()
             foreach ($file in $Plan.FunctionFiles) {
-                $functionFiles.Add($file.LocalPath, $file.ContainerPath)
+                if ($file.Executable) { $functionFiles.AddExecutable($file.LocalPath, $file.ContainerPath) }
+                else { $functionFiles.Add($file.LocalPath, $file.ContainerPath) }
             }
             & $addFolders $functionFiles
             Write-Progress -Activity $activity -Status 'Building the function layer'

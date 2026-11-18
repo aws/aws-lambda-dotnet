@@ -26,6 +26,8 @@ function Get-LambdaPSOciImagePlan {
         The project directory (resolved, with a Dockerfile).
     .PARAMETER Architecture
         The target architecture: x86_64 or arm64.
+    .PARAMETER OnWindows
+        Whether the host is Windows. Defaults to $IsWindows; tests pass it to cover the other platform.
     .OUTPUTS
         System.Management.Automation.PSCustomObject
 
@@ -45,7 +47,10 @@ function Get-LambdaPSOciImagePlan {
 
         [Parameter(Mandatory)]
         [ValidateSet('x86_64', 'arm64')]
-        [string]$Architecture
+        [string]$Architecture,
+
+        [Parameter()]
+        [bool]$OnWindows = $IsWindows
     )
 
     $root = Resolve-LambdaPSPath -Path $Path
@@ -102,7 +107,8 @@ function Get-LambdaPSOciImagePlan {
     }
     $baseImage = if ($actual -match '(?m)^FROM (\S+)$') { $Matches[1] }
 
-    # Step 3: the runtime files the Dockerfile copies into /var/runtime.
+    # Step 3: the runtime files the Dockerfile copies into /var/runtime. A Windows file has no mode, and
+    # docker build from Windows adds every file as 0755, so the plan marks every file executable there.
     $runtimeFiles = [System.Collections.Generic.List[object]]::new()
     foreach ($name in 'lambda-entrypoint.sh', 'bootstrap', 'runtime.ps1', 'PowerShellLambdaContext.cs') {
         $local = [System.IO.Path]::Combine($root, $name)
@@ -112,7 +118,7 @@ function Get-LambdaPSOciImagePlan {
                 'ProjectFileNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $local)
         }
         $executable = @('lambda-entrypoint.sh', 'bootstrap') -ccontains $name
-        $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$name"; Executable = $executable; Normalize = $executable })
+        $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$name"; Executable = $executable -or $OnWindows; Normalize = $executable })
     }
     # COPY modules honors .dockerignore (for example **/.git) like COPY . does. It fails, as this does, when
     # the folder is missing, named in another case (the daemon matches case on every OS), or excluded.
@@ -138,7 +144,7 @@ function Get-LambdaPSOciImagePlan {
     foreach ($relative in $contextFiles) {
         if (-not $relative.StartsWith('modules/', [System.StringComparison]::Ordinal)) { continue }
         $local = [System.IO.Path]::Combine($root, $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
-        $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$relative"; Executable = $false; Normalize = $false })
+        $runtimeFiles.Add([PSCustomObject]@{ LocalPath = $local; ContainerPath = "/var/runtime/$relative"; Executable = $OnWindows; Normalize = $false })
     }
 
     # Step 5: COPY . /var/task, then the rm of the runtime files.
@@ -150,7 +156,7 @@ function Get-LambdaPSOciImagePlan {
             $functionFiles.Add([PSCustomObject]@{
                     LocalPath     = [System.IO.Path]::Combine($root, $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
                     ContainerPath = "/var/task/$relative"
-                    Executable    = $false
+                    Executable    = $OnWindows
                     Normalize     = $false
                 })
         }
