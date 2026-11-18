@@ -171,8 +171,12 @@ public class OperationPluginTests
         await Run(recorder, ctx => ctx.StepAsync((_, _) => Task.FromResult("ok"), name: "flaky"), ready);
 
         Assert.Equal(2, Assert.Single(recorder.AttemptStarts).Attempt);
-        Assert.Equal(OperationStatuses.Succeeded, Assert.Single(recorder.OperationEnds).Status);
-        Assert.False(recorder.OperationStarts[0].IsReplay);
+        var end = Assert.Single(recorder.OperationEnds);
+        Assert.Equal(OperationStatuses.Succeeded, end.Status);
+        // The operation was started by an earlier invocation, so reaching it is a resume. It finishes now, so
+        // its end is not a replay.
+        Assert.True(recorder.OperationStarts[0].IsReplay);
+        Assert.False(end.IsReplay);
     }
 
     [Fact]

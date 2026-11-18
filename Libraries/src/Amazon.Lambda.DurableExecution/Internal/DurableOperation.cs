@@ -89,11 +89,13 @@ internal abstract class DurableOperation<TResult>
     private async Task<TResult> ExecuteWithPluginsAsync(
         PluginRunner plugins, Operation? existing, CancellationToken cancellationToken)
     {
-        // An operation is replayed when the workflow reaches it again after it already finished.
+        // The workflow reaches an operation that already has a checkpoint when it replays history, or resumes one
+        // that an earlier invocation started (a step after a retry, a child context that suspended). The end is a
+        // replay only when the operation had already finished.
         var isReplay = existing != null && PluginInfoConverter.IsTerminal(existing.Status);
 
         plugins.OperationStart(PluginInfoConverter.ToOperationInfo(
-            existing, OperationId, Name, OperationType, OperationSubType, ParentId, isReplay,
+            existing, OperationId, Name, OperationType, OperationSubType, ParentId, isReplay: existing != null,
             fallbackStatus: OperationStatuses.Started));
 
         TResult result;

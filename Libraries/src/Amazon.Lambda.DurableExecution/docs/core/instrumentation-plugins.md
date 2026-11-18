@@ -40,7 +40,7 @@ Every member of `IDurableInstrumentationPlugin` is optional.
 |---|---|
 | `OnInvocationStart` | Once, before the workflow runs. `InvocationInfo` carries the request id, whether this is the first invocation, `XRayTraceId` (from `ILambdaContext.TraceId`), and the operations known so far and those the service reports as updated. |
 | `OnInvocationEndAsync` | Last. Status is `Succeeded`, `Failed`, `Pending` (suspended), or `Retrying` (the invocation threw and Lambda will retry it). This is where to flush. |
-| `OnOperationStart` / `OnOperationEnd` | When the workflow reaches an operation, and when it reaches a terminal state. `IsReplay` is true when the operation had already finished in history. An operation that suspends the invocation, or is cancelled, reports no end. A callback ends when its result is read. |
+| `OnOperationStart` / `OnOperationEnd` | When the workflow reaches an operation, and when it reaches a terminal state. At start `IsReplay` is true when the operation already has a checkpoint (it finished, or an earlier invocation started it, as with a step resumed after a retry). At end it is true when the operation had already finished. An operation that suspends the invocation, or is cancelled, reports no end. A callback ends when its result is read. |
 | `OnAttemptStart` / `OnAttemptEnd` | Around each execution of a step's function (and each wait-for-condition poll). The attempt number is 1-based. Cancellation is not an outcome. |
 | `OnOperationChange` | A checkpoint response added operations or changed their status, for example a callback completed. |
 | `WrapAsync` | Runs the invocation, a child context, or one attempt inside the plugin's own context. Use it to make an ambient value, such as `Activity.Current`, visible to user code. |

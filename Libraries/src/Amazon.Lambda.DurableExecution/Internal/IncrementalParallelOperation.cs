@@ -448,7 +448,7 @@ internal sealed class IncrementalParallelOperation : IDurableParallel
 
         _plugins?.OperationStart(PluginInfoConverter.ToOperationInfo(
             existing, _operationId, _name, OperationTypes.Context, OperationSubTypes.Parallel, _parentId,
-            isReplay: existing != null && PluginInfoConverter.IsTerminal(existing.Status),
+            isReplay: existing != null,
             fallbackStatus: OperationStatuses.Started));
     }
 

@@ -108,7 +108,11 @@ public class OperationInfo
     /// <summary>The attempt number (1-based) for operations that retry, if applicable.</summary>
     public int? Attempt { get; init; }
 
-    /// <summary>True when the workflow reached this operation by replaying checkpointed history.</summary>
+    /// <summary>
+    /// In <see cref="IDurableInstrumentationPlugin.OnOperationStart"/>: true when the operation already has a
+    /// checkpoint, because it finished earlier or an earlier invocation started it (a step resumed after a retry).
+    /// In <see cref="IDurableInstrumentationPlugin.OnOperationEnd"/>: true when it had already finished.
+    /// </summary>
     public bool IsReplay { get; init; }
 }
 
