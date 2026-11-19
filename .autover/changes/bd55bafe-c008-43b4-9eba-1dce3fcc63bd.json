@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix dead Powertools for AWS Lambda (.NET) documentation links in the Powertools blueprints"
+      ]
+    }
+  ]
+}

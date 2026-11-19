@@ -11,9 +11,9 @@ The generated function handler is a simple method accepting a string argument th
 
 ## Powertools for AWS Lambda (.NET)
 
-[Powertools for AWS Lambda (.NET)](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
+[Powertools for AWS Lambda (.NET)](https://docs.aws.amazon.com/powertools/dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
-This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables defined in the `aws-lambda-tools-defaults.json` file and annotations on methods in `Function.cs`
+This starter project comes with Powertools Logging, Metrics and Tracing configured through environment variables defined in the `aws-lambda-tools-defaults.json` file and annotations on methods in `Function.cs`
 
 **Environment variables:**
 
@@ -24,13 +24,13 @@ This starter project comes with Powertools Loging, Metrics and Tracing configure
 * POWERTOOLS_TRACER_CAPTURE_ERROR=true
 * POWERTOOLS_METRICS_NAMESPACE=powertools_function
 
-References to the environment variables can be found [here]([https://](https://awslabs.github.io/aws-lambda-powertools-dotnet/references/))
+References to the environment variables can be found [here](https://docs.aws.amazon.com/powertools/dotnet/references/)
 
 **Included NuGet Packages:**
 
-* [AWS.Lambda.Powertools.Logging](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/)
-* [AWS.Lambda.Powertools.Metrics](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/)
-* [AWS.Lambda.Powertools.Tracing](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/tracing/)
+* [AWS.Lambda.Powertools.Logging](https://docs.aws.amazon.com/powertools/dotnet/core/logging/)
+* [AWS.Lambda.Powertools.Metrics](https://docs.aws.amazon.com/powertools/dotnet/core/metrics/)
+* [AWS.Lambda.Powertools.Tracing](https://docs.aws.amazon.com/powertools/dotnet/core/tracing/)
 
 ## Here are some steps to follow from Visual Studio
 
