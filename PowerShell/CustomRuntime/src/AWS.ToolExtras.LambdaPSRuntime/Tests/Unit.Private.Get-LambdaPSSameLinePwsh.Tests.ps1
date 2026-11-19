@@ -13,15 +13,24 @@ AfterAll {
 
 InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
     Describe 'Get-LambdaPSSameLinePwsh' -Tag 'Unit' {
-        It 'Should return the running pwsh for a release of its line' {
+        BeforeAll {
             $release = "$($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor).99"
-            $pwsh = Get-LambdaPSSameLinePwsh -PwshVersion $release
+            $probe = [System.IO.Path]::Combine($TestDrive, 'same-line-probe')
+        }
+
+        It 'Should return the running pwsh for a release of its line' {
+            $pwsh = Get-LambdaPSSameLinePwsh -PwshVersion $release -Destination $probe
             $pwsh | Should -Be ([System.IO.Path]::Combine($PSHOME, $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })))
         }
 
         It 'Should return $null for a release of another line' {
-            # Act / Assert
-            Get-LambdaPSSameLinePwsh -PwshVersion '6.0.0' | Should -BeNullOrEmpty
+            Get-LambdaPSSameLinePwsh -PwshVersion '6.0.0' -Destination $probe | Should -BeNullOrEmpty
+        }
+
+        # As on a host without the OpenSSL that Add-Type loads: the cold-start fallback, not ContextCompileFailed.
+        It 'Should return $null when the running pwsh cannot compile here' {
+            Mock 'Invoke-LambdaPSContextPrecompile' -MockWith { throw [System.Management.Automation.ErrorRecord]::new([System.InvalidOperationException]::new('no OpenSSL'), 'ContextCompileFailed', 'InvalidResult', $null) }
+            Get-LambdaPSSameLinePwsh -PwshVersion $release -Destination $probe | Should -BeNullOrEmpty
         }
     }
 }

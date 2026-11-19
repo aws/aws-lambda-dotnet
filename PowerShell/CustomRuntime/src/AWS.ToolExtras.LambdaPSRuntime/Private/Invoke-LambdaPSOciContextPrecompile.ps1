@@ -17,7 +17,7 @@ function Invoke-LambdaPSOciContextPrecompile {
     .PARAMETER OutputPath
         The DLL to write.
     .PARAMETER StagePath
-        The build's staging folder, where a host build of pwsh is unpacked.
+        The build's staging folder, where a host build of pwsh is unpacked and trial compiles run.
     .OUTPUTS
         System.Boolean
     .EXAMPLE
@@ -52,6 +52,6 @@ function Invoke-LambdaPSOciContextPrecompile {
     $pwsh = if ($IsLinux -and $hostArchitecture -eq $Architecture) { $BundledPwshPath }
     elseif ($IsLinux) { Get-LambdaPSHostPwsh -PwshVersion $PwshVersion -Architecture $hostArchitecture -Destination ([System.IO.Path]::Combine($StagePath, 'host-powershell')) }
     if ($pwsh -and (Invoke-LambdaPSContextPrecompile -PwshPath $pwsh -SourcePath $SourcePath -OutputPath $OutputPath)) { return $true }
-    $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $PwshVersion
+    $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $PwshVersion -Destination ([System.IO.Path]::Combine($StagePath, 'same-line-probe'))
     [bool]($sameLine -and (Invoke-LambdaPSContextPrecompile -PwshPath $sameLine -SourcePath $SourcePath -OutputPath $OutputPath))
 }

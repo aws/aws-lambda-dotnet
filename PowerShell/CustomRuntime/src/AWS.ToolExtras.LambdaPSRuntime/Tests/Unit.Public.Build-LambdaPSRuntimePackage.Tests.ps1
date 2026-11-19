@@ -398,6 +398,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
         $a = [System.IO.Path]::Combine($TestDrive, 'repro-a.zip')
         $b = [System.IO.Path]::Combine($TestDrive, 'repro-b.zip')
+        Mock 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
 
         $null = Build-LambdaPSRuntimePackage -Path $proj -OutFile $a -PwshArchivePath $script:fakeTarball -Architecture $other -WarningAction SilentlyContinue
         Get-ChildItem -LiteralPath $proj -Recurse -File | ForEach-Object { $_.LastWriteTime = [datetime]::Now.AddMinutes(5) }
@@ -1157,6 +1158,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-noexec')
         $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
         $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
+        Mock 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
 
         $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'ctx-noexec.zip')) -PwshArchivePath $tarball -Architecture $arch -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -1180,6 +1182,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         & $script:tar -czf $tarball -C $src .
         $proj = [System.IO.Path]::Combine($TestDrive, 'scz-cross')
         $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        Mock 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
 
         $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'scz-cross.zip')) -PwshArchivePath $tarball -Architecture $other -WarningVariable warnings -WarningAction SilentlyContinue
 

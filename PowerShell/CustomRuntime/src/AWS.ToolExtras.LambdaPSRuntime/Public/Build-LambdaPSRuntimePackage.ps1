@@ -525,7 +525,7 @@ function Build-LambdaPSRuntimePackage {
             }
             $precompiled = $contextPwsh -and (Invoke-LambdaPSContextPrecompile @precompile -PwshPath $contextPwsh)
             if (-not $precompiled) {
-                $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $resolvedVersion
+                $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $resolvedVersion -Destination ([System.IO.Path]::Combine($downloadRoot, 'same-line-probe'))
                 $precompiled = $sameLine -and (Invoke-LambdaPSContextPrecompile @precompile -PwshPath $sameLine)
             }
             if (-not $precompiled) {
