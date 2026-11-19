@@ -123,7 +123,7 @@ function Build-LambdaPSRuntimePackage {
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimePackage
 
-        PackagePath (the .zip written), Target, PwshVersion (the pwsh bundled), Architecture and
+        PackagePath (the .zip written), Target, PowerShellVersion (the pwsh release bundled), Architecture and
         ModulesStaged: an AWS.ToolExtras.LambdaPSRuntime.StagedModule (Name, and Version as a [version])
         for every module in the package's modules/ tree, read from what was staged, as on
         Compress-LambdaPSFunctionPackage. Nothing under -WhatIf.
@@ -154,6 +154,7 @@ function Build-LambdaPSRuntimePackage {
         [string]$Target,
 
         [Parameter()]
+        [SupportsWildcards()]
         [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
 
@@ -560,7 +561,7 @@ function Build-LambdaPSRuntimePackage {
             PSTypeName    = 'AWS.ToolExtras.LambdaPSRuntime.RuntimePackage'
             PackagePath   = $destination
             Target        = $effectiveTarget
-            PwshVersion   = $resolvedVersion
+            PowerShellVersion = $resolvedVersion
             Architecture  = $Architecture
             ModulesStaged = $modulesStaged
         }

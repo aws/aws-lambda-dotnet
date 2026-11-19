@@ -40,7 +40,7 @@ Describe 'Build-LambdaPSRuntimePackage' -Tag 'Unit' {
         $result.PSTypeNames | Should -Contain 'AWS.ToolExtras.LambdaPSRuntime.RuntimePackage'
         $result.PackagePath | Should -Be ([System.IO.Path]::GetFullPath($out))
         $result.Target | Should -Be 'Layer'
-        $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+        $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
         $result.Architecture | Should -Be 'x86_64'
         Test-Path -LiteralPath $out | Should -BeTrue
 
@@ -932,7 +932,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin.zip')) -PwshArchivePath $script:fakeTarball
 
-        $result.PwshVersion | Should -Be '7.4.2'
+        $result.PowerShellVersion | Should -Be '7.4.2'
     }
 
     It 'lets an x.y.z -PowerShellVersion override the recorded release' {
@@ -941,7 +941,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin-override.zip')) -PowerShellVersion '7.4.3' -PwshArchivePath $script:fakeTarball
 
-        $result.PwshVersion | Should -Be '7.4.3'
+        $result.PowerShellVersion | Should -Be '7.4.3'
     }
 
     It 'throws InvalidProjectMarker for a marker whose PwshVersion is on another line than its PowerShellVersion' {
@@ -996,7 +996,7 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
 
         $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile $out -PowerShellVersion '7.6.*' -PwshArchivePath $script:fakeTarball
 
-        $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.6']
+        $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.6']
         Should -Invoke 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $PwshVersion -eq $script:pwshConfig.DefaultPatch['7.6'] }
         Should -Invoke 'Get-LambdaPSPwshArchiveHash' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $PwshVersion -eq '7.4.2' } -Times 0 -Exactly
         $names = Get-ZipEntryNames -ZipPath $out
@@ -1258,7 +1258,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         @($warnings | Where-Object { "$_" -like '*could not be fetched*' }).Count | Should -Be ([int](-not $Fetched))
         $once = @{ ModuleName = 'AWS.ToolExtras.LambdaPSRuntime'; Times = 1; Exactly = $true }
         Should -Invoke 'Get-LambdaPSPwshArchive' @once -ParameterFilter { -not $ValidateOnly }
-        Should -Invoke 'Get-LambdaPSHostPwsh' @once -ParameterFilter { $Architecture -eq $hostArch -and $PwshVersion -eq $zip.PwshVersion }
+        Should -Invoke 'Get-LambdaPSHostPwsh' @once -ParameterFilter { $Architecture -eq $hostArch -and $PwshVersion -eq $zip.PowerShellVersion }
     }
 
     It 'Should throw ContextCompileFailed when the host build starts but PowerShellLambdaContext.cs does not compile' -Skip:(-not $IsLinux) {

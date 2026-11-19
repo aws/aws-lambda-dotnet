@@ -177,7 +177,7 @@ architecture, rather than downgrade it. Pass an exact `-PowerShellVersion` such 
 Naming a version lists the runtime's versions and the repository's images, so the deploy needs
 `lambda:ListRuntimeVersions` and `ecr:DescribeImages`. Pass an exact `-PowerShellVersion` or `-RuntimeVersion` to pin
 either choice; for example, to put x86_64 and arm64 runtimes on the same release, pass the arm64 one's
-`PwshVersion` as the x86_64 deploy's `-PowerShellVersion`.
+`PowerShellVersion` as the x86_64 deploy's `-PowerShellVersion`.
 
 After a patch that changes the pwsh release, the first cold start of a bound function can take about
 15 seconds while Lambda loads the new image, and the request still succeeds.

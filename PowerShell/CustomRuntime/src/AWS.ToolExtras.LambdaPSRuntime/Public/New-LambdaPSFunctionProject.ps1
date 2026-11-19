@@ -217,6 +217,7 @@ function New-LambdaPSFunctionProject {
         [string]$Target = 'RuntimeBound',
 
         [Parameter()]
+        [SupportsWildcards()]
         [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
 

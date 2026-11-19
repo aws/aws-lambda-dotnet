@@ -239,8 +239,8 @@ function New-LambdaPSRuntimeDeployment {
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment
 
-        RuntimeArn is the runtime's ARN, to bind functions to. PwshVersion is the pwsh release the
-        image installs. ImageDigest is the digest of the pushed image, which the version is published
+        RuntimeArn is the runtime's ARN, to bind functions to. PowerShellVersion is the pwsh release
+        the image installs (for example 7.6.9), which -PowerShellVersion takes back. ImageDigest is the digest of the pushed image, which the version is published
         by (empty, with a warning, when buildx reports none and the version is published by tag).
         ModulesStaged lists every module baked into the runtime image, as
         AWS.ToolExtras.LambdaPSRuntime.StagedModule objects (Name, and Version as a [version]),
@@ -278,6 +278,7 @@ function New-LambdaPSRuntimeDeployment {
         [string]$RuntimeName,
 
         [Parameter(Mandatory)]
+        [SupportsWildcards()]
         [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
 
@@ -990,8 +991,7 @@ function New-LambdaPSRuntimeDeployment {
             PSTypeName             = 'AWS.ToolExtras.LambdaPSRuntime.RuntimeDeployment'
             RuntimeName            = $RuntimeName
             RuntimeArn             = $runtimeArn
-            PowerShellVersion      = $PowerShellVersion
-            PwshVersion            = $resolvedPwshVersion
+            PowerShellVersion      = $resolvedPwshVersion
             Region                 = $Region
             RepositoryName         = $effectiveRepository
             ImageUri               = $imageUri

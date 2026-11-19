@@ -75,7 +75,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             $result.ImageUri | Should -Be "111122223333.dkr.ecr.us-east-1.amazonaws.com/powershell-runtime:$script:defaultVersion"
             $result.RuntimeArn | Should -Be 'arn:aws:lambda:us-east-1:111122223333:runtime/my-ps'
             $result.RuntimeName | Should -Be 'my-ps'
-            $result.PowerShellVersion | Should -Be '7.4'
+            $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
             $result.Region | Should -Be 'us-east-1'
             $result.RepositoryName | Should -Be 'powershell-runtime'
             $result.RuntimeVersion | Should -Be $script:defaultVersion
@@ -472,7 +472,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.3' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4.3 -RepositoryName rt -Region us-east-1
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $PowerShellVersion -eq '7.4.3' }
-            $result.PwshVersion | Should -Be '7.4.3'
+            $result.PowerShellVersion | Should -Be '7.4.3'
         }
 
         It 'throws PwshVersionNotFound for an x86_64 -PowerShellVersion release the package repository does not list, before the build' {
@@ -484,7 +484,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'reports the default pwsh release for an x.y.* -PowerShellVersion' {
             $default = InModuleScope $script:moduleName { $script:Config.pwsh.DefaultPatch['7.4'] }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -RepositoryName rt -Region us-east-1
-            $result.PwshVersion | Should -Be $default
+            $result.PowerShellVersion | Should -Be $default
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $PowerShellVersion -eq $default }
         }
 
@@ -500,7 +500,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'installs the newest release in the package repository on x86_64, and names the version after it' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.21', '7.4.99' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -RepositoryName rt -Region us-east-1
-            $result.PwshVersion | Should -Be '7.4.99'
+            $result.PowerShellVersion | Should -Be '7.4.99'
             $result.RuntimeVersion | Should -Be '7.4.99-1'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $PowerShellVersion -eq '7.4.99' }
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter {
@@ -511,14 +511,14 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         It 'installs a pinned release on arm64, and warns that a newer one exists' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.99' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -Architecture arm64 -RepositoryName rt -Region us-east-1 -WarningVariable warnings -WarningAction SilentlyContinue
-            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
             "$warnings" | Should -BeLike '*pwsh 7.4.99 is the newest*'
         }
 
         It 'falls back to the pinned release, with a warning, when the package repository cannot be read' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { throw 'offline' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -RepositoryName rt -Region us-east-1 -WarningVariable warnings -WarningAction SilentlyContinue
-            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
             "$warnings" | Should -BeLike '*pinned release*offline*'
         }
 
@@ -548,7 +548,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
                 [PSCustomObject]@{ Name = 'default'; RuntimeVersion = "$Release-1"; Compatibility = [PSCustomObject]@{ Architectures = $Architectures } }
             }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion '7.4.*' -RepositoryName rt -Region us-east-1 -WarningAction SilentlyContinue
-            $result.PwshVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
+            $result.PowerShellVersion | Should -Be $script:pwshConfig.DefaultPatch['7.4']
             Should -Invoke 'Set-LambdaPSRuntimeAlias' -ModuleName $script:moduleName -Times 1 -Exactly
         }
 
@@ -693,7 +693,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
         ) {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.13', '7.4.20' }
             $result = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion $PwshVersion -Architecture $Architecture -Region us-east-1 -RepositoryName rt -WarningAction SilentlyContinue
-            $result.PwshVersion | Should -Be $PwshVersion
+            $result.PowerShellVersion | Should -Be $PwshVersion
             Should -Invoke 'Publish-LambdaPSRuntimeVersion' -ModuleName $script:moduleName -Times 1 -Exactly
         }
     }
@@ -1744,7 +1744,7 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
 
             $result = New-LambdaPSRuntimeDeployment @script:splat
 
-            $result.PwshVersion | Should -Be '7.4.2'
+            $result.PowerShellVersion | Should -Be '7.4.2'
             $result.RuntimeVersion | Should -Be '7.4.2-1'
             Should -Invoke 'New-LambdaPSRuntimeProject' -ModuleName $script:moduleName -Times 0 -Exactly
             Should -Invoke 'Build-LambdaPSRuntimeImage' -ModuleName $script:moduleName -Times 2 -Exactly -ParameterFilter { $Path -eq $script:projectPath }

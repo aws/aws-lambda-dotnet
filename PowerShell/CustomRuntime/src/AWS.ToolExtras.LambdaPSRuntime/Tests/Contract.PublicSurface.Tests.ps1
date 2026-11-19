@@ -41,6 +41,12 @@ Describe 'Parameter binding' -Tag 'Contract' {
         $positional.Count | Should -BeLessOrEqual 1
     }
 
+    It '<Name> shows -PowerShellVersion as accepting wildcards in its help' -ForEach @(
+        @{ Name = 'New-LambdaPSRuntimeDeployment' }, @{ Name = 'New-LambdaPSRuntimeProject' },
+        @{ Name = 'New-LambdaPSFunctionProject' }, @{ Name = 'Build-LambdaPSRuntimePackage' }) {
+        (Get-Help $Name -Parameter PowerShellVersion).globbing | Should -Be 'true'
+    }
+
     # A blank string is refused when it is bound, with the parameter named, rather than reaching a
     # helper or an AWS call. The exceptions accept a blank value on purpose, each for the reason given.
     It '<Name> refuses blank values for its string parameters' -ForEach $script:PublicNames {
