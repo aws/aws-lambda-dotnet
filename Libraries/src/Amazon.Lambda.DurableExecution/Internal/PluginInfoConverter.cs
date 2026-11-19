@@ -117,6 +117,7 @@ internal static class PluginInfoConverter
             IsFirstInvocation = !hasHistory,
             ExecutionStartTimestamp = executionStart,
             XRayTraceId = ResolveTraceId(lambdaContext, isMultiConcurrency),
+            TraceParent = lambdaContext.W3C.TryGetValue("traceparent", out var traceParent) ? traceParent : null,
             Operations = ToOperationMap(operations),
             UpdatedOperations = updatedIds == null
                 ? EmptyOperations.Instance

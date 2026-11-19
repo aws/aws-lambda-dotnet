@@ -120,6 +120,24 @@ public class DurableFunctionPluginTests
     }
 
     [Fact]
+    public async Task InvocationInfo_CarriesTheW3CTraceParent_WhenTheInvokeHasOne()
+    {
+        const string traceParent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+        var withHeader = new Recorder();
+        var context = Context();
+        context.W3CFields = new Dictionary<string, string> { ["traceparent"] = traceParent };
+        await DurableFunction.WrapAsync<string, string>(
+            (input, ctx) => Task.FromResult(input), Input(), context, new MockLambdaClient(), Options(withHeader));
+
+        var without = new Recorder();
+        await DurableFunction.WrapAsync<string, string>(
+            (input, ctx) => Task.FromResult(input), Input(), Context(), new MockLambdaClient(), Options(without));
+
+        Assert.Equal(traceParent, withHeader.Started!.TraceParent);
+        Assert.Null(without.Started!.TraceParent);
+    }
+
+    [Fact]
     public async Task WorkflowFailure_EndsAsFailed_WithTheError()
     {
         var recorder = new Recorder();

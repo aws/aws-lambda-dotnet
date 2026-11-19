@@ -24,6 +24,12 @@ public sealed class InvocationInfo
     /// </summary>
     public string? XRayTraceId { get; init; }
 
+    /// <summary>
+    /// The W3C <c>traceparent</c> of this invocation (<c>ILambdaContext.W3C["traceparent"]</c>, carried on
+    /// <c>clientContext.w3c</c>), or null when the invoke carried none.
+    /// </summary>
+    public string? TraceParent { get; init; }
+
     /// <summary>Every operation known at the start of the invocation, by operation id.</summary>
     public IReadOnlyDictionary<string, OperationInfo> Operations { get; init; } = EmptyOperations.Instance;
 
