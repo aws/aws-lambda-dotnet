@@ -1,3 +1,8 @@
+## Release 2026-11-19
+
+### Amazon.Lambda.Templates (8.1.3)
+* Fix dead Powertools for AWS Lambda (.NET) documentation links in the Powertools blueprints
+
 ## Release 2026-11-17
 
 ### Amazon.Lambda.DurableExecution (2.2.1)
