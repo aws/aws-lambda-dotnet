@@ -27,7 +27,7 @@ public static class ContextExtractors
     /// parent id, a <c>ff</c> version, or a malformed field returns null. Version <c>00</c> has exactly four
     /// fields; a later version may add more after them. The sampled flag is the low bit of the flags.
     /// </summary>
-    public static ExtractedContext? ParseTraceParent(string? traceParent)
+    internal static ExtractedContext? ParseTraceParent(string? traceParent)
     {
         if (string.IsNullOrWhiteSpace(traceParent))
             return null;
@@ -56,7 +56,7 @@ public static class ContextExtractors
     /// Parses an <c>X-Amzn-Trace-Id</c> header. <c>Root</c>, <c>Parent</c> and <c>Sampled</c> are read independently;
     /// an all-zero or malformed <c>Root</c> or <c>Parent</c> is ignored. Returns null without a valid <c>Root</c>.
     /// </summary>
-    public static ExtractedContext? ParseXRayHeader(string? header)
+    internal static ExtractedContext? ParseXRayHeader(string? header)
     {
         if (string.IsNullOrWhiteSpace(header))
             return null;
