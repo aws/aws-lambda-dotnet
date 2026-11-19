@@ -279,7 +279,7 @@ function New-LambdaPSRuntimeDeployment {
 
         [Parameter(Mandatory)]
         [SupportsWildcards()]
-        [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
 
         [Parameter()]
@@ -526,8 +526,15 @@ function New-LambdaPSRuntimeDeployment {
         # An exact or kept release is not looked up above; say when the line has a newer one.
         $newerRelease = ''
         if ($pwshRelease.Source -in 'Parameter', 'Project') {
+            # An arm64 or no-Docker image can install only a release whose tarball SHA256 the module pins.
+            $newest = if ($releaseParams.InstallSource -eq 'PinnedArchive') {
+                @($script:Config.pwsh.ArchiveSha256.Keys | Where-Object {
+                        $_.StartsWith("$PowerShellVersion.", [System.StringComparison]::Ordinal) -and
+                        -not [string]::IsNullOrWhiteSpace((Get-LambdaPSPwshArchiveHash -PwshVersion $_ -Architecture $Architecture)) } |
+                    Sort-Object { [version]$_ }) | Select-Object -Last 1
+            }
             # An x86_64 exact release was already looked up, to check that the repository has it.
-            $newest = if ($pwshRelease.PSObject.Properties.Name -contains 'Newest') { $pwshRelease.Newest }
+            elseif ($pwshRelease.PSObject.Properties.Name -contains 'Newest') { $pwshRelease.Newest }
             else {
                 try { Get-LambdaPSPwshRepositoryRelease -PowerShellVersion $PowerShellVersion | Select-Object -Last 1 }
                 catch { Write-Verbose "Could not check for a pwsh release newer than ${resolvedPwshVersion}: $($_.Exception.Message)" }

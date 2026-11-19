@@ -20,7 +20,7 @@ function Split-LambdaPSPowerShellVersion {
     [OutputType([PSCustomObject])]
     param(
         [Parameter(Mandatory)]
-        [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z')]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z')]
         [string]$PowerShellVersion
     )
 

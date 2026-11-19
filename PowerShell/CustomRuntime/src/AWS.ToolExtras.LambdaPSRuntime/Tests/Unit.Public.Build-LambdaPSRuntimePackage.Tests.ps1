@@ -945,16 +945,17 @@ Describe 'Build-LambdaPSRuntimePackage pwsh version' -Tag 'Unit' {
         $result.PowerShellVersion | Should -Be '7.4.3'
     }
 
-    It 'throws InvalidProjectMarker for a marker whose PwshVersion is on another line than its PowerShellVersion' {
-        $proj = [System.IO.Path]::Combine($TestDrive, 'marker-two-lines')
-        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer
-        $markerPath = [System.IO.Path]::Combine($proj, 'lambdaps-runtime.json')
-        $marker = Get-Content -LiteralPath $markerPath -Raw | ConvertFrom-Json
-        $marker.PwshVersion = '7.40.1'
-        $marker | ConvertTo-Json | Set-Content -LiteralPath $markerPath
+    It 'bundles the module pinned release, not the recorded one, for a wildcard -PowerShellVersion on the recorded line' {
+        # Arrange
+        $proj = [System.IO.Path]::Combine($TestDrive, 'pin-wildcard')
+        $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.2' -Target Layer -WarningAction SilentlyContinue
+        $pinned = (Import-PowerShellDataFile -LiteralPath ([System.IO.Path]::Combine($PSScriptRoot, '..', 'Config', 'pwsh.psd1'))).DefaultPatch['7.4']
 
-        { Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'two-lines.zip')) -PwshArchivePath $script:fakeTarball } |
-            Should -Throw -ErrorId 'InvalidProjectMarker,Build-LambdaPSRuntimePackage' -ExpectedMessage "*PwshVersion '7.40.1', which is not a PowerShell 7.4 release*"
+        # Act
+        $result = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'pin-wildcard.zip')) -PowerShellVersion '7.4.*' -PwshArchivePath $script:fakeTarball
+
+        # Assert
+        $result.PowerShellVersion | Should -Be $pinned
     }
 
     # A pattern ending in '$' also matches before a final newline, so the versions are anchored with \z.

@@ -454,11 +454,11 @@ Describe 'New-LambdaPSRuntimeDeployment' -Tag 'Unit' {
             Should -Invoke 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -Times 1 -Exactly
         }
 
-        It 'names a newer release of the line on the preflight line for an exact arm64 release' {
+        It 'names the newest pinned release of the line, not the newest in the repository, on the preflight line for an exact arm64 release' {
             Mock 'Get-LambdaPSPwshRepositoryRelease' -ModuleName $script:moduleName -MockWith { '7.4.20', '7.4.30' }
             $null = New-LambdaPSRuntimeDeployment -RuntimeName my-ps -PowerShellVersion 7.4.20 -Architecture arm64 -RepositoryName rt -Region us-east-1 -InformationVariable info
             "$($info | Where-Object { "$_" -like 'Preflight: the image installs*' })" |
-                Should -Be 'Preflight: the image installs pwsh 7.4.20 (-PowerShellVersion). The newest PowerShell 7.4 release is 7.4.30.'
+                Should -Be 'Preflight: the image installs pwsh 7.4.20 (-PowerShellVersion). The newest PowerShell 7.4 release is 7.4.22.'
         }
 
         It 'throws PowerShellVersionNotSpecific for a bare major.minor before resolving the region' {

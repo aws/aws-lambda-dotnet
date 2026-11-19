@@ -43,10 +43,13 @@ Describe 'Get-LambdaPSProjectMarker' -Tag 'Unit' {
     It 'throws InvalidProjectMarker naming the file and field for <Field> <Value>' -ForEach @(
         @{ Field = 'PwshVersion'; Value = '7.4.x/../../evil' }, @{ Field = 'PwshVersion'; Value = '7.4' }
         @{ Field = 'PowerShellVersion'; Value = '7' }, @{ Field = 'PowerShellVersion'; Value = '7.4/..' }
+        @{ Field = 'PwshVersion'; Value = '7.40.1'; Line = '7.4' }
     ) {
         $dir = Join-Path $TestDrive "marker-bad-$Field-$($Value -replace '\W', '-')"
         $null = New-Item -ItemType Directory -Path $dir
-        Set-Content -LiteralPath (Join-Path $dir 'lambdaps-runtime.json') -Value (@{ Target = 'Layer'; $Field = $Value } | ConvertTo-Json)
+        $content = @{ Target = 'Layer'; $Field = $Value }
+        if ($Line) { $content.PowerShellVersion = $Line }
+        Set-Content -LiteralPath (Join-Path $dir 'lambdaps-runtime.json') -Value ($content | ConvertTo-Json)
         InModuleScope $script:moduleName -Parameters @{ Dir = $dir; Field = $Field; Value = $Value } {
             param($Dir, $Field, $Value)
             { Get-LambdaPSProjectMarker -Path $Dir } | Should -Throw -ErrorId 'InvalidProjectMarker' -ExpectedMessage "*lambdaps-runtime.json' has $Field '$([System.Management.Automation.WildcardPattern]::Escape($Value))'*"

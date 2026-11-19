@@ -82,10 +82,9 @@ function Build-LambdaPSRuntimePackage {
         Build-LambdaPSRuntimeImage.
     .PARAMETER PowerShellVersion
         The PowerShell release to bundle: 7.6.9, 7.6.* or 7.* (the highest 7.x line), as on
-        New-LambdaPSRuntimeProject. When omitted, or a wildcard on the line the project was
-        scaffolded for, the release recorded in lambdaps-runtime.json is used. A wildcard on
-        another line bundles the module's pinned release of it. A release with no pinned SHA256
-        requires -PwshArchivePath.
+        New-LambdaPSRuntimeProject. When omitted, the release recorded in lambdaps-runtime.json is
+        used. A wildcard bundles the module's pinned release of the line. A release with no pinned
+        SHA256 requires -PwshArchivePath.
     .PARAMETER Architecture
         The target architecture: x86_64 (default) or arm64.
     .PARAMETER PwshArchivePath
@@ -154,7 +153,7 @@ function Build-LambdaPSRuntimePackage {
 
         [Parameter()]
         [SupportsWildcards()]
-        [ValidatePattern('\A[0-9]+\.([0-9]+(\.([0-9]+|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
 
         [Parameter()]
@@ -195,15 +194,6 @@ function Build-LambdaPSRuntimePackage {
 
         # Resolve target and PowerShell version from the marker unless overridden.
         $marker = Get-LambdaPSProjectMarker -Path $root
-        if ($marker -and $marker.PowerShellVersion -and $marker.PwshVersion -and
-            -not $marker.PwshVersion.StartsWith("$($marker.PowerShellVersion).", [System.StringComparison]::Ordinal)) {
-            $PSCmdlet.ThrowTerminatingError(
-                [System.Management.Automation.ErrorRecord]::new(
-                    [System.IO.InvalidDataException]::new(
-                        ("The project marker '$($marker.Path)' has PwshVersion '$($marker.PwshVersion)', which is not a " +
-                         "PowerShell $($marker.PowerShellVersion) release. Fix it, or scaffold the project again.")),
-                    'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $marker.Path))
-        }
         # A function project (the scaffolder's manifest.json, no marker) is handler code for a runtime deployed
         # separately: it is packaged with Compress-LambdaPSFunctionPackage, not built here.
         if ($null -eq $marker) {
@@ -277,11 +267,10 @@ function Build-LambdaPSRuntimePackage {
                     'PowerShellVersionRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path))
         }
 
-        # The pwsh version the project was scaffolded with, unless -PowerShellVersion names a release
-        # or a different line.
+        # The pwsh version the project was scaffolded with, unless -PowerShellVersion is given: a wildcard
+        # then means the module's pinned release, as on New-LambdaPSRuntimeProject.
         $effectivePwshVersion = $PwshVersion
-        if ([string]::IsNullOrWhiteSpace($effectivePwshVersion) -and $marker -and $marker.PwshVersion -and
-            $marker.PowerShellVersion -eq $effectiveVersion) {
+        if (-not $PSBoundParameters.ContainsKey('PowerShellVersion') -and $marker -and $marker.PwshVersion) {
             $effectivePwshVersion = $marker.PwshVersion
         }
         $resolvedVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $effectiveVersion -PwshVersion $effectivePwshVersion

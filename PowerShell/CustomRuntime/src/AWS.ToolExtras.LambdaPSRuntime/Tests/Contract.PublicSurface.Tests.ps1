@@ -47,6 +47,22 @@ Describe 'Parameter binding' -Tag 'Contract' {
         (Get-Help $Name -Parameter PowerShellVersion).globbing | Should -Be 'true'
     }
 
+    It '<Name> refuses a -PowerShellVersion with a leading zero' -ForEach @(
+        @{ Name = 'New-LambdaPSRuntimeDeployment' }, @{ Name = 'New-LambdaPSRuntimeProject' },
+        @{ Name = 'New-LambdaPSFunctionProject' }, @{ Name = 'Build-LambdaPSRuntimePackage' }) {
+        # Arrange
+        $pattern = @((Get-Command $Name).Parameters['PowerShellVersion'].Attributes |
+                Where-Object { $_ -is [System.Management.Automation.ValidatePatternAttribute] })[0].RegexPattern
+
+        # Act
+        $accepted = @('7.6.9', '7.6.0', '7.6.10', '7.6.*', '7.*') | Where-Object { $_ -match $pattern }
+        $refused = @('07.6.9', '7.06.9', '7.6.009', '7.06.*', '07.*') | Where-Object { $_ -notmatch $pattern }
+
+        # Assert
+        $accepted | Should -HaveCount 5
+        $refused | Should -HaveCount 5
+    }
+
     # A blank string is refused when it is bound, with the parameter named, rather than reaching a
     # helper or an AWS call. The exceptions accept a blank value on purpose, each for the reason given.
     It '<Name> refuses blank values for its string parameters' -ForEach $script:PublicNames {
