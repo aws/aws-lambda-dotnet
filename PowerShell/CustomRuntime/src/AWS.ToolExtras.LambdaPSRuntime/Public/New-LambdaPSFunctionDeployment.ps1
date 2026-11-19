@@ -16,12 +16,12 @@ function New-LambdaPSFunctionDeployment {
         source when that is the current location. A .zip at -PackagePath inside a folder source is left
         out of the next package, with a warning.
 
-        You supply -RuntimeName and -RuntimeAlias; the runtime ARN is looked up for you. The alias
-        selects the runtime version at cold start, so the function follows runtime updates without
-        redeploying.
+        You supply -RuntimeName and -RuntimeAlias; the runtime ARN is looked up for you, unless
+        -RuntimeName is the ARN. The alias selects the runtime version at cold start, so the function
+        follows runtime updates without redeploying.
 
-        The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-LMCRuntime, Get-LMCRuntimeAlias
-        and Get-LMFunctionConfiguration. State-changing: Publish-LMFunction, or Update-LMFunctionCode and
+        The AWS calls are made with AWS.Tools cmdlets. Read-only: Get-LMCRuntime (not for a runtime ARN),
+        Get-LMCRuntimeAlias and Get-LMFunctionConfiguration. State-changing: Publish-LMFunction, or Update-LMFunctionCode and
         Update-LMFunctionConfiguration when the function already exists.
 
         Before packaging, the runtime and its alias are read to check the function's architecture
@@ -29,7 +29,9 @@ function New-LambdaPSFunctionDeployment {
         (RuntimeAliasNotFound), or an alias scheduled for deletion (RuntimeAliasPendingDeletion), is also
         caught here, rather than producing a function that fails on every invoke. A refused runtime read is RuntimeServiceAccessDenied, which also covers a region
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
-        RuntimeAliasCheckFailed, which wraps the service's error.
+        RuntimeAliasCheckFailed, which wraps the service's error. A runtime ARN is not read, so a missing
+        runtime is RuntimeAliasNotFound, and a runtime in another account whose owner has not granted
+        lambda:GetRuntimeAlias is RuntimeAliasCheckFailed.
 
         When the function already exists, its code is updated, and then each setting given that
         differs from the function's; when none does, the configuration is not updated. A redeploy
@@ -92,9 +94,13 @@ function New-LambdaPSFunctionDeployment {
         InvalidHandlerPath, because Lambda joins the handler to its task root as written.
         A handler with whitespace in it fails with InvalidHandler.
     .PARAMETER RuntimeName
-        The customer-managed runtime the function binds to. Its ARN is resolved automatically. A runtime
-        name is 2 to 128 lowercase ASCII letters, digits, '_', '.' and '-', starting and ending with a
-        letter or digit, as Lambda requires; any other name is refused before anything is read or packaged.
+        The customer-managed runtime the function binds to: its name, whose ARN is resolved in the
+        caller's account, or its ARN (arn:<partition>:lambda:<region>:<account>:runtime/<name>), which
+        can name a runtime in another account. A runtime name is 2 to 128 lowercase ASCII letters,
+        digits, '_', '.' and '-', starting and ending with a letter or digit, as Lambda requires; any
+        other value is refused before anything is read or packaged. A runtime ARN in a region other than
+        the function's fails with RuntimeRegionMismatch. The runtime's owner must grant the function's
+        account access (see the module README).
     .PARAMETER RuntimeAlias
         The runtime alias the function binds to (the alias selects the version at cold start).
         When omitted, an existing function on the same runtime keeps its alias (with a warning if
@@ -112,7 +118,7 @@ function New-LambdaPSFunctionDeployment {
         minute, then the deploy fails with RoleNotAssumable.
     .PARAMETER Region
         The AWS region to deploy into. When omitted and -FunctionName is a function ARN, the region in
-        the ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's
+        the ARN, or else the region in a -RuntimeName ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's
         default (Set-DefaultAWSRegion, including one a calling script set for itself), the -ProfileName profile's region, the default profile's
         region, AWS_REGION, the AWS_PROFILE profile's region, or the instance or container's.
         AWS_DEFAULT_REGION is not read. With none of those it fails with RegionNotResolved.
@@ -245,7 +251,7 @@ function New-LambdaPSFunctionDeployment {
         # Options = 'None': ValidatePattern ignores case by default, and a runtime name is lowercase only.
         [Parameter(Mandatory)]
         [ValidateNotNullOrWhiteSpace()]
-        [ValidatePattern('^[a-z0-9](?:[a-z0-9_.-]{0,126})?[a-z0-9]\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime name (lowercase letters, digits, '_', '.' and '-', 2 to 128 characters, starting and ending with a letter or digit).")]
+        [ValidatePattern('^(?:arn:aws[a-z-]*:lambda:[a-z0-9-]+:[0-9]{12}:runtime/)?[a-z0-9](?:[a-z0-9_.-]{0,126})?[a-z0-9]\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime name (lowercase letters, digits, '_', '.' and '-', 2 to 128 characters, starting and ending with a letter or digit) or runtime ARN (arn:<partition>:lambda:<region>:<account>:runtime/<name>).")]
         [string]$RuntimeName,
 
         [Parameter()]
@@ -335,8 +341,11 @@ function New-LambdaPSFunctionDeployment {
                          'with Publish-LMVersion and Update-LMAlias.')),
                     'FunctionNameQualified', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
         }
+        $runtimeRegion = if ($RuntimeName.StartsWith('arn:')) { $RuntimeName.Split(':')[3] }
         if (-not $PSBoundParameters.ContainsKey('Region')) {
-            $Region = if ($functionParts.Region) { $functionParts.Region } else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState }
+            $Region = if ($functionParts.Region) { $functionParts.Region }
+            elseif ($runtimeRegion) { $runtimeRegion }
+            else { Resolve-LambdaPSRegion -CredentialParameter $credentialParameter -SessionState $PSCmdlet.SessionState }
         }
         elseif ($functionParts.Region -and $Region -ne $functionParts.Region) {
             # A different -Region would only reach Lambda as a not-found for the ARN.
@@ -346,6 +355,15 @@ function New-LambdaPSFunctionDeployment {
                         ("-FunctionName '$FunctionName' is a function in region '$($functionParts.Region)', but -Region is " +
                          "'$Region'. Omit -Region, or pass -Region $($functionParts.Region).")),
                     'FunctionRegionMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
+        }
+        if ($runtimeRegion -and $Region -ne $runtimeRegion) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        ("-RuntimeName '$RuntimeName' is a runtime in region '$runtimeRegion', but the function is in " +
+                         "region '$Region'. A function binds only to a runtime in its own region, so " +
+                         "$(if (-not $functionParts.Region) { "deploy it in '$runtimeRegion' or " })use a runtime in '$Region'.")),
+                    'RuntimeRegionMismatch', [System.Management.Automation.ErrorCategory]::InvalidArgument, $RuntimeName))
         }
         if (-not (Test-Path -LiteralPath $ProjectPath)) {
             $PSCmdlet.ThrowTerminatingError(
@@ -586,8 +604,9 @@ function New-LambdaPSFunctionDeployment {
         $functionArn = $null
         $updated = $false
 
-        # Runtime ARN resolution (read-only; safe to resolve for the -WhatIf preview).
-        $runtimeArn = Get-LambdaPSRuntimeArn -RuntimeName $RuntimeName -Region $Region -CredentialParameter $credentialParameter
+        # Runtime ARN resolution (read-only; safe to resolve for the -WhatIf preview). An ARN is used as
+        # given, so a runtime in another account needs no lambda:GetRuntime grant from its owner.
+        $runtimeArn = if ($runtimeRegion) { $RuntimeName } else { Get-LambdaPSRuntimeArn -RuntimeName $RuntimeName -Region $Region -CredentialParameter $credentialParameter }
 
         # A redeploy keeps the function's runtime alias unless -RuntimeAlias (or manifest.json) names one
         # and it stays on the same runtime, so check the architecture against the alias it will be on.
@@ -748,9 +767,9 @@ function New-LambdaPSFunctionDeployment {
             foreach ($name in 'Handler', 'RuntimeAlias', 'RuntimeArn', 'Architecture', 'Timeout', 'MemorySize', 'Role') {
                 $reported[$name] = $published.$name
             }
-            # Name the runtime the returned ARN identifies.
-            if ($reported.RuntimeArn -match ':runtime/(?<name>[^/]+)') { $reported.RuntimeName = $Matches.name }
         }
+        # -RuntimeName may be an ARN; report the name.
+        if ($reported.RuntimeArn -match ':runtime/(?<name>[^/]+)') { $reported.RuntimeName = $Matches.name }
 
         [PSCustomObject]@{
             PSTypeName       = 'AWS.ToolExtras.LambdaPSRuntime.FunctionDeployment'
