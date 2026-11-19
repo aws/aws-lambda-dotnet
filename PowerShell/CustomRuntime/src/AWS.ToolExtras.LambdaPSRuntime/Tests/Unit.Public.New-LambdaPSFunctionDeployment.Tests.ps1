@@ -968,6 +968,7 @@ Describe 'New-LambdaPSFunctionDeployment -RuntimeName and -RuntimeAlias' -Tag 'U
     It 'refuses the runtime name <Name>' -ForEach @(
         @{ Name = 'My-PS' }, @{ Name = 'a' }, @{ Name = 'rt-' }, @{ Name = '-rt' }, @{ Name = 'my ps' }
         @{ Name = "rt`n" }, @{ Name = 'r' + ('x' * 127) + 'z' }
+        @{ Name = 'arn:aws:lambda:eu-west-1:111122223333:function:rt' }, @{ Name = 'arn:aws:lambda:eu-west-1:1111:runtime/rt' }
     ) {
         Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { throw 'must not read the runtime' }
         { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $script:nameSource -RuntimeName $Name -Role arn:aws:iam::111122223333:role/r -Region us-east-1 } |
@@ -1002,10 +1003,50 @@ Describe 'New-LambdaPSFunctionDeployment -RuntimeName and -RuntimeAlias' -Tag 'U
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionDeployment' -ExpectedMessage '*is not a valid runtime alias name*'
     }
 
-    # The same wording as New-LambdaPSRuntimeDeployment, which creates the runtime.
-    It 'describes a valid runtime name as the runtime deploy does' {
+    It 'describes a valid runtime name as the runtime deploy does, and the runtime ARN' {
         { New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $script:nameSource -RuntimeName My-PS -Role arn:aws:iam::111122223333:role/r -Region us-east-1 } |
-            Should -Throw -ExpectedMessage "*'My-PS' is not a valid runtime name (lowercase letters, digits, '_', '.' and '-', 2 to 128 characters, starting and ending with a letter or digit).*"
+            Should -Throw -ExpectedMessage "*'My-PS' is not a valid runtime name (lowercase letters, digits, '_', '.' and '-', 2 to 128 characters, starting and ending with a letter or digit) or runtime ARN*"
+    }
+
+    Context 'runtime ARN' {
+        BeforeEach {
+            Mock 'Get-LambdaPSRuntimeArn' -ModuleName $script:moduleName -MockWith { throw 'must not read the runtime' }
+            Mock 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -MockWith { , [string[]]@('x86_64') }
+            Mock 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -MockWith { $null }
+            Mock 'Compress-LambdaPSFunctionPackage' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ PackagePath = $OutFile; ModulesStaged = @() } }
+            Mock 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ FunctionName = $FunctionName; Arn = 'arn:aws:lambda:eu-west-1:111122223333:function:fn' } }
+            $script:runtimeArn = 'arn:aws:lambda:eu-west-1:444455556666:runtime/shared-ps'
+        }
+
+        It 'Should bind to a runtime ARN as given, in its region, when -Region is omitted' {
+            # Arrange
+            Mock 'Resolve-LambdaPSRegion' -ModuleName $script:moduleName -MockWith { 'us-east-1' }
+
+            # Act
+            $result = New-LambdaPSFunctionDeployment -FunctionName fn -ProjectPath $script:nameSource -RuntimeName $script:runtimeArn `
+                -Role arn:aws:iam::111122223333:role/r -PackagePath (Join-Path $TestDrive 'arn.zip')
+
+            # Assert
+            $result.RuntimeArn | Should -Be $script:runtimeArn
+            $result.RuntimeName | Should -Be 'shared-ps'
+            $result.Region | Should -Be 'eu-west-1'
+            Should -Invoke 'Get-LambdaPSRuntimeAliasArchitecture' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $RuntimeName -eq $script:runtimeArn -and $Region -eq 'eu-west-1' }
+            Should -Invoke 'Publish-LambdaPSFunction' -ModuleName $script:moduleName -Times 1 -Exactly -ParameterFilter { $RuntimeArn -eq $script:runtimeArn -and $Region -eq 'eu-west-1' }
+        }
+
+        It 'Should throw RuntimeRegionMismatch, before anything is read, for a function in <Region>' -ForEach @(
+            @{ Function = @{ FunctionName = 'fn'; Region = 'us-east-1' }; Region = 'us-east-1'; Advice = "so deploy it in 'eu-west-1' or use a runtime in 'us-east-1'." }
+            @{ Function = @{ FunctionName = 'arn:aws:lambda:us-west-2:111122223333:function:fn' }; Region = 'us-west-2'; Advice = "so use a runtime in 'us-west-2'." }
+        ) {
+            # Act
+            $err = { New-LambdaPSFunctionDeployment @Function -ProjectPath $script:nameSource -RuntimeName $script:runtimeArn `
+                    -Role arn:aws:iam::111122223333:role/r } |
+                Should -Throw -ErrorId 'RuntimeRegionMismatch,New-LambdaPSFunctionDeployment' -PassThru
+
+            # Assert
+            $err.Exception.Message | Should -BeLike "*runtime in region 'eu-west-1', but the function is in region '$Region'*$Advice"
+            Should -Invoke 'Get-LambdaPSFunctionBinding' -ModuleName $script:moduleName -Times 0 -Exactly
+        }
     }
 
     # The alias is read from manifest.json after binding, so it is checked against the same pattern there.
