@@ -8,7 +8,7 @@ function private:Write-LambdaLog {
 
         .DESCRIPTION
             Writes the message as one line. With AWS_LAMBDA_LOG_FORMAT=JSON, writes it as a JSON line
-            with timestamp, level, requestId, traceId and message, as the .NET runtime client does, and
+            with timestamp, level, requestId, traceId, tenantId and message, as the .NET runtime client does, and
             drops it when its level is below AWS_LAMBDA_LOG_LEVEL (default INFO).
 
         .PARAMETER ErrorRecord
@@ -71,6 +71,7 @@ function private:Write-LambdaLog {
     }
     if ($env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID) { $private:record.requestId = $env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID }
     if ($env:_X_AMZN_TRACE_ID) { $private:record.traceId = $env:_X_AMZN_TRACE_ID }
+    if ($script:__LambdaPSRuntimeTenantId) { $private:record.tenantId = $script:__LambdaPSRuntimeTenantId }
     $private:record.message = $Message
     if ($ErrorRecord) {
         $private:record.errorType = $ErrorRecord.CategoryInfo.Reason

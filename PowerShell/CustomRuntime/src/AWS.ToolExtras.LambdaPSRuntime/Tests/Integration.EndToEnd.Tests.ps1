@@ -21,15 +21,15 @@
 #   - SelfContainedZip: a provided.al2023 function (<prefix>zip);
 #   - ContainerFunction: an ECR repository with one image, and an image function (<prefix>container);
 #   - RuntimeImage (CMR): an ECR repository with one image, a customer-managed runtime with a version named
-#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), and a function bound to it (<prefix>cmr-fn), which is
-#     deployed twice;
+#     after its pwsh release (for example 7.6.9-1) and alias default (<prefix>cmr), a function bound to it
+#     (<prefix>cmr-fn), which is deployed twice, and a PER_TENANT function bound to it (<prefix>cmr-tenant);
 #   - the CloudWatch log group each function writes (/aws/lambda/<function name>).
 # AfterAll removes all of it, removes the log groups again after 30 seconds in case a late log delivery
 # created one again, and fails listing anything it could not remove. Lambda deletes a runtime's alias and
 # versions days later, so the runtime is left, with a warning naming it. Nothing whose name does not start
 # with this run's prefix is changed.
 #
-# What it costs: five invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
+# What it costs: six invocations at 512 MB, and a few hundred MB of ECR and S3 storage held only until
 # AfterAll, with the requests to upload and remove it. At on-demand prices that is under
 # US$0.01 a run; data transfer into AWS (the image pushes and the .zip uploads) is not charged. The
 # image and package builds run on the build host.
@@ -254,7 +254,7 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
         $response.Echo.name | Should -BeExactly 'live'
     }
 
-    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke, and a redeploy keeps its handler and alias' {
+    It 'RuntimeImage (CMR): a function bound to a customer-managed runtime answers an invoke, a redeploy keeps its handler and alias, and a PER_TENANT function sees the invoke''s tenant' {
         $region = $script:Region
         # Region names are lowercase. The runtime deploy is given its region in upper case, and every
         # ARN that follows must carry it in lower case.
@@ -353,5 +353,19 @@ Describe 'Integration end to end' -Tag 'Integration' -Skip:(-not $script:Integra
 
         $response.message | Should -BeExactly 'Hello again, live'
         $response.function | Should -BeExactly $functionName
+
+        $tenantFunction = $script:Prefix + 'cmr-tenant'
+        $tenantScript = [System.IO.Path]::Combine($script:Work, 'tenant.ps1')
+        [System.IO.File]::WriteAllText($tenantScript, "param(`$LambdaInput, `$LambdaContext)`n@{ tenantId = `$LambdaContext.TenantId }`n")
+        Add-IntegrationResource -Kind 'function' -Name $tenantFunction -Remove {
+            Remove-LMFunction -FunctionName $tenantFunction -Region $region -Force -ErrorAction Stop
+        }.GetNewClosure()
+        $null = New-LambdaPSFunctionDeployment -FunctionName $tenantFunction -ProjectPath $tenantScript -RuntimeName $runtimeName `
+            -Role $script:Role -Region $script:Region -TenantIsolationMode PER_TENANT `
+            -PackagePath ([System.IO.Path]::Combine($script:Work, 'cmr-tenant.zip')) -Confirm:$false
+
+        $response = Invoke-LambdaPSFunction -FunctionName $tenantFunction -TenantId 'tenant-a' -Region $script:Region -ErrorAction Stop
+
+        $response.tenantId | Should -BeExactly 'tenant-a'
     }
 }

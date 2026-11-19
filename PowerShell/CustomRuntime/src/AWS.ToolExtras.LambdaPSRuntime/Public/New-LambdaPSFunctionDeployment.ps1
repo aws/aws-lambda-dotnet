@@ -31,13 +31,12 @@ function New-LambdaPSFunctionDeployment {
         that does not offer customer-managed runtimes; a refused or otherwise failed alias read is
         RuntimeAliasCheckFailed, which wraps the service's error.
 
-        When the function already exists, its code is updated, and then its configuration: -Role, and
-        -Handler, -Timeout, -MemorySize, -RuntimeAlias and -EnvironmentVariable when given. A redeploy
+        When the function already exists, its code is updated, and then each setting given that
+        differs from the function's; when none does, the configuration is not updated. A redeploy
         starts from the live function: its handler and alias are kept over the ones manifest.json
         records (with a warning when they differ), and the handler is replaced only when its script is
         not in the package, or when it is not a PowerShell handler (one written for another runtime,
-        such as 'app.handler'). A setting not given keeps the function's existing value, so a redeploy
-        changes only what was asked for. The runtime binding also moves when -RuntimeName names another
+        such as 'app.handler'). The runtime binding also moves when -RuntimeName names another
         runtime. Otherwise the function keeps its alias, and the architecture check (see -Architecture)
         uses that alias: a stated -Architecture it supports is applied, and one it does not is refused
         with ArchitectureMismatch. A function bound with no alias keeps its architecture, with a warning
@@ -107,8 +106,10 @@ function New-LambdaPSFunctionDeployment {
         InvalidProjectManifest error naming manifest.json.
     .PARAMETER Role
         The Lambda execution role ARN for the function (arn:aws:iam::<account>:role/<name>). A role
-        name alone is refused before anything is packaged. A role Lambda cannot assume yet, as while IAM
-        propagates a new role, is retried for up to a minute, then the deploy fails with RoleNotAssumable.
+        name alone is refused before anything is packaged. Required to create the function (without
+        it, RoleRequired before anything is packaged); a redeploy without it keeps the function's role.
+        A role Lambda cannot assume yet, as while IAM propagates a new role, is retried for up to a
+        minute, then the deploy fails with RoleNotAssumable.
     .PARAMETER Region
         The AWS region to deploy into. When omitted and -FunctionName is a function ARN, the region in
         the ARN. Otherwise, when omitted, the region AWS.Tools would use: the shell's
@@ -184,6 +185,13 @@ function New-LambdaPSFunctionDeployment {
         to the function log) and POWERSHELL_RUNTIME_JSON_DEPTH (1-100, the depth to which the handler's
         output is serialized to JSON; 100 by default, and an invalid value uses 100 and writes a warning
         to the function log).
+    .PARAMETER TenantIsolationMode
+        PER_TENANT creates a multi-tenant function: each invoke names a tenant
+        (Invoke-LambdaPSFunction -TenantId), and Lambda never shares an execution environment between
+        tenants. Lambda sets the mode only when it creates the function, so a redeploy that gives a
+        mode the function does not have stops with TenantIsolationModeMismatch before anything is
+        packaged. When omitted, a new function has no tenant isolation, and a redeploy keeps the
+        function's mode.
     .PARAMETER PackagePath
         Where to write the packaged .zip. Defaults to ./<FunctionName>.zip under the current location.
         An existing .zip there is replaced. A path that is the single-file source, or an existing file
@@ -245,7 +253,7 @@ function New-LambdaPSFunctionDeployment {
         [ValidatePattern('^[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,126}[A-Za-z0-9_])?\z', Options = 'None', ErrorMessage = "'{0}' is not a valid runtime alias name (letters, digits, '_', '.' and '-', up to 128 characters, not starting or ending with '.' or '-').")]
         [string]$RuntimeAlias = 'default',
 
-        [Parameter(Mandatory)]
+        [Parameter()]
         # Options = 'None': ValidatePattern ignores case by default, and an ARN's fixed parts are lowercase.
         [ValidatePattern('^arn:aws[a-z-]*:iam::[0-9]{12}:role/\S+\z', Options = 'None', ErrorMessage = "'{0}' is not an IAM role ARN (arn:aws:iam::<account>:role/<name>).")]
         [string]$Role,
@@ -293,6 +301,10 @@ function New-LambdaPSFunctionDeployment {
         [Parameter()]
         [ValidateNotNull()]
         [hashtable]$EnvironmentVariable,
+
+        [Parameter()]
+        [ValidateSet('PER_TENANT')]
+        [string]$TenantIsolationMode,
 
         [Parameter()]
         [ValidateNotNullOrWhiteSpace()]
@@ -421,6 +433,25 @@ function New-LambdaPSFunctionDeployment {
                         ("Function '$FunctionName' $existingKind and is not bound to a customer-managed runtime, so " +
                          'nothing was packaged or deployed. Use a new -FunctionName, or delete the function first.')),
                     'FunctionNotRuntimeBound', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
+        }
+        if ($null -ne $existing -and $PSBoundParameters.ContainsKey('TenantIsolationMode') -and $existing.TenantIsolationMode -ne $TenantIsolationMode) {
+            $existingMode = if ($existing.TenantIsolationMode) { "tenant isolation mode $($existing.TenantIsolationMode)" } else { 'no tenant isolation' }
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.InvalidOperationException]::new(
+                        ("Function '$FunctionName' has $existingMode, and Lambda sets the mode only when it creates a function, " +
+                         'so nothing was packaged or deployed. Omit -TenantIsolationMode to keep the mode, or use a new -FunctionName.')),
+                    'TenantIsolationModeMismatch', [System.Management.Automation.ErrorCategory]::InvalidOperation, $FunctionName))
+        }
+        # Lambda needs a role to create a function; a redeploy keeps the function's own.
+        if ($null -eq $existing -and -not $PSBoundParameters.ContainsKey('Role')) {
+            $PSCmdlet.ThrowTerminatingError(
+                [System.Management.Automation.ErrorRecord]::new(
+                    [System.ArgumentException]::new(
+                        ("Function '$FunctionName' does not exist in region '$Region', so nothing was packaged or deployed. " +
+                         'Pass -Role with the execution role ARN (arn:aws:iam::<account>:role/<name>) to create it' +
+                         $(if ($functionParts.Region) { '.' } else { ', or -Region if the function is in another region.' }))),
+                    'RoleRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $FunctionName))
         }
 
         # Resolve the handler string from the source itself rather than assuming a file name: the
@@ -676,7 +707,6 @@ function New-LambdaPSFunctionDeployment {
             $publishParams = @{
                 FunctionName = $FunctionName
                 Handler      = $Handler
-                Role         = $Role
                 RuntimeArn   = $runtimeArn
                 RuntimeAlias = $RuntimeAlias
                 Architecture = $Architecture
@@ -686,12 +716,15 @@ function New-LambdaPSFunctionDeployment {
                 Region       = $Region
             }
             if ($PSBoundParameters.ContainsKey('EnvironmentVariable')) { $publishParams.EnvironmentVariable = $EnvironmentVariable }
+            if ($PSBoundParameters.ContainsKey('Role')) { $publishParams.Role = $Role }
+            if ($TenantIsolationMode) { $publishParams.TenantIsolationMode = $TenantIsolationMode }
             # On a redeploy, only the settings the caller gave (or manifest.json recorded) are applied;
             # the rest keep the existing function's values rather than reset to this cmdlet's defaults.
             $publishParams.UpdateSetting = @(
                 # A handler resolved from the source is not "given": the function keeps its own, unless
                 # that names a script the package lacks (Publish-LambdaPSFunction checks).
                 if ($handlerGiven) { 'Handler' }
+                if ($PSBoundParameters.ContainsKey('Role')) { 'Role' }
                 if ($PSBoundParameters.ContainsKey('Timeout')) { 'Timeout' }
                 if ($PSBoundParameters.ContainsKey('MemorySize')) { 'MemorySize' }
                 if ($PSBoundParameters.ContainsKey('RuntimeAlias') -or $manifestAliasUsed) { 'RuntimeAlias' }
@@ -708,7 +741,8 @@ function New-LambdaPSFunctionDeployment {
         # RuntimeAlias, for one) would fail the cmdlet after the code was already deployed.
         $reported = @{
             Handler = $Handler; RuntimeName = $RuntimeName; RuntimeAlias = $RuntimeAlias; RuntimeArn = $runtimeArn
-            Architecture = $Architecture; Timeout = $Timeout; MemorySize = $MemorySize; Role = $Role
+            Architecture = $Architecture; Timeout = $Timeout; MemorySize = $MemorySize
+            Role = if ($PSBoundParameters.ContainsKey('Role')) { $Role } elseif ($null -ne $existing) { $existing.Role } else { $null }
         }
         if ($updated) {
             foreach ($name in 'Handler', 'RuntimeAlias', 'RuntimeArn', 'Architecture', 'Timeout', 'MemorySize', 'Role') {

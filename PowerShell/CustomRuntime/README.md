@@ -143,6 +143,9 @@ than inheriting Lambda's 3 s / 128 MB, which a PowerShell function cannot reliab
 invoke can take about 2 seconds at 128 MB, and pwsh uses about 115–130 MB of memory on startup. Memory
 also scales CPU, so at 512 MB the same warm invoke takes about half a second.
 
+`New-LambdaPSFunctionDeployment -TenantIsolationMode PER_TENANT` creates a multi-tenant function. Invoke it
+with `Invoke-LambdaPSFunction -TenantId`, and the handler reads the tenant as `$LambdaContext.TenantId`.
+
 ### Patching a runtime
 
 Run the same `New-LambdaPSRuntimeDeployment` command again to patch the runtime. With `-PowerShellVersion 7.6.*`,
@@ -383,6 +386,13 @@ runtime logging in `Templates/`, `PSReviewUnusedParameter` for mockable stub sig
 `PSUseSingularNouns` for non-exported helper names in both) are each documented in that settings
 file.
 
+## Known limitations
+
+- A runtime project you keep with `-ProjectPath` keeps the `bootstrap`, `runtime.ps1` and
+  `PowerShellLambdaContext.cs` it was scaffolded with, so it does not pick up runtime fixes from a
+  newer module. To pick them up, deploy without `-ProjectPath`, or scaffold a new project and move
+  your changes into it.
+
 ## Status
 
 - **AWS.Tools dependency:** the AWS-calling paths use the Lambda customer-managed runtime cmdlets
@@ -397,17 +407,21 @@ file.
   modules lack those cmdlets or parameters imports fine and fails at the point of call.
 - **Re-deploying an existing function updates its code and only the configuration you give.**
   `New-LambdaPSFunctionDeployment` against a function that already exists updates its code with
-  `Update-LMFunctionCode`, then its configuration with `Update-LMFunctionConfiguration`: always its
-  role, and `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable` only when
-  you give them. Anything you don't give keeps the function's current value, so a redeploy doesn't
-  reset a tuned timeout, memory size or alias to the defaults. The live handler is kept unless you give
+  `Update-LMFunctionCode`, then its configuration with `Update-LMFunctionConfiguration`: `-Role`,
+  `-Handler`, `-Timeout`, `-MemorySize`, `-RuntimeAlias` and `-EnvironmentVariable`, only when you give
+  them and they differ from the function's. When none does, the configuration isn't updated. `-Role` is
+  needed only to create the function (without it, `RoleRequired`). Anything you don't give keeps the
+  function's current value, so a redeploy doesn't reset a tuned timeout, memory size or alias to the
+  defaults. The live handler is kept unless you give
   `-Handler`, its script is not in the package, or it is not a PowerShell handler, and the live alias is kept unless you give
   `-RuntimeAlias` or `-RuntimeName` names another runtime. The handler and alias a scaffolded project's
   `manifest.json` records apply to a new function (the alias also to one moving to another runtime);
   where the live ones are kept, a warning says when the manifest's differ. When the alias is kept, a
   stated `-Architecture` is checked against it: one it supports is applied, and one it doesn't is
   refused with `ArchitectureMismatch`. An existing function of the same name that is not
-  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched. If
+  bound to a customer-managed runtime is refused with `FunctionNotRuntimeBound` and left untouched.
+  Lambda sets a function's tenant isolation mode only when it creates the function, so a redeploy whose
+  `-TenantIsolationMode` the function doesn't have is refused with `TenantIsolationModeMismatch`. If
   the configuration update fails after the code update, `FunctionConfigurationNotApplied` says what the
   function now has; fix the cause the service reported, then run the deploy again.
 - **A function deploy returns once the function can be invoked.** Lambda creates a function in state

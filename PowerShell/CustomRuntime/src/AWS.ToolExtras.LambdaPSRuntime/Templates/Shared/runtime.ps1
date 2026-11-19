@@ -296,6 +296,7 @@ do {
     $private:__LambdaPSRuntimeResponse = $null
     $env:_X_AMZN_TRACE_ID = ''
     $env:AWS_LAMBDA_RUNTIME_AWS_REQUEST_ID = ''
+    & (Microsoft.PowerShell.Core\Get-Module -Name pwsh-runtime) { $script:__LambdaPSRuntimeTenantId = $null }
     # Remove the jobs and remoting sessions this invocation left, which would otherwise go on running into
     # later invocations, and restore $LASTEXITCODE and PSModulePath to their values after start-up. Jobs
     # and sessions that start-up created are kept. The commands are module-qualified, so a handler's

@@ -23,6 +23,7 @@ $script:__LambdaPSRuntimeSendRuntimeApiRequest = ${function:Send-RuntimeApiReque
 $script:__LambdaPSRuntimeWriteLambdaLog = ${function:Write-LambdaLog}
 # Set before it is read: a handler script may have turned on strict mode.
 $script:__LambdaPSRuntimeInvocationId = $null
+$script:__LambdaPSRuntimeTenantId = $null
 
 # A <script>.ps1 handler runs in a child of this module's scope, so a variable left here would be one it
 # can read; the loader's own variable goes once the files are loaded.
