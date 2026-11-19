@@ -39,7 +39,8 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
                 [PSCustomObject]@{ RuntimeName = $RuntimeName; ImageUri = $ImageUri; Version = 'v1'; Arn = "arn:aws:lambda:eu-west-1:111122223333:runtime/$RuntimeName/version/v1" }
             }
             Mock 'Set-LambdaPSRuntimeAlias' -MockWith { $RuntimeAlias }
-            $script:splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; PowerShellVersion = '7.4'; Region = 'eu-west-1'; RepositoryName = 'rt' }
+            $script:splat = @{ RuntimeName = 'my-ps'; RuntimeAlias = 'default'; PowerShellVersion = '7.4.*'; Region = 'eu-west-1'; RepositoryName = 'rt' }
+            $script:exactSplat = $script:splat.Clone(); $script:exactSplat.PowerShellVersion = '7.4.99'
         }
 
         AfterEach {
@@ -76,7 +77,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             Mock 'Test-LambdaPSContainerRuntime' -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/usr/bin/docker'; BuildxVersion = 'v0' } }
             Mock 'Get-LambdaPSPwshRepositoryRelease' -MockWith { @($script:Config.pwsh.DefaultPatch[$PowerShellVersion], '7.4.99') }
 
-            $null = New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99'
+            $null = New-LambdaPSRuntimeDeployment @script:exactSplat
 
             Should -Invoke 'Import-LambdaPSOciBuilder' -Times 0 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 1 -Exactly -ParameterFilter { -not $SkipDockerLogin }
@@ -129,11 +130,11 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
             $result = New-LambdaPSRuntimeDeployment @script:splat -WarningVariable warnings -WarningAction SilentlyContinue
             $result.RuntimeVersion | Should -Be "$pinned-1"
             @($warnings) -like '*pwsh 7.4.99 is the newest*no-Docker x86_64 build*-BuildMethod Docker*' | Should -HaveCount 1
-            Should -Invoke 'New-LambdaPSRuntimeProject' -Times 1 -Exactly -ParameterFilter { $PwshVersion -eq $pinned }
+            Should -Invoke 'New-LambdaPSRuntimeProject' -Times 1 -Exactly -ParameterFilter { $PowerShellVersion -eq $pinned }
         }
 
         It 'refuses an x86_64 pwsh release with no pinned x64 hash in preflight, under -WhatIf too, before anything is created' {
-            { New-LambdaPSRuntimeDeployment @script:splat -PwshVersion '7.4.99' -WhatIf } |
+            { New-LambdaPSRuntimeDeployment @script:exactSplat -WhatIf } |
                 Should -Throw -ErrorId 'PwshX64HashNotPinned,New-LambdaPSRuntimeDeployment'
             Should -Invoke 'New-LambdaPSRuntimeProject' -Times 0 -Exactly
             Should -Invoke 'Initialize-LambdaPSEcrRepository' -Times 0 -Exactly

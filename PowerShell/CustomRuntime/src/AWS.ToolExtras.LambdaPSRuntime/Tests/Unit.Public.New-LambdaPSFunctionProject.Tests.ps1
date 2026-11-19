@@ -89,7 +89,7 @@ Describe 'New-LambdaPSFunctionProject' -Tag 'Unit' {
     # redirected stdout on every platform, so these assert what was written, or that nothing was.
     It 'writes nothing over the old project when the -Force delete is declined under -Confirm' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-confirm-decline')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4.*'
         $before = @(Get-ChildItem -LiteralPath $target -Recurse -Force | ForEach-Object FullName)
         # A file write asked about after the declined delete would take the 'Y' and write over the old project.
         $result = Invoke-InChildPwsh -Command "`$null = New-LambdaPSFunctionProject -Path '$target' -Handler handler -Force -Confirm" -Answer 'N', 'Y'
@@ -127,7 +127,7 @@ function script:Save-LambdaPSModuleFromRepository {
 
     It 'replaces rather than merges under -Force' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-force-replace')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4.*'
         $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Force
 
         [System.IO.Path]::Combine($target, 'Dockerfile') | Should -Not -Exist
@@ -138,11 +138,11 @@ function script:Save-LambdaPSModuleFromRepository {
 
     It 'replaces an edited handler when -Force re-scaffolds a SelfContainedZip project as Container' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-force-scz-to-container')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target SelfContainedZip -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target SelfContainedZip -PowerShellVersion '7.4.*'
         $handler = [System.IO.Path]::Combine($target, 'handler.ps1')
         Add-Content -LiteralPath $handler -Value '# my edit'
 
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4' -Force
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4.*' -Force
 
         Get-Content -LiteralPath $handler -Raw | Should -Not -Match '# my edit'
         (Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'lambdaps-runtime.json')) -Raw | ConvertFrom-Json).Target | Should -Be 'Container'
@@ -169,7 +169,7 @@ function script:Save-LambdaPSModuleFromRepository {
         @{ Target = 'RuntimeBound'; Pattern = 'Timeout\s+= {0}\s+MemorySize\s+= {1}' }
     ) {
         $projectDir = [System.IO.Path]::Combine($TestDrive, "fn-readme-sizing-$Target")
-        $versionArgs = if ($Target -ne 'RuntimeBound') { @{ PowerShellVersion = '7.4' } } else { @{} }
+        $versionArgs = if ($Target -ne 'RuntimeBound') { @{ PowerShellVersion = '7.4.*' } } else { @{} }
         $null = New-LambdaPSFunctionProject -Path $projectDir -Handler 'handler' -Target $Target @versionArgs
         $function = InModuleScope $script:moduleName { $script:Config.function }
         $readme = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($projectDir, 'README.md'))
@@ -319,7 +319,7 @@ function script:Save-LambdaPSModuleFromRepository {
 Describe 'New-LambdaPSFunctionProject -Target SelfContainedZip' -Tag 'Unit' {
     It 'emits the self-contained tree with a SelfContainedZip marker' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-scz')
-        $written = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $written = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
 
         $written | Should -Not -BeNullOrEmpty
         foreach ($rel in @(
@@ -341,7 +341,7 @@ Describe 'New-LambdaPSFunctionProject -Target SelfContainedZip' -Tag 'Unit' {
 
     It 'ships a bootstrap that references /var/task and not /var/runtime or /opt' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-scz-bootstrap')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $bootstrap = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'bootstrap')) -Raw
         $bootstrap | Should -Match '/var/task'
         $bootstrap | Should -Not -Match '/var/runtime'
@@ -355,9 +355,9 @@ Describe 'New-LambdaPSFunctionProject -Target SelfContainedZip' -Tag 'Unit' {
         $target | Should -Not -Exist
     }
 
-    It 'throws for an unmapped version with no -PwshVersion override' {
+    It 'throws for an unmapped major.minor' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-scz-unmapped')
-        { New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '9.9' } |
+        { New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '9.9.*' } |
             Should -Throw -ErrorId 'UnknownPwshVersion,New-LambdaPSFunctionProject'
     }
 }
@@ -365,7 +365,7 @@ Describe 'New-LambdaPSFunctionProject -Target SelfContainedZip' -Tag 'Unit' {
 Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
     It 'emits the container-per-function tree with a Container marker' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container')
-        $written = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $written = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
 
         $written | Should -Not -BeNullOrEmpty
         foreach ($rel in @(
@@ -387,7 +387,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'substitutes the resolved pwsh version into the Dockerfile and leaves no token' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-version')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match "ARG PWSH_VERSION=$([regex]::Escape($script:pwshConfig.DefaultPatch['7.4']))"
         $dockerfile | Should -Not -Match '__PWSH_VERSION__'
@@ -395,7 +395,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'ships a Dockerfile that sets CMD to the handler and bakes the handler into /var/task' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-dockerfile')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'CMD \[ "handler\.ps1" \]'
         $dockerfile | Should -Match '(?m)^COPY \. /var/task$'
@@ -404,7 +404,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
     # Lambda runs the ENTRYPOINT with CMD as its argument; the entrypoint makes that the handler.
     It 'keeps the runtime image''s ENTRYPOINT, which takes CMD as the handler, and removes the runtime files from /var/task' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-entrypoint')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         @([regex]::Matches($dockerfile, '(?m)^ENTRYPOINT .*$').Value) | Should -Be @('ENTRYPOINT [ "/var/runtime/lambda-entrypoint.sh" ]')
         $dockerfile.IndexOf('ENTRYPOINT [') | Should -BeLessThan $dockerfile.IndexOf('CMD [ "handler.ps1" ]')
@@ -414,7 +414,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
     # The whole project goes into /var/task, so a handler can use a script or data file beside it.
     It 'copies the whole project into /var/task, leaving out the scaffolding with .dockerignore' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-context')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $ignorePath = [System.IO.Path]::Combine($target, '.dockerignore')
         $ignorePath | Should -Exist
@@ -434,9 +434,9 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'builds on the CMR runtime image''s Dockerfile, the one copy of the runtime steps' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-base')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $runtimeTarget = [System.IO.Path]::Combine($TestDrive, 'rt-container-base')
-        $null = New-LambdaPSRuntimeProject -Path $runtimeTarget -PowerShellVersion '7.4'
+        $null = New-LambdaPSRuntimeProject -Path $runtimeTarget -PowerShellVersion '7.4.*'
         $dockerfile = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($target, 'Dockerfile'))
         $runtimeDockerfile = [System.IO.File]::ReadAllText([System.IO.Path]::Combine($runtimeTarget, 'Dockerfile'))
 
@@ -448,21 +448,21 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'ships a bootstrap that references /var/runtime' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-bootstrap')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $bootstrap = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'bootstrap')) -Raw
         $bootstrap | Should -Match '/var/runtime'
     }
 
-    It 'honors an explicit -PwshVersion override' {
+    It 'honors an x.y.z -PowerShellVersion' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-pin')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4' -PwshVersion '7.4.2' -WarningAction SilentlyContinue
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.2' -WarningAction SilentlyContinue
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match '(?m)^ARG PWSH_VERSION=7\.4\.2$' -Because 'the default 7.4 pin also starts with 7.4.2'
     }
 
     It 'ships a Dockerfile that installs pwsh from the RPM on amd64 and the verified tarball on arm64' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-arch')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'ARG TARGETARCH'
         $dockerfile | Should -Match 'if \[ "\$TARGETARCH" = "arm64" \]'
@@ -476,7 +476,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'bakes the pinned arm64 tarball SHA256 into the Dockerfile and leaves no token' -ForEach $script:arm64Cases {
         $target = [System.IO.Path]::Combine($TestDrive, "fn-container-arm64-$Pin")
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion $PowerShellVersion -PwshVersion $Pin -WarningVariable warnings
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion $Pin -WarningVariable warnings
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match "ARG PWSH_ARM64_SHA256=$Hash"
         $dockerfile | Should -Not -Match '__PWSH_ARM64_SHA256__'
@@ -485,7 +485,7 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
 
     It 'keeps the arm64 hash token and warns when no hash is pinned for the version' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-arm64-unpinned')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4' -PwshVersion '7.4.2' -WarningVariable warnings -WarningAction SilentlyContinue
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '7.4.2' -WarningVariable warnings -WarningAction SilentlyContinue
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
         $dockerfile | Should -Match 'ARG PWSH_ARM64_SHA256=__PWSH_ARM64_SHA256__'
         @($warnings).Count | Should -Be 1
@@ -498,9 +498,9 @@ Describe 'New-LambdaPSFunctionProject -Target Container' -Tag 'Unit' {
             Should -Throw -ErrorId 'PowerShellVersionRequired,New-LambdaPSFunctionProject'
     }
 
-    It 'throws for an unmapped version with no -PwshVersion override' {
+    It 'throws for an unmapped major.minor' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-container-unmapped')
-        { New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '9.9' } |
+        { New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target 'Container' -PowerShellVersion '9.9.*' } |
             Should -Throw -ErrorId 'UnknownPwshVersion,New-LambdaPSFunctionProject'
         $target | Should -Not -Exist
     }
@@ -572,7 +572,7 @@ Describe 'New-LambdaPSFunctionProject output' -Tag 'Unit' {
 
     It 'stages -IncludeModule into modules/ for Container, which the Dockerfile copies to /var/runtime/modules' {
         $target = [System.IO.Path]::Combine($TestDrive, 'fn-out-container-module')
-        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4' -IncludeModule $script:fakeSpecs[0]
+        $null = New-LambdaPSFunctionProject -Path $target -Handler 'handler' -Target Container -PowerShellVersion '7.4.*' -IncludeModule $script:fakeSpecs[0]
 
         [System.IO.Path]::Combine($target, 'modules', 'LambdaPSOutputFakeA', '1.0.0') | Should -Exist
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($target, 'Dockerfile')) -Raw
@@ -596,7 +596,7 @@ Describe 'New-LambdaPSFunctionProject binding parameters on the template targets
     ) {
         $projectDir = [System.IO.Path]::Combine($TestDrive, "ignored-$Target")
         $warnings = @()
-        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target $Target -PowerShellVersion '7.4' `
+        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target $Target -PowerShellVersion '7.4.*' `
             -RuntimeAlias staging -Architecture arm64 -WarningVariable warnings -WarningAction SilentlyContinue
 
         ($warnings -join ' ') | Should -BeLike '*-RuntimeAlias and -Architecture apply only to -Target RuntimeBound*'
@@ -610,7 +610,7 @@ Describe 'New-LambdaPSFunctionProject binding parameters on the template targets
     It 'warns in the singular, with the build-time hint, for -Architecture alone on Container' {
         $projectDir = [System.IO.Path]::Combine($TestDrive, 'ignored-architecture-only')
         $warnings = @()
-        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target Container -PowerShellVersion '7.4' `
+        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target Container -PowerShellVersion '7.4.*' `
             -Architecture arm64 -WarningVariable warnings -WarningAction SilentlyContinue
 
         ($warnings -join ' ') | Should -BeLike '*-Architecture applies only to -Target RuntimeBound, so it is ignored*Choose the architecture when you build it.*'
@@ -624,20 +624,20 @@ Describe 'New-LambdaPSFunctionProject binding parameters on the template targets
     It 'names the build-time architecture choice only when -Architecture is the ignored parameter' {
         $projectDir = [System.IO.Path]::Combine($TestDrive, 'ignored-alias-only')
         $warnings = @()
-        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target Container -PowerShellVersion '7.4' `
+        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target Container -PowerShellVersion '7.4.*' `
             -RuntimeAlias staging -WarningVariable warnings -WarningAction SilentlyContinue
 
         ($warnings -join ' ') | Should -BeLike '*-RuntimeAlias applies only to -Target RuntimeBound*'
         ($warnings -join ' ') | Should -Not -BeLike '*architecture*'
     }
 
-    It 'warns that -PowerShellVersion and -PwshVersion are ignored for RuntimeBound' {
+    It 'warns that -PowerShellVersion is ignored for RuntimeBound' {
         $projectDir = [System.IO.Path]::Combine($TestDrive, 'ignored-bound')
         $warnings = @()
-        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -PowerShellVersion '7.4' -PwshVersion '7.4.20' `
+        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -PowerShellVersion '7.4.20' `
             -WarningVariable warnings -WarningAction SilentlyContinue
 
-        ($warnings -join ' ') | Should -BeLike '*-PowerShellVersion and -PwshVersion apply only to -Target SelfContainedZip and Container*'
+        ($warnings -join ' ') | Should -BeLike '*-PowerShellVersion applies only to -Target SelfContainedZip and Container*'
         @(Get-ChildItem -LiteralPath $projectDir -Recurse -File | Where-Object { -not $_.Name.StartsWith('.') } | ForEach-Object Name | Sort-Object) |
             Should -Be @('fn.ps1', 'manifest.json', 'README.md')
     }
@@ -654,7 +654,7 @@ Describe 'New-LambdaPSFunctionProject binding parameters on the template targets
     It 'does not warn when neither is given' {
         $projectDir = [System.IO.Path]::Combine($TestDrive, 'ignored-none')
         $warnings = @()
-        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target SelfContainedZip -PowerShellVersion '7.4' `
+        $null = New-LambdaPSFunctionProject -Path $projectDir -Handler fn -Target SelfContainedZip -PowerShellVersion '7.4.*' `
             -WarningVariable warnings -WarningAction SilentlyContinue
 
         ($warnings -join ' ') | Should -Not -BeLike '*apply only to -Target RuntimeBound*'
@@ -669,7 +669,7 @@ Describe 'New-LambdaPSFunctionProject -Handler on the template targets' -Tag 'Un
         @{ Target = 'Container'; Handler = 'myfn.ps1' }
     ) {
         $projectPath = [System.IO.Path]::Combine($TestDrive, "fn-handler-$Target-$($Handler.Replace('.', '-'))")
-        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler $Handler -Target $Target -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler $Handler -Target $Target -PowerShellVersion '7.4.*'
 
         $script = [System.IO.Path]::Combine($projectPath, 'myfn.ps1')
         Test-Path -LiteralPath $script -PathType Leaf | Should -BeTrue
@@ -685,7 +685,7 @@ Describe 'New-LambdaPSFunctionProject -Handler on the template targets' -Tag 'Un
         @{ Target = 'Container' }
     ) {
         $projectPath = [System.IO.Path]::Combine($TestDrive, "fn-handler-case-$Target")
-        $versionArgs = if ($Target -ne 'RuntimeBound') { @{ PowerShellVersion = '7.4' } } else { @{} }
+        $versionArgs = if ($Target -ne 'RuntimeBound') { @{ PowerShellVersion = '7.4.*' } } else { @{} }
         $null = New-LambdaPSFunctionProject -Path $projectPath -Handler 'Handler' -Target $Target @versionArgs
 
         $names = @(Get-ChildItem -LiteralPath $projectPath -File | ForEach-Object Name)
@@ -695,7 +695,7 @@ Describe 'New-LambdaPSFunctionProject -Handler on the template targets' -Tag 'Un
 
     It 'points the Container Dockerfile CMD at the renamed handler' {
         $projectPath = [System.IO.Path]::Combine($TestDrive, 'fn-handler-container-dockerfile')
-        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler 'myfn' -Target 'Container' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler 'myfn' -Target 'Container' -PowerShellVersion '7.4.*'
         $dockerfile = Get-Content -LiteralPath ([System.IO.Path]::Combine($projectPath, 'Dockerfile')) -Raw
 
         $dockerfile | Should -Match 'CMD \[ "myfn\.ps1" \]'
@@ -709,7 +709,7 @@ Describe 'New-LambdaPSFunctionProject -Handler on the template targets' -Tag 'Un
         @{ Target = 'Container'; Handler = 'runtime.ps1' }
     ) {
         $projectPath = [System.IO.Path]::Combine($TestDrive, "fn-handler-reserved-$Target-$($Handler.Replace('.', '-'))")
-        { New-LambdaPSFunctionProject -Path $projectPath -Handler $Handler -Target $Target -PowerShellVersion '7.4' } |
+        { New-LambdaPSFunctionProject -Path $projectPath -Handler $Handler -Target $Target -PowerShellVersion '7.4.*' } |
             Should -Throw -ErrorId 'HandlerNameReserved*'
         Test-Path -LiteralPath $projectPath | Should -BeFalse
     }
@@ -719,7 +719,7 @@ Describe 'New-LambdaPSFunctionProject -Handler on the template targets' -Tag 'Un
         @{ Target = 'Container' }
     ) {
         $projectPath = [System.IO.Path]::Combine($TestDrive, "fn-handler-lint-$Target")
-        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler 'myfn' -Target $Target -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $projectPath -Handler 'myfn' -Target $Target -PowerShellVersion '7.4.*'
         Test-LambdaPSRuntimeProject -Path $projectPath -Quiet | Should -BeTrue
     }
 }
@@ -729,7 +729,6 @@ Describe 'New-LambdaPSFunctionProject parameter validation' -Tag 'Unit' {
     It 'rejects -<Parameter> with a trailing newline' -ForEach @(
         @{ Parameter = 'Handler'; Arguments = @{ Handler = "fn`n" } }
         @{ Parameter = 'PowerShellVersion'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = "7.4`n" } }
-        @{ Parameter = 'PwshVersion'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = '7.4'; PwshVersion = "7.4.20`n" } }
     ) {
         $projectDir = [System.IO.Path]::Combine($TestDrive, "fn-newline-$Parameter")
         { New-LambdaPSFunctionProject -Path $projectDir @Arguments } |
@@ -738,11 +737,11 @@ Describe 'New-LambdaPSFunctionProject parameter validation' -Tag 'Unit' {
     }
 
     # \d also matches other scripts' digits, such as Arabic-Indic ones; a version is ASCII digits only.
-    It 'rejects -<Parameter> in non-ASCII digits, naming the form it takes' -ForEach @(
-        @{ Parameter = 'PowerShellVersion'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = "$([char]0x0667).$([char]0x0664)" }; Message = '*is not a PowerShell version in major.minor form, for example 7.4.' }
-        @{ Parameter = 'PwshVersion'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = '7.4'; PwshVersion = "7.4.$([char]0x0662)$([char]0x0660)" }; Message = '*is not a pwsh release in x.y.z form, for example 7.4.20.' }
+    It 'rejects -<Parameter> <Form> in non-ASCII digits, naming the form it takes' -ForEach @(
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = "$([char]0x0667).$([char]0x0664)" }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
+        @{ Parameter = 'PowerShellVersion'; Form = 'x.y.z'; Arguments = @{ Handler = 'fn'; Target = 'Container'; PowerShellVersion = "7.4.$([char]0x0662)$([char]0x0660)" }; Message = '*is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.' }
     ) {
-        $projectDir = [System.IO.Path]::Combine($TestDrive, "fn-digits-$Parameter")
+        $projectDir = [System.IO.Path]::Combine($TestDrive, "fn-digits-$Form")
         { New-LambdaPSFunctionProject -Path $projectDir @Arguments } |
             Should -Throw -ErrorId 'ParameterArgumentValidationError,New-LambdaPSFunctionProject' -ExpectedMessage $Message
         $projectDir | Should -Not -Exist

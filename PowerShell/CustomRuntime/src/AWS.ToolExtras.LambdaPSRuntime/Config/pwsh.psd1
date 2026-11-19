@@ -39,8 +39,8 @@
         }
     }
 
-    # The pwsh release each supported PowerShell line installs by default, when -PwshVersion is not
-    # given. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
+    # The pwsh release each supported PowerShell line installs by default, when -PowerShellVersion names
+    # only the line. Move a line to its newest servicing release (and pin its hashes below) as releases ship.
     DefaultPatch  = @{
         '7.4' = '7.4.22'
         '7.5' = '7.5.13'
@@ -52,7 +52,7 @@
     # Layer and self-contained .zip packages verify their download against these, and the CMR and
     # Container images verify the arm64 tarball against them (Microsoft publishes no aarch64 RPM).
     # A release's hashes stay when DefaultPatch moves past it, so a project that pins an older
-    # -PwshVersion still builds.
+    # release still builds.
     ArchiveSha256 = @{
         '7.4.20' = @{
             x64   = 'ed8008345c7f5337f5e293145f5e243ce132e5ee4dfc24ac551c45a4b3092181'

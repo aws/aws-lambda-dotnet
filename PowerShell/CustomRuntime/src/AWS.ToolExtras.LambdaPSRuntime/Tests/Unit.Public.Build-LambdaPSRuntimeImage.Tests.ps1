@@ -4,7 +4,7 @@ BeforeAll {
 
     # A minimal runtime-image project (only the Dockerfile presence is checked).
     $script:projectPath = [System.IO.Path]::Combine($TestDrive, 'rt')
-    $null = New-LambdaPSRuntimeProject -Path $script:projectPath -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+    $null = New-LambdaPSRuntimeProject -Path $script:projectPath -PowerShellVersion '7.4.*' -WarningAction SilentlyContinue
 }
 
 AfterAll {
@@ -164,7 +164,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
 
         It 'does not check a Container function image, whose code belongs in /var/task' {
             $functionPath = [System.IO.Path]::Combine($TestDrive, 'fn-image')
-            $null = New-LambdaPSFunctionProject -Path $functionPath -Handler handler -Target Container -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+            $null = New-LambdaPSFunctionProject -Path $functionPath -Handler handler -Target Container -PowerShellVersion '7.4.*' -WarningAction SilentlyContinue
 
             $null = Build-LambdaPSRuntimeImage -Path $functionPath -Tag 'fn:v1'
 
@@ -242,7 +242,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
     Context 'arm64 with no pinned pwsh hash' {
         BeforeAll {
             $script:unpinned = [System.IO.Path]::Combine($TestDrive, 'rt-unpinned')
-            $null = New-LambdaPSRuntimeProject -Path $script:unpinned -PowerShellVersion '7.4' -PwshVersion '7.4.2' -WarningAction SilentlyContinue
+            $null = New-LambdaPSRuntimeProject -Path $script:unpinned -PowerShellVersion '7.4.2' -WarningAction SilentlyContinue
         }
 
         It 'throws PwshArm64HashNotPinned before running docker' {
@@ -324,7 +324,7 @@ Describe 'Build-LambdaPSRuntimeImage' -Tag 'Unit' {
             @{ Case = 'a function project'; Cmdlet = 'Compress-LambdaPSFunctionPackage' }
         ) {
             $proj = [System.IO.Path]::Combine($TestDrive, "no-dockerfile-$Cmdlet")
-            if ($Cmdlet -eq 'Build-LambdaPSRuntimePackage') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer }
+            if ($Cmdlet -eq 'Build-LambdaPSRuntimePackage') { $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4.*' -Target Layer }
             else { $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' }
 
             $err = { Build-LambdaPSRuntimeImage -Path $proj -Tag 'rt:v1' } |

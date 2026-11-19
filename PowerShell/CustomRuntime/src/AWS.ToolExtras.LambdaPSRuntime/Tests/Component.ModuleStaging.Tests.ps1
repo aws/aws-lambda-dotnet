@@ -25,7 +25,7 @@ Describe 'Module staging across commands' -Tag 'Component' {
         $installed = Join-Path $TestDrive 'installed-modules'
         $null = New-FakeModule -Root $installed -Name 'LambdaPSFake.Local' -Version '1.0.0'
         $proj = Join-Path $TestDrive 'scz'
-        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4'
+        $null = New-LambdaPSFunctionProject -Path $proj -Handler 'handler' -Target 'SelfContainedZip' -PowerShellVersion '7.4.*'
         $saved = $env:PSModulePath
         try {
             $env:PSModulePath = $installed + [System.IO.Path]::PathSeparator + $env:PSModulePath

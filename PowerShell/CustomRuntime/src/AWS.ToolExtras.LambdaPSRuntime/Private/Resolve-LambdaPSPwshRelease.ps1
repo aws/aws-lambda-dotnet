@@ -8,9 +8,8 @@ function Resolve-LambdaPSPwshRelease {
         returns the pin when the repository can't be read or has nothing that new.
         PinnedArchive (builds that install the tarball): the newest release with a pinned SHA256 for
         -Architecture, else the pin. It warns when the repository has a newer release.
-        An explicit -PwshVersion is returned after Resolve-LambdaPSPwshVersion's checks. For
-        PackageRepository it must be in the repository (PwshVersionNotFound), unless the repository
-        can't be read.
+        An explicit -PwshVersion is returned as given. For PackageRepository it must be in the
+        repository (PwshVersionNotFound), unless the repository can't be read.
     .PARAMETER PowerShellVersion
         The PowerShell line in major.minor form (for example 7.6).
     .PARAMETER PwshVersion
@@ -20,8 +19,9 @@ function Resolve-LambdaPSPwshRelease {
     .PARAMETER Architecture
         The target architecture, whose pinned tarball hash PinnedArchive needs: x86_64 or arm64.
     .OUTPUTS
-        PSCustomObject with Version (x.y.z) and Source: Parameter (-PwshVersion), PackageRepository
-        (found there) or Pinned (the module's pins).
+        PSCustomObject with Version (x.y.z) and Source: Parameter (an x.y.z -PowerShellVersion), PackageRepository
+        (found there) or Pinned (the module's pins). For Parameter with PackageRepository, Newest is
+        the repository's newest release of the line ($null when it can't be read).
     .EXAMPLE
         Resolve-LambdaPSPwshRelease -PowerShellVersion 7.6 -InstallSource PackageRepository -Architecture x86_64
 
@@ -61,6 +61,7 @@ function Resolve-LambdaPSPwshRelease {
                          "can't install it. Its newest PowerShell $PowerShellVersion release is $($listed[-1])."), 'PwshVersion'),
                     'PwshVersionNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $version)
             }
+            return [PSCustomObject]@{ Version = $version; Source = 'Parameter'; Newest = $(if ($listed.Count -gt 0) { $listed[-1] }) }
         }
         return [PSCustomObject]@{ Version = $version; Source = 'Parameter' }
     }

@@ -56,7 +56,7 @@ function Build-LambdaPSRuntimePackage {
             BackslashInFileName (off Windows, a file with '\' in its name).
           - Paths: DriveNotFound, PathNotFileSystem, OutFileExists, OutFileIsDirectory, PackageWriteFailed, OutFileIsSource (-OutFile
             is the -PwshArchivePath tarball).
-          - pwsh: UnknownPwshVersion, PwshVersionMismatch, UnknownPwshArchiveHash, PwshArchiveNotFound,
+          - pwsh: PowerShellVersionNotSpecific, UnknownPwshVersion, UnknownPwshArchiveHash, PwshArchiveNotFound,
             PwshArchiveHashMismatch, TarNotFound, PwshArchiveExtractFailed, PwshBinaryNotFound,
             ContextCompileFailed, PackageEntryIsLink (a link in the tarball).
           - The handler's modules (SelfContainedZip only): InvalidRequiresStatement, ModuleNameInvalid (a #Requires naming a wildcard
@@ -81,11 +81,10 @@ function Build-LambdaPSRuntimePackage {
         Container project is UnsupportedTarget whatever -Target says: build it with
         Build-LambdaPSRuntimeImage.
     .PARAMETER PowerShellVersion
-        Override the PowerShell version (major.minor) read from the marker.
-    .PARAMETER PwshVersion
-        Pin the full pwsh version (x.y.z). When omitted, the version the project was scaffolded with
-        (recorded in lambdaps-runtime.json) is used, or else the major.minor value is mapped to a
-        default patch release. A version with no pinned SHA256 requires -PwshArchivePath.
+        The PowerShell release to bundle: 7.6.9, 7.6.* or 7.* (the highest 7.x line), as on
+        New-LambdaPSRuntimeProject. When omitted, the release recorded in lambdaps-runtime.json is
+        used. A wildcard bundles the module's pinned release of the line. A release with no pinned
+        SHA256 requires -PwshArchivePath.
     .PARAMETER Architecture
         The target architecture: x86_64 (default) or arm64.
     .PARAMETER PwshArchivePath
@@ -122,7 +121,7 @@ function Build-LambdaPSRuntimePackage {
     .OUTPUTS
         AWS.ToolExtras.LambdaPSRuntime.RuntimePackage
 
-        PackagePath (the .zip written), Target, PwshVersion (the pwsh bundled), Architecture and
+        PackagePath (the .zip written), Target, PowerShellVersion (the pwsh release bundled), Architecture and
         ModulesStaged: an AWS.ToolExtras.LambdaPSRuntime.StagedModule (Name, and Version as a [version])
         for every module in the package's modules/ tree, read from what was staged, as on
         Compress-LambdaPSFunctionPackage. Nothing under -WhatIf.
@@ -153,12 +152,9 @@ function Build-LambdaPSRuntimePackage {
         [string]$Target,
 
         [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a PowerShell version in major.minor form, for example 7.4.")]
+        [SupportsWildcards()]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
-
-        [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a pwsh release in x.y.z form, for example 7.4.20.")]
-        [string]$PwshVersion,
 
         [Parameter()]
         [ValidateSet('x86_64', 'arm64')]
@@ -253,6 +249,11 @@ function Build-LambdaPSRuntimePackage {
             }
         }
 
+        $PwshVersion = $null
+        if ($PowerShellVersion) {
+            $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
+            $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
+        }
         $effectiveVersion = $PowerShellVersion
         if ([string]::IsNullOrWhiteSpace($effectiveVersion) -and $marker) {
             $effectiveVersion = $marker.PowerShellVersion
@@ -261,16 +262,15 @@ function Build-LambdaPSRuntimePackage {
             $PSCmdlet.ThrowTerminatingError(
                 [System.Management.Automation.ErrorRecord]::new(
                     [System.ArgumentException]::new(
-                        $(if ($marker) { "The lambdaps-runtime.json marker in '$Path' records no PowerShell version; pass -PowerShellVersion (major.minor)." }
-                            else { "'$Path' has no lambdaps-runtime.json marker to give the PowerShell version; pass -PowerShellVersion (major.minor)." }), 'PowerShellVersion'),
+                        $(if ($marker) { "The lambdaps-runtime.json marker in '$Path' records no PowerShell version; pass -PowerShellVersion." }
+                            else { "'$Path' has no lambdaps-runtime.json marker to give the PowerShell version; pass -PowerShellVersion." }), 'PowerShellVersion'),
                     'PowerShellVersionRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Path))
         }
 
-        # The pwsh version the project was scaffolded with, unless -PwshVersion overrides it or
-        # -PowerShellVersion asks for a different line.
+        # The pwsh version the project was scaffolded with, unless -PowerShellVersion is given: a wildcard
+        # then means the module's pinned release, as on New-LambdaPSRuntimeProject.
         $effectivePwshVersion = $PwshVersion
-        if ([string]::IsNullOrWhiteSpace($effectivePwshVersion) -and $marker -and $marker.PwshVersion -and
-            $marker.PowerShellVersion -eq $effectiveVersion) {
+        if (-not $PSBoundParameters.ContainsKey('PowerShellVersion') -and $marker -and $marker.PwshVersion) {
             $effectivePwshVersion = $marker.PwshVersion
         }
         $resolvedVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $effectiveVersion -PwshVersion $effectivePwshVersion
@@ -550,7 +550,7 @@ function Build-LambdaPSRuntimePackage {
             PSTypeName    = 'AWS.ToolExtras.LambdaPSRuntime.RuntimePackage'
             PackagePath   = $destination
             Target        = $effectiveTarget
-            PwshVersion   = $resolvedVersion
+            PowerShellVersion = $resolvedVersion
             Architecture  = $Architecture
             ModulesStaged = $modulesStaged
         }

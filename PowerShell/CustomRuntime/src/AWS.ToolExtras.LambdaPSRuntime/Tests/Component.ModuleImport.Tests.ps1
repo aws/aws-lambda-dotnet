@@ -137,7 +137,7 @@ Describe 'Module import' -Tag 'Component' {
         $target = [System.IO.Path]::Combine($TestDrive, 'never-created')
         # After the refusal, a cmdlet of the module is not there to run, so nothing is created.
         $command = "`$env:PSModulePath = '$modulePath'; try { Import-Module '$script:modulePath' -ErrorAction Stop; 'IMPORTED' } catch { 'FAILED: ' + `$_.FullyQualifiedErrorId + ' | ' + `$_.Exception.Message }; " +
-            "try { New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion 7.4 -ErrorAction Stop; 'RAN' } catch { 'NEXT: ' + `$_.FullyQualifiedErrorId }"
+            "try { New-LambdaPSRuntimeProject -Path '$target' -PowerShellVersion '7.4.*' -ErrorAction Stop; 'RAN' } catch { 'NEXT: ' + `$_.FullyQualifiedErrorId }"
 
         $output = & (Get-Process -Id $PID).Path -NoProfile -NonInteractive -Command $command 2>&1 | Out-String
 

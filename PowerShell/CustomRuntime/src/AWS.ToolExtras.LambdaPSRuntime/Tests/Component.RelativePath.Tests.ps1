@@ -28,7 +28,7 @@ Describe 'Relative paths' -Tag 'Component' {
         $null = New-Item -ItemType Directory -Path ./rt
         Set-Content -LiteralPath ./rt/old.txt -Value 'old'
 
-        $null = New-LambdaPSRuntimeProject -Path ./rt -Target Layer -PowerShellVersion 7.4 -Force
+        $null = New-LambdaPSRuntimeProject -Path ./rt -Target Layer -PowerShellVersion '7.4.*' -Force
 
         Test-Path -LiteralPath ./rt/old.txt | Should -BeFalse
         Test-Path -LiteralPath ./rt/lambdaps-runtime.json -PathType Leaf | Should -BeTrue
@@ -45,7 +45,7 @@ Describe 'Relative paths' -Tag 'Component' {
     }
 
     It 'builds a package from a relative -Path to a relative -OutFile' {
-        $null = New-LambdaPSFunctionProject -Path ./scz -Handler fn -Target SelfContainedZip -PowerShellVersion 7.4
+        $null = New-LambdaPSFunctionProject -Path ./scz -Handler fn -Target SelfContainedZip -PowerShellVersion '7.4.*'
         $fakeSource = [System.IO.Path]::Combine($TestDrive, 'rel-pwsh-src')
         $null = New-Item -ItemType Directory -Path $fakeSource -Force
         # Stands in for the bundled Linux pwsh by forwarding to the host's, so the context precompile works.
@@ -77,7 +77,7 @@ Describe 'Relative paths' -Tag 'Component' {
     }
 
     It 'validates a relative -Path piped in' {
-        $null = New-LambdaPSRuntimeProject -Path ./pipe-rt -Target Layer -PowerShellVersion 7.4
+        $null = New-LambdaPSRuntimeProject -Path ./pipe-rt -Target Layer -PowerShellVersion '7.4.*'
 
         './pipe-rt' | Test-LambdaPSRuntimeProject -Quiet | Should -BeTrue
     }

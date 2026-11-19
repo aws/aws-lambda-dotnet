@@ -85,6 +85,13 @@ function Get-LambdaPSProjectMarker {
                 'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $markerPath)
         }
     }
+    if ($powerShellVersion -and $pwshVersion -and -not $pwshVersion.StartsWith("$powerShellVersion.", [System.StringComparison]::Ordinal)) {
+        throw [System.Management.Automation.ErrorRecord]::new(
+            [System.IO.InvalidDataException]::new(
+                ("The project marker '$markerPath' has PwshVersion '$pwshVersion', which is not a " +
+                 "PowerShell $powerShellVersion release. Fix it, or scaffold the project again.")),
+            'InvalidProjectMarker', [System.Management.Automation.ErrorCategory]::InvalidData, $markerPath)
+    }
 
     [PSCustomObject]@{
         Path              = $markerPath

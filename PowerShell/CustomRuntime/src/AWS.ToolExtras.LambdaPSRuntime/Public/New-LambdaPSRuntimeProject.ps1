@@ -30,9 +30,7 @@ function New-LambdaPSRuntimeProject {
         __PWSH_VERSION__ token and the pinned SHA256 of that version's linux-arm64 tarball into its
         __PWSH_ARM64_SHA256__ token. If no arm64 hash is pinned for the version, that
         token is left in place with a warning: the project still builds for linux/amd64, but a
-        linux/arm64 build stops at the Dockerfile's hash check. -PowerShellVersion is major.minor;
-        the full pwsh version (x.y.z) is derived from a small default-patch map unless
-        -PwshVersion overrides it.
+        linux/arm64 build stops at the Dockerfile's hash check.
 
         This cmdlet only writes local files; it makes no AWS API calls. New-LambdaPSRuntimeDeployment
         builds, pushes and publishes a CMR project in one step; the project's README lists the manual
@@ -52,15 +50,12 @@ function New-LambdaPSRuntimeProject {
         write to (o+w, without the sticky bit) is a TargetWritableByOthers error for the same reason:
         remove that permission with chmod o-w <path>. The checks are skipped when you run as root.
     .PARAMETER PowerShellVersion
-        The PowerShell version the project targets, in major.minor form (for example 7.4).
-    .PARAMETER PwshVersion
-        The full pwsh version to install (x.y.z, for example 7.4.20). When omitted, the
-        major.minor value is mapped to a default patch release. Supply this to pin a specific patch
-        or to target a major.minor the module does not yet map. For the CMR target it is baked into
-        the Dockerfile; for the Layer target it is recorded in lambdaps-runtime.json and
-        Build-LambdaPSRuntimePackage bundles it, unless its own -PwshVersion overrides it.
-        A version that is not a -PowerShellVersion release is a PwshVersionMismatch error; without
-        it, a major.minor with no default patch is UnknownPwshVersion.
+        The PowerShell release the project targets: 7.6.9 installs that exact release, 7.6.* the
+        module's pinned release of the 7.6 line, and 7.* that of the highest 7.x line it supports.
+        A bare 7.6 is PowerShellVersionNotSpecific, and a line with no pinned release
+        UnknownPwshVersion. For the CMR target the release is baked into the
+        Dockerfile; for the Layer target it is recorded in lambdaps-runtime.json and
+        Build-LambdaPSRuntimePackage bundles it, unless its own -PowerShellVersion changes it.
     .PARAMETER Target
         The deployment shape to scaffold: 'CMR' (customer-managed runtime image, the default) or 'Layer' (a
         Lambda layer whose contents mount at /opt).
@@ -139,20 +134,20 @@ function New-LambdaPSRuntimeProject {
         The full paths written, emitted as one array. Empty under -WhatIf, and when the download, the
         delete or the file write is declined under -Confirm.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./powershell-runtime -PowerShellVersion 7.6
+        New-LambdaPSRuntimeProject -Path ./powershell-runtime -PowerShellVersion 7.6.*
 
         Scaffolds a CMR runtime-image project targeting PowerShell 7.6 (the default 7.6 pwsh release).
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./layer -PowerShellVersion 7.6 -Target Layer
+        New-LambdaPSRuntimeProject -Path ./layer -PowerShellVersion 7.6.* -Target Layer
 
         Scaffolds a Lambda layer project targeting PowerShell 7.6.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.6 -PwshVersion 7.6.0 -Force
+        New-LambdaPSRuntimeProject -Path ./rt -PowerShellVersion 7.6.0 -Force
 
         Replaces the contents of an existing directory and pins pwsh 7.6.0. That version has no pinned
         arm64 hash, so the project builds linux/amd64 only and a warning says so.
     .EXAMPLE
-        New-LambdaPSRuntimeProject -Path ./rt-s3 -PowerShellVersion 7.6 -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
+        New-LambdaPSRuntimeProject -Path ./rt-s3 -PowerShellVersion 7.6.* -IncludeModule @{ ModuleName = 'AWS.Tools.S3'; RequiredVersion = '5.0.274' }
 
         Scaffolds the project and stages AWS.Tools.S3 5.0.274 (and its dependencies) into
         ./rt/modules, downloading any that are not installed locally.
@@ -178,12 +173,9 @@ function New-LambdaPSRuntimeProject {
         [string]$Path,
 
         [Parameter(Mandatory)]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a PowerShell version in major.minor form, for example 7.4.")]
+        [SupportsWildcards()]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
-
-        [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a pwsh release in x.y.z form, for example 7.4.20.")]
-        [string]$PwshVersion,
 
         [Parameter()]
         [ValidateSet('CMR', 'Layer')]
@@ -210,6 +202,8 @@ function New-LambdaPSRuntimeProject {
         # half-scaffolded directory behind.
         $existing = Assert-LambdaPSScaffoldPath -Path $Path -Force:$Force
 
+        $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
+        $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
         $resolvedVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
 
         $templateRoot = Get-LambdaPSProjectTemplateRoot -Target $Target

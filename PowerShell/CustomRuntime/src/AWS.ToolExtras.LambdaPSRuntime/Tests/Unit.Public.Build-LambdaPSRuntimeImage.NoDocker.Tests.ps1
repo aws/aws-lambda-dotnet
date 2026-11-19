@@ -15,7 +15,7 @@ InModuleScope 'AWS.ToolExtras.LambdaPSRuntime' {
     Describe 'Build-LambdaPSRuntimeImage -BuildMethod' -Tag 'Unit' {
         BeforeAll {
             $script:projectPath = [System.IO.Path]::Combine($TestDrive, 'rt')
-            $null = New-LambdaPSRuntimeProject -Path $script:projectPath -PowerShellVersion '7.4' -WarningAction SilentlyContinue
+            $null = New-LambdaPSRuntimeProject -Path $script:projectPath -PowerShellVersion '7.4.*' -WarningAction SilentlyContinue
             $script:imageUri = '111122223333.dkr.ecr.eu-west-1.amazonaws.com/rt:v1'
         }
 

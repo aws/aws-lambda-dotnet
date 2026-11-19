@@ -71,19 +71,17 @@ function New-LambdaPSFunctionProject {
         binds to a separate runtime), 'SelfContainedZip' (a single .zip that bundles the runtime), or
         'Container' (a container-per-function image that bundles the runtime).
     .PARAMETER PowerShellVersion
-        The PowerShell version the bundled package targets, in major.minor form (for example
-        7.4). Required for -Target SelfContainedZip and -Target Container, which stop with
-        PowerShellVersionRequired without it; ignored for RuntimeBound.
-    .PARAMETER PwshVersion
-        The full pwsh version to install (x.y.z, for example 7.4.20). When omitted, the
-        major.minor value is mapped to a default patch release. It is baked into the Container
-        Dockerfile at scaffold time, together with the module's pinned SHA256 of that version's
-        linux-arm64 release tarball (the arm64 image installs the tarball, since there is no aarch64
-        RPM). If no arm64 hash is pinned for the version, a warning is written and the project builds
-        for linux/amd64 only. For SelfContainedZip the version is recorded in lambdaps-runtime.json
-        and Build-LambdaPSRuntimePackage bundles it; its own -PwshVersion overrides it.
-        A version that is not a -PowerShellVersion release is a PwshVersionMismatch error; without
-        it, a major.minor with no default patch is UnknownPwshVersion.
+        The PowerShell release the bundled package targets: 7.6.9 installs that exact release,
+        7.6.* the module's pinned release of the 7.6 line, and 7.* that of the highest 7.x line it
+        supports. A bare 7.6 is PowerShellVersionNotSpecific, and a line with no pinned release
+        UnknownPwshVersion. Required for -Target SelfContainedZip and
+        -Target Container, which stop with PowerShellVersionRequired without it; ignored for
+        RuntimeBound. The release is baked into the Container Dockerfile at scaffold time, together
+        with the module's pinned SHA256 of its linux-arm64 release tarball (the arm64 image installs
+        the tarball, since there is no aarch64 RPM). If no arm64 hash is pinned for the release, a
+        warning is written and the project builds for linux/amd64 only. For SelfContainedZip the
+        release is recorded in lambdaps-runtime.json and Build-LambdaPSRuntimePackage bundles it,
+        unless its own -PowerShellVersion changes it.
     .PARAMETER IncludeModule
         Modules to stage into the project's modules directory (with transitive dependencies), via
         Copy-LambdaPSModuleSet. Accepts a list. Each specification must pin an exact RequiredVersion
@@ -166,11 +164,11 @@ function New-LambdaPSFunctionProject {
 
         Scaffolds an arm64 RuntimeBound function project bound to the 'prod' runtime alias.
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello-zip -Handler handler -Target SelfContainedZip -PowerShellVersion 7.6
+        New-LambdaPSFunctionProject -Path ./hello-zip -Handler handler -Target SelfContainedZip -PowerShellVersion 7.6.*
 
         Scaffolds a self-contained function .zip project bundling PowerShell 7.6 (the default 7.6 pwsh release, added at build time).
     .EXAMPLE
-        New-LambdaPSFunctionProject -Path ./hello-image -Handler handler -Target Container -PowerShellVersion 7.6
+        New-LambdaPSFunctionProject -Path ./hello-image -Handler handler -Target Container -PowerShellVersion 7.6.*
 
         Scaffolds a container-per-function image project bundling PowerShell 7.6 (the default 7.6 pwsh release).
     .EXAMPLE
@@ -219,12 +217,9 @@ function New-LambdaPSFunctionProject {
         [string]$Target = 'RuntimeBound',
 
         [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a PowerShell version in major.minor form, for example 7.4.")]
+        [SupportsWildcards()]
+        [ValidatePattern('\A(0|[1-9][0-9]*)\.((0|[1-9][0-9]*)(\.(0|[1-9][0-9]*|\*))?|\*)\z', ErrorMessage = "'{0}' is not a PowerShell version such as 7.6.9, 7.6.* or 7.*.")]
         [string]$PowerShellVersion,
-
-        [Parameter()]
-        [ValidatePattern('\A[0-9]+\.[0-9]+\.[0-9]+\z', ErrorMessage = "'{0}' is not a pwsh release in x.y.z form, for example 7.4.20.")]
-        [string]$PwshVersion,
 
         [Parameter()]
         [Alias('Module')]
@@ -275,11 +270,13 @@ function New-LambdaPSFunctionProject {
                 $PSCmdlet.ThrowTerminatingError(
                     [System.Management.Automation.ErrorRecord]::new(
                         [System.ArgumentException]::new(
-                            "The -PowerShellVersion parameter (major.minor, for example 7.4) is required for -Target $Target.",
+                            "The -PowerShellVersion parameter (for example 7.6.*) is required for -Target $Target.",
                             'PowerShellVersion'),
                         'PowerShellVersionRequired', [System.Management.Automation.ErrorCategory]::InvalidArgument, $Target))
             }
 
+            $requested = Split-LambdaPSPowerShellVersion -PowerShellVersion $PowerShellVersion
+            $PowerShellVersion, $PwshVersion = $requested.Line, $requested.Release
             $resolvedVersion = Resolve-LambdaPSPwshVersion -PowerShellVersion $PowerShellVersion -PwshVersion $PwshVersion
         }
         $templateRoot = Get-LambdaPSProjectTemplateRoot -Target $Target
@@ -302,11 +299,9 @@ function New-LambdaPSFunctionProject {
         }
         else {
             # The RuntimeBound project runs on the runtime it binds to, which brings its own pwsh.
-            $ignored = @('PowerShellVersion', 'PwshVersion') | Where-Object { $PSBoundParameters.ContainsKey($_) }
-            if ($ignored) {
-                $agreement = if (@($ignored).Count -eq 1) { 'applies only to -Target SelfContainedZip and Container, so it is' } else { 'apply only to -Target SelfContainedZip and Container, so they are' }
-                Write-Warning ("-$($ignored -join ' and -') $agreement ignored for -Target RuntimeBound: the function " +
-                    'runs on the pwsh of the runtime it binds to.')
+            if ($PSBoundParameters.ContainsKey('PowerShellVersion')) {
+                Write-Warning ('-PowerShellVersion applies only to -Target SelfContainedZip and Container, so it is ignored ' +
+                    'for -Target RuntimeBound: the function runs on the pwsh of the runtime it binds to.')
             }
             # Record the architecture only when it was chosen, so a deploy otherwise follows the runtime's.
             $chosenArchitecture = if ($PSBoundParameters.ContainsKey('Architecture')) { $Architecture } else { $null }

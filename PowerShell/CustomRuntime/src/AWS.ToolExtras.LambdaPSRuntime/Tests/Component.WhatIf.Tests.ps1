@@ -32,7 +32,7 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
             Mock $command -ModuleName $script:moduleName -MockWith { throw 'must not call AWS under -WhatIf' }
         }
         $script:projectPath = Join-Path $TestDrive "rt-$([guid]::NewGuid().ToString('N'))"
-        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4'; RuntimeAlias = 'default'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
+        $script:splat = @{ RuntimeName = 'rt'; PowerShellVersion = '7.4.*'; RuntimeAlias = 'default'; Region = 'us-east-1'; ProjectPath = $script:projectPath }
     }
 
     It 'previews a valid deploy without writing anything' {
@@ -45,7 +45,7 @@ Describe 'New-LambdaPSRuntimeDeployment -WhatIf' -Tag 'Component' {
     }
 
     It 'fails with <ErrorId> when <Case>' -ForEach @(
-        @{ Case = 'the PowerShell version has no known pwsh build'; ErrorId = 'UnknownPwshVersion'; Extra = @{ PowerShellVersion = '7.9' } }
+        @{ Case = 'the PowerShell version has no known pwsh build'; ErrorId = 'UnknownPwshVersion'; Extra = @{ PowerShellVersion = '7.9.*' } }
         @{ Case = '-IncludeModule is not pinned'; ErrorId = 'ModuleVersionRequired'; Extra = @{ IncludeModule = @{ ModuleName = 'AWS.Tools.S3'; ModuleVersion = '5.0.1' } } }
         @{ Case = 'a module is missing under -MissingModuleAction Stop'; ErrorId = 'ModuleNotFoundLocally'; Extra = @{ IncludeModule = @{ ModuleName = 'LambdaPSTests.NotInstalled'; RequiredVersion = '1.0.0' }; MissingModuleAction = 'Stop' } }
     ) {
@@ -131,11 +131,11 @@ Describe 'Invoke-LambdaPSFunction -WhatIf' -Tag 'Component' {
 Describe 'Build-LambdaPSRuntimePackage -WhatIf' -Tag 'Component' {
     BeforeAll {
         $script:layer = Join-Path $TestDrive 'layer'
-        $null = New-LambdaPSRuntimeProject -Path $script:layer -Target Layer -PowerShellVersion 7.4
+        $null = New-LambdaPSRuntimeProject -Path $script:layer -Target Layer -PowerShellVersion '7.4.*'
     }
 
     It 'fails with <ErrorId> when <Case>' -ForEach @(
-        @{ Case = 'no SHA256 is pinned for the pwsh version'; ErrorId = 'UnknownPwshArchiveHash'; Extra = @{ PwshVersion = '7.4.2' } }
+        @{ Case = 'no SHA256 is pinned for the pwsh version'; ErrorId = 'UnknownPwshArchiveHash'; Extra = @{ PowerShellVersion = '7.4.2' } }
         @{ Case = '-PwshArchivePath does not exist'; ErrorId = 'PwshArchiveNotFound'; Extra = @{ PwshArchivePath = 'TestDrive:/nope.tar.gz' } }
     ) {
         $out = Join-Path $TestDrive "layer-$([guid]::NewGuid().ToString('N')).zip"
@@ -152,7 +152,7 @@ Describe '-WhatIf writes nothing' -Tag 'Component' {
         Mock 'Test-LambdaPSContainerRuntime' -ModuleName $script:moduleName -MockWith { [PSCustomObject]@{ Name = 'docker'; Path = '/nonexistent/docker' } }
         Mock 'Invoke-LambdaPSExternalTool' -ModuleName $script:moduleName -MockWith { }
         $project = Join-Path $TestDrive 'image-whatif'
-        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion 7.4
+        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion '7.4.*'
 
         $result = Build-LambdaPSRuntimeImage -Path $project -ImageUri '111122223333.dkr.ecr.us-east-1.amazonaws.com/rt:v1' -WhatIf
 
@@ -163,7 +163,7 @@ Describe '-WhatIf writes nothing' -Tag 'Component' {
     It 'Build-LambdaPSRuntimePackage writes no package and downloads nothing' {
         Mock 'Invoke-WebRequest' -ModuleName $script:moduleName -MockWith { throw 'must not download under -WhatIf' }
         $project = Join-Path $TestDrive 'layer-whatif'
-        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion 7.4 -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion '7.4.*' -Target Layer
         $out = Join-Path $TestDrive 'layer-whatif.zip'
 
         $result = Build-LambdaPSRuntimePackage -Path $project -OutFile $out -WhatIf
@@ -185,7 +185,7 @@ Describe '-WhatIf writes nothing' -Tag 'Component' {
 
     It 'Build-LambdaPSRuntimePackage names the Layer package in its What if line' {
         $project = Join-Path $TestDrive 'layer-whatif-text'
-        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion 7.4 -Target Layer
+        $null = New-LambdaPSRuntimeProject -Path $project -PowerShellVersion '7.4.*' -Target Layer
         $out = Join-Path $TestDrive 'wi.zip'
 
         $result = Invoke-InChildPwsh -Command "Build-LambdaPSRuntimePackage -Path '$project' -OutFile '$out' -WhatIf"
