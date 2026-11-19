@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.DurableExecution.OpenTelemetry",
       "Type": "Minor",
       "ChangelogMessages": [
-        "Initial preview of OpenTelemetry tracing for Amazon.Lambda.DurableExecution. The Invocation view emits Workflow, Invocation, operation and attempt spans through System.Diagnostics.ActivitySource, with no OpenTelemetry package dependency."
+        "Initial preview of OpenTelemetry tracing for Amazon.Lambda.DurableExecution. The Invocation view emits Workflow, Invocation, operation and attempt spans through System.Diagnostics.ActivitySource, with no OpenTelemetry package dependency. ContextExtractors.W3C anchors the execution on a W3C traceparent instead of an X-Ray header."
       ]
     }
   ]

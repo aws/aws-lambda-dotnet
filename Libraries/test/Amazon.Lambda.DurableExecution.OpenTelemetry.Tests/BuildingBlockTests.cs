@@ -48,6 +48,52 @@ public class ContextExtractorTests
         Assert.Null(ContextExtractors.ParseXRayHeader(header));
 }
 
+public class TraceParentExtractorTests
+{
+    private const string Valid = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+
+    [Fact]
+    public void TraceParent_IsParsed()
+    {
+        var context = ContextExtractors.ParseTraceParent(Valid)!;
+
+        Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", context.TraceId);
+        Assert.Equal("00f067aa0ba902b7", context.ParentSpanId);
+        Assert.Equal(UpstreamSampling.Sampled, context.Sampling);
+    }
+
+    [Theory]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00", UpstreamSampling.NotSampled)]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-03", UpstreamSampling.Sampled)]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-02", UpstreamSampling.NotSampled)]
+    public void Sampling_IsTheLowBitOfTheFlags(string traceParent, UpstreamSampling expected) =>
+        Assert.Equal(expected, ContextExtractors.ParseTraceParent(traceParent)!.Sampling);
+
+    [Fact]
+    public void ALaterVersion_MayAddFields() =>
+        Assert.NotNull(ContextExtractors.ParseTraceParent("01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-extra"));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7")]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-extra")]
+    [InlineData("ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")]
+    [InlineData("00-00000000000000000000000000000000-00f067aa0ba902b7-01")]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01")]
+    [InlineData("00-4BF92F3577B34DA6A3CE929D0E0E4736-00f067aa0ba902b7-01")]
+    [InlineData("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-1")]
+    [InlineData("0-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")]
+    public void Malformed_ExtractsNothing(string? traceParent) =>
+        Assert.Null(ContextExtractors.ParseTraceParent(traceParent));
+
+    [Fact]
+    public void W3C_ReadsTheInvocationsTraceParent() =>
+        Assert.Equal(
+            "4bf92f3577b34da6a3ce929d0e0e4736",
+            ContextExtractors.W3C(new Instrumentation.InvocationInfo { ExecutionArn = "arn", TraceParent = Valid })!.TraceId);
+}
+
 public class DeterministicIdTests
 {
     private const string Arn = "arn:aws:lambda:us-east-1:123456789012:execution:test-fn:test-execution";

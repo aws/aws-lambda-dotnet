@@ -104,6 +104,8 @@ The plugin supplies the `X-Amzn-Trace-Id` the SDK sends with a chained invoke: t
 | `FlushTimeout` | 1 second | Passed to `FlushAsync`; its token is cancelled after this time or when the invocation's time runs out. |
 | `ContextExtractor` | `ContextExtractors.XRay` | Finds the execution's trace context. It must return the execution's own context: one that changes between invocations splits the execution across traces. |
 
+To anchor the execution on a W3C `traceparent` the invoke carried on `clientContext.w3c` (`ILambdaContext.W3C`), set `ContextExtractor = ContextExtractors.W3C`. It returns the trace id, parent span id and sampled flag, and nothing when the header is missing or malformed.
+
 ## Span ids and `Activity`
 
 `Activity` has no public way to choose its own span id. The plugin sets the private `_spanId` and `_id` fields through `[UnsafeAccessor]`, only for the spans whose ids other invocations must reproduce. It is generated at compile time and works under trimming and Native AOT. The fields are not a contract: if a runtime changes them the override switches itself off and spans get random ids. Parenting inside one invocation still works; references across invocations (the Workflow span, the link from a replayed step to its first segment) then dangle. A test fails when the fields are missing. Listeners notified when a span starts see the random id; export and child spans see the derived one.
@@ -111,5 +113,4 @@ The plugin supplies the `X-Amzn-Trace-Id` the SDK sends with a chained invoke: t
 ## Not yet available
 
 - Loading the plugin from an environment variable or a Lambda layer without code.
-- The W3C `traceparent` extractor.
 - `[DurableExecution(Tracing = ...)]` for Amazon.Lambda.Annotations.

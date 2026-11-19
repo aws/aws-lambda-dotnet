@@ -23,7 +23,7 @@ internal static class DeterministicIds
     internal static bool IsValidSpanId(string? value) =>
         value is { Length: 16 } && value != ZeroSpanId && IsLowerHex(value);
 
-    private static bool IsLowerHex(string value)
+    internal static bool IsLowerHex(string value)
     {
         foreach (var c in value)
         {
