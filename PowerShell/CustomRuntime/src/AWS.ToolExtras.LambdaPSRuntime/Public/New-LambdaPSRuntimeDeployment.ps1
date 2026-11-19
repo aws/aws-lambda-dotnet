@@ -138,7 +138,8 @@ function New-LambdaPSRuntimeDeployment {
         preflight line names a newer 7.6 release when Microsoft's RPM repository has one): give it
         to keep a runtime on one release, or to put x86_64 and arm64 runtimes on the same release. 7.6.*
         installs the newest 7.6 release the build can verify, and 7.* that of the highest 7.x line
-        the module supports. A bare 7.6 is PowerShellVersionNotSpecific. For a Docker x86_64 build the
+        the module supports, so a later module release can move a 7.* runtime to a new line: patch
+        with 7.6.*. A bare 7.6 is PowerShellVersionNotSpecific. For a Docker x86_64 build the
         newest release is the newest in Microsoft's RPM repository (the module's pinned release if the
         repository cannot be read), for arm64 or a no-Docker build the newest with a pinned tarball SHA256.
         If that pinned release is older than the one the alias runs, on the same line and
