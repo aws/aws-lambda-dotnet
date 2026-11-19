@@ -11,7 +11,7 @@ function Invoke-LambdaPSOciImageBuild {
              System.Formats.Tar, keeping each entry's Unix mode, which a Windows file system cannot hold,
              and adds the ICU libraries (Get-LambdaPSIcuPackage) next to pwsh.
           2. Stages the executable scripts LF-only and without a BOM, and precompiles
-             PowerShellLambdaContext.dll with the bundled pwsh when the host can run it.
+             PowerShellLambdaContext.dll when it can (Invoke-LambdaPSOciContextPrecompile).
           3. Pulls the base image's manifest for the platform, adds one layer for pwsh, one for the runtime
              and (Container) one for the function, so a rebuild that changes only the function re-pushes
              only that layer, and sets the entrypoint, CMD and environment.
@@ -141,8 +141,7 @@ function Invoke-LambdaPSOciImageBuild {
         }
         finally { $zip.Dispose() }
 
-        # 2. Runtime files: executables staged LF-only without a BOM (the Dockerfile's sed), and the
-        #    LambdaContext DLL when the bundled pwsh can run here.
+        # 2. Runtime files: executables staged LF-only without a BOM (the Dockerfile's sed).
         $runtimeFiles = [AWS.OCI.Builder.FileManifest]::new()
         $runtimeStage = [System.IO.Path]::Combine($stage, 'runtime')
         $null = [System.IO.Directory]::CreateDirectory($runtimeStage)
@@ -157,17 +156,21 @@ function Invoke-LambdaPSOciImageBuild {
             # The source's mode, as docker COPY keeps it (a module's native helper stays executable).
             else { $runtimeFiles.Add($local, $file.ContainerPath) }
         }
-        $hostArchitecture = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
-        $contextSource = @($Plan.RuntimeFiles | Where-Object { $_.ContainerPath -ceq '/var/runtime/PowerShellLambdaContext.cs' })[0].LocalPath
         $contextDll = [System.IO.Path]::Combine($runtimeStage, 'PowerShellLambdaContext.dll')
-        $precompiled = $IsLinux -and $hostArchitecture -eq $Plan.Architecture -and
-            (Invoke-LambdaPSContextPrecompile -PwshPath ([System.IO.Path]::Combine($pwshRoot, 'pwsh')) -SourcePath $contextSource -OutputPath $contextDll)
-        if ($precompiled) {
+        $precompile = @{
+            BundledPwshPath = [System.IO.Path]::Combine($pwshRoot, 'pwsh')
+            PwshVersion     = $Plan.PwshVersion
+            Architecture    = $Plan.Architecture
+            SourcePath      = @($Plan.RuntimeFiles | Where-Object { $_.ContainerPath -ceq '/var/runtime/PowerShellLambdaContext.cs' })[0].LocalPath
+            OutputPath      = $contextDll
+            StagePath       = $stage
+        }
+        Write-Progress -Activity $activity -Status 'Precompiling PowerShellLambdaContext.dll'
+        if (Invoke-LambdaPSOciContextPrecompile @precompile) {
             $runtimeFiles.Add($contextDll, '/var/runtime/PowerShellLambdaContext.dll', [System.IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead')
         }
         else {
-            Write-Verbose ("PowerShellLambdaContext.dll was not precompiled (the bundled $($Plan.Architecture) pwsh cannot run on this host), so " +
-                'the runtime compiles PowerShellLambdaContext.cs at cold start.')
+            Write-Verbose 'PowerShellLambdaContext.dll was not precompiled, so the runtime compiles PowerShellLambdaContext.cs at cold start.'
         }
 
         # 3. Base image, layers and config.
