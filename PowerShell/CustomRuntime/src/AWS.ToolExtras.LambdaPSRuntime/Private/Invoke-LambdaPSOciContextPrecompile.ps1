@@ -3,9 +3,9 @@ function Invoke-LambdaPSOciContextPrecompile {
     .SYNOPSIS
         Precompiles a no-Docker image's PowerShellLambdaContext.dll, returning $false when the runtime must compile it at cold start.
     .DESCRIPTION
-        On Linux, compiles with the bundled pwsh when the host has the image's architecture, otherwise with the
-        same pwsh release for the host's architecture (Get-LambdaPSHostPwsh). Elsewhere, or when that pwsh can't be
-        fetched or started, it compiles with the running pwsh if it is of the same line (Get-LambdaPSSameLinePwsh).
+        Compiles with the bundled pwsh on a Linux host of the image's architecture, else with the running pwsh if it
+        is of the same line (Get-LambdaPSSameLinePwsh), else on Linux with the same pwsh release for the host's
+        architecture (Get-LambdaPSHostPwsh), which is a ~70 MB download.
     .PARAMETER BundledPwshPath
         The image's unpacked pwsh binary.
     .PARAMETER PwshVersion
@@ -49,9 +49,11 @@ function Invoke-LambdaPSOciContextPrecompile {
     )
 
     $hostArchitecture = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'x86_64' }
-    $pwsh = if ($IsLinux -and $hostArchitecture -eq $Architecture) { $BundledPwshPath }
-    elseif ($IsLinux) { Get-LambdaPSHostPwsh -PwshVersion $PwshVersion -Architecture $hostArchitecture -Destination ([System.IO.Path]::Combine($StagePath, 'host-powershell')) }
-    if ($pwsh -and (Invoke-LambdaPSContextPrecompile -PwshPath $pwsh -SourcePath $SourcePath -OutputPath $OutputPath)) { return $true }
+    $compile = @{ SourcePath = $SourcePath; OutputPath = $OutputPath }
+    if ($IsLinux -and $hostArchitecture -eq $Architecture -and (Invoke-LambdaPSContextPrecompile @compile -PwshPath $BundledPwshPath)) { return $true }
     $sameLine = Get-LambdaPSSameLinePwsh -PwshVersion $PwshVersion -Destination ([System.IO.Path]::Combine($StagePath, 'same-line-probe'))
-    [bool]($sameLine -and (Invoke-LambdaPSContextPrecompile -PwshPath $sameLine -SourcePath $SourcePath -OutputPath $OutputPath))
+    if ($sameLine -and (Invoke-LambdaPSContextPrecompile @compile -PwshPath $sameLine)) { return $true }
+    if (-not $IsLinux -or $hostArchitecture -eq $Architecture) { return $false }
+    $hostPwsh = Get-LambdaPSHostPwsh -PwshVersion $PwshVersion -Architecture $hostArchitecture -Destination ([System.IO.Path]::Combine($StagePath, 'host-powershell'))
+    [bool]($hostPwsh -and (Invoke-LambdaPSContextPrecompile @compile -PwshPath $hostPwsh))
 }

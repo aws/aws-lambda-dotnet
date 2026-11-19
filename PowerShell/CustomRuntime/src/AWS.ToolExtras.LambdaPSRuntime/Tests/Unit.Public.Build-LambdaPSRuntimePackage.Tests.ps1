@@ -1255,16 +1255,20 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         Should -Invoke 'Get-LambdaPSHostPwsh' @once -ParameterFilter { $Architecture -eq $hostArch -and $PwshVersion -eq $zip.PwshVersion }
     }
 
-    It 'Should precompile with the running pwsh of the same line when no build of the bundled release runs here' {
+    It 'Should precompile with the running pwsh of the same line, without downloading the host build, for another architecture' {
         $proj = [System.IO.Path]::Combine($TestDrive, 'ctx-same-line')
         $null = New-LambdaPSRuntimeProject -Path $proj -PowerShellVersion '7.4' -Target Layer
         $other = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'x86_64' } else { 'arm64' }
+        $bundled = [System.IO.Path]::Combine($TestDrive, 'bundled-same-line.tar.gz')
+        Copy-Item -LiteralPath $script:fakeTarball -Destination $bundled
+        Mock 'Get-LambdaPSPwshArchive' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -ParameterFilter { $Architecture -eq $other } -MockWith { $bundled }
         Mock 'Get-LambdaPSHostPwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
         Mock 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { [System.Environment]::ProcessPath }
-        $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'ctx-same-line.zip')) -PwshArchivePath $script:fakeTarball -Architecture $other -WarningVariable warnings -WarningAction SilentlyContinue
+        $zip = Build-LambdaPSRuntimePackage -Path $proj -OutFile ([System.IO.Path]::Combine($TestDrive, 'ctx-same-line.zip')) -Architecture $other -WarningVariable warnings -WarningAction SilentlyContinue
         (Get-ZipEntryNames $zip.PackagePath) -contains 'PowerShellLambdaContext.dll' | Should -BeTrue
         @($warnings | Where-Object { "$_" -like '*not precompiled*' }) | Should -HaveCount 0
         Should -Invoke 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -Times 1 -Exactly -ParameterFilter { $PwshVersion -eq $zip.PwshVersion }
+        Should -Not -Invoke 'Get-LambdaPSHostPwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime'
     }
 
     It 'Should retry with the running pwsh of the same line when the bundled pwsh cannot start' -Skip:(-not $IsLinux) {
@@ -1292,6 +1296,7 @@ Describe 'Build-LambdaPSRuntimePackage LambdaContext precompile' -Tag 'Unit' {
         $hostPwsh = [System.IO.Path]::Combine($TestDrive, 'host-pwsh-badsource')
         Set-Content -LiteralPath $hostPwsh -Value "#!/bin/sh`nexec '$([System.Environment]::ProcessPath)' `"`$@`""
         Mock 'Get-LambdaPSHostPwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { $hostPwsh }
+        Mock 'Get-LambdaPSSameLinePwsh' -ModuleName 'AWS.ToolExtras.LambdaPSRuntime' -MockWith { }
         $build = @{
             Path          = $proj
             OutFile       = [System.IO.Path]::Combine($TestDrive, 'ctx-host-badsource.zip')
