@@ -46,6 +46,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         ? $"<{inputType}, {_model.LambdaMethod.ReturnType.TaskTypeArgument}>"
         : $"<{inputType}>";
 
+    // Plugins (Tracing / PluginProvider) travel in DurableExecutionOptions, built once in a static field of the
+    // generated class (see FieldsAndConstructor). Without them the call is unchanged.
+    var optionsArgument = _model.DurablePluginsEnabled ? ", __durableExecutionOptions__" : "";
+
             
             #line default
             #line hidden
@@ -71,7 +75,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write(", __request__, __context__);\r\n");
+            this.Write(", __request__, __context__");
+            
+            #line 27 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\DurableExecutionInvoke.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(optionsArgument));
+            
+            #line default
+            #line hidden
+            this.Write(");\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

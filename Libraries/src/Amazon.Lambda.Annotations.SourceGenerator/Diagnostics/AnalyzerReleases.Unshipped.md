@@ -28,3 +28,6 @@ AWSLambda0142 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecution meth
 AWSLambda0143 | AWSLambdaCSharpGenerator | Info | DurableExecution function with explicit Role needs checkpoint permissions
 AWSLambda0144 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecutionAttribute
 AWSLambda0145 | AWSLambdaCSharpGenerator | Warning | Durable execution envelope types not registered with JsonSerializerContext
+AWSLambda0146 | AWSLambdaCSharpGenerator | Error | Durable execution plugins are not available
+AWSLambda0147 | AWSLambdaCSharpGenerator | Error | Durable execution tracing needs the OpenTelemetry package
+AWSLambda0148 | AWSLambdaCSharpGenerator | Error | Invalid DurableExecution PluginProvider

@@ -139,6 +139,12 @@ public class OrderProcessor
 }
 ```
 
+To add instrumentation plugins, set `PluginProvider` to the name of a static parameterless method on the same class that returns `IEnumerable<IDurableInstrumentationPluginFactory>`, and/or set `Tracing` to `DurableTracing.Execution` or `DurableTracing.Invocation` for OpenTelemetry (requires `Amazon.Lambda.DurableExecution.OpenTelemetry`). When both are set, the OpenTelemetry plugin runs first. The generator reports AWSLambda0146 to AWSLambda0148 when a plugin option cannot be honored.
+
+```csharp
+[DurableExecution(300, Tracing = DurableTracing.Execution, PluginProvider = nameof(GetPlugins))]
+```
+
 Works with both the executable and class-library programming models — set `[assembly: LambdaGlobalProperties(GenerateMain = true)]` for the executable model, or omit it for a class library (the generated `serverless.template` `Handler` adapts to each). The generator validates the `(TInput, IDurableContext) -> Task`/`Task<TOutput>` signature and Zip packaging, and reports a diagnostic otherwise.
 
 ## Documentation

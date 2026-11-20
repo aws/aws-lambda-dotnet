@@ -106,6 +106,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidDurableExecutionAttribute, methodLocation, errorMessage)));
             }
 
+            // Tracing and PluginProvider make the generated code reference the plugin API, the OpenTelemetry
+            // package and a method of the user's class. Check each now so a mistake is a diagnostic on the user's
+            // method instead of a compile error in generated code.
+            ValidateDurablePlugins(context, lambdaMethodSymbol, lambdaFunctionModel, methodLocation, diagnostics);
+
             // The generated wrapper hands the user method group to DurableFunction.WrapAsync, whose overloads
             // accept Func<TInput, IDurableContext, Task> or Func<TInput, IDurableContext, Task<TOutput>>. A
             // mismatched signature would produce a C# error in the generated code, so reject it up front with
@@ -125,6 +130,115 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // the context only handles types explicitly registered via [JsonSerializable]. If the envelope types
             // are missing, the failure only surfaces at invocation time, so warn about it at build time here.
             ValidateDurableExecutionSerializerContext(context, lambdaMethodSymbol, methodLocation, diagnostics);
+        }
+
+        private static void ValidateDurablePlugins(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            var durable = lambdaFunctionModel.DurableExecution;
+            if (durable == null)
+                return;
+
+            var wantsTracing = durable.Tracing != DurableTracing.None;
+            var wantsProvider = durable.PluginProvider != null;
+            if (!wantsTracing && !wantsProvider)
+                return;
+
+            // An invalid attribute value was reported above; do not pile generated-code checks on top of it.
+            if (durable.Validate().Count > 0)
+                return;
+
+            var compilation = context.Compilation;
+            var optionsType = compilation.GetTypeByMetadataName(TypeFullNames.DurableExecutionOptions);
+            var factoryType = compilation.GetTypeByMetadataName(TypeFullNames.DurableInstrumentationPluginFactory);
+            var setting = wantsTracing ? nameof(durable.Tracing) : nameof(durable.PluginProvider);
+            if (optionsType == null)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionPluginsUnavailable, methodLocation, setting, TypeFullNames.DurableExecutionOptions));
+                return;
+            }
+            if (factoryType == null)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionPluginsUnavailable, methodLocation, setting, TypeFullNames.DurableInstrumentationPluginFactory));
+                return;
+            }
+
+            if (wantsTracing
+                && (compilation.GetTypeByMetadataName(TypeFullNames.DurableOtelPlugin) == null
+                    || compilation.GetTypeByMetadataName(TypeFullNames.DurableOtelView) == null))
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionTracingPackageMissing, methodLocation, durable.Tracing.ToString()));
+            }
+
+            if (wantsProvider)
+                ValidateDurablePluginProvider(compilation, lambdaMethodSymbol, durable.PluginProvider, factoryType, methodLocation, diagnostics);
+        }
+
+        private static void ValidateDurablePluginProvider(Compilation compilation, IMethodSymbol lambdaMethodSymbol, string providerName, INamedTypeSymbol factoryType, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            void Report(string detail) =>
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.DurableExecutionInvalidPluginProvider, methodLocation, providerName, detail));
+
+            var containingType = lambdaMethodSymbol.ContainingType;
+            var candidates = containingType.GetMembers(providerName).OfType<IMethodSymbol>().ToList();
+            if (candidates.Count == 0)
+            {
+                Report($"'{containingType.ToDisplayString()}' has no method with that name.");
+                return;
+            }
+
+            // Prefer a usable overload when there are several. The detail reported is for the first candidate otherwise.
+            var method = candidates.FirstOrDefault(m => m.IsStatic && m.Parameters.Length == 0 && m.TypeParameters.Length == 0 && IsCallableFromGeneratedCode(m))
+                ?? candidates[0];
+
+            if (!method.IsStatic)
+            {
+                Report("it must be static.");
+                return;
+            }
+            if (method.Parameters.Length != 0 || method.TypeParameters.Length != 0)
+            {
+                Report("it must take no parameters and have no type parameters.");
+                return;
+            }
+            if (!IsCallableFromGeneratedCode(method))
+            {
+                // The generated class is a different class in the same assembly, so private and protected members are out.
+                Report($"it is {method.DeclaredAccessibility.ToString().ToLowerInvariant()}, but the generated code must be able to call it. Make it internal or public.");
+                return;
+            }
+
+            if (!ReturnsPluginFactories(compilation, method.ReturnType, factoryType))
+            {
+                Report($"it must return IEnumerable<{TypeFullNames.DurableInstrumentationPluginFactory}> but returns '{method.ReturnType.ToDisplayString()}'.");
+            }
+        }
+
+        private static bool IsCallableFromGeneratedCode(IMethodSymbol method) =>
+            method.DeclaredAccessibility == Accessibility.Public
+            || method.DeclaredAccessibility == Accessibility.Internal
+            || method.DeclaredAccessibility == Accessibility.ProtectedOrInternal;
+
+        /// <summary>
+        /// True when <paramref name="returnType"/> is an <c>IEnumerable&lt;T&gt;</c>, or implements one, where T is the
+        /// plugin factory interface or a type that implements it. That covers IEnumerable, arrays and lists.
+        /// </summary>
+        private static bool ReturnsPluginFactories(Compilation compilation, ITypeSymbol returnType, INamedTypeSymbol factoryType)
+        {
+            var enumerable = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1");
+            if (enumerable == null || returnType == null)
+                return false;
+
+            bool IsFactory(ITypeSymbol t) =>
+                SymbolEqualityComparer.Default.Equals(t, factoryType)
+                || t.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, factoryType));
+
+            bool IsEnumerableOfFactory(ITypeSymbol t) =>
+                t is INamedTypeSymbol named
+                && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, enumerable)
+                && named.TypeArguments.Length == 1
+                && IsFactory(named.TypeArguments[0]);
+
+            return IsEnumerableOfFactory(returnType) || returnType.AllInterfaces.Any(IsEnumerableOfFactory);
         }
 
         private static void ValidateDurableExecutionSerializerContext(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, Location methodLocation, List<Diagnostic> diagnostics)
