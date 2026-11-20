@@ -1,0 +1,4 @@
+# The runtime image's build context. 'COPY modules' takes everything under modules/, and a module's
+# .git/config can hold a remote URL with a token. The files the Dockerfile copies stay in.
+**/.git
+**/.gitignore

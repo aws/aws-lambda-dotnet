@@ -35,7 +35,7 @@ concurrency:
 env:
   # The CodePipelines to start (space-separated). The target account is the one the
   # assumed role lives in; the role must allow StartPipelineExecution on all of them.
-  PIPELINE_NAMES: "aws-lambda-dotnet aws-lambda-dotnet-powershell aws-lambda-testtool"
+  PIPELINE_NAMES: "aws-lambda-dotnet aws-lambda-dotnet-powershell aws-lambda-testtool aws-lambda-dotnet-lambdapsruntime"
   AWS_REGION: us-west-2
   INPUT_OVERRIDE_VERSION: ${{ github.event.inputs.OVERRIDE_VERSION }}
 
