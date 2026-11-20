@@ -8,7 +8,7 @@ using Amazon.Lambda.DurableExecution.Testing;
 namespace Amazon.Lambda.DurableExecution.OpenTelemetry.Tests;
 
 /// <summary>
-/// Collects the spans the plugin exports, with a sampler that behaves like the OpenTelemetry SDK's default
+/// Collects the spans the plugin exports. The sampler defaults to the OpenTelemetry SDK's default,
 /// ParentBased(AlwaysOn): a span follows the sampled flag of its parent, and a span without one is sampled.
 /// </summary>
 internal sealed class SpanCollector : IDisposable
@@ -20,13 +20,24 @@ internal sealed class SpanCollector : IDisposable
     private readonly object _lock = new();
     private readonly List<Activity> _stopped = new();
 
-    internal SpanCollector()
+    /// <summary>A sampler: given a span's name and parent, whether to record it.</summary>
+    internal delegate bool SamplerFunc(string name, ActivityContext parent);
+
+    /// <summary>The OpenTelemetry SDK's default, ParentBased(AlwaysOn).</summary>
+    internal static readonly SamplerFunc ParentBased = (_, parent) =>
+        parent == default || (parent.TraceFlags & ActivityTraceFlags.Recorded) != 0;
+
+    /// <summary>AlwaysOn, which ignores the parent's sampled flag (<c>OTEL_TRACES_SAMPLER=always_on</c>).</summary>
+    internal static readonly SamplerFunc AlwaysOn = (_, _) => true;
+
+    internal SpanCollector(SamplerFunc? sampler = null)
     {
+        var sample = sampler ?? ParentBased;
         _listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == SourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
-                options.Parent == default || (options.Parent.TraceFlags & ActivityTraceFlags.Recorded) != 0
+                sample(options.Name, options.Parent)
                     ? ActivitySamplingResult.AllDataAndRecorded
                     : ActivitySamplingResult.None,
             ActivityStopped = activity => { lock (_lock) _stopped.Add(activity); },

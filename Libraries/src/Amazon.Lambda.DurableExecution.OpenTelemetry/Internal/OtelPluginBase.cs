@@ -35,6 +35,10 @@ internal abstract class OtelPluginBase : IDurableInstrumentationPlugin
     protected Activity? InvocationSpan;
 
     protected string TraceId = string.Empty;
+    private ActivityTraceId _traceId;
+    private ActivitySpanId _ancestorSpanId;
+
+    /// <summary>The invocation's sampling decision. Spans are only started when it is recorded.</summary>
     protected ActivityTraceFlags Flags;
     protected ActivityContext Ancestor;
     protected bool AncestorIsRemote;
@@ -46,6 +50,14 @@ internal abstract class OtelPluginBase : IDurableInstrumentationPlugin
         Options = options;
         ExecutionArn = info.ExecutionArn;
         ReportedExecutionStart = info.ExecutionStartTimestamp;
+    }
+
+    private void SetSampled(bool sampled)
+    {
+        Flags = sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
+        Ancestor = new ActivityContext(_traceId, _ancestorSpanId, Flags, isRemote: AncestorIsRemote);
+        WorkflowContext = new ActivityContext(
+            _traceId, ActivitySpanId.CreateFromString(DeterministicIds.WorkflowSpanId(ExecutionArn)), Flags);
     }
 
     /// <summary>What the Workflow span and the synthetic root are backdated to.</summary>
@@ -82,26 +94,24 @@ internal abstract class OtelPluginBase : IDurableInstrumentationPlugin
             ? extracted!.TraceId
             : DeterministicIds.TraceIdFromArn(ExecutionArn, ReportedExecutionStart);
 
-        // An upstream decision is authoritative. Without one the execution is sampled, and the application's
-        // sampler still gets to decide for each span.
-        var sampled = !hasTraceId || extracted!.Sampling != UpstreamSampling.NotSampled;
-        Flags = sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
+        // One sampling decision covers every span of the invocation, as in the other SDKs. An upstream decision is
+        // authoritative. Without one, the application's sampler decides for the Invocation span and the rest follow
+        // it. A span the plugin does not start cannot be exported by a sampler that ignores its parent.
+        var sampling = hasTraceId ? extracted!.Sampling : UpstreamSampling.Undecided;
 
-        var traceId = ActivityTraceId.CreateFromString(TraceId);
+        _traceId = ActivityTraceId.CreateFromString(TraceId);
         if (hasTraceId && DeterministicIds.IsValidSpanId(extracted!.ParentSpanId))
         {
-            Ancestor = new ActivityContext(traceId, ActivitySpanId.CreateFromString(extracted.ParentSpanId), Flags, isRemote: true);
+            _ancestorSpanId = ActivitySpanId.CreateFromString(extracted.ParentSpanId);
             AncestorIsRemote = true;
         }
         else
         {
-            var rootId = DeterministicIds.ExecutionRootSpanId(ExecutionArn);
-            Ancestor = new ActivityContext(traceId, ActivitySpanId.CreateFromString(rootId), Flags);
+            _ancestorSpanId = ActivitySpanId.CreateFromString(DeterministicIds.ExecutionRootSpanId(ExecutionArn));
             AncestorIsRemote = false;
         }
-
-        WorkflowContext = new ActivityContext(
-            traceId, ActivitySpanId.CreateFromString(DeterministicIds.WorkflowSpanId(ExecutionArn)), Flags);
+        SetSampled(sampling != UpstreamSampling.NotSampled);
+        var traceId = _traceId;
 
         // The Invocation span joins an ambient span of the same trace (the Lambda or ADOT handler span) so the
         // trace shows the Lambda call. Otherwise it hangs off the execution ancestor.
@@ -116,6 +126,14 @@ internal abstract class OtelPluginBase : IDurableInstrumentationPlugin
             new("durable.execution.arn", ExecutionArn),
             new("durable.invocation.first", info.IsFirstInvocation),
         }, links: null, _invocationStart);
+
+        if (sampling == UpstreamSampling.Undecided && InvocationSpan is not { Recorded: true })
+        {
+            // The application's sampler dropped the invocation, so the rest of it is dropped too. Propagation and
+            // the stand-in contexts then carry the unsampled flag.
+            InvocationSpan = null;
+            SetSampled(false);
+        }
 
         if (ReportedExecutionStart != null)
             ExportSyntheticRoot(ReportedExecutionStart.Value);
@@ -345,6 +363,9 @@ internal abstract class OtelPluginBase : IDurableInstrumentationPlugin
         string name, ActivityContext parent, IEnumerable<KeyValuePair<string, object?>> tags,
         IEnumerable<ActivityLink>? links, DateTimeOffset start)
     {
+        if ((Flags & ActivityTraceFlags.Recorded) == 0)
+            return null;
+
         var previous = Activity.Current;
         try
         {

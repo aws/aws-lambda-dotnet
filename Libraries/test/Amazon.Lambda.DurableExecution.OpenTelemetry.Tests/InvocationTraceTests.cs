@@ -262,6 +262,57 @@ public class InvocationTraceTests
         Assert.Empty(spans.Spans);
     }
 
+    [Theory]
+    [InlineData(OtelView.Invocation)]
+    [InlineData(OtelView.Execution)]
+    public async Task UpstreamNotSampled_ExportsNothing_EvenWithASamplerThatIgnoresTheParent(OtelView view)
+    {
+        using var spans = new SpanCollector(SpanCollector.AlwaysOn);
+        var options = spans.ExecutionOptions(spans.Options(RemoteParent(UpstreamSampling.NotSampled)), view);
+        await using var runner = new DurableTestRunner<string, string>(async (_, ctx) =>
+        {
+            await ctx.StepAsync((_, _) => Task.FromResult("a"), name: "charge");
+            await ctx.WaitAsync(TimeSpan.FromSeconds(1), name: "pause");
+            return await ctx.RunInChildContextAsync((child, _) => child.StepAsync((_, _) => Task.FromResult("b"), name: "inner"), name: "outer");
+        }, Runner(options));
+
+        var result = await runner.RunAsync("in");
+
+        result.EnsureSucceeded();
+        Assert.Empty(spans.Spans);
+    }
+
+    [Theory]
+    [InlineData(OtelView.Invocation)]
+    [InlineData(OtelView.Execution)]
+    public async Task WithoutAnUpstreamDecision_TheInvocationSpansSamplingDecidesForTheRest(OtelView view)
+    {
+        // AlwaysOn for everything but the Invocation span: the plugin must not export the rest of a dropped invocation.
+        using var spans = new SpanCollector((name, _) => name != "Invocation");
+        var options = spans.ExecutionOptions(spans.Options(), view);
+        await using var runner = new DurableTestRunner<string, string>(
+            (_, ctx) => ctx.StepAsync((_, _) => Task.FromResult("a"), name: "charge"), Runner(options));
+
+        var result = await runner.RunAsync("in");
+
+        result.EnsureSucceeded();
+        Assert.Empty(spans.Spans);
+    }
+
+    [Fact]
+    public async Task UpstreamSampled_WithAlwaysOn_ExportsTheWholeExecution()
+    {
+        using var spans = new SpanCollector(SpanCollector.AlwaysOn);
+
+        var result = await Run(spans, ctx => ctx.StepAsync((_, _) => Task.FromResult("v"), name: "charge"), RemoteParent());
+
+        result.EnsureSucceeded();
+        Assert.Single(spans.All("Workflow"));
+        Assert.Single(spans.All("Invocation"));
+        Assert.Single(spans.All("charge"));
+        Assert.Single(spans.All("charge attempt 1"));
+    }
+
     [Fact]
     public async Task NoListener_RunsTheWorkflowWithoutSpans()
     {

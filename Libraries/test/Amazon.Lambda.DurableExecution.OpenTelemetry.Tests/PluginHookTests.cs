@@ -277,6 +277,22 @@ public class PluginHookTests
     }
 
     [Fact]
+    public async Task PropagationHeader_IsNotSampled_WhenTheSamplerDroppedTheInvocation()
+    {
+        // No upstream decision, and a sampler that drops the Invocation span: the invoked function must not record.
+        using var spans = new SpanCollector((name, _) => name != "Invocation");
+        var factory = OtelPlugin.CreateFactory(OtelView.Invocation, spans.Options());
+        var info = Info();
+        var plugin = factory.CreatePlugin(info)!;
+        plugin.OnInvocationStart(info);
+
+        var header = plugin.ProvidePropagationMetadata(new PropagationInput { ExecutionArn = Arn, OperationId = "i", TargetFunctionName = "f" });
+
+        Assert.EndsWith(";Sampled=0", header);
+        await Finish(plugin);
+    }
+
+    [Fact]
     public async Task LogScope_ReportsTheCurrentSpan_AndCanBeSwitchedOff()
     {
         using var spans = new SpanCollector();

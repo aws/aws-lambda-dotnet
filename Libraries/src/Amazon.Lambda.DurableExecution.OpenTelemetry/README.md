@@ -83,7 +83,7 @@ Status: Workflow `Ok`/`Error`. Invocation `Ok` for succeeded and pending, `Error
 
 ## Sampling
 
-An upstream decision in the header (`Sampled=1` or `0`) is authoritative: spans are created with the matching trace flag, and the standard `ParentBased` sampler follows it. Without one the execution is sampled and your sampler decides for each span.
+Each invocation makes one sampling decision for all of its spans, as the other SDKs do. An upstream decision in the header (`Sampled=1` or `0`) is authoritative. Without one, your sampler decides for the Invocation span and the invocation's other spans follow it. When the decision is not to sample, the plugin starts no spans, so even a sampler that ignores the parent (`AlwaysOn`) exports nothing, and a chained invoke carries `Sampled=0`. The plugin cannot make your sampler keep a span it drops, so a custom sampler that drops some spans by name can still leave gaps; `ParentBased`, `AlwaysOn` and `TraceIdRatioBased` cannot.
 
 ## Chained invokes
 
