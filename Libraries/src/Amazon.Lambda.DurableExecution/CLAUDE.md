@@ -135,6 +135,23 @@ String constants live in `OperationTypes` (STEP/WAIT/CALLBACK/CHAINED_INVOKE/CON
 `OperationSubTypes` (PascalCase finer classifier). Plural type names (`OperationTypes`, not `OperationType`)
 intentionally avoid collision with `AWSSDK.Lambda` model enums.
 
+## Instrumentation plugins
+
+`Instrumentation/` holds the public plugin API and `Internal/PluginRunner.cs` dispatches to it (user guide:
+`docs/core/instrumentation-plugins.md`, decisions: `docs/design/instrumentation-plugin-hooks.md`). Rules to keep when
+touching it:
+
+- Operation and attempt hooks are synchronous and never awaited. Awaiting plugin work where no operation is
+  executing lets the invocation suspend early. Async plugin work belongs in `OnInvocationEndAsync`.
+- A plugin must never fail the workflow: contain every hook exception, and keep `WrapAsync` running the user code
+  exactly once and letting its exception through.
+- Operation start/end are reported in one place, `DurableOperation.ExecuteAsync`. An operation that hands back a
+  handle and finishes later (a callback) sets `EndsWhenExecuteReturns` to false and calls `ReportEnd` itself.
+  `IncrementalParallelOperation` is not a `DurableOperation` and reports its own start and end.
+- With no plugin registered the `Plugins` reference is null and the original code path runs. Keep it that way.
+- Plugins are passed to operations through the `Plugins` init property and to child contexts through
+  `DurableContext`, so operation constructors stay unchanged.
+
 ## Conventions
 
 - **Programming model:** both the *executable* model (`Main` builds a `LambdaBootstrap` with a handler

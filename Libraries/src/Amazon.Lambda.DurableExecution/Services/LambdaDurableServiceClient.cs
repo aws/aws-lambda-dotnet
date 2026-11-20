@@ -131,6 +131,9 @@ internal sealed class LambdaDurableServiceClient : IDurableServiceClient
         return (operations, response.NextMarker);
     }
 
+    private static long? ToUnixMilliseconds(DateTime? value) =>
+        value.HasValue ? new DateTimeOffset(value.Value, TimeSpan.Zero).ToUnixTimeMilliseconds() : null;
+
     private static Operation MapFromSdkOperation(SdkOperation sdkOp)
     {
         return new Operation
@@ -141,6 +144,8 @@ internal sealed class LambdaDurableServiceClient : IDurableServiceClient
             Name = sdkOp.Name,
             ParentId = sdkOp.ParentId,
             SubType = sdkOp.SubType,
+            StartTimestamp = ToUnixMilliseconds(sdkOp.StartTimestamp),
+            EndTimestamp = ToUnixMilliseconds(sdkOp.EndTimestamp),
             StepDetails = sdkOp.StepDetails != null ? new StepDetails
             {
                 Result = sdkOp.StepDetails.Result,

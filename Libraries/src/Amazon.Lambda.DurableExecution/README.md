@@ -22,6 +22,7 @@ Your handler delegates to `DurableFunction.WrapAsync`, which gives your workflow
 - `ctx.RunInChildContextAsync` — run an isolated child context with its own checkpoint log. ([docs](docs/core/child-contexts.md))
 - `ctx.ParallelAsync` — run independent branches concurrently and aggregate their results. ([docs](docs/core/parallel.md))
 - Every user `Func` receives a `CancellationToken` linking the caller's token with the SDK's workflow-shutdown signal. ([docs](docs/core/cancellation.md))
+- Instrumentation plugins observe the invocation and its operations, for tracing, metrics or audit. ([docs](docs/core/instrumentation-plugins.md))
 
 ## Quick Start
 

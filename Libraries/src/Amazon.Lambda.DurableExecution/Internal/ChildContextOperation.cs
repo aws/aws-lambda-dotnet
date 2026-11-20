@@ -97,6 +97,8 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
 
     protected override string OperationType => OperationTypes.Context;
 
+    protected override string? OperationSubType => _subType;
+
     protected override async Task<T> StartAsync(CancellationToken cancellationToken)
     {
         // Virtual (NestingType.Flat) branches emit no CONTEXT checkpoint of their
@@ -194,7 +196,7 @@ internal sealed class ChildContextOperation<T> : DurableOperation<T>
             // the deadline while its timer has not run yet.
             _workflowCancellation.ThrowIfDeadlineExceeded(
                 "The invocation deadline passed before the child context started.");
-            result = await _func(childContext, linked.Token);
+            result = await RunChildContextAsync(() => _func(childContext, linked.Token));
         }
         catch (OperationCanceledException) when (
             linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)

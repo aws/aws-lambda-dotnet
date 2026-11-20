@@ -31,4 +31,7 @@ internal sealed class DurableInvocationOptions
     /// instead of racing a real timer.
     /// </summary>
     public Action<WorkflowCancellation>? OnWorkflowCancellationCreated { get; init; }
+
+    /// <summary>The public options passed to <c>DurableFunction.WrapAsync</c>, if any (instrumentation plugins).</summary>
+    public DurableExecutionOptions? Execution { get; init; }
 }

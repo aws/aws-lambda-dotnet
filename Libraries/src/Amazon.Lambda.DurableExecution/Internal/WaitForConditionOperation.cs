@@ -81,6 +81,8 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
 
     protected override string OperationType => OperationTypes.Step;
 
+    protected override string? OperationSubType => OperationSubTypes.WaitForCondition;
+
     protected override Task<TState> StartAsync(CancellationToken cancellationToken)
         => ExecuteIteration(_config.InitialState, attemptNumber: 1, existingStatus: null, cancellationToken);
 
@@ -212,7 +214,7 @@ internal sealed class WaitForConditionOperation<TState> : DurableOperation<TStat
             // Also against the clock: restoring the prior state on replay can
             // cross the deadline while its timer has not run yet.
             ThrowIfDeadlineExceeded();
-            newState = await _check(currentState, checkContext, linked.Token);
+            newState = await RunAttemptAsync(attemptNumber, () => _check(currentState, checkContext, linked.Token));
         }
         catch (OperationCanceledException) when (
             linked.IsCancellationRequested || _workflowCancellation.Token.IsCancellationRequested)

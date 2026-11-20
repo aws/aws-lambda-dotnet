@@ -179,6 +179,7 @@ Invoking an unregistered function throws `UnregisteredSiblingFunctionException`.
 | `LoggerFactory` | none | Optional logging during execution. |
 | `DurableExecutionArn` | synthetic test ARN | Override for tests that assert on the ARN. |
 | `OmitCheckpointToken` | none | Predicate over the 1-based checkpoint call number; when true, the response omits the token so the invocation suspends (`Pending`) and resumes in the next one. |
+| `ExecutionOptions` | none | `DurableExecutionOptions` passed to every invocation, for example to run the workflow with instrumentation plugins. |
 
 ## Testing Against a Deployed Function
 
