@@ -3,18 +3,18 @@
 This starter project consists of:
 
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources
-* Function.cs - class file containing the C# method mapped to the single function declared in the template file
+* Functions.cs - class file containing the C# method mapped to the single function declared in the template file
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
 
 You may also have a test project depending on the options selected.
 
-The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
+The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Functions.cs. You can then deploy your Serverless application.
 
 ## Powertools for AWS Lambda (.NET)
 
-[Powertools for AWS Lambda (.NET)](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
+[Powertools for AWS Lambda (.NET)](https://docs.aws.amazon.com/powertools/dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
-This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables defined in the `serverless.template` file and annotations on methods in `Function.cs`
+This starter project comes with Powertools Logging, Metrics and Tracing configured through environment variables defined in the `serverless.template` file and annotations on methods in `Functions.cs`
 
 **Environment variables:**
 
@@ -25,13 +25,13 @@ This starter project comes with Powertools Loging, Metrics and Tracing configure
 * POWERTOOLS_TRACER_CAPTURE_ERROR=true
 * POWERTOOLS_METRICS_NAMESPACE=ServerlessGreeting
 
-References to the environment variables can be found [here]([https://](https://awslabs.github.io/aws-lambda-powertools-dotnet/references/))
+References to the environment variables can be found [here](https://docs.aws.amazon.com/powertools/dotnet/references/)
 
 **Included NuGet Packages:**
 
-* [AWS.Lambda.Powertools.Logging](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/)
-* [AWS.Lambda.Powertools.Metrics](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/)
-* [AWS.Lambda.Powertools.Tracing](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/tracing/)
+* [AWS.Lambda.Powertools.Logging](https://docs.aws.amazon.com/powertools/dotnet/core/logging/)
+* [AWS.Lambda.Powertools.Metrics](https://docs.aws.amazon.com/powertools/dotnet/core/metrics/)
+* [AWS.Lambda.Powertools.Tracing](https://docs.aws.amazon.com/powertools/dotnet/core/tracing/)
 
 ## Here are some steps to follow from Visual Studio
 

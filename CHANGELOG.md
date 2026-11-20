@@ -1,6 +1,24 @@
 ### AWS.ToolExtras.LambdaPSRuntime PowerShell Module (1.0.0)
 * Initial release. Scaffolds, builds, deploys and invokes PowerShell Lambda functions on a custom runtime, as a Layer, a self-contained .zip, a container image or a Lambda customer-managed runtime.
 
+## Release 2026-11-19
+
+### Amazon.Lambda.Templates (8.1.3)
+* Fix dead Powertools for AWS Lambda (.NET) documentation links in the Powertools blueprints
+
+## Release 2026-11-17
+
+### Amazon.Lambda.DurableExecution (2.2.1)
+* Cancel user work that is still running when an invocation ends, and reject new durable operations started after that point.
+* On Lambda Managed Instances, stop durable work at the invocation deadline and throw TimeoutException so the invocation is retried instead of left running.
+
+## Release 2026-11-13
+
+### AWS.OCI.Builder (0.6.0)
+* Initial release of AWS library for programmatically building OCI images without a container runtime
+### Amazon.Lambda.AspNetCoreServer (10.3.2)
+* Fix response streaming dropping bytes written to HttpResponse.BodyWriter that the application did not flush before the response was started by CompleteAsync, Response.StartAsync or SendFileAsync.
+
 ## Release 2026-11-06
 
 ### Amazon.Lambda.AspNetCoreServer (10.3.1)

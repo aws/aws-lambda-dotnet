@@ -28,7 +28,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         private Stream _lambdaStream;         // null until StartAsync completes
         private MemoryStream _preStartBuffer; // accumulates bytes written before StartAsync
         private bool _started;
-        private PipeWriter _pipeWriter;       // lazily created; always wraps the live Stream
+        private StartOnFlushPipeWriter _pipeWriter; // lazily created; always wraps the live Stream
 
         /// <summary>
         /// Initializes a new instance of <see cref="StreamingResponseBodyFeature"/>.
@@ -97,6 +97,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 invokeFeatures.ResponseStartingEvents != null)
             {
                 await invokeFeatures.ResponseStartingEvents.ExecuteAsync();
+            }
+
+            // If the application wrote through Writer (GetSpan/Advance) without flushing, those
+            // bytes are still pending in the writer's inner PipeWriter, which is bound to the
+            // pre-start buffer. Move them into the buffer and detach the inner writer so that
+            // subsequent writes bind to the Lambda stream. This must happen regardless of how
+            // StartAsync is reached (CompleteAsync, Response.StartAsync, SendFileAsync, ...).
+            if (_pipeWriter != null)
+            {
+                await _pipeWriter.DetachFromPreStartBufferAsync(cancellationToken);
             }
 
             // Open the Lambda response stream (this writes the HTTP prelude).
@@ -190,6 +200,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             public StartOnFlushPipeWriter(StreamingResponseBodyFeature feature)
             {
                 _feature = feature;
+            }
+
+            /// <summary>
+            /// Called by <see cref="StreamingResponseBodyFeature.StartAsync"/> before the Lambda stream
+            /// is opened. Flushes any bytes pending in the inner writer into the pre-start buffer and
+            /// drops the inner writer so the next write is bound to the live Lambda stream.
+            /// </summary>
+            internal async Task DetachFromPreStartBufferAsync(CancellationToken cancellationToken)
+            {
+                if (_inner != null)
+                {
+                    await _inner.FlushAsync(cancellationToken);
+                    _inner = null;
+                }
             }
 
             public override void Advance(int bytes) => Inner.Advance(bytes);
