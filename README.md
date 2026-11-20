@@ -121,13 +121,13 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.DurableExec
 
 ## Blueprints
 
-Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are available when creating a new project and selecting the AWS Lambda Project.
+Blueprints in this repository are .NET Core Lambda functions that can be used to get started. In Visual Studio the Blueprints are available when creating a new project and selecting the AWS Lambda Project.
 
 
 ### Dotnet CLI Templates
 
 New .NET Core projects can be created with the **dotnet new** command. By 
-installing the **Amazon.Lambda.Templates** NuGet package the AWS Lamdba blueprints 
+installing the **Amazon.Lambda.Templates** NuGet package the AWS Lambda blueprints 
 can be created from the **dotnet new** command. To install the template execute the following command:
 ```
 dotnet new -i "Amazon.Lambda.Templates::*"
