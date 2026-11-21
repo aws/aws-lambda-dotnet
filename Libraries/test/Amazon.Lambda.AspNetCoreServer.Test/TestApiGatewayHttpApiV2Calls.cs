@@ -63,6 +63,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestResponseTooLargeReturns413()
+        {
+            var response = await InvokeAPIGatewayRequest("large-response-httpapi-v2-request.json");
+
+            Assert.Equal((int)HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            Assert.Null(response.Body);
+        }
+
+        [Fact]
         public async Task TestEncodePlusInResourcePath()
         {
             var response = await InvokeAPIGatewayRequest("encode-plus-in-resource-path-httpapi-v2.json");

@@ -22,6 +22,30 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(expected, encoded);
         }
 
+        [Theory]
+        [InlineData(Utilities.MaxResponsePayloadSize, false, false)]
+        [InlineData(Utilities.MaxResponsePayloadSize + 1, false, true)]
+        [InlineData(Utilities.MaxResponsePayloadSize, true, false)]
+        [InlineData(Utilities.MaxResponsePayloadSize + 1, true, true)]
+        public void TestIsResponseBodyTooLarge(int size, bool isBase64Encoded, bool expected)
+        {
+            Assert.Equal(expected, Utilities.IsResponseBodyTooLarge(new string('a', size), isBase64Encoded));
+        }
+
+        [Fact]
+        public void TestIsResponseBodyTooLargeCountsUtf8Bytes()
+        {
+            // Each character is 2 bytes in UTF-8, so this body is over the limit even though it has fewer characters.
+            var body = new string('é',Utilities.MaxResponsePayloadSize / 2 + 1);
+            Assert.True(Utilities.IsResponseBodyTooLarge(body, false));
+        }
+
+        [Fact]
+        public void TestIsResponseBodyTooLargeNullBody()
+        {
+            Assert.False(Utilities.IsResponseBodyTooLarge(null, false));
+        }
+
         // This test is ensure middleware will the status code at 200.
         [Fact]
         public void EnsureStatusCodeStartsAtIs200()

@@ -369,6 +369,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             }
 #pragma warning restore CS0618
+
+            if (Utilities.IsResponseBodyTooLarge(response.Body, response.IsBase64Encoded))
+            {
+                _logger.LogError($"Response body exceeds the Lambda response payload limit of {Utilities.MaxResponsePayloadSize} bytes, returning status code 413");
+                response = new APIGatewayProxyResponse
+                {
+                    StatusCode = (int)HttpStatusCode.RequestEntityTooLarge
+                };
+            }
+
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");

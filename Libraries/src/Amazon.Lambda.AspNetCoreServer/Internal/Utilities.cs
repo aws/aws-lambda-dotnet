@@ -127,6 +127,25 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
 
         /// <summary>
+        /// The maximum size in bytes of a buffered (non-streaming) Lambda response payload.
+        /// </summary>
+        internal const int MaxResponsePayloadSize = 6 * 1024 * 1024;
+
+        /// <summary>
+        /// Checks if the Lambda response body is larger than Lambda allows for a buffered response.
+        /// </summary>
+        internal static bool IsResponseBodyTooLarge(string body, bool isBase64Encoded)
+        {
+            if (body == null)
+            {
+                return false;
+            }
+
+            var size = isBase64Encoded ? body.Length : Encoding.UTF8.GetByteCount(body);
+            return size > MaxResponsePayloadSize;
+        }
+
+        /// <summary>
         /// Add a '?' to the start of a non-empty query string, otherwise return null.
         /// </summary>
         /// <remarks>
