@@ -18,5 +18,7 @@ phases:
     commands:
       - dotnet msbuild buildtools/build.proj /t:testtoolv2-tests /p:Cicd=true
       - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true
+      # Release pipelines that load this buildspec skip the module's suite, so it can't block their release; its own pipeline runs it.
+      - case "$CODEBUILD_INITIATOR" in codepipeline/*) echo "Skipping lambdapsruntime-tests in a release pipeline" ;; *) dotnet msbuild buildtools/build.proj /t:lambdapsruntime-tests /p:Cicd=true ;; esac
       - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true
 

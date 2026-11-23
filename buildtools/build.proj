@@ -25,6 +25,18 @@
         </ItemGroup>
         <Copy SourceFiles="@(AWSLambdaPSCoreModuleFiles)" DestinationFolder="../Deployment/PowerShell/AWSLambdaPSCore/%(RecursiveDir)" />
     </Target>
+    <!-- Stages into its own folder: the release pipeline publishes every module folder under its working directory. -->
+    <Target Name="copy-lambdapsruntime-module">
+        <!-- Library first: the no-Docker image build loads lib/AWS.OCI.Builder.dll, which Package stages with the module. -->
+        <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task Library" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task Package" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    </Target>
+    <!-- build.ps1 -Task All runs the unit, component and contract tests and the analyzer; it makes no AWS calls.
+         Each AWS.Tools module requires its exact AWS.Tools.Common, and a release publishes them minutes apart. -->
+    <Target Name="lambdapsruntime-tests">
+        <Exec Condition="$(Cicd)" Command="pwsh -NoProfile -NonInteractive -Command '$ErrorActionPreference = &quot;Stop&quot;; Install-PSResource -Name Pester -Version 5.7.1 -Repository PSGallery -TrustRepository; Install-PSResource -Name PSScriptAnalyzer -Version 1.25.0 -Repository PSGallery -TrustRepository; $version = (Find-PSResource -Name AWS.Tools.Lambda -Repository PSGallery).Version.ToString(); Install-PSResource -Name AWS.Tools.Lambda, AWS.Tools.LambdaCore, AWS.Tools.ECR, AWS.Tools.SecurityToken -Version $version -Repository PSGallery -TrustRepository'" />
+        <Exec Command="pwsh -NoProfile -NonInteractive -File ../PowerShell/CustomRuntime/build.ps1 -Task All" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    </Target>
     <ItemGroup>
         <LibraryName Include="..\Libraries\src\**\*.csproj"/>
     </ItemGroup>

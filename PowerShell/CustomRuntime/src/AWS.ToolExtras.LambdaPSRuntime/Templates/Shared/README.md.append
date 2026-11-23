@@ -1,0 +1,80 @@
+## Runtime settings
+
+Set these as environment variables on the function:
+
+- `POWERSHELL_RUNTIME_VERBOSE=TRUE` writes the runtime's own progress (each step of start-up and of
+  every invocation) to the function log. It does not turn on `Write-Verbose` output from the handler or
+  the modules it uses: set `$VerbosePreference` in the handler for that.
+- `POWERSHELL_RUNTIME_JSON_DEPTH` (1-100, default 100) is the depth to which the handler's output is
+  serialized to JSON; any other value uses 100, and the runtime writes a warning naming the value to
+  the function log once. Return plain data (hashtables, PSCustomObjects, arrays, strings, numbers): a
+  rich .NET object, such as the output of `Get-Item`, references other objects without end, and
+  serializing it that deep can exhaust the function's memory or time. Lower the depth if a handler must
+  return one; values nested deeper than the depth are sent as their type name (for example
+  `System.Collections.Hashtable`).
+- The function's log format and application log level (Lambda sets `AWS_LAMBDA_LOG_FORMAT` and
+  `AWS_LAMBDA_LOG_LEVEL` from them). With the JSON format, each record the handler or its start-up code
+  writes is one JSON line with `timestamp`, `level`, `requestId`, `traceId`, `tenantId` (on a
+  multi-tenant function) and `message`, plus
+  `errorType`, `errorMessage` and `stackTrace` for an error: `Write-Error` is `ERROR`, `Write-Warning`
+  `WARN`, `Write-Host`, `Write-Information` (unless `$InformationPreference` is `Ignore`) and start-up output
+  `INFO`, and `Write-Verbose` and `Write-Debug` `DEBUG` (when `$VerbosePreference` or `$DebugPreference`
+  lets them through). Records below the log level (default `INFO`) are dropped.
+
+Everything the handler writes to the pipeline is its response. A string is sent as it is; anything else
+is sent as JSON. PowerShell unrolls a one-item array, so return `, @($item)` to send a JSON array of
+one, and discard stray output (for example `$null = $list.Add($x)`), which would otherwise be sent as
+part of an array. A handler that writes nothing to the pipeline returns an empty body.
+
+`Write-Host` and `Write-Warning` output goes to the function log; `Write-Information` and
+`Write-Verbose` output goes there only when the handler sets `$InformationPreference` or
+`$VerbosePreference`. `Write-Error` does not fail the invocation: the handler goes on and its output is
+the response. A `throw`, or a command run with `-ErrorAction Stop` that fails, fails the invocation and
+reports the error. `$LambdaContext` has `AwsRequestId`, `ClientContext`, `FunctionName`,
+`FunctionVersion`, `Identity`, `InvokedFunctionArn`, `LogGroupName`, `LogStreamName`,
+`MemoryLimitInMB`, `RemainingTime`, `TenantId` (the invoke's tenant on a multi-tenant function, otherwise
+`$null`) and `GetRemainingTimeInMillis()`.
+
+A handler receives the event and the context as its first two arguments, so start a handler function
+with `param($LambdaInput, $LambdaContext)`. A `<script>.ps1` handler can declare the same block, or
+leave it out: `$LambdaInput` and `$LambdaContext` are in scope either way, as in AWSLambdaPSCore. The
+handler setting (`_HANDLER`) takes one of three forms: `<script>.ps1`,
+`<script>.ps1::<function>` or `Module::<module>::<function>`. If the handler cannot be loaded, the
+function fails at start-up and the invoke reports why: a handler setting that is not one of those
+forms, a missing or unparsable script, a handler function that does not exist, a module that does not
+import, or, for a `<script>.ps1::<function>` handler, any terminating error in the script's top-level
+code (which runs once, at start-up). The handler can be a function, filter or cmdlet, or an alias to
+one of these or to a script file.
+
+The event is converted from JSON before the handler runs. An event with two keys that differ only in
+case (for example `id` and `ID`, as in a query string `?id=1&ID=2` passed on by an HTTP front end)
+cannot be converted, so the invocation fails before the handler is called. A string in the event that
+looks like an ISO 8601 date and time becomes a `[datetime]` in the function's time zone (UTC in
+Lambda), so its offset is lost: a handler that returns `2026-10-22T10:00:00+05:00` unchanged sends
+`2026-10-22T05:00:00+00:00`, the same instant written in UTC.
+
+Leave a handler early with `return`. A `break` or `continue` outside a loop of the handler's own fails
+the invocation, or, in the top-level code of a `<script>.ps1::<function>` script or a handler module,
+fails start-up. `exit` in a handler function, or a `break` or `continue` whose label matches no loop of
+the handler's own, ends the runtime: the invocation fails and Lambda starts the runtime again. In the
+top-level code of a `<script>.ps1::<function>` script or a handler module, such a labelled `break` or
+`continue` fails start-up, but `exit` stops only that script or module import, and start-up goes on
+without the rest of it, so do not use `exit` there. In a `<script>.ps1` handler, `exit` ends only the
+script: a non-zero exit code fails the invocation, and `exit 0` sends what the script wrote before as the
+response.
+
+The Layer and SelfContainedZip targets run pwsh in invariant-globalization mode, because the
+`provided.al2023` base has no ICU library, so culture-specific code fails there: a named culture such
+as `[cultureinfo]'de-DE'`, or formatting with one, throws. The CMR and Container targets install ICU
+and support it.
+
+Lambda reuses the runtime's session for the invocations that follow. After each one, the runtime
+removes any jobs (including thread jobs still running) and remoting sessions the invocation left, and
+restores `$LASTEXITCODE` and `$env:PSModulePath` to their values at the end of start-up. Anything else
+the handler changes, such as a global variable, an environment variable the runtime does not set, the
+current location or an imported module, is still there for the next invocation. So are the jobs,
+event subscriptions (`-Action`) and remoting sessions that the handler's start-up code created.
+
+The runtime sets `AWS_EXECUTION_ENV` to `AWS_Lambda_lambdapsruntime_pwsh_<pwsh version>_ric_<runtime client
+version>`, or appends the part from `_lambdapsruntime` to a value already set. The AWS SDK sends it in the
+user agent of each call the function makes.

@@ -1,3 +1,6 @@
+### AWS.ToolExtras.LambdaPSRuntime PowerShell Module (1.0.0)
+* Initial release. Scaffolds, builds, deploys and invokes PowerShell Lambda functions on a custom runtime, as a Layer, a self-contained .zip, a container image or a Lambda customer-managed runtime.
+
 ## Release 2026-11-19
 
 ### Amazon.Lambda.Templates (8.1.3)

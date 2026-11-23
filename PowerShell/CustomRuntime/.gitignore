@@ -1,0 +1,15 @@
+# PowerShell / .NET build and test artifacts
+bin/
+obj/
+*.zip
+# Built by build.ps1 -Task Library
+src/AWS.ToolExtras.LambdaPSRuntime/lib/
+coverage.xml
+testResults*.xml
+pester*.xml
+
+# Editor / OS
+.vs/
+.vscode/
+*.user
+.DS_Store
