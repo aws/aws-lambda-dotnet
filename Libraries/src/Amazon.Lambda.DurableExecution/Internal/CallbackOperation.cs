@@ -84,6 +84,14 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
 
     protected override string OperationType => OperationTypes.Callback;
 
+    protected override string? OperationSubType => _subType;
+
+    // The handle is returned as soon as the callback is registered. The operation ends when its result is read.
+    protected override bool EndsWhenExecuteReturns => false;
+
+    private int _endReported;
+    private bool _terminalFromHistory;
+
     /// <summary>
     /// Set when an existing terminal-state checkpoint was observed during
     /// dispatch. <see cref="GetResultAsync"/> reads this directly to short-
@@ -147,6 +155,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
         }
 
         _callbackId = callbackId;
+        _terminalFromHistory = IsTerminalStatus(existing.Status);
 
         // CRITICAL: we must NOT raise on terminal state here.
         // CreateCallbackAsync always returns the ICallback handle so any user
@@ -183,7 +192,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
         // (or throw) immediately without suspending.
         if (_terminalReplay != null)
         {
-            return ResolveTerminal(_terminalReplay);
+            return ResolveAndReport(_terminalReplay, isReplay: _terminalFromHistory);
         }
 
         // A later checkpoint in this same invocation (e.g. WaitForCallback's
@@ -193,7 +202,7 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
         var current = State.GetOperation(OperationId);
         if (IsTerminalStatus(current?.Status))
         {
-            return ResolveTerminal(current!);
+            return ResolveAndReport(current!, isReplay: false);
         }
 
         // No terminal state yet. Suspend the workflow; the service re-invokes
@@ -201,6 +210,24 @@ internal sealed class CallbackOperation<T> : DurableOperation<ICallback<T>>, ICa
         return await Termination.SuspendAndAwait<T>(
             TerminationReason.CallbackPending,
             $"callback:{Name ?? OperationId}");
+    }
+
+    /// <summary>Resolves the result and tells the plugins, once, that the operation ended.</summary>
+    private T ResolveAndReport(Operation op, bool isReplay)
+    {
+        try
+        {
+            var value = ResolveTerminal(op);
+            if (Interlocked.Exchange(ref _endReported, 1) == 0)
+                ReportEnd(OperationStatuses.Succeeded, isReplay, null);
+            return value;
+        }
+        catch (CallbackException ex)
+        {
+            if (Interlocked.Exchange(ref _endReported, 1) == 0)
+                ReportEnd(op.Status == OperationStatuses.TimedOut ? OperationStatuses.TimedOut : OperationStatuses.Failed, isReplay, ex);
+            throw;
+        }
     }
 
     private T ResolveTerminal(Operation op)

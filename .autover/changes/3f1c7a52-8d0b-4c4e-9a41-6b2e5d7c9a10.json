@@ -1,0 +1,12 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DurableExecution",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add an instrumentation plugin API (IDurableInstrumentationPlugin and IDurableInstrumentationPluginFactory) and DurableExecutionOptions, accepted by new DurableFunction.WrapAsync overloads. Plugins observe the invocation lifecycle and can run the workflow function inside their own context.",
+        "Raise the minimum AWSSDK.Lambda version to 4.0.110.1, which adds the trace header on chained invokes (ChainedInvokeOptions.XAmznTraceId). Plugins can supply that header and add fields to the log scope of durable log entries."
+      ]
+    }
+  ]
+}

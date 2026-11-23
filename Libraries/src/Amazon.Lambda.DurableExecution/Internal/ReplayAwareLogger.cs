@@ -19,12 +19,18 @@ internal sealed class ReplayAwareLogger : ILogger
     private readonly ILogger _inner;
     private readonly ExecutionState _state;
     private readonly bool _modeAware;
+    private readonly Func<IReadOnlyDictionary<string, object>?>? _scopeFields;
 
-    public ReplayAwareLogger(ILogger inner, ExecutionState state, bool modeAware)
+    // scopeFields: fields from instrumentation plugins (for example a trace id) added to the scope of every
+    // entry. Read on each call because they change as the active span does. Null when no plugin is registered.
+    public ReplayAwareLogger(
+        ILogger inner, ExecutionState state, bool modeAware,
+        Func<IReadOnlyDictionary<string, object>?>? scopeFields = null)
     {
         _inner = inner;
         _state = state;
         _modeAware = modeAware;
+        _scopeFields = scopeFields;
     }
 
     /// <summary>The wrapped logger; exposed so <c>ConfigureLogger</c> can rewrap without losing it.</summary>
@@ -50,6 +56,9 @@ internal sealed class ReplayAwareLogger : ILogger
         Func<TState, Exception?, string> formatter)
     {
         if (ShouldSuppress()) return;
+
+        var fields = _scopeFields?.Invoke();
+        using var scope = fields != null ? _inner.BeginScope(fields) : null;
         _inner.Log(logLevel, eventId, state, exception, formatter);
     }
 

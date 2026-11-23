@@ -44,6 +44,8 @@ internal sealed class WaitOperation : DurableOperation<object?>
 
     protected override string OperationType => OperationTypes.Wait;
 
+    protected override string? OperationSubType => OperationSubTypes.Wait;
+
     protected override async Task<object?> StartAsync(CancellationToken cancellationToken)
     {
         // Sync-flush WAIT START before suspending — the service can't schedule

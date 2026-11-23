@@ -70,6 +70,8 @@ internal sealed class StepOperation<T> : DurableOperation<T>
 
     protected override string OperationType => OperationTypes.Step;
 
+    protected override string? OperationSubType => _subType;
+
     protected override Task<T> StartAsync(CancellationToken cancellationToken)
         => ExecuteFunc(attemptNumber: 1, cancellationToken);
 
@@ -240,7 +242,7 @@ internal sealed class StepOperation<T> : DurableOperation<T>
                 // deadline while its timer has not run yet.
                 _workflowCancellation.ThrowIfDeadlineExceeded(
                     "The invocation deadline passed before the step body started.");
-                result = await _func(stepContext, linked.Token);
+                result = await RunAttemptAsync(attemptNumber, () => _func(stepContext, linked.Token));
             }
         }
         catch (OperationCanceledException) when (

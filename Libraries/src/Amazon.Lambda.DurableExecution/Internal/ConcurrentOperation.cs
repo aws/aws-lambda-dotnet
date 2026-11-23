@@ -101,6 +101,8 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
     /// <summary>Parent CONTEXT sub-type label (e.g. Parallel / Map).</summary>
     protected abstract string ParentSubType { get; }
 
+    protected override string? OperationSubType => ParentSubType;
+
     /// <summary>Per-unit child-context sub-type label (e.g. ParallelBranch / MapIteration).</summary>
     protected abstract string ChildSubType { get; }
 
@@ -523,7 +525,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
                 DurableExecutionArn,
                 Batcher,
                 shortCircuitToken,
-                isVirtual: _isVirtual);
+                isVirtual: _isVirtual) { Plugins = Plugins };
 
             try
             {
@@ -644,7 +646,7 @@ internal abstract class ConcurrentOperation<T> : DurableOperation<IBatchResult<T
             _workflowCancellation,
             DurableExecutionArn,
             Batcher,
-            isVirtual: _isVirtual);
+            isVirtual: _isVirtual) { Plugins = Plugins };
 
         try
         {

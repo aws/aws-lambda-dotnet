@@ -68,4 +68,11 @@ public sealed record TestRunnerOptions
     /// omit its token from the response, which suspends the invocation. Default: null.
     /// </summary>
     public Func<int, bool>? OmitCheckpointToken { get; init; }
+
+    /// <summary>
+    /// Options passed to every invocation of the workflow, for example to run it with instrumentation plugins.
+    /// The in-memory service does not report <c>UpdatedOperationIds</c>, so plugins see no updated operations
+    /// at invocation start. Default: null.
+    /// </summary>
+    public DurableExecutionOptions? ExecutionOptions { get; init; }
 }

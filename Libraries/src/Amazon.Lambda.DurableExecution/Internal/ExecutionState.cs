@@ -93,6 +93,36 @@ internal sealed class ExecutionState
     }
 
     /// <summary>
+    /// Merges operations from a checkpoint response and returns the ones that are new or whose status changed,
+    /// so plugins hear about a callback completing or a timer firing but not about a repeated record.
+    /// </summary>
+    public IReadOnlyList<Operation> AddOperationsReportingChanges(IEnumerable<Operation> operations)
+    {
+        lock (_lock)
+        {
+            var changed = new List<Operation>();
+            foreach (var op in operations)
+            {
+                if (op.Id == null) continue;
+                if (!_operations.TryGetValue(op.Id, out var previous) || previous.Status != op.Status)
+                    changed.Add(op);
+            }
+
+            AddOperationsLocked(operations);
+            return changed;
+        }
+    }
+
+    /// <summary>A point-in-time copy of every known operation, for plugin snapshots.</summary>
+    public Operation[] GetAllOperations()
+    {
+        lock (_lock)
+        {
+            return _operations.Values.ToArray();
+        }
+    }
+
+    /// <summary>
     /// Returns the checkpointed record for <paramref name="operationId"/>, or null
     /// if none. Callers should switch on <see cref="Operation.Status"/> against
     /// <see cref="OperationStatuses"/> constants to decide replay behavior.

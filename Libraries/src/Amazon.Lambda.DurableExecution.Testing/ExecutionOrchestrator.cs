@@ -3,6 +3,7 @@
 
 using System.Text;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.DurableExecution.Internal;
 using Amazon.Lambda.DurableExecution.Services;
 
 namespace Amazon.Lambda.DurableExecution.Testing;
@@ -92,8 +93,12 @@ internal sealed class ExecutionOrchestrator<TInput, TOutput>
 
             var invocationInput = BuildInvocationInput(arn);
 
-            var output = await DurableFunction.WrapAsync<TInput, TOutput>(
-                _handler, invocationInput, _lambdaContext, _serviceClient);
+            var output = _options.ExecutionOptions == null
+                ? await DurableFunction.WrapAsync<TInput, TOutput>(
+                    _handler, invocationInput, _lambdaContext, _serviceClient)
+                : await DurableFunction.WrapAsync<TInput, TOutput>(
+                    _handler, invocationInput, _lambdaContext, _serviceClient,
+                    new DurableInvocationOptions { Execution = _options.ExecutionOptions });
 
             _invocationCount++;
 
