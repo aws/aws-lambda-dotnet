@@ -78,6 +78,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string DurableExecutionInvocationOutput = "Amazon.Lambda.DurableExecution.DurableExecutionInvocationOutput";
         public const string DurableFunction = "Amazon.Lambda.DurableExecution.DurableFunction";
         public const string IDurableContext = "Amazon.Lambda.DurableExecution.IDurableContext";
+        public const string DurableExecutionOptions = "Amazon.Lambda.DurableExecution.DurableExecutionOptions";
+        public const string DurableInstrumentationPluginFactory = "Amazon.Lambda.DurableExecution.Instrumentation.IDurableInstrumentationPluginFactory";
+        public const string DurableOtelPlugin = "Amazon.Lambda.DurableExecution.OpenTelemetry.OtelPlugin";
+        public const string DurableOtelView = "Amazon.Lambda.DurableExecution.OpenTelemetry.OtelView";
 
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";

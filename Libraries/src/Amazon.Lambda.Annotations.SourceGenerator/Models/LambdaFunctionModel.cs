@@ -72,6 +72,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <inheritdoc />
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
 
+        /// <summary>
+        /// The <c>[DurableExecution]</c> attribute of the function, or null when it has none.
+        /// </summary>
+        public DurableExecutionAttribute DurableExecution =>
+            Attributes.OfType<AttributeModel<DurableExecutionAttribute>>().FirstOrDefault()?.Data;
+
+        /// <summary>
+        /// True when the <c>[DurableExecution]</c> attribute asks for instrumentation plugins, through
+        /// <c>Tracing</c> or <c>PluginProvider</c>. The generated wrapper then passes
+        /// <c>DurableExecutionOptions</c> to <c>DurableFunction.WrapAsync</c>.
+        /// </summary>
+        public bool DurablePluginsEnabled
+        {
+            get
+            {
+                var durable = DurableExecution;
+                return durable != null && (durable.Tracing != DurableTracing.None || durable.PluginProvider != null);
+            }
+        }
+
         /// <inheritdoc />
         public string ReturnTypeFullName  => LambdaMethod.ReturnType.FullName;
 

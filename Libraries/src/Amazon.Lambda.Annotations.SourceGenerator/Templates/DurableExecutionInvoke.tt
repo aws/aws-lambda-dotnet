@@ -18,5 +18,9 @@
     var typeArguments = _model.LambdaMethod.ReturnsGenericTask
         ? $"<{inputType}, {_model.LambdaMethod.ReturnType.TaskTypeArgument}>"
         : $"<{inputType}>";
+
+    // Plugins (Tracing / PluginProvider) travel in DurableExecutionOptions, built once in a static field of the
+    // generated class (see FieldsAndConstructor). Without them the call is unchanged.
+    var optionsArgument = _model.DurablePluginsEnabled ? ", __durableExecutionOptions__" : "";
 #>
-            return await Amazon.Lambda.DurableExecution.DurableFunction.WrapAsync<#= typeArguments #>(<#= instance #>.<#= _model.LambdaMethod.Name #>, __request__, __context__);
+            return await Amazon.Lambda.DurableExecution.DurableFunction.WrapAsync<#= typeArguments #>(<#= instance #>.<#= _model.LambdaMethod.Name #>, __request__, __context__<#= optionsArgument #>);

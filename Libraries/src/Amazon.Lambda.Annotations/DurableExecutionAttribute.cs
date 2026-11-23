@@ -4,6 +4,27 @@ using System.Collections.Generic;
 namespace Amazon.Lambda.Annotations
 {
     /// <summary>
+    /// Which OpenTelemetry view a <see cref="DurableExecutionAttribute"/> function registers.
+    /// </summary>
+    public enum DurableTracing
+    {
+        /// <summary>No tracing plugin is registered.</summary>
+        None = 0,
+
+        /// <summary>
+        /// Registers the OpenTelemetry plugin with operations as children of the Workflow span
+        /// (<c>OtelView.Execution</c>).
+        /// </summary>
+        Execution = 1,
+
+        /// <summary>
+        /// Registers the OpenTelemetry plugin with operations as children of the Invocation span
+        /// (<c>OtelView.Invocation</c>).
+        /// </summary>
+        Invocation = 2,
+    }
+
+    /// <summary>
     /// Marks a Lambda function method (also annotated with <see cref="LambdaFunctionAttribute"/>) as a
     /// durable execution workflow. The Amazon.Lambda.Annotations source generator recognizes this
     /// attribute and generates a handler wrapper that delegates to
@@ -60,6 +81,28 @@ namespace Amazon.Lambda.Annotations
         internal bool IsRetentionPeriodInDaysSet { get; private set; }
 
         /// <summary>
+        /// Registers the Amazon.Lambda.DurableExecution.OpenTelemetry plugin with default options. The project must
+        /// reference that package, and the application must listen to the
+        /// <c>Amazon.Lambda.DurableExecution</c> activity source (for example through the ADOT layer).
+        /// The default is <see cref="DurableTracing.None"/>. It can be combined with <see cref="PluginProvider"/>:
+        /// the OpenTelemetry plugin is registered first, then the provider's.
+        /// </summary>
+        /// <remarks>
+        /// This does not turn on X-Ray active tracing for the function. Set <c>Tracing: Active</c> on the function
+        /// yourself when X-Ray should sample and propagate a trace.
+        /// </remarks>
+        public DurableTracing Tracing { get; set; }
+
+        /// <summary>
+        /// The name of a static method on the same class that returns the instrumentation plugin factories to
+        /// register, for example <c>nameof(GetPlugins)</c>. It must take no parameters, return
+        /// <c>IEnumerable&lt;IDurableInstrumentationPluginFactory&gt;</c>, and be at least internal. It is called
+        /// once, when the function's class is first used, and its factories serve every invocation. Use it to
+        /// configure the OpenTelemetry plugin (for example the flush callback) or to add other plugins.
+        /// </summary>
+        public string PluginProvider { get; set; }
+
+        /// <summary>
         /// The maximum duration, in seconds, that a single durable execution may run.
         /// Maps to <c>DurableConfig.ExecutionTimeout</c> on the generated function resource.
         /// Set via the constructor; always emitted to the template because the service requires it.
@@ -82,6 +125,16 @@ namespace Amazon.Lambda.Annotations
             if (ExecutionTimeout < 1 || ExecutionTimeout > MaxExecutionTimeoutInSeconds)
             {
                 validationErrors.Add($"{nameof(ExecutionTimeout)} = {ExecutionTimeout}. It must be between 1 and {MaxExecutionTimeoutInSeconds}.");
+            }
+
+            if (!Enum.IsDefined(typeof(DurableTracing), Tracing))
+            {
+                validationErrors.Add($"{nameof(Tracing)} = {(int)Tracing}. It must be one of {string.Join(", ", Enum.GetNames(typeof(DurableTracing)))}.");
+            }
+
+            if (PluginProvider != null && string.IsNullOrWhiteSpace(PluginProvider))
+            {
+                validationErrors.Add($"{nameof(PluginProvider)} is empty. Name a static method, for example nameof(GetPlugins), or leave it unset.");
             }
 
             return validationErrors;
