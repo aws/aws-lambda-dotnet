@@ -1,0 +1,27 @@
+# Collector layer configuration for the X-Ray backend. Sends spans to X-Ray's OTLP endpoint (Transaction Search),
+# the same destination the ADOT language distros use, so spans carry their kind and service name.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+
+extensions:
+  sigv4auth:
+    region: ${env:AWS_REGION}
+    service: xray
+
+exporters:
+  otlphttp:
+    traces_endpoint: https://xray.${env:AWS_REGION}.amazonaws.com/v1/traces
+    auth:
+      authenticator: sigv4auth
+    sending_queue:
+      enabled: false
+
+service:
+  extensions: [sigv4auth]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp]

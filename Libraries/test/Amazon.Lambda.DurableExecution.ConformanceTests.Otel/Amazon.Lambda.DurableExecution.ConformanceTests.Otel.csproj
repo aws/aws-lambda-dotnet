@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Handlers for the shared OpenTelemetry conformance suites (otel-invocation, otel-execution).
+       One executable serves every case: CONFORMANCE_SCENARIO picks the scenario and OTEL_PLUGIN_MODE
+       picks the view, both set by template.yaml. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AssemblyName>bootstrap</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="collector-xray.yaml" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Amazon.Lambda.DurableExecution/Amazon.Lambda.DurableExecution.csproj" />
+    <ProjectReference Include="../../src/Amazon.Lambda.DurableExecution.OpenTelemetry/Amazon.Lambda.DurableExecution.OpenTelemetry.csproj" />
+    <ProjectReference Include="../../src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" />
+    <ProjectReference Include="../../src/Amazon.Lambda.Serialization.SystemTextJson/Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The instrumentation package depends on Amazon.Lambda.Core 2.x, which NuGet prefers over a project reference. -->
+    <PackageReference Include="Amazon.Lambda.Core" Version="3.4.0" />
+    <!-- Not transitive into a framework-dependent publish; the deployed bundle needs them. -->
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.110.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
+    <!-- The plugin only emits Activity objects. The handler needs an SDK to export them to the collector layer. -->
+    <PackageReference Include="OpenTelemetry" Version="1.21.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.21.0" />
+    <!-- Starts the server span for each Lambda invocation, the .NET counterpart of the ADOT wrapper the other SDKs run under. -->
+    <PackageReference Include="OpenTelemetry.Instrumentation.AWSLambda" Version="1.21.0" />
+  </ItemGroup>
+
+</Project>
