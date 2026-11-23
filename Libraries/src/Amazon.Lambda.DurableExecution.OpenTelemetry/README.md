@@ -1,0 +1,116 @@
+# Amazon.Lambda.DurableExecution.OpenTelemetry
+
+OpenTelemetry tracing for [Amazon.Lambda.DurableExecution](../Amazon.Lambda.DurableExecution/README.md). It is a plugin for the SDK's [instrumentation plugin API](../Amazon.Lambda.DurableExecution/docs/core/instrumentation-plugins.md).
+
+**Preview.**
+
+The plugin emits spans through `System.Diagnostics.ActivitySource`, so the package has no OpenTelemetry NuGet dependency. The OpenTelemetry SDK, the ADOT layer and `OpenTelemetry.Instrumentation.AWSLambda` listen to it once you add the source name.
+
+## Quick start
+
+```csharp
+using Amazon.Lambda.DurableExecution.OpenTelemetry;
+
+static readonly TracerProvider Tracer = Sdk.CreateTracerProviderBuilder()
+    .AddSource(OtelPlugin.ActivitySourceName)      // "Amazon.Lambda.DurableExecution"
+    .AddOtlpExporter()
+    .Build();
+
+static readonly DurableExecutionOptions Options = new DurableExecutionOptions()
+    .AddOpenTelemetry(OtelView.Execution, new OtelPluginOptions
+    {
+        // The plugin cannot flush by itself. Export before Lambda freezes the environment.
+        FlushAsync = (timeout, _) => { Tracer.ForceFlush((int)timeout.TotalMilliseconds); return Task.CompletedTask; },
+    });
+
+public Task<DurableExecutionInvocationOutput> Handler(DurableExecutionInvocationInput input, ILambdaContext context)
+    => DurableFunction.WrapAsync<Order, OrderResult>(Workflow, input, context, Options);
+```
+
+Create the options once and reuse them. Register exactly one OpenTelemetry view: two factories fail with `PluginLoadException` before the workflow runs.
+
+With the ADOT Lambda layer, activate it with `AWS_LAMBDA_EXEC_WRAPPER=/opt/otel-instrument` and omit your own provider; the layer listens for the source.
+
+## Choosing a view
+
+Register one view. Both emit the same Workflow, Invocation, operation and attempt spans in one trace per execution; they differ in where operations are parented.
+
+| View | Hierarchy | Operations link | Use it to see |
+|---|---|---|---|
+| `Execution` (default) | `Workflow -> operation -> attempt` | Invocation | what the workflow did, start to finish |
+| `Invocation` | `Invocation -> operation -> attempt` | Workflow | what each Lambda invocation did |
+
+```text
+Execution view                                  Invocation view
+
+Execution ancestor                              Execution ancestor
++-- Workflow                                    +-- Workflow
+|   +-- operation  (links Invocation)           +-- Invocation
+|       +-- attempt                                 +-- operation  (links Workflow)
++-- Invocation                                          +-- attempt
+```
+
+### What both views share
+
+- **The ancestor** is the complete `Root` and `Parent` of the X-Ray header the service propagates (`ILambdaContext.TraceId`). Without a parent the plugin exports a synthetic `DurableExecutionRoot` span whose id comes from the execution ARN, once per invocation with the same id. Consumers deduplicate on span id. An ambient span of the same trace (the ADOT handler span) is used as the Invocation's parent instead.
+- **Derived ids.** The Workflow span, the synthetic root and every operation's span (its first segment, in the Invocation view) have ids derived from the execution ARN, so a span exported by one invocation can name one exported by another. They match the JavaScript, Python and Java SDKs.
+- **Workflow** is exported once, by the invocation that finishes the execution.
+
+### Invocation view
+
+- Spans use the invocation's own clock: the wall clock read at the start, advanced by the monotonic clock.
+- An operation that is still running when the invocation suspends is ended with `durable.operation.status=STARTED`. A step or child context that a later invocation reaches again before it finished (a retried step, a suspended context) is a new span that links the Workflow and the operation's first segment. One that already finished is only replayed and is not exported again. A wait, invoke or callback that finished while the execution was suspended is exported once, in the invocation that sees it. A wait that is only replayed is not exported again.
+
+### Execution view
+
+- **One span per operation**, exported when the operation finishes, by the invocation where that happens. While it is open only its identity exists, so nothing is left unended when an invocation suspends. Reaching a finished operation again by replay exports nothing.
+- **Times come from the service.** The span starts at the earliest start seen (the service's, or the local clock if the service has none) and ends at the service's end time. A parent starts no later than its earliest child, and an end before the start is raised to the start. The Invocation span ends no earlier than any boundary it observed.
+- **Attempts** are exported by the invocation that ran them, parented on the operation's derived id before the operation's own span exists. A retried step therefore has one operation span and one attempt span per attempt, each linking the invocation that ran it. The service resets a step's start time when it schedules a retry, and a later invocation cannot see an earlier attempt, so the operation span of a retried step can start after its first attempts (observed on a deployed function).
+- **Application spans** started inside the workflow, a child context or a step are parented on the Workflow, the child context or the attempt. The first two have no span yet, so a stand-in activity that carries their derived id is current. It is not created by an `ActivitySource`, so no listener sees or exports it.
+
+## Attributes and status
+
+All spans are `SpanKind.Internal`.
+
+| Span | Attributes |
+|---|---|
+| Workflow (`WorkflowSpanName`, default `Workflow`) | `durable.execution.arn`, `durable.execution.status` |
+| Invocation | `durable.execution.arn`, `durable.invocation.first`, `durable.invocation.status` (`SUCCEEDED`, `FAILED`, `PENDING`, `RETRYING`) |
+| Operation (named by the operation name, or its type) | `durable.execution.arn`, `durable.operation.id`, `.type`, `.name`, `.subtype`, `.status`; `durable.attempt.number` on steps and wait-for-condition |
+| Attempt (`<name> attempt <n>`) | the operation identity, `durable.attempt.number`, `durable.attempt.outcome` |
+
+Status: Workflow `Ok`/`Error`. Invocation `Ok` for succeeded and pending, `Error` for failed, unset for retrying. An operation is `Error` when it failed, timed out or was stopped, even with no error details, and `Ok` when it succeeded. An `exception` event is added only when error details exist, with a stored error type used as is.
+
+## Sampling
+
+Each invocation makes one sampling decision for all of its spans, as the other SDKs do. An upstream decision in the header (`Sampled=1` or `0`) is authoritative. Without one, your sampler decides for the Invocation span and the invocation's other spans follow it. When the decision is not to sample, the plugin starts no spans, so even a sampler that ignores the parent (`AlwaysOn`) exports nothing, and a chained invoke carries `Sampled=0`. The plugin cannot make your sampler keep a span it drops, so a custom sampler that drops some spans by name can still leave gaps; `ParentBased`, `AlwaysOn` and `TraceIdRatioBased` cannot.
+
+## Chained invokes
+
+The plugin supplies the `X-Amzn-Trace-Id` the SDK sends with a chained invoke: this execution's trace, with the calling operation's span as the parent and the upstream sampling decision. The invoked function continues the trace.
+
+## Log correlation
+
+`EnrichLogger` (default on) adds `otelTraceId`, `otelSpanId` and `otelTraceSampled` to the logging scope of durable log entries written while a span is current. The names avoid the `traceId` field the Lambda runtime already writes in JSON logs.
+
+## Options
+
+| Option | Default | |
+|---|---|---|
+| `InstrumentationName` | `Amazon.Lambda.DurableExecution` | The `ActivitySource` name. |
+| `WorkflowSpanName` | `Workflow` | |
+| `EnrichLogger` | `true` | |
+| `FlushAsync` | none | Called at the end of every invocation, after its spans ended. |
+| `FlushTimeout` | 1 second | Passed to `FlushAsync`; its token is cancelled after this time or when the invocation's time runs out. |
+| `ContextExtractor` | `ContextExtractors.XRay` | Finds the execution's trace context. It must return the execution's own context: one that changes between invocations splits the execution across traces. |
+
+To anchor the execution on a W3C `traceparent` the invoke carried on `clientContext.w3c` (`ILambdaContext.W3C`), set `ContextExtractor = ContextExtractors.W3C`. It returns the trace id, parent span id and sampled flag, and nothing when the header is missing or malformed.
+
+## Span ids and `Activity`
+
+`Activity` has no public way to choose its own span id. The plugin sets the private `_spanId` and `_id` fields through `[UnsafeAccessor]`, only for the spans whose ids other invocations must reproduce. It is generated at compile time and works under trimming and Native AOT. The fields are not a contract: if a runtime changes them the override switches itself off and spans get random ids. Parenting inside one invocation still works; references across invocations (the Workflow span, the link from a replayed step to its first segment) then dangle. A test fails when the fields are missing. Listeners notified when a span starts see the random id; export and child spans see the derived one.
+
+## Not yet available
+
+- Loading the plugin from an environment variable or a Lambda layer without code.
+- `[DurableExecution(Tracing = ...)]` for Amazon.Lambda.Annotations.

@@ -8,8 +8,10 @@
       "src\\Amazon.Lambda.TestUtilities\\Amazon.Lambda.TestUtilities.csproj",
       "src\\Amazon.Lambda.DurableExecution\\Amazon.Lambda.DurableExecution.csproj",
       "src\\Amazon.Lambda.DurableExecution.Testing\\Amazon.Lambda.DurableExecution.Testing.csproj",
+      "src\\Amazon.Lambda.DurableExecution.OpenTelemetry\\Amazon.Lambda.DurableExecution.OpenTelemetry.csproj",
       "test\\Amazon.Lambda.DurableExecution.Tests\\Amazon.Lambda.DurableExecution.Tests.csproj",
       "test\\Amazon.Lambda.DurableExecution.Testing.Tests\\Amazon.Lambda.DurableExecution.Testing.Tests.csproj",
+      "test\\Amazon.Lambda.DurableExecution.OpenTelemetry.Tests\\Amazon.Lambda.DurableExecution.OpenTelemetry.Tests.csproj",
       "test\\Amazon.Lambda.DurableExecution.IntegrationTests\\Amazon.Lambda.DurableExecution.IntegrationTests.csproj",
       "test\\Amazon.Lambda.DurableExecution.AotPublishTest\\Amazon.Lambda.DurableExecution.AotPublishTest.csproj"
     ]

@@ -4,6 +4,7 @@
 using System.Text.Json.Serialization;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.DurableExecution;
+using Amazon.Lambda.DurableExecution.OpenTelemetry;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 
@@ -28,9 +29,14 @@ public class Program
             .RunAsync();
     }
 
+    // The tracing plugin goes through the same publish check: its span id override, trace context parsing and
+    // ActivitySource use must not need reflection.
+    private static readonly DurableExecutionOptions Options = new DurableExecutionOptions()
+        .AddOpenTelemetry(OtelView.Invocation);
+
     public static Task<DurableExecutionInvocationOutput> HandlerAsync(
         DurableExecutionInvocationInput input, ILambdaContext context) =>
-        DurableFunction.WrapAsync<OrderEvent, OrderResult>(WorkflowAsync, input, context);
+        DurableFunction.WrapAsync<OrderEvent, OrderResult>(WorkflowAsync, input, context, Options);
 
     private static async Task<OrderResult> WorkflowAsync(OrderEvent input, IDurableContext context)
     {
