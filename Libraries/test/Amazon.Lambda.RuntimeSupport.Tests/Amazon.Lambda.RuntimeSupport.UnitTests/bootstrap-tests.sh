@@ -4,7 +4,7 @@
 set -eu
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bootstrap="${script_directory}/../../../src/Amazon.Lambda.RuntimeSupport/bootstrap.sh"
+bootstrap_directory="${script_directory}/../../../src/Amazon.Lambda.RuntimeSupport"
 test_directory="$(mktemp -d)"
 trap 'rm -rf "${test_directory}"' EXIT
 
@@ -19,7 +19,7 @@ run_case() {
   local name="$1" nullglob="$2" expected_exit="$3" expected_message="$4"
   local expected_deps="$5" expected_runtimeconfig="$6"
   shift 6
-  local directory="${test_directory}/${name}-${nullglob}"
+  local directory="${test_directory}/${bootstrap_name}-${name}-${nullglob}"
   mkdir "${directory}"
   for file in "$@"; do
     printf '{}\n' > "${directory}/${file}"
@@ -33,7 +33,7 @@ run_case() {
 
   tests=$((tests + 1))
   if [ "${actual_exit}" -ne "${expected_exit}" ]; then
-    printf 'FAIL %s (%s): expected exit %s, got %s\n' "${name}" "${nullglob}" "${expected_exit}" "${actual_exit}" >&2
+    printf 'FAIL %s/%s (%s): expected exit %s, got %s\n' "${bootstrap_name}" "${name}" "${nullglob}" "${expected_exit}" "${actual_exit}" >&2
     cat "${directory}/stderr" >&2
     failures=$((failures + 1))
     return
@@ -41,7 +41,7 @@ run_case() {
 
   if [ "${expected_exit}" -ne 0 ]; then
     if ! grep -F -q -- "${expected_message}" "${directory}/stderr"; then
-      printf 'FAIL %s (%s): missing diagnostic: %s\n' "${name}" "${nullglob}" "${expected_message}" >&2
+      printf 'FAIL %s/%s (%s): missing diagnostic: %s\n' "${bootstrap_name}" "${name}" "${nullglob}" "${expected_message}" >&2
       cat "${directory}/stderr" >&2
       failures=$((failures + 1))
     fi
@@ -54,31 +54,34 @@ run_case() {
     /var/runtime/Amazon.Lambda.RuntimeSupport.dll 'Example::Function::Handle' \
     > "${directory}/expected"
   if ! cmp -s "${directory}/expected" "${directory}/stdout" || [ -s "${directory}/stderr" ]; then
-    printf 'FAIL %s (%s): unexpected bootstrap arguments or error output\n' "${name}" "${nullglob}" >&2
+    printf 'FAIL %s/%s (%s): unexpected bootstrap arguments or error output\n' "${bootstrap_name}" "${name}" "${nullglob}" >&2
     cat "${directory}/stderr" >&2
     failures=$((failures + 1))
   fi
 }
 
-for nullglob in +O -O; do
-  run_case exact "${nullglob}" 0 '' Example.deps.json Example.runtimeconfig.json \
-    Example.deps.json Example.runtimeconfig.json
-  run_case missing-deps "${nullglob}" 105 'missing the required .deps.json file' '' '' \
-    Example.runtimeconfig.json
-  run_case ambiguous-deps "${nullglob}" 105 'multiple .deps.json files' '' '' \
-    First.deps.json Second.deps.json Example.runtimeconfig.json
-  run_case missing-runtimeconfig "${nullglob}" 106 'missing the required .runtimeconfig.json file' '' '' \
-    Example.deps.json
-  run_case ambiguous-runtimeconfig "${nullglob}" 106 'multiple .runtimeconfig.json files' '' '' \
-    Example.deps.json First.runtimeconfig.json Second.runtimeconfig.json
-  run_case single-fallback "${nullglob}" 0 '' Alternate.deps.json Alternate.runtimeconfig.json \
-    Alternate.deps.json Alternate.runtimeconfig.json
-  run_case exact-with-extras "${nullglob}" 0 '' Example.deps.json Example.runtimeconfig.json \
-    Example.deps.json Example.runtimeconfig.json First.deps.json Second.deps.json First.runtimeconfig.json Second.runtimeconfig.json
-  run_case both-ambiguous "${nullglob}" 105 'multiple .deps.json files' '' '' \
-    First.deps.json Second.deps.json First.runtimeconfig.json Second.runtimeconfig.json
-  run_case spaced-fallback "${nullglob}" 0 '' 'Alternate assembly.deps.json' 'Alternate assembly.runtimeconfig.json' \
-    'Alternate assembly.deps.json' 'Alternate assembly.runtimeconfig.json'
+for bootstrap_name in bootstrap.sh bootstrap.net8.sh; do
+  bootstrap="${bootstrap_directory}/${bootstrap_name}"
+  for nullglob in +O -O; do
+    run_case exact "${nullglob}" 0 '' Example.deps.json Example.runtimeconfig.json \
+      Example.deps.json Example.runtimeconfig.json
+    run_case missing-deps "${nullglob}" 105 'missing the required .deps.json file' '' '' \
+      Example.runtimeconfig.json
+    run_case ambiguous-deps "${nullglob}" 105 'multiple .deps.json files' '' '' \
+      First.deps.json Second.deps.json Example.runtimeconfig.json
+    run_case missing-runtimeconfig "${nullglob}" 106 'missing the required .runtimeconfig.json file' '' '' \
+      Example.deps.json
+    run_case ambiguous-runtimeconfig "${nullglob}" 106 'multiple .runtimeconfig.json files' '' '' \
+      Example.deps.json First.runtimeconfig.json Second.runtimeconfig.json
+    run_case single-fallback "${nullglob}" 0 '' Alternate.deps.json Alternate.runtimeconfig.json \
+      Alternate.deps.json Alternate.runtimeconfig.json
+    run_case exact-with-extras "${nullglob}" 0 '' Example.deps.json Example.runtimeconfig.json \
+      Example.deps.json Example.runtimeconfig.json First.deps.json Second.deps.json First.runtimeconfig.json Second.runtimeconfig.json
+    run_case both-ambiguous "${nullglob}" 105 'multiple .deps.json files' '' '' \
+      First.deps.json Second.deps.json First.runtimeconfig.json Second.runtimeconfig.json
+    run_case spaced-fallback "${nullglob}" 0 '' 'Alternate assembly.deps.json' 'Alternate assembly.runtimeconfig.json' \
+      'Alternate assembly.deps.json' 'Alternate assembly.runtimeconfig.json'
+  done
 done
 
 printf 'Bootstrap metadata tests: %s passed, %s failed\n' "$((tests - failures))" "${failures}"
