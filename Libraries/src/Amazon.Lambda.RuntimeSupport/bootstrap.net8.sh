@@ -79,6 +79,11 @@ else
   if ! [ -f "${DEPS_FILE}" ]; then
     DEPS_FILES=( "${LAMBDA_TASK_ROOT}"/*.deps.json )
 
+    if [ "${#DEPS_FILES[@]}" -gt 1 ]; then
+      echo "Error: Found multiple .deps.json files in ${LAMBDA_TASK_ROOT}. Expected ${ASSEMBLY_NAME}.deps.json." 1>&2
+      exit 105
+    fi
+
     # Check if there were any matches to the *.deps.json glob, and that the glob was resolved
     # This makes the matching independent from the global `nullopt` shopt's value (https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html)
     if [ "${#DEPS_FILES[@]}" -ne 1 ] || echo "${DEPS_FILES[0]}" | grep -q -F '*'; then
@@ -91,6 +96,11 @@ else
   RUNTIMECONFIG_FILE="${LAMBDA_TASK_ROOT}/${ASSEMBLY_NAME}.runtimeconfig.json"
   if ! [ -f "${RUNTIMECONFIG_FILE}" ]; then
     RUNTIMECONFIG_FILES=( "${LAMBDA_TASK_ROOT}"/*.runtimeconfig.json )
+
+    if [ "${#RUNTIMECONFIG_FILES[@]}" -gt 1 ]; then
+      echo "Error: Found multiple .runtimeconfig.json files in ${LAMBDA_TASK_ROOT}. Expected ${ASSEMBLY_NAME}.runtimeconfig.json." 1>&2
+      exit 106
+    fi
 
     # Check if there were any matches to the *.runtimeconfig.json glob, and that the glob was resolved
     # This makes the matching independent from the global `nullopt` shopt's value (https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html)

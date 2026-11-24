@@ -42,4 +42,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <Target Name="TestBootstrapScript" BeforeTargets="VSTest" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <Exec Command="bash &quot;$(MSBuildProjectDirectory)/bootstrap-tests.sh&quot;" />
+  </Target>
+
 </Project>
