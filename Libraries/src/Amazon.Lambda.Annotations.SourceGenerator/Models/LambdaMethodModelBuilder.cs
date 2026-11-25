@@ -12,6 +12,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     {
         public static LambdaMethodModel Build(IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,
+            IMethodSymbol buildServiceProviderMethodSymbol,
             GeneratorExecutionContext context)
         {
             var model = new LambdaMethodModel
@@ -28,6 +29,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 ContainingType = TypeModelBuilder.Build(lambdaMethodSymbol.ContainingType, context),
                 UsingDependencyInjection = configureMethodSymbol != null,
                 UsingHostBuilderForDependencyInjection = configureMethodSymbol != null && configureMethodSymbol.Name == "ConfigureHostBuilder",
+                UsingCustomServiceProvider = buildServiceProviderMethodSymbol != null,
                 Attributes = lambdaMethodSymbol.GetAttributes().Select(att => AttributeModelBuilder.Build(att, context)).ToList()
             };
 

@@ -138,15 +138,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var configureHostBuilderMethodSymbol = semanticModelProvider.GetConfigureHostBuilderMethodModel(receiver.StartupClasses.FirstOrDefault());
                 var configureServicesMethodSymbol = semanticModelProvider.GetConfigureServicesMethodModel(receiver.StartupClasses.FirstOrDefault());
                 var configureMethodSymbol = configureServicesMethodSymbol;
+                var buildServiceProviderMethodSymbol = semanticModelProvider.GetBuildServiceProviderMethodModel(receiver.StartupClasses.FirstOrDefault());
 
                 if (configureServicesMethodSymbol != null && configureHostBuilderMethodSymbol != null)
                 {
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleConfigureMethodsNotAllowed, configureServicesMethodSymbol.Locations.FirstOrDefault(), configureServicesMethodSymbol.Name, configureHostBuilderMethodSymbol.Name));
                 }
 
+                if (buildServiceProviderMethodSymbol != null && !semanticModelProvider.IsValidBuildServiceProviderMethod(buildServiceProviderMethodSymbol))
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidBuildServiceProviderMethod, buildServiceProviderMethodSymbol.Locations.FirstOrDefault(), buildServiceProviderMethodSymbol.Name));
+                    buildServiceProviderMethodSymbol = null;
+                }
+
                 if (configureHostBuilderMethodSymbol != null)
                 {
                     configureMethodSymbol = configureHostBuilderMethodSymbol;
+                    // The BuildServiceProvider hook only applies to the ConfigureServices path.
+                    // With a host builder the container is configured through ConfigureHostBuilder
+                    // and the generated code uses host.Services, so the hook is ignored.
+                    buildServiceProviderMethodSymbol = null;
                 }
 
                 // Check for methods that have secondary attributes (HttpApi, RestApi, HttpApiAuthorizer, etc.)
@@ -171,7 +182,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     var lambdaMethodSymbol = semanticModelProvider.GetMethodSemanticModel(lambdaMethodDeclarationSyntax);
                     var lambdaMethodLocation = lambdaMethodDeclarationSyntax.GetLocation();
 
-                    var lambdaFunctionModel = LambdaFunctionModelBuilder.BuildAndValidate(lambdaMethodSymbol, lambdaMethodLocation, configureMethodSymbol, context, isExecutable, defaultRuntime, diagnosticReporter);
+                    var lambdaFunctionModel = LambdaFunctionModelBuilder.BuildAndValidate(lambdaMethodSymbol, lambdaMethodLocation, configureMethodSymbol, buildServiceProviderMethodSymbol, context, isExecutable, defaultRuntime, diagnosticReporter);
                     if (!lambdaFunctionModel.IsValid)
                     {
                         // If the model is not valid then skip it from further processing

@@ -330,5 +330,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidBuildServiceProviderMethod = new DiagnosticDescriptor(id: "AWSLambda0146",
+            title: "Invalid BuildServiceProvider method",
+            messageFormat: "The BuildServiceProvider method on the Startup class must take a single IServiceCollection parameter and return IServiceProvider or a type implementing it: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

@@ -153,6 +153,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool UsingHostBuilderForDependencyInjection { get; set; }
 
         /// <summary>
+        /// Returns true if the Startup class defines a BuildServiceProvider method that
+        /// the generated code should use to create the <see cref="System.IServiceProvider"/>
+        /// instead of the default <see cref="Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(Microsoft.Extensions.DependencyInjection.IServiceCollection)"/>.
+        /// This allows using an alternate IoC container, for example Autofac.
+        /// </summary>
+        public bool UsingCustomServiceProvider { get; set; }
+
+        /// <summary>
         /// Gets or sets the namespace for the nearest enclosing namespace. Returns null if the
         /// symbol isn't contained in a namespace.
         /// </summary>

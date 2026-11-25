@@ -14,7 +14,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public static class LambdaFunctionModelBuilder
     {
-        public static LambdaFunctionModel BuildAndValidate(IMethodSymbol lambdaMethodSymbol, Location LambdamethodLocation, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime, DiagnosticReporter diagnosticReporter)
+        public static LambdaFunctionModel BuildAndValidate(IMethodSymbol lambdaMethodSymbol, Location LambdamethodLocation, IMethodSymbol configureMethodSymbol, IMethodSymbol buildServiceProviderMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime, DiagnosticReporter diagnosticReporter)
         {
             // We need to check for the necessary dependencies before attempting to build the LambdaFunctionModel otherwise the generator blows up with unknown exceptions.
             if (!LambdaFunctionValidator.ValidateDependencies(context, lambdaMethodSymbol, LambdamethodLocation, diagnosticReporter))
@@ -22,14 +22,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 return new LambdaFunctionModel() { IsValid = false };
             }
 
-            var lambdaFunctionModel = Build(lambdaMethodSymbol, configureMethodSymbol, context, isExecutable, runtime);
+            var lambdaFunctionModel = Build(lambdaMethodSymbol, configureMethodSymbol, buildServiceProviderMethodSymbol, context, isExecutable, runtime);
             lambdaFunctionModel.IsValid = LambdaFunctionValidator.ValidateFunction(context, lambdaMethodSymbol, LambdamethodLocation, lambdaFunctionModel, diagnosticReporter);
             return lambdaFunctionModel;
         }
 
-        private static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime)
+        private static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, IMethodSymbol buildServiceProviderMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime)
         {
-            var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
+            var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, buildServiceProviderMethodSymbol, context);
             var generatedMethod = GeneratedMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, lambdaMethod, context);
             var model = new LambdaFunctionModel()
             {
