@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
@@ -132,7 +133,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         internal const int MaxResponsePayloadSize = 6 * 1024 * 1024;
 
         /// <summary>
+        /// Bytes of the payload kept for the rest of the serialized response: the status code,
+        /// headers, cookies and the JSON property names around the body.
+        /// </summary>
+        internal const int ResponseEnvelopeHeadroom = 16 * 1024;
+
+        /// <summary>
+        /// The largest body, measured as it is written into the serialized response, that still fits
+        /// in the Lambda response payload together with <see cref="ResponseEnvelopeHeadroom"/>.
+        /// </summary>
+        internal const int MaxResponseBodySize = MaxResponsePayloadSize - ResponseEnvelopeHeadroom;
+
+        /// <summary>
         /// Checks if the Lambda response body is larger than Lambda allows for a buffered response.
+        /// The body is measured as a JSON string, escaped the way the Lambda JSON serializer writes it,
+        /// and a fixed <see cref="ResponseEnvelopeHeadroom"/> is kept for the rest of the response.
         /// </summary>
         internal static bool IsResponseBodyTooLarge(string body, bool isBase64Encoded)
         {
@@ -141,8 +156,29 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 return false;
             }
 
-            var size = isBase64Encoded ? body.Length : Encoding.UTF8.GetByteCount(body);
-            return size > MaxResponsePayloadSize;
+            // Escaping never makes the body smaller, so the raw size is a lower bound.
+            if (Encoding.UTF8.GetByteCount(body) > MaxResponseBodySize)
+            {
+                return true;
+            }
+
+            // An escaped character takes at most 6 bytes ("\uXXXX"), so a body this short fits
+            // without measuring the escaped form.
+            if ((long)body.Length * 6 <= MaxResponseBodySize)
+            {
+                return false;
+            }
+
+            return GetJsonEncodedSize(body) > MaxResponseBodySize;
+        }
+
+        /// <summary>
+        /// The number of UTF-8 bytes the string takes inside a JSON string value, escaped with
+        /// <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/> like the Lambda JSON serializers do.
+        /// </summary>
+        internal static int GetJsonEncodedSize(string value)
+        {
+            return Encoding.UTF8.GetByteCount(JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode(value));
         }
 
         /// <summary>
