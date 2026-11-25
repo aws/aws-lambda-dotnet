@@ -213,6 +213,40 @@ public class Startup
 }
 ```
 
+### Using an alternate IoC container
+
+By default the generated code builds the service provider from the `IServiceCollection` with
+`services.BuildServiceProvider()`. If you use a different container (for example Autofac or
+Simple Injector), add a `BuildServiceProvider` method to your startup class that takes the
+`IServiceCollection` and returns an `IServiceProvider` (or a type implementing it). The generated
+code will call it instead of `services.BuildServiceProvider()`.
+
+```csharp
+[LambdaStartup]
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddAWSService<Amazon.S3.IAmazonS3>();
+        services.AddScoped<ITracker, DefaultTracker>();
+    }
+
+    public IServiceProvider BuildServiceProvider(IServiceCollection services)
+    {
+        var builder = new ContainerBuilder();
+        builder.Populate(services);
+        builder.RegisterType<DefaultTracker>().As<ITracker>();
+        return new AutofacServiceProvider(builder.Build());
+    }
+}
+```
+
+The method must take exactly one `IServiceCollection` parameter and return `IServiceProvider` or a
+type implementing it. Otherwise the generator reports an error (AWSLambda0146). When using the
+`ConfigureHostBuilder` path above there is no need for this method — configure the container on the
+host builder with `ConfigureContainer` or `UseServiceProviderFactory` instead, and the generated
+code uses `host.Services`.
+
 Example function using DI:
 ```csharp
 public class Functions
@@ -516,7 +550,7 @@ informational purposes, as a user of the Lambda Annotations framework this code 
 ```csharp
 public class Functions_Add_Generated
 {
-    private readonly ServiceProvider serviceProvider;
+    private readonly IServiceProvider serviceProvider;
 
     public Functions_Add_Generated()
     {
@@ -528,9 +562,11 @@ public class Functions_Add_Generated
         // To use a different lifetime, specify the lifetime in Startup.ConfigureHostBuilder() method.
         hostBuilder.Services.AddSingleton<Functions>();  
 
-        serviceProvider = hostBuilder.Services.BuildServiceProvider();
-
         host = hostBuilder.Build();
+
+        // The service provider comes from the host so a custom container configured
+        // in Startup.ConfigureHostBuilder (via ConfigureContainer or UseServiceProviderFactory) is used.
+        serviceProvider = host.Services;
         host.RunAsync();
     }
 
@@ -734,7 +770,7 @@ informational purposes, as a user of the Lambda Annotations framework this code 
 ```csharp
 public class Functions_Resize_Generated
 {
-    private readonly ServiceProvider serviceProvider;
+    private readonly IServiceProvider serviceProvider;
 
     public Functions_Resize_Generated()
     {

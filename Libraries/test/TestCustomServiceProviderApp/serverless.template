@@ -1,0 +1,50 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v2.4.2.0).",
+  "Outputs": {
+    "ApiURL": {
+      "Description": "API endpoint URL for Prod environment",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      }
+    }
+  },
+  "Resources": {
+    "TestCustomServiceProviderAppCustomServiceProviderFunctionsAddGenerated": {
+      "Metadata": {
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        },
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "CodeUri": ".",
+        "Events": {
+          "RootGet": {
+            "Properties": {
+              "Method": "GET",
+              "Path": "/add/{x}/{y}"
+            },
+            "Type": "HttpApi"
+          }
+        },
+        "Handler": "TestProject::TestCustomServiceProviderApp.CustomServiceProviderFunctions_Add_Generated::Add",
+        "MemorySize": 512,
+        "PackageType": "Zip",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Runtime": "dotnet10",
+        "Timeout": 30
+      },
+      "Type": "AWS::Serverless::Function"
+    }
+  },
+  "Transform": "AWS::Serverless-2016-10-31"
+}

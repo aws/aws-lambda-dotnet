@@ -17,7 +17,7 @@ namespace TestHostBuilderApp
     /// </summary>
     public class HostBuilderFunctions_Add_Generated
     {
-        private readonly ServiceProvider serviceProvider;
+        private readonly IServiceProvider serviceProvider;
         private readonly IHost host;
 
         /// <summary>
@@ -36,9 +36,11 @@ namespace TestHostBuilderApp
             hostBuilder.Services.AddSingleton<HostBuilderFunctions>();
             hostBuilder.Services.AddSingleton<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
-            serviceProvider = hostBuilder.Services.BuildServiceProvider();
-
             host = hostBuilder.Build();
+
+            // The service provider comes from the host so a custom container configured
+            // in Startup.ConfigureHostBuilder (via ConfigureContainer or UseServiceProviderFactory) is used.
+            serviceProvider = host.Services;
             host.RunAsync();
 
             // Intentionally eagerly build HostBuilderFunctions and its dependencies.

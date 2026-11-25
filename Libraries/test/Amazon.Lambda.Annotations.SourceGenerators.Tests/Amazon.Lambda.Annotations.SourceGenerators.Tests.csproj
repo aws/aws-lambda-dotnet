@@ -49,6 +49,15 @@
         <Content Remove="..\TestHostBuilderApp\bin\**" />
         <Content Remove="..\TestHostBuilderApp\serverless.template" />
 
+        <Content Include="..\TestCustomServiceProviderApp\**">
+          <Link>TestCustomServiceProviderApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+
+        <Content Remove="..\TestCustomServiceProviderApp\obj\**" />
+        <Content Remove="..\TestCustomServiceProviderApp\bin\**" />
+        <Content Remove="..\TestCustomServiceProviderApp\serverless.template" />
+
         <Content Include="..\TestServerlessApp.NET8\**">
             <Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>

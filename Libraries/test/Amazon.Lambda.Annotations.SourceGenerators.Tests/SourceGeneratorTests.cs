@@ -1850,6 +1850,96 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task CustomServiceProvider()
+        {
+            var expectedAddGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomServiceProviderFunctions_Add_Generated.g.cs"));
+            var expectedTemplate = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "customServiceProvider.serverless.template"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestCustomServiceProviderApp", "CustomServiceProviderFunctions.cs"), await File.ReadAllTextAsync(Path.Combine("TestCustomServiceProviderApp", "CustomServiceProviderFunctions.cs"))),
+                        (Path.Combine("TestCustomServiceProviderApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestCustomServiceProviderApp", "Startup.cs"))),
+                        (Path.Combine("TestCustomServiceProviderApp", "CustomServiceProvider.cs"), await File.ReadAllTextAsync(Path.Combine("TestCustomServiceProviderApp", "CustomServiceProvider.cs"))),
+                        (Path.Combine("TestCustomServiceProviderApp", "CalculatorService", "ICalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestCustomServiceProviderApp", "CalculatorService", "ICalculatorService.cs"))),
+                        (Path.Combine("TestCustomServiceProviderApp", "CalculatorService", "CalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestCustomServiceProviderApp", "CalculatorService", "CalculatorService.cs"))),
+
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomServiceProviderFunctions_Add_Generated.g.cs",
+                            SourceText.From(expectedAddGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomServiceProviderFunctions_Add_Generated.g.cs", expectedAddGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestCustomServiceProviderApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplate),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task InvalidBuildServiceProviderSignature_ReportsError()
+        {
+            var source = @"
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Core;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace MyApp
+{
+    [LambdaStartup]
+    public class Startup
+    {
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddSingleton<Functions>();
+        }
+
+        public void BuildServiceProvider(IServiceCollection services)
+        {
+        }
+    }
+
+    public class Functions
+    {
+    }
+}";
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        ("Startup.cs", source),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0146", DiagnosticSeverity.Error)
+                            .WithSpan("Startup.cs", 16, 21, 16, 41)
+                            .WithArguments("BuildServiceProvider"),
+                    }
+                },
+                CompilerDiagnostics = CompilerDiagnostics.None
+            };
+            // Ignore the per-file codegen Info noise (AWSLambda0103) and the generated-source list
+            // so this test focuses on the invalid-signature diagnostic.
+            test.DisabledDiagnostics.Add("AWSLambda0103");
+            test.TestBehaviors |= TestBehaviors.SkipGeneratedSourcesCheck;
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task CustomAuthorizerRestTest()
         {
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerRest.template"));

@@ -16,7 +16,7 @@ namespace TestServerlessApp
     /// </summary>
     public class SimpleCalculator_Randoms_Generated
     {
-        private readonly ServiceProvider serviceProvider;
+        private readonly IServiceProvider serviceProvider;
 
         /// <summary>
         /// Default constructor. This constructor is used by Lambda to construct the instance. When invoked in a Lambda environment
