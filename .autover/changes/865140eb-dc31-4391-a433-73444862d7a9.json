@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.AspNetCoreServer",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Return a 413 status code when the response body exceeds the Lambda response payload limit for API Gateway REST and HTTP API functions instead of failing the invocation."
+        "Return a 502 status code when the response body exceeds the Lambda response payload limit for API Gateway REST and HTTP API functions instead of failing the invocation."
       ]
     }
   ]

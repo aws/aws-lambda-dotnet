@@ -253,11 +253,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public async Task TestResponseTooLargeReturns413()
+        public async Task TestResponseTooLargeReturns502()
         {
             var response = await InvokeAPIGatewayRequest("large-response-apigateway-request.json");
 
-            Assert.Equal((int)HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            Assert.Equal((int)HttpStatusCode.BadGateway, response.StatusCode);
             Assert.Null(response.Body);
         }
 

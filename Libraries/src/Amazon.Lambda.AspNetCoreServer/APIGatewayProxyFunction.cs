@@ -372,10 +372,10 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if (Utilities.IsResponseBodyTooLarge(response.Body, response.IsBase64Encoded))
             {
-                _logger.LogError($"Response body exceeds the Lambda response payload limit of {Utilities.MaxResponsePayloadSize} bytes, returning status code 413");
+                _logger.LogError($"Response body exceeds the Lambda response payload limit of {Utilities.MaxResponsePayloadSize} bytes, returning status code 502");
                 response = new APIGatewayProxyResponse
                 {
-                    StatusCode = (int)HttpStatusCode.RequestEntityTooLarge
+                    StatusCode = (int)HttpStatusCode.BadGateway
                 };
             }
 
