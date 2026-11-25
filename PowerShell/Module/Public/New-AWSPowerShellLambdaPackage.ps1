@@ -17,11 +17,19 @@
     For both standalone scripts and script projects the package bundle (a zip file) can then be deployed separately
     to AWS Lambda.
 
+    This cmdlet has two parameter sets that cannot be mixed. Use -ScriptPath (with -StagingDirectory and
+    -PowerShellSdkVersion) to package a standalone script. Use -ProjectDirectory (with -DisableModuleRestore) to package
+    a script project, which is a folder that contains a .csproj file. A folder created by
+    New-AWSPowerShellLambda without the -WithProject switch holds the script file (plus a readme.txt) and no .csproj, so pass the script itself to
+    -ScriptPath. Only a folder created with -WithProject can be passed to -ProjectDirectory.
+
     .PARAMETER DisableModuleRestore
     Skip restoring any required PowerShell modules when deploying a project.
 
     .PARAMETER ProjectDirectory
-    The directory containing the AWS Lambda PowerShell project to publish.
+    The directory containing the AWS Lambda PowerShell project to publish. The directory must contain a .NET project
+    file, such as one created by New-AWSPowerShellLambda with the -WithProject switch. A folder holding just a script
+    file is not a project: use -ScriptPath for it. Cannot be combined with -ScriptPath.
 
     .PARAMETER ModuleRepository
     Custom repositories to use when downloading modules to satisfy your script's declared dependencies.
@@ -34,7 +42,7 @@
     must match a version of the Microsoft.PowerShell.SDK NuGet package. https://www.nuget.org/packages/Microsoft.PowerShell.SDK
 
     .PARAMETER ScriptPath
-    The path to the PowerShell script file to be published to AWS Lambda.
+    The path to the PowerShell script file to be published to AWS Lambda. Cannot be combined with -ProjectDirectory.
 
     .PARAMETER Architecture
     The architecture of the Lambda function. Valid values: x86_64 or arm64. Default is x86_64
@@ -58,6 +66,19 @@
     New-AWSPowerShellLambdaPackage -ProjectDirectory C:\MyLambdaProject -OutputPackage C:\PendingDeployment\MyS3CleanupProjectBundle.zip
 
     Creates a zip file containing the deployment bundle for the script project in the folder C:\MyLambdaProject.
+
+    .EXAMPLE
+    New-AWSPowerShellLambda -Template Basic
+    New-AWSPowerShellLambdaPackage -ScriptPath .\Basic\Basic.ps1 -OutputPackage .\Basic.zip
+
+    Creates a script from the 'Basic' template and packages it. Because the template was created without -WithProject,
+    the script file is passed to -ScriptPath; passing the Basic folder to -ProjectDirectory would fail.
+
+    .EXAMPLE
+    New-AWSPowerShellLambda -Template Basic -WithProject
+    New-AWSPowerShellLambdaPackage -ProjectDirectory .\Basic -OutputPackage .\Basic.zip
+
+    Creates a script project from the 'Basic' template and packages the project folder.
 #>
 function New-AWSPowerShellLambdaPackage
 {

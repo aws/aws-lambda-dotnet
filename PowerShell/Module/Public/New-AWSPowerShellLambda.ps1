@@ -12,6 +12,10 @@
     or need to include additional files. If you just need to deploy a single script consider using the simpler script
     based workflow.
 
+    Without -WithProject only the script file (plus a readme.txt) is created and no project file, so package it with New-AWSPowerShellLambdaPackage -ScriptPath
+    (or deploy it with Publish-AWSPowerShellLambda -ScriptPath). The -ProjectDirectory parameters of those cmdlets only
+    accept a folder created with -WithProject.
+
     A project will consist of the following files, some file names are based on the Name parameter.
         * <name>.ps1 - The main file to be edited. This is the PowerShell script that will be invoked for each Lambda function invocation.
         * <name>.csproj> - The .NET project file used to build the Lambda package bundle
