@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Mark generated Lambda handler and executable bootstrap code for coverage and analysis tools."
+      ]
+    }
+  ]
+}
