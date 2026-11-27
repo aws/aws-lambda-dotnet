@@ -16,6 +16,7 @@ For a history of releases view the [release change log](CHANGELOG.md)
     - [Amazon.Lambda.AspNetCoreServer](#amazonlambdaaspnetcoreserver)
     - [Amazon.Lambda.TestUtilities](#amazonlambdatestutilities)
     - [Amazon.Lambda.DurableExecution](#amazonlambdadurableexecution)
+    - [Amazon.Lambda.RuntimeSupport (Runtime Interface Client)](#amazonlambdaruntimesupport-runtime-interface-client)
   - [Blueprints](#blueprints)
     - [Dotnet CLI Templates](#dotnet-cli-templates)
     - [Yeoman (Deprecated)](#yeoman-deprecated)
@@ -118,6 +119,11 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.TestUtiliti
 
 The Durable Execution SDK lets you write multi-step Lambda workflows that automatically checkpoint progress and resume after failures.
 For more information see the [README.md](Libraries/src/Amazon.Lambda.DurableExecution/README.md) file for Amazon.Lambda.DurableExecution.
+
+### Amazon.Lambda.RuntimeSupport (Runtime Interface Client)
+
+Amazon.Lambda.RuntimeSupport is the .NET Lambda Runtime Interface Client (RIC). It is distributed as a NuGet package and is preinstalled in `/var/runtime` of the AWS provided .NET base images. To use a custom container base image, add the NuGet package to your function project and start it from `Main`; there is nothing else to download.
+For a Dockerfile example for a custom base image and a description of how to initialize the library, see the [README.md](Libraries/src/Amazon.Lambda.RuntimeSupport/README.md) file for Amazon.Lambda.RuntimeSupport. The source of the AWS base images is in [LambdaRuntimeDockerfiles](LambdaRuntimeDockerfiles/README.md).
 
 ## Blueprints
 
